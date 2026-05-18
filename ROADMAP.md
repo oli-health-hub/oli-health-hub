@@ -71,7 +71,7 @@
 | Composição final dos planos BASE/PRO/VIP | Guilherme/Igor/César | 06/06 | Tela de planos, onboarding |
 | Precificação definitiva (mensal + anual + modular) | Guilherme/Igor | 06/06 | Gateway Asaas, cobrança |
 | Possível 4º Plano (corpo clínico fixo) | César/Guilherme | pós-lançamento | Novo tipo de usuário |
-| BPO Financeiro (Miriam) como módulo | Guilherme | 22/05 | Novo card ecossistema |
+| BPO Financeiro (Miriam) — escopo e parceria | Guilherme | reunião 19/05 | Módulo VIP + contratação avulsa |
 | Produto "sem espaço físico" para médicos de outros estados | Guilherme/Igor | 15/08 | Novo perfil de usuário |
 | Configuração e precificação da telemedicina nas salas | Guilherme/Igor | 06/06 | Módulo Telemedicina |
 | Programa de indicação (regras e benefícios) | Guilherme/Igor/Mint | 15/07 | Funcionalidade referral |
@@ -122,9 +122,12 @@ A reunião de 15/05 revelou parceiros estratégicos ainda não representados no 
 
 **Regras de negócio validadas na reunião de parceiros:**
 - **Pré-pago sempre** — sem acesso ao espaço antes do pagamento confirmado
-- **Assinatura anual preferencial** — marketing e contabilidade precisam de histórico; reduz churn
+- **Assinatura anual é prioridade**, especialmente no VIP — exibida primeiro, com desconto em destaque
+- **Assinatura mensal disponível** como opção secundária (mais acessível na entrada)
+- **VIP exige anual** como padrão — marketing e contabilidade precisam de histórico mínimo
 - **Minutagem separada da assinatura** — já pode operar independente
 - **Planos e preços no banco** — nunca hardcoded, para ajustar sem novo build
+- **BPO Financeiro** — incluso no VIP + disponível como módulo avulso (igual demais serviços de parceiros)
 
 **Tarefas:**
 - [ ] Migration: tabela `plans` (id, nome, preco_mensal, preco_anual, taxa_min, features_json)

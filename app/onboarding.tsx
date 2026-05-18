@@ -458,14 +458,14 @@ export default function OnboardingScreen() {
                     <OptionCard
                       value={true}
                       label="Sim"
-                      icon="add-outline"
+                      icon="checkmark-outline"
                       selected={previsaoContratacao === true}
                       onPress={setPrevisaoContratacao}
                     />
                     <OptionCard
                       value={false}
                       label="Não por enquanto"
-                      icon="remove-outline"
+                      icon="close-outline"
                       selected={previsaoContratacao === false}
                       onPress={setPrevisaoContratacao}
                     />
