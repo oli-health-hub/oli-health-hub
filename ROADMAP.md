@@ -291,8 +291,8 @@ Painel web para a equipe OLI gerenciar usuários, assinaturas e receita:
 - [ ] **Agenda de eventos do espaço** — workshops, grupos de negócios, palestras
 - [ ] **NPS do profissional** — métrica de permanência e curadoria (`useNPSGate` + modal)
 - [ ] **Programa de indicação** — gerar link, rastrear, aplicar benefício automaticamente
-- [ ] Timer em background (app minimizado)
-- [ ] Notificações push: alertas de sessão, fatura, buffer, saldo baixo
+- [x] Timer em background (app minimizado) — notificações agendadas cobrem o gap
+- [x] Notificações push: alertas de sessão, buffer urgente, saldo baixo
 - [ ] Relatórios PDF (`expo-print`): extrato mensal, comprovantes
 - [ ] QR Code funcional com `expo-camera`
 - [ ] Métricas CRM: de histórico real de consultas

@@ -8,6 +8,10 @@ import { useAppLock } from '../src/hooks/useAppLock';
 import { useSessionTimeout } from '../src/hooks/useSessionTimeout';
 import { AppLockScreen } from '../src/components/AppLockScreen';
 import { checkMFARequired } from '../src/hooks/useMFA';
+import {
+  requestNotificationPermission,
+  addNotificationResponseListener,
+} from '../src/services/notificationService';
 
 // Desativa o escalonamento de fonte do sistema em todos os textos do app,
 // garantindo tamanhos consistentes entre iOS e Android.
@@ -22,6 +26,24 @@ export default function RootLayout() {
   useSessionTimeout(); // logout automático após 30 min de inatividade
 
   useEffect(() => { initialize(); }, []);
+
+  // Pede permissão de notificação uma vez na inicialização
+  useEffect(() => {
+    requestNotificationPermission().catch(() => {});
+  }, []);
+
+  // Navega para a tela certa ao tocar em uma notificação
+  useEffect(() => {
+    const unsub = addNotificationResponseListener((type) => {
+      if (!session) return;
+      if (type === 'SESSION_ENDING_SOON' || type === 'SESSION_ENDED' || type === 'BUFFER_URGENT') {
+        router.push('/');           // Dashboard — onde fica o timer
+      } else if (type === 'LOW_BALANCE') {
+        router.push('/(tabs)/ecossistema'); // Tela de compra de horas
+      }
+    });
+    return unsub;
+  }, [session]);
 
   useEffect(() => {
     if (isLoading) return;

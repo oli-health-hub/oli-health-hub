@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import type { Room, Reservation, PlanType } from '../models/types';
 import { createReservation, deleteReservation, updateReservation } from '../services/reservationService';
 import { logUsageCharge } from '../services/usageChargeService';
+import {
+  scheduleSessionNotifications,
+  cancelSessionNotifications,
+} from '../services/notificationService';
 import { useAuthStore } from './authStore';
 
 // ─── Custo por minuto por plano ───────────────────────────────────────────────
@@ -137,6 +141,14 @@ export const useAppStore = create<AppStore>((set, get) => {
     startSession: (startTime, endTime) => {
       set({ sessionStartTime: startTime, sessionEndTime: endTime, isInBuffer: false, isOvertime: false });
       get()._syncNextReservation();
+      // Agenda notificações locais — funcionam mesmo com app minimizado/morto
+      const { hasNextReservation, rooms, todayReservations } = get();
+      const roomName = todayReservations[0]?.roomName ?? 'Sala';
+      scheduleSessionNotifications({
+        sessionEndTime:    endTime,
+        roomName,
+        hasNextReservation,
+      }).catch(() => {});
     },
 
     extendSession: (extraMinutes) => {
@@ -147,8 +159,10 @@ export const useAppStore = create<AppStore>((set, get) => {
       get()._syncNextReservation();
     },
 
-    checkout: () =>
-      set({ sessionStartTime: null, sessionEndTime: null, isInBuffer: false, isOvertime: false }),
+    checkout: () => {
+      cancelSessionNotifications().catch(() => {});
+      set({ sessionStartTime: null, sessionEndTime: null, isInBuffer: false, isOvertime: false });
+    },
 
     enterBuffer:   () => set({ isInBuffer: true,  isOvertime: false }),
     enterOvertime: () => get().extendSession(30),
