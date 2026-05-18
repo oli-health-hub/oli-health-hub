@@ -62,7 +62,42 @@
 
 ---
 
+## ⚠️ Decisões Pendentes (bloqueia implementação da Fase 1)
+
+> Baseado na Reunião de Parceiros de 15/05/2026. Aguardando definição até 06/06/2026.
+
+| Decisão | Responsável | Prazo | Impacto no App |
+|---------|-------------|-------|----------------|
+| Composição final dos planos BASE/PRO/VIP | Guilherme/Igor/César | 06/06 | Tela de planos, onboarding |
+| Precificação definitiva (mensal + anual + modular) | Guilherme/Igor | 06/06 | Gateway Asaas, cobrança |
+| Possível 4º Plano (corpo clínico fixo) | César/Guilherme | pós-lançamento | Novo tipo de usuário |
+| BPO Financeiro (Miriam) como módulo | Guilherme | 22/05 | Novo card ecossistema |
+| Produto "sem espaço físico" para médicos de outros estados | Guilherme/Igor | 15/08 | Novo perfil de usuário |
+| Configuração e precificação da telemedicina nas salas | Guilherme/Igor | 06/06 | Módulo Telemedicina |
+| Programa de indicação (regras e benefícios) | Guilherme/Igor/Mint | 15/07 | Funcionalidade referral |
+
+> 🔒 **Preço e composição de planos NÃO serão hardcoded no app** — virão de tabela no Supabase para facilitar ajustes sem novo build.
+
+---
+
 ## Fase 1 — MVP com Gestão de Planos e Cobrança 🚧 Próxima
+
+### 1.0 — Novos Parceiros no Ecossistema
+
+A reunião de 15/05 revelou parceiros estratégicos ainda não representados no app:
+
+| Parceiro | Empresa | Serviço | Plano |
+|----------|---------|---------|-------|
+| Amanda | AR Soluções | Convênios médicos + gestão de carreira | PRO/VIP |
+| Ronaldo | AR Soluções | Redução de no-show + faturamento em operadoras | PRO/VIP |
+| César | OLI | Mentor de carreira + Responsável Técnico | Todos |
+
+**Tarefas:**
+- [ ] Adicionar card "OLI Convênios" (AR Soluções) na tela Ecossistema
+- [ ] Adicionar card "OLI Carreira" (César + AR Soluções) na tela Ecossistema
+- [ ] Adicionar agente virtual para AR Soluções quando disponível
+
+---
 
 ### 1.1 — Modelo de Usuários e Planos
 
@@ -85,13 +120,21 @@
 - **PRO (tudo do BASE +):** Communicare básico (prontuário, agenda, WhatsApp) + Operação assistida (faturamento, recepção WA, automações) + Jurídico expandido (documentos personalizados) + Contabilidade consultoria inicial
 - **VIP (tudo do PRO +):** Communicare Premium (IA, transcrição, chatbot avançado) + Contabilidade integrada (IR PF gratuito, previdência, certificado digital) + Jurídico contínuo (3h/trimestre, MADD, revisão contratos) + Networking VIP (grupo de negócios OLI)
 
+**Regras de negócio validadas na reunião de parceiros:**
+- **Pré-pago sempre** — sem acesso ao espaço antes do pagamento confirmado
+- **Assinatura anual preferencial** — marketing e contabilidade precisam de histórico; reduz churn
+- **Minutagem separada da assinatura** — já pode operar independente
+- **Planos e preços no banco** — nunca hardcoded, para ajustar sem novo build
+
 **Tarefas:**
-- [ ] Migration: tabela `plans` com planos e preços
-- [ ] Migration: tabela `subscriptions` (usuario, plano, status, datas, asaas_id)
-- [ ] Migration: tabela `hour_packages` (tipo, horas, valor, validade)
-- [ ] Migration: tabela `hour_balance` (saldo de horas por usuário)
-- [ ] Migration: tabela `usage_charges` (log de minutagem cobrada por sessão)
+- [ ] Migration: tabela `plans` (id, nome, preco_mensal, preco_anual, taxa_min, features_json)
+- [ ] Migration: tabela `subscriptions` (usuario, plano, ciclo: mensal/anual, status, datas, asaas_id)
+- [ ] Migration: tabela `hour_packages` (tipo, horas, valor, validade_dias)
+- [ ] Migration: tabela `hour_balance` (saldo de horas por usuário, expira_em)
+- [ ] Migration: tabela `usage_charges` (log de minutagem por sessão: inicio, fim, minutos, valor)
+- [ ] Migration: tabela `referrals` (indicador_id, indicado_id, status, beneficio_aplicado)
 - [ ] Coluna `user_type` e `plan_id` em `profiles`
+- [ ] Coluna `pre_paid_ok` — boolean que libera ou bloqueia acesso às salas
 - [ ] RLS separado para `subscriber` vs `hour_user` vs `admin`
 
 ---
@@ -170,7 +213,18 @@ O timer já rastreia minutos em tempo real. Precisa alimentar o faturamento:
 
 ---
 
-### 1.5 — Gateway de Pagamento (Asaas)
+### 1.5 — Programa de Indicação
+
+Consenso da reunião: médico que indica ganha mês grátis ou benefício definido.
+
+- [ ] Gerar código de indicação único por usuário
+- [ ] Tela "Indicar Colega" com link compartilhável
+- [ ] Webhook/trigger: quando indicado assina, aplicar benefício ao indicador automaticamente
+- [ ] Histórico de indicações no perfil
+
+---
+
+### 1.6 — Gateway de Pagamento (Asaas)
 
 **Por que Asaas:**
 - Brasileiro (sem conversão de moeda)
@@ -199,7 +253,7 @@ App → Supabase Edge Function → Asaas API
 
 ---
 
-### 1.6 — Dashboard Admin (Web)
+### 1.7 — Dashboard Admin (Web)
 
 Painel web para a equipe OLI gerenciar usuários, assinaturas e receita:
 
@@ -221,7 +275,7 @@ Painel web para a equipe OLI gerenciar usuários, assinaturas e receita:
 
 ---
 
-### 1.7 — Tela de Planos e Assinatura no App (para o profissional)
+### 1.8 — Tela de Planos e Assinatura no App (para o profissional)
 
 - [ ] Tela "Meu Plano" com plano atual, benefícios, data de renovação
 - [ ] Tela de upgrade (comparação BASE → PRO → VIP)
@@ -234,14 +288,31 @@ Painel web para a equipe OLI gerenciar usuários, assinaturas e receita:
 
 ## Fase 2 — Funcionalidades OLI Completas (Semanas 8–12)
 
-- [ ] Tela de comunidade e networking (eventos, grupos)
-- [ ] Notificações push: alertas de sessão, fatura, buffer, saldo baixo
+> Funcionalidades solicitadas pelos parceiros na reunião de 15/05/2026
+
+### App do Profissional
+- [ ] **Vídeo de boas-vindas personalizado** no primeiro login (diferencial de onboarding)
+- [ ] **Dashboard de indicadores por parceiro** — card por parceiro (contábil, marketing, convênios, agendamento)
+- [ ] **Chat entre profissionais do Hub** — networking virtual interno
+- [ ] **Agenda de eventos do espaço** — workshops, grupos de negócios, palestras
+- [ ] **NPS do profissional** — métrica de permanência e curadoria (`useNPSGate` + modal)
+- [ ] **Programa de indicação** — gerar link, rastrear, aplicar benefício automaticamente
 - [ ] Timer em background (app minimizado)
-- [ ] Chatbot OLI com personas reais (Ana/Isabella/César via API Claude)
+- [ ] Notificações push: alertas de sessão, fatura, buffer, saldo baixo
 - [ ] Relatórios PDF (`expo-print`): extrato mensal, comprovantes
 - [ ] QR Code funcional com `expo-camera`
-- [ ] NPS: `useNPSGate` + modal de coleta → tabela `nps_responses`
 - [ ] Métricas CRM: de histórico real de consultas
+
+### Assistentes Virtuais (parceiros representados no app)
+- [ ] **Ana** (Jurídico) — já no app, expandir para documentos personalizados
+- [ ] **Isabella** (Contábil Melo) — já no app, conectar ao dashboard contábil real
+- [ ] **Agente AR Soluções** — convênios, carreira, gestão de agenda (a nomear com Amanda/Ronaldo)
+- [ ] **César** — mentor de carreira (a definir formato: chat ou conteúdo)
+
+### Telemedicina
+- [ ] Todas as salas habilitadas para tele (não apenas sala dedicada)
+- [ ] Módulo de reserva de sala com modo "telemedicina" (configuração de câmera/light)
+- [ ] Precificação de tele via módulo separado (R$ 150/mês)
 
 ---
 
