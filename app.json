@@ -30,7 +30,11 @@
       "permissions": [
         "CAMERA",
         "READ_CALENDAR",
-        "WRITE_CALENDAR"
+        "WRITE_CALENDAR",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
       ]
     },
     "web": {
@@ -66,8 +70,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "SUBSTITUIR-PELO-ID-DO-EAS"
-      }
-    }
+        "projectId": "86281f73-3b5b-4e6c-adfe-8909137f86d5"
+      },
+      "router": {}
+    },
+    "owner": "guipasquetti"
   }
 }
