@@ -28,7 +28,7 @@
 - [x] App lock biométrico
 - [x] Audit log imutável
 - [ ] **Gateway de pagamento PCI DSS** — Asaas (PIX, boleto, cartão, recorrência)
-- [ ] **Rate limiting de autenticação** — máx. 5 tentativas / 15 min
+- [x] **Rate limiting de autenticação** — máx. 5 tentativas / 15 min
 
 ---
 
@@ -68,9 +68,8 @@
 
 | Decisão | Responsável | Prazo | Impacto no App |
 |---------|-------------|-------|----------------|
-| Composição final dos planos BASE/PRO/VIP | Guilherme/Igor/César | 06/06 | Tela de planos, onboarding |
+| Composição final dos planos BASE/PRO/VIP | Guilherme/Igor | 06/06 | Tela de planos, onboarding |
 | Precificação definitiva (mensal + anual + modular) | Guilherme/Igor | 06/06 | Gateway Asaas, cobrança |
-| Possível 4º Plano (corpo clínico fixo) | César/Guilherme | pós-lançamento | Novo tipo de usuário |
 | BPO Financeiro (Miriam) — escopo e parceria | Guilherme | reunião 19/05 | Módulo VIP + contratação avulsa |
 | Produto "sem espaço físico" para médicos de outros estados | Guilherme/Igor | 15/08 | Novo perfil de usuário |
 | Configuração e precificação da telemedicina nas salas | Guilherme/Igor | 06/06 | Módulo Telemedicina |
@@ -90,11 +89,10 @@ A reunião de 15/05 revelou parceiros estratégicos ainda não representados no 
 |----------|---------|---------|-------|
 | Amanda | AR Soluções | Convênios médicos + gestão de carreira | PRO/VIP |
 | Ronaldo | AR Soluções | Redução de no-show + faturamento em operadoras | PRO/VIP |
-| César | OLI | Mentor de carreira + Responsável Técnico | Todos |
 
 **Tarefas:**
-- [ ] Adicionar card "OLI Convênios" (AR Soluções) na tela Ecossistema
-- [ ] Adicionar card "OLI Carreira" (César + AR Soluções) na tela Ecossistema
+- [x] Adicionar card "OLI Convênios" (AR Soluções) na tela Ecossistema
+- [x] Adicionar card "OLI Carreira" (AR Soluções) na tela Ecossistema
 - [ ] Adicionar agente virtual para AR Soluções quando disponível
 
 ---
@@ -130,15 +128,15 @@ A reunião de 15/05 revelou parceiros estratégicos ainda não representados no 
 - **BPO Financeiro** — incluso no VIP + disponível como módulo avulso (igual demais serviços de parceiros)
 
 **Tarefas:**
-- [ ] Migration: tabela `plans` (id, nome, preco_mensal, preco_anual, taxa_min, features_json)
-- [ ] Migration: tabela `subscriptions` (usuario, plano, ciclo: mensal/anual, status, datas, asaas_id)
-- [ ] Migration: tabela `hour_packages` (tipo, horas, valor, validade_dias)
-- [ ] Migration: tabela `hour_balance` (saldo de horas por usuário, expira_em)
-- [ ] Migration: tabela `usage_charges` (log de minutagem por sessão: inicio, fim, minutos, valor)
-- [ ] Migration: tabela `referrals` (indicador_id, indicado_id, status, beneficio_aplicado)
-- [ ] Coluna `user_type` e `plan_id` em `profiles`
-- [ ] Coluna `pre_paid_ok` — boolean que libera ou bloqueia acesso às salas
-- [ ] RLS separado para `subscriber` vs `hour_user` vs `admin`
+- [x] Migration: tabela `plans` (id, nome, preco_mensal, preco_anual, taxa_min, features_json)
+- [x] Migration: tabela `subscriptions` (usuario, plano, ciclo: mensal/anual, status, datas, asaas_id)
+- [x] Migration: tabela `hour_packages` (tipo, horas, valor, validade_dias)
+- [x] Migration: tabela `hour_balance` (saldo de horas por usuário, expira_em)
+- [x] Migration: tabela `usage_charges` (log de minutagem por sessão: inicio, fim, minutos, valor)
+- [x] Migration: tabela `referrals` (indicador_id, indicado_id, status, beneficio_aplicado)
+- [x] Coluna `user_type` e `plan_id` em `profiles`
+- [x] Coluna `pre_paid_ok` — boolean que libera ou bloqueia acesso às salas
+- [x] RLS separado para `subscriber` vs `hour_user` vs `admin`
 
 ---
 
@@ -168,16 +166,9 @@ Módulos disponíveis para compra independente de plano:
 | Consultoria Tributária | R$ 500 | Avulso |
 | Previdência | R$ 300 | Avulso |
 
-**Mentoria (César) — Futuro:**
-| Módulo | Valor | Tipo |
-|--------|-------|------|
-| Mentoria de Carreira | R$ 500/mês | Mensal |
-| Posicionamento Profissional | R$ 1.000 | Único |
-| Estruturação de Agenda | R$ 600 | Único |
-
 **Tarefas:**
-- [ ] Migration: tabela `modules` (nome, descrição, valor, tipo: mensal/avulso)
-- [ ] Migration: tabela `user_modules` (usuario, modulo, status, ativo_ate)
+- [x] Migration: tabela `modules` (nome, descrição, valor, tipo: mensal/avulso)
+- [x] Migration: tabela `user_modules` (usuario, modulo, status, ativo_ate)
 - [ ] Tela de Módulos no app (listagem com status: ativo/inativo/disponível)
 - [ ] Fluxo de compra de módulo individual
 
@@ -208,7 +199,7 @@ Para usuários sem plano e para assinantes que precisam de horas extras:
 
 O timer já rastreia minutos em tempo real. Precisa alimentar o faturamento:
 
-- [ ] Ao finalizar reserva: calcular `minutos × taxa_plano` e gravar em `usage_charges`
+- [x] Ao finalizar reserva: calcular `minutos × taxa_plano` e gravar em `usage_charges`
 - [ ] Deduzir do saldo de horas (se `hour_user` ou pacote)
 - [ ] Somar na fatura mensal (se `subscriber`)
 - [ ] Exibir extrato de minutagem no app (tela Financeiro)
@@ -310,7 +301,6 @@ Painel web para a equipe OLI gerenciar usuários, assinaturas e receita:
 - [ ] **Ana** (Jurídico) — já no app, expandir para documentos personalizados
 - [ ] **Isabella** (Contábil Melo) — já no app, conectar ao dashboard contábil real
 - [ ] **Agente AR Soluções** — convênios, carreira, gestão de agenda (a nomear com Amanda/Ronaldo)
-- [ ] **César** — mentor de carreira (a definir formato: chat ou conteúdo)
 
 ### Telemedicina
 - [ ] Todas as salas habilitadas para tele (não apenas sala dedicada)

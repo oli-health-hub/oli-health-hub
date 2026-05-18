@@ -120,6 +120,22 @@ export default function EcossistemaScreen() {
           ctaLabel="Em breve"
           disabled
         />
+        <OLISolutionCard
+          accent={colors.oliCoral}
+          icon="business-outline"
+          title="OLI Convênios"
+          description="Credenciamento, faturamento em operadoras e redução de no-show. Parceria AR Soluções."
+          ctaLabel="Falar com especialista"
+          onPress={() => contactReception('Olá! Tenho interesse nos serviços de convênios médicos do OLI (credenciamento e faturamento em operadoras).')}
+        />
+        <OLISolutionCard
+          accent={colors.oliPurple}
+          icon="briefcase-outline"
+          title="OLI Carreira"
+          description="Posicionamento profissional, gestão de agenda e captação de pacientes particular."
+          ctaLabel="Saiba mais"
+          onPress={() => contactReception('Olá! Tenho interesse nos serviços de gestão de carreira do OLI.')}
+        />
 
         {/* ── Uso do plano ── */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>

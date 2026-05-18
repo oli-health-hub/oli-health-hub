@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Room, Reservation, PlanType } from '../models/types';
 import { createReservation, deleteReservation, updateReservation } from '../services/reservationService';
+import { logUsageCharge } from '../services/usageChargeService';
 import { useAuthStore } from './authStore';
 
 // ─── Custo por minuto por plano ───────────────────────────────────────────────
@@ -202,14 +203,33 @@ export const useAppStore = create<AppStore>((set, get) => {
 
     endRoomUse: (id) => {
       const now = new Date().toISOString();
+      const { userPlan, todayReservations } = get();
+      const target = todayReservations.find(r => r.id === id);
+
       set({
-        todayReservations: get().todayReservations.map(r =>
+        todayReservations: todayReservations.map(r =>
           r.id === id
             ? { ...r, status: 'concluido' as const, consultationEndedAt: r.consultationEndedAt ?? now }
             : r,
         ),
         activeConsultationId: null,
       });
+
+      // Registra cobrança por minutagem no Supabase em background
+      if (target?.consultationStartedAt) {
+        const professionalId = useAuthStore.getState().session?.user?.id;
+        if (professionalId) {
+          logUsageCharge({
+            professionalId,
+            reservationId:  target.id,
+            plan:           userPlan,
+            startedAt:      target.consultationStartedAt,
+            endedAt:        target.consultationEndedAt ?? now,
+          }).catch(() => {
+            // Falha silenciosa — o dado é reconciliado pelo admin via Supabase
+          });
+        }
+      }
     },
 
     setActiveConsultationId: (id) => set({ activeConsultationId: id }),

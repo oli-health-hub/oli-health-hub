@@ -12,6 +12,8 @@ export const colors = {
   oliNavy:      '#1E3A6E',  // OLI Jurídico — Azul Navy
   oliCyan:      '#0891B2',  // OLI Contábil — Azul Cyan
   oliMint:      '#3DAA7A',  // OLI Crescimento — Verde Menta
+  oliCoral:     '#C0714A',  // OLI Convênios — Terracota (AR Soluções)
+  oliPurple:    '#7B6EA8',  // OLI Carreira — Roxo suave (AR Soluções)
   white:        '#FFFFFF',
   black:        '#000000',
   gray:         '#9E9E9E',

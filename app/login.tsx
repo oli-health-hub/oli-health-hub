@@ -7,6 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { signIn, signUp } from '../src/services/auth';
+import { checkAuthRateLimit, recordAuthAttempt } from '../src/services/usageChargeService';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 
 type Mode = 'login' | 'cadastro';
@@ -34,7 +35,22 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       if (mode === 'login') {
+        // Rate limiting: verifica tentativas antes de chamar o Supabase
+        const rateCheck = await checkAuthRateLimit(email.trim());
+        if (!rateCheck.allowed) {
+          const blockedUntil = rateCheck.blockedUntil
+            ? new Date(rateCheck.blockedUntil).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            : 'alguns minutos';
+          Alert.alert(
+            'Conta temporariamente bloqueada',
+            `Muitas tentativas incorretas. Tente novamente após ${blockedUntil}.`,
+          );
+          return;
+        }
+
         await signIn(email.trim(), password);
+        // Registra sucesso (limpa histórico de falhas)
+        recordAuthAttempt(email.trim(), true).catch(() => {});
       } else {
         await signUp(email.trim(), password, nome.trim());
         Alert.alert(
@@ -47,6 +63,10 @@ export default function LoginScreen() {
       router.replace('/');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+      // Registra falha para rate limiting
+      if (mode === 'login') {
+        recordAuthAttempt(email.trim(), false).catch(() => {});
+      }
       Alert.alert('Erro', translateAuthError(msg));
     } finally {
       setLoading(false);
