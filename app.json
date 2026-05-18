@@ -18,7 +18,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Usamos a câmera para escanear o QR Code de checkout da sala.",
         "NSCalendarsUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
-        "NSCalendarsFullAccessUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone."
+        "NSCalendarsFullAccessUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

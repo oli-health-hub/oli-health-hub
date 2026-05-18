@@ -10,6 +10,7 @@ import { useAppStore } from '../src/store/appStore';
 import { useAuthStore } from '../src/store/authStore';
 import { usePatientStore } from '../src/store/patientStore';
 import { signOut, updateProfile } from '../src/services/auth';
+import { exportMyData, deleteAccountData } from '../src/services/accountService';
 import { useAppLock } from '../src/hooks/useAppLock';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 
@@ -75,14 +76,18 @@ export default function PerfilScreen() {
   const handleExportData = () => {
     Alert.alert(
       'Exportar Meus Dados',
-      'Seus dados serão exportados em formato JSON conforme exigido pela LGPD (Art. 18). Deseja continuar?',
+      'Seus dados serão exportados em formato JSON conforme exigido pela LGPD (Art. 18). O arquivo será compartilhado pelo seu dispositivo.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Exportar',
-          onPress: () => {
-            const data = exportData();
-            Alert.alert('Dados Exportados', `Exportação concluída.\n\nEm produção, o arquivo será enviado ao e-mail cadastrado.`);
+          onPress: async () => {
+            try {
+              await exportMyData();
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+              Alert.alert('Erro', `Não foi possível exportar os dados.\n\n${msg}`);
+            }
           },
         },
       ],
@@ -96,9 +101,30 @@ export default function PerfilScreen() {
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Excluir permanentemente',
+          text: 'Confirmar exclusão',
           style: 'destructive',
-          onPress: () => Alert.alert('Solicitação Enviada', 'Sua solicitação de exclusão foi registrada. Todos os seus dados serão removidos em até 15 dias úteis.'),
+          onPress: () =>
+            Alert.alert(
+              'Tem certeza?',
+              'Todos os seus pacientes, reservas e histórico serão apagados permanentemente.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Excluir tudo',
+                  style: 'destructive',
+                  onPress: async () => {
+                    if (!session?.user?.id) return;
+                    try {
+                      await deleteAccountData(session.user.id);
+                      router.replace('/login');
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+                      Alert.alert('Erro', `Não foi possível excluir a conta.\n\n${msg}`);
+                    }
+                  },
+                },
+              ],
+            ),
         },
       ],
     );
@@ -271,6 +297,14 @@ export default function PerfilScreen() {
         {/* ── Privacidade LGPD ── */}
         <Text style={styles.sectionTitle}>PRIVACIDADE E DADOS (LGPD)</Text>
         <View style={[styles.card, shadows.card]}>
+          <TouchableOpacity style={styles.actionRow} onPress={() => router.push('/politica-privacidade')} accessibilityLabel="Ver política de privacidade">
+            <Ionicons name="document-text-outline" size={20} color={colors.oliGreen} />
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionLabel}>Política de Privacidade</Text>
+              <Text style={styles.actionDesc}>Como tratamos seus dados pessoais</Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={18} color={colors.gray} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.actionRow} onPress={handleExportData} accessibilityLabel="Exportar meus dados">
             <Ionicons name="download-outline" size={20} color={colors.oliGreen} />
             <View style={styles.actionTextWrap}>

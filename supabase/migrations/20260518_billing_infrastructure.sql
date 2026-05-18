@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS hour_balance (
 CREATE TABLE IF NOT EXISTS usage_charges (
   id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   professional_id  uuid        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  reservation_id   uuid        REFERENCES reservations(id) ON DELETE SET NULL,
+  reservation_id   text        REFERENCES reservations(id) ON DELETE SET NULL,
   subscription_id  uuid        REFERENCES subscriptions(id) ON DELETE SET NULL,
   hour_balance_id  uuid        REFERENCES hour_balance(id)  ON DELETE SET NULL,
   iniciado_em      timestamptz NOT NULL,

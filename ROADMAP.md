@@ -34,11 +34,11 @@
 
 ## 🟡 Segurança — Sprint 1 (primeiras 4 semanas em produção)
 
-- [ ] Direito ao esquecimento — exclusão em cascade (LGPD Art. 18)
-- [ ] Portabilidade de dados — exportação JSON (LGPD Art. 18)
+- [x] Direito ao esquecimento — exclusão em cascade (LGPD Art. 18)
+- [x] Portabilidade de dados — exportação JSON (LGPD Art. 18)
 - [ ] Criptografia de colunas financeiras — pgcrypto
-- [ ] Timeout de sessão — logout automático após 30 min
-- [ ] Política de privacidade — publicada e linkada no cadastro
+- [x] Timeout de sessão — logout automático após 30 min
+- [x] Política de privacidade — publicada e linkada no perfil
 - [ ] Sentry configurado para nunca logar dados pessoais
 
 ---

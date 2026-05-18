@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { colors } from '../src/theme/designSystem';
 import { useAuthStore } from '../src/store/authStore';
 import { useAppLock } from '../src/hooks/useAppLock';
+import { useSessionTimeout } from '../src/hooks/useSessionTimeout';
 import { AppLockScreen } from '../src/components/AppLockScreen';
 import { checkMFARequired } from '../src/hooks/useMFA';
 
@@ -18,6 +19,7 @@ export default function RootLayout() {
   const router   = useRouter();
   const segments = useSegments();
   const { isLocked, unlock } = useAppLock();
+  useSessionTimeout(); // logout automático após 30 min de inatividade
 
   useEffect(() => { initialize(); }, []);
 
@@ -81,6 +83,13 @@ export default function RootLayout() {
             title:        'Meu Perfil',
             presentation: 'modal',
             headerStyle:  { backgroundColor: colors.white },
+          }}
+        />
+        <Stack.Screen
+          name="politica-privacidade"
+          options={{
+            title:       'Política de Privacidade',
+            headerStyle: { backgroundColor: colors.white },
           }}
         />
       </Stack>
