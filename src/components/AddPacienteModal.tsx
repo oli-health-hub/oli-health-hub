@@ -1,0 +1,413 @@
+import { useState } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, ScrollView,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform,
+} from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { usePatientStore } from '../store/patientStore';
+import { notifyPatientCadastro, notifyOLINewPatient } from '../utils/whatsapp';
+import { colors, spacing, radius } from '../theme/designSystem';
+import type { ConvenioTipo } from '../models/types';
+
+interface Props {
+  onClose: () => void;
+}
+
+// ─── Máscaras automáticas ─────────────────────────────────────────────────────
+
+function maskDate(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
+function maskCPF(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function maskPhone(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 11);
+  if (d.length === 0) return '';
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+function isValidDate(value: string): boolean {
+  if (value.length !== 10) return false;
+  const [dd, mm, yyyy] = value.split('/').map(Number);
+  if (!dd || !mm || !yyyy) return false;
+  if (mm < 1 || mm > 12) return false;
+  if (dd < 1 || dd > 31) return false;
+  if (yyyy < 1900 || yyyy > new Date().getFullYear()) return false;
+  return true;
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
+
+export function AddPacienteModal({ onClose }: Props) {
+  const addPatient = usePatientStore(s => s.addPatient);
+
+  const [nome,          setNome]          = useState('');
+  const [telefone,      setTelefone]      = useState('');
+  const [cpf,           setCpf]           = useState('');
+  const [dataNasc,      setDataNasc]      = useState('');
+  const [dateError,     setDateError]     = useState('');
+  const [convenioTipo,  setConvenioTipo]  = useState<ConvenioTipo>('particular');
+  const [convenioNome,  setConvenioNome]  = useState('');
+  const [consentimento, setConsentimento] = useState(false);
+  const [loading,       setLoading]       = useState(false);
+
+  const convenioValido = convenioTipo === 'particular' || convenioNome.trim().length > 0;
+  const isValid = nome.trim() && telefone.trim() && cpf.replace(/\D/g, '').length === 11
+    && consentimento && convenioValido;
+
+  const handleDateChange = (text: string) => {
+    const masked = maskDate(text);
+    setDataNasc(masked);
+    if (masked.length === 10) {
+      setDateError(isValidDate(masked) ? '' : 'Data inválida. Verifique o dia e mês.');
+    } else {
+      setDateError('');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!isValid) {
+      Alert.alert('Campos obrigatórios', 'Preencha todos os campos e confirme o consentimento.');
+      return;
+    }
+    if (dataNasc && !isValidDate(dataNasc)) {
+      Alert.alert('Data inválida', 'Verifique a data de nascimento.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await addPatient({
+        nome:                   nome.trim(),
+        telefone:               telefone.trim(),
+        cpf:                    cpf.replace(/\D/g, ''), // TODO Fase 4: SHA-256
+        dataNascimento:         dataNasc.trim(),
+        convenioTipo,
+        convenioNome:           convenioTipo === 'convenio' ? convenioNome.trim() : undefined,
+        consentimentoTimestamp: new Date().toISOString(),
+      });
+      // WhatsApp: falha silenciosa — o cadastro já foi salvo
+      try { await notifyPatientCadastro(nome, telefone); } catch { /* sem WhatsApp */ }
+      try { await notifyOLINewPatient(nome, telefone);   } catch { /* sem WhatsApp */ }
+      onClose();
+    } catch {
+      Alert.alert('Erro', 'Não foi possível salvar o paciente. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.header}>
+        <Text style={styles.title}>Novo Paciente</Text>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Cancelar cadastro">
+          <Text style={styles.cancel}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+
+        {/* ── Dados Pessoais ── */}
+        <SectionLabel text="DADOS PESSOAIS" />
+
+        <Field label="Nome Completo *">
+          <TextInput
+            style={styles.input}
+            placeholder="Ex: Maria da Silva"
+            placeholderTextColor={colors.gray}
+            value={nome}
+            onChangeText={setNome}
+            autoCapitalize="words"
+            accessibilityLabel="Nome completo do paciente"
+          />
+        </Field>
+
+        <Field label="Telefone (WhatsApp) *">
+          <TextInput
+            style={styles.input}
+            placeholder="(11) 99999-9999"
+            placeholderTextColor={colors.gray}
+            value={telefone}
+            onChangeText={v => setTelefone(maskPhone(v))}
+            keyboardType="phone-pad"
+            accessibilityLabel="Telefone do paciente"
+          />
+        </Field>
+
+        <Field label="CPF *">
+          <TextInput
+            style={styles.input}
+            placeholder="000.000.000-00"
+            placeholderTextColor={colors.gray}
+            value={cpf}
+            onChangeText={v => setCpf(maskCPF(v))}
+            keyboardType="numeric"
+            accessibilityLabel="CPF do paciente"
+          />
+        </Field>
+
+        <Field
+          label="Data de Nascimento"
+          hint={dateError}
+          hintIsError
+        >
+          <TextInput
+            style={[styles.input, dateError ? styles.inputError : null]}
+            placeholder="DD/MM/AAAA"
+            placeholderTextColor={colors.gray}
+            value={dataNasc}
+            onChangeText={handleDateChange}
+            keyboardType="numeric"
+            maxLength={10}
+            accessibilityLabel="Data de nascimento do paciente"
+          />
+        </Field>
+
+        {/* ── Convênio ── */}
+        <SectionLabel text="CONVÊNIO / FORMA DE PAGAMENTO" />
+
+        <View style={styles.segmentRow}>
+          <TouchableOpacity
+            style={[styles.segmentBtn, convenioTipo === 'particular' && styles.segmentBtnActive]}
+            onPress={() => { setConvenioTipo('particular'); setConvenioNome(''); }}
+            accessibilityLabel="Particular"
+            accessibilityState={{ selected: convenioTipo === 'particular' }}
+          >
+            <Ionicons
+              name="wallet-outline"
+              size={16}
+              color={convenioTipo === 'particular' ? colors.white : colors.oliDarkGray}
+            />
+            <Text style={[styles.segmentText, convenioTipo === 'particular' && styles.segmentTextActive]}>
+              Particular
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.segmentBtn, convenioTipo === 'convenio' && styles.segmentBtnActive]}
+            onPress={() => setConvenioTipo('convenio')}
+            accessibilityLabel="Convênio"
+            accessibilityState={{ selected: convenioTipo === 'convenio' }}
+          >
+            <Ionicons
+              name="card-outline"
+              size={16}
+              color={convenioTipo === 'convenio' ? colors.white : colors.oliDarkGray}
+            />
+            <Text style={[styles.segmentText, convenioTipo === 'convenio' && styles.segmentTextActive]}>
+              Convênio
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {convenioTipo === 'convenio' && (
+          <Field label="Nome do Convênio *">
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: Unimed, Bradesco Saúde, Amil..."
+              placeholderTextColor={colors.gray}
+              value={convenioNome}
+              onChangeText={setConvenioNome}
+              autoCapitalize="words"
+              accessibilityLabel="Nome do convênio do paciente"
+            />
+          </Field>
+        )}
+
+        {/* ── Communicare ── */}
+        <View style={styles.syncNote}>
+          <Ionicons name="cloud-outline" size={14} color={colors.oliGreen} />
+          <Text style={styles.syncNoteText}>
+            Estes dados serão sincronizados automaticamente com o Communicare após o cadastro.
+          </Text>
+        </View>
+
+        {/* ── Consentimento LGPD ── */}
+        <TouchableOpacity
+          style={styles.consentRow}
+          onPress={() => setConsentimento(v => !v)}
+          accessibilityLabel="Confirmar consentimento LGPD"
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: consentimento }}
+        >
+          <View style={[styles.checkbox, consentimento && styles.checkboxChecked]}>
+            {consentimento && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.consentText}>
+            O paciente autoriza o uso dos seus dados para agendamento e comunicação, conforme a{' '}
+            <Text style={styles.consentLink}>Política de Privacidade</Text> do OLI Health Hub.{'\n'}
+            <Text style={styles.consentNote}>Obrigatório pela LGPD (Lei 13.709/2018)</Text>
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={!isValid || loading}
+          accessibilityLabel="Salvar paciente"
+        >
+          <Text style={styles.saveText}>{loading ? 'Salvando...' : 'Salvar Paciente'}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.footer}>
+          Ao salvar, o paciente receberá uma mensagem de boas-vindas no WhatsApp
+          e a recepção do OLI será notificada.
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
+    </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
+
+function SectionLabel({ text }: { text: string }) {
+  return <Text style={styles.sectionLabel}>{text}</Text>;
+}
+
+function Field({
+  label, hint, hintIsError, children,
+}: { label: string; hint?: string; hintIsError?: boolean; children: React.ReactNode }) {
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {children}
+      {hint ? (
+        <Text style={[styles.fieldHint, hintIsError && styles.fieldHintError]}>{hint}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: colors.white },
+  flex:   { flex: 1 },
+  header: {
+    flexDirection:     'row',
+    justifyContent:    'space-between',
+    alignItems:        'center',
+    padding:           spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  title:  { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
+  cancel: { fontSize: 16, color: colors.oliGreen },
+  scroll: { padding: spacing.md },
+
+  sectionLabel: {
+    fontSize:     11,
+    fontWeight:   '700',
+    color:        colors.gray,
+    letterSpacing: 0.5,
+    marginTop:    spacing.lg,
+    marginBottom: spacing.sm,
+  },
+
+  fieldWrap:      { marginBottom: spacing.sm },
+  fieldLabel:     { fontSize: 13, fontWeight: '600', color: colors.oliDarkGray, marginBottom: 6 },
+  fieldHint:      { fontSize: 12, color: colors.gray, marginTop: 4 },
+  fieldHintError: { color: colors.oliRed },
+
+  input: {
+    borderWidth:     1,
+    borderColor:     colors.border,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+    fontSize:        16,
+    color:           colors.oliDarkGray,
+    backgroundColor: colors.white,
+  },
+  inputError: { borderColor: colors.oliRed },
+
+  segmentRow: {
+    flexDirection:  'row',
+    gap:            spacing.sm,
+    marginBottom:   spacing.sm,
+  },
+  segmentBtn: {
+    flex:            1,
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'center',
+    gap:             6,
+    paddingVertical: 12,
+    borderRadius:    radius.md,
+    borderWidth:     1.5,
+    borderColor:     colors.border,
+    backgroundColor: colors.white,
+  },
+  segmentBtnActive: {
+    backgroundColor: colors.oliGreen,
+    borderColor:     colors.oliGreen,
+  },
+  segmentText:       { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
+  segmentTextActive: { color: colors.white },
+
+  syncNote: {
+    flexDirection:  'row',
+    alignItems:     'flex-start',
+    gap:            6,
+    backgroundColor:`${colors.oliGreen}0F`,
+    borderRadius:   radius.sm,
+    padding:        10,
+    marginTop:      spacing.sm,
+    marginBottom:   spacing.md,
+  },
+  syncNoteText: { flex: 1, fontSize: 12, color: colors.oliGreen, lineHeight: 18 },
+
+  consentRow: {
+    flexDirection: 'row',
+    alignItems:    'flex-start',
+    marginTop:     spacing.sm,
+    marginBottom:  spacing.lg,
+    gap:           spacing.sm,
+  },
+  checkbox: {
+    width:         22,
+    height:        22,
+    borderRadius:  4,
+    borderWidth:   2,
+    borderColor:   colors.oliGreen,
+    justifyContent:'center',
+    alignItems:    'center',
+    marginTop:     2,
+    flexShrink:    0,
+  },
+  checkboxChecked: { backgroundColor: colors.oliGreen },
+  checkmark:       { color: colors.white, fontSize: 14, fontWeight: '700' },
+  consentText:     { flex: 1, fontSize: 13, color: colors.oliDarkGray, lineHeight: 20 },
+  consentLink:     { color: colors.oliGreen, fontWeight: '600' },
+  consentNote:     { color: colors.gray, fontSize: 12 },
+
+  saveButton: {
+    backgroundColor: colors.oliGreen,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+    alignItems:      'center',
+    marginBottom:    spacing.md,
+  },
+  saveButtonDisabled: { backgroundColor: `${colors.gray}80` },
+  saveText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  footer:   { fontSize: 13, color: colors.gray, textAlign: 'center', paddingBottom: spacing.xxl },
+});

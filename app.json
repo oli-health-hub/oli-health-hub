@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "OLI Health Hub",
+    "slug": "oli-health-hub",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "olihealthhub",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4EFEA"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.oli.healthhub",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Usamos a câmera para escanear o QR Code de checkout da sala.",
+        "NSCalendarsUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
+        "NSCalendarsFullAccessUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F4EFEA"
+      },
+      "package": "com.oli.healthhub",
+      "permissions": [
+        "CAMERA",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Usamos a câmera para escanear o QR Code de checkout da sala."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Salvamos suas reservas de sala na agenda do dispositivo."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#5F7D67"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "SUBSTITUIR-PELO-ID-DO-EAS"
+      }
+    }
+  }
+}
