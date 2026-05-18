@@ -293,7 +293,7 @@ Painel web para a equipe OLI gerenciar usuários, assinaturas e receita:
 - [ ] **Programa de indicação** — gerar link, rastrear, aplicar benefício automaticamente
 - [x] Timer em background (app minimizado) — notificações agendadas cobrem o gap
 - [x] Notificações push: alertas de sessão, buffer urgente, saldo baixo
-- [ ] Relatórios PDF (`expo-print`): extrato mensal, comprovantes
+- [x] Relatórios PDF (`expo-print`): extrato mensal com ROI, serviços e histórico de faturas
 - [ ] QR Code funcional com `expo-camera`
 - [ ] Métricas CRM: de histórico real de consultas
 

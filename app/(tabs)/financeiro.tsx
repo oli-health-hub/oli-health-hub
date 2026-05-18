@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Alert,
+  StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { formatCurrency } from '../../src/utils/formatters';
+import { generateAndShareMonthlyReport } from '../../src/services/reportService';
+import { useAuthStore } from '../../src/store/authStore';
 import type { Invoice, HourPackage, InvoiceStatus } from '../../src/models/types';
 
 // ── Mock — virão do Communicare + Supabase nas Fases 2 e 3 ───────────────────
@@ -123,6 +126,44 @@ const roiMultiple  = (MONTHLY_STATS.grossRevenue / MONTHLY_STATS.oliCost).toFixe
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function FinanceiroScreen() {
+  const { profile } = useAuthStore();
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  const handleGeneratePDF = async () => {
+    setGeneratingPDF(true);
+    try {
+      await generateAndShareMonthlyReport({
+        period:          MONTHLY_STATS.period,
+        doctorName:      profile?.nome ?? 'Profissional',
+        crm:             profile?.crm ?? '',
+        plan:            'PRO',
+        grossRevenue:    MONTHLY_STATS.grossRevenue,
+        consultations:   MONTHLY_STATS.consultations,
+        horasUtilizadas: MONTHLY_STATS.horasUtilizadas,
+        taxaMin:         1.60,
+        oliCost:         MONTHLY_STATS.oliCost,
+        invoiceHistory:  PAST_INVOICES.map(i => ({
+          period:  i.period,
+          amount:  i.amount,
+          status:  i.status,
+        })),
+        includedServices: INCLUDED_SERVICES.map(s => ({
+          name:        s.name,
+          detail:      s.detail,
+          marketPrice: s.marketPrice,
+          unit:        s.unit,
+          used:        s.used,
+        })),
+        traditionalOfficeCost: TRADITIONAL_OFFICE_COST,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+      Alert.alert('Erro', `Não foi possível gerar o extrato.\n\n${msg}`);
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
   const handlePayInvoice = () => {
     Alert.alert(
       'Pagar Fatura',
@@ -164,6 +205,26 @@ export default function FinanceiroScreen() {
             <StatPill icon="receipt-outline" label="Ticket médio" value={formatCurrency(MONTHLY_STATS.ticketMedio)} />
           </View>
         </View>
+
+        {/* ── Botão Extrato PDF ── */}
+        <TouchableOpacity
+          style={[styles.pdfBtn, generatingPDF && styles.pdfBtnDisabled]}
+          onPress={handleGeneratePDF}
+          disabled={generatingPDF}
+          accessibilityLabel="Gerar extrato mensal em PDF"
+        >
+          {generatingPDF ? (
+            <>
+              <ActivityIndicator size="small" color={colors.white} />
+              <Text style={styles.pdfBtnText}>Gerando PDF…</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="document-text-outline" size={18} color={colors.white} />
+              <Text style={styles.pdfBtnText}>Gerar Extrato PDF — {MONTHLY_STATS.period}</Text>
+            </>
+          )}
+        </TouchableOpacity>
 
         {/* ── Vale a Pena Estar no OLI? ── */}
         <View style={[styles.card, shadows.card]}>
@@ -461,6 +522,18 @@ const styles = StyleSheet.create({
   roiSummaryValue:   { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
   roiSummaryLabel:   { fontSize: 11, color: colors.gray, textAlign: 'center', marginTop: 2, lineHeight: 16 },
   roiSummaryDivider: { width: 1, height: 36, backgroundColor: colors.border },
+
+  pdfBtn: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'center',
+    gap:             spacing.sm,
+    backgroundColor: colors.oliGold,
+    borderRadius:    radius.md,
+    paddingVertical: spacing.md,
+  },
+  pdfBtnDisabled: { backgroundColor: colors.oliLightGray },
+  pdfBtnText:     { color: colors.white, fontSize: 15, fontWeight: '700' },
 
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray, marginTop: spacing.xs },
 
