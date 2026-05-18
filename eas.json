@@ -30,11 +30,6 @@
   },
   "submit": {
     "production": {
-      "ios": {
-        "appleId": "guilherme.pasquetti@gmail.com",
-        "ascAppId": "",
-        "appleTeamId": ""
-      },
       "android": {
         "serviceAccountKeyPath": "./google-services.json",
         "track": "internal"
