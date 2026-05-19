@@ -164,7 +164,7 @@ export default function DashboardScreen() {
     sessionStartTime,
     consultationDurationMinutes,
     checkout, cancelReservation, occupyCurrentRoom,
-    endRoomUse,
+    endRoomUse, startSession,
   } = useAppStore();
 
   const { session, profile } = useAuthStore();
@@ -184,6 +184,29 @@ export default function DashboardScreen() {
       .then(setHourBalance)
       .catch(() => {});  // silencioso — widget simplesmente não aparece
   }, [session?.user?.id]);
+
+  // Auto-inicia o timer quando o horário da primeira reserva chega
+  useEffect(() => {
+    if (sessionStartTime || todayReservations.length === 0) return;
+
+    const firstRes  = todayReservations[0];
+    const startTime = new Date(firstRes.startTime);
+    const endTime   = new Date(firstRes.endTime);
+    const msUntil   = startTime.getTime() - Date.now();
+
+    if (msUntil <= 0) {
+      // Reserva já começou e sessão não está ativa — inicia imediatamente
+      startSession(startTime, endTime);
+      return;
+    }
+
+    // Agenda o início para o momento exato da reserva
+    const timeoutId = setTimeout(() => {
+      startSession(startTime, endTime);
+    }, msUntil);
+
+    return () => clearTimeout(timeoutId);
+  }, [todayReservations, sessionStartTime, startSession]);
 
   // Dispara alerta ao mudar de fase
   useEffect(() => {

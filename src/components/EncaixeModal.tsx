@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour } from '../utils/formatters';
-import { openPatientChat } from '../utils/whatsapp';
+import { notifyPatientEncaixe } from '../utils/whatsapp';
 import type { Patient, Reservation, Room } from '../models/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ interface Props {
 }
 
 export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
-  const { rooms, todayReservations, addReservation } = useAppStore();
+  const { rooms, todayReservations, addReservation, userName } = useAppStore();
 
   const dates = useMemo(() => nextWeekdays(5), []);
 
@@ -192,7 +192,15 @@ export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
           text: 'Confirmar + WhatsApp',
           onPress: async () => {
             onConfirm();
-            await openPatientChat(paciente.nome, paciente.telefone);
+            await notifyPatientEncaixe(
+              paciente.nome,
+              paciente.telefone,
+              userName,
+              dateStr,
+              timeStr,
+              durLabel,
+              coveringForSelected?.roomName,
+            );
           },
         },
       ],

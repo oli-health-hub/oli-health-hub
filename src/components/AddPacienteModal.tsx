@@ -6,7 +6,8 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { usePatientStore } from '../store/patientStore';
-import { notifyPatientCadastro, notifyOLINewPatient } from '../utils/whatsapp';
+import { notifyPatientCadastro, notifyOLINewPatient, notifyPatientLGPDConsent } from '../utils/whatsapp';
+import { useAuthStore } from '../store/authStore';
 import { colors, spacing, radius } from '../theme/designSystem';
 import type { ConvenioTipo } from '../models/types';
 
@@ -52,21 +53,21 @@ function isValidDate(value: string): boolean {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export function AddPacienteModal({ onClose }: Props) {
-  const addPatient = usePatientStore(s => s.addPatient);
+  const addPatient  = usePatientStore(s => s.addPatient);
+  const { profile } = useAuthStore();
 
-  const [nome,          setNome]          = useState('');
-  const [telefone,      setTelefone]      = useState('');
-  const [cpf,           setCpf]           = useState('');
-  const [dataNasc,      setDataNasc]      = useState('');
-  const [dateError,     setDateError]     = useState('');
-  const [convenioTipo,  setConvenioTipo]  = useState<ConvenioTipo>('particular');
-  const [convenioNome,  setConvenioNome]  = useState('');
-  const [consentimento, setConsentimento] = useState(false);
-  const [loading,       setLoading]       = useState(false);
+  const [nome,         setNome]         = useState('');
+  const [telefone,     setTelefone]     = useState('');
+  const [cpf,          setCpf]          = useState('');
+  const [dataNasc,     setDataNasc]     = useState('');
+  const [dateError,    setDateError]    = useState('');
+  const [convenioTipo, setConvenioTipo] = useState<ConvenioTipo>('particular');
+  const [convenioNome, setConvenioNome] = useState('');
+  const [loading,      setLoading]      = useState(false);
 
   const convenioValido = convenioTipo === 'particular' || convenioNome.trim().length > 0;
   const isValid = nome.trim() && telefone.trim() && cpf.replace(/\D/g, '').length === 11
-    && consentimento && convenioValido;
+    && convenioValido;
 
   const handleDateChange = (text: string) => {
     const masked = maskDate(text);
@@ -80,7 +81,7 @@ export function AddPacienteModal({ onClose }: Props) {
 
   const handleSave = async () => {
     if (!isValid) {
-      Alert.alert('Campos obrigatórios', 'Preencha todos os campos e confirme o consentimento.');
+      Alert.alert('Campos obrigatórios', 'Preencha todos os campos antes de continuar.');
       return;
     }
     if (dataNasc && !isValidDate(dataNasc)) {
@@ -89,18 +90,21 @@ export function AddPacienteModal({ onClose }: Props) {
     }
     setLoading(true);
     try {
+      // Salva sem consentimento — pendente até o paciente confirmar via WhatsApp
       await addPatient({
         nome:                   nome.trim(),
         telefone:               telefone.trim(),
-        cpf:                    cpf.replace(/\D/g, ''), // TODO Fase 4: SHA-256
+        cpf:                    cpf.replace(/\D/g, ''),
         dataNascimento:         dataNasc.trim(),
         convenioTipo,
         convenioNome:           convenioTipo === 'convenio' ? convenioNome.trim() : undefined,
-        consentimentoTimestamp: new Date().toISOString(),
+        consentimentoTimestamp: '', // vazio = aguardando consentimento do paciente
       });
-      // WhatsApp: falha silenciosa — o cadastro já foi salvo
-      try { await notifyPatientCadastro(nome, telefone); } catch { /* sem WhatsApp */ }
-      try { await notifyOLINewPatient(nome, telefone);   } catch { /* sem WhatsApp */ }
+      const doctorName = profile?.nome ?? 'seu médico';
+      // Envia solicitação de consentimento LGPD ao paciente
+      try { await notifyPatientLGPDConsent(nome, telefone, doctorName); } catch { /* sem WhatsApp */ }
+      // Notifica a recepção do OLI
+      try { await notifyOLINewPatient(nome, telefone); } catch { /* sem WhatsApp */ }
       onClose();
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar o paciente. Tente novamente.');
@@ -240,37 +244,28 @@ export function AddPacienteModal({ onClose }: Props) {
           </Text>
         </View>
 
-        {/* ── Consentimento LGPD ── */}
-        <TouchableOpacity
-          style={styles.consentRow}
-          onPress={() => setConsentimento(v => !v)}
-          accessibilityLabel="Confirmar consentimento LGPD"
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: consentimento }}
-        >
-          <View style={[styles.checkbox, consentimento && styles.checkboxChecked]}>
-            {consentimento && <Text style={styles.checkmark}>✓</Text>}
+        {/* ── LGPD: consentimento coletado pelo paciente ── */}
+        <View style={styles.lgpdNote}>
+          <Ionicons name="shield-checkmark-outline" size={18} color={colors.oliGreen} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={styles.lgpdTitle}>Consentimento LGPD</Text>
+            <Text style={styles.lgpdBody}>
+              Ao salvar, o paciente receberá automaticamente um WhatsApp solicitando autorização expressa para uso dos dados,
+              conforme a Lei 13.709/2018. O cadastro ficará marcado como{' '}
+              <Text style={styles.lgpdPending}>Aguardando LGPD</Text>
+              {' '}até a confirmação.
+            </Text>
           </View>
-          <Text style={styles.consentText}>
-            O paciente autoriza o uso dos seus dados para agendamento e comunicação, conforme a{' '}
-            <Text style={styles.consentLink}>Política de Privacidade</Text> do OLI Health Hub.{'\n'}
-            <Text style={styles.consentNote}>Obrigatório pela LGPD (Lei 13.709/2018)</Text>
-          </Text>
-        </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={!isValid || loading}
-          accessibilityLabel="Salvar paciente"
+          accessibilityLabel="Salvar paciente e solicitar consentimento LGPD"
         >
-          <Text style={styles.saveText}>{loading ? 'Salvando...' : 'Salvar Paciente'}</Text>
+          <Text style={styles.saveText}>{loading ? 'Salvando...' : 'Salvar e Solicitar LGPD'}</Text>
         </TouchableOpacity>
-
-        <Text style={styles.footer}>
-          Ao salvar, o paciente receberá uma mensagem de boas-vindas no WhatsApp
-          e a recepção do OLI será notificada.
-        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
     </SafeAreaView>
@@ -376,29 +371,21 @@ const styles = StyleSheet.create({
   },
   syncNoteText: { flex: 1, fontSize: 12, color: colors.oliGreen, lineHeight: 18 },
 
-  consentRow: {
-    flexDirection: 'row',
-    alignItems:    'flex-start',
-    marginTop:     spacing.sm,
-    marginBottom:  spacing.lg,
-    gap:           spacing.sm,
+  lgpdNote: {
+    flexDirection:   'row',
+    alignItems:      'flex-start',
+    gap:             spacing.sm,
+    backgroundColor: `${colors.oliGreen}10`,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+    marginTop:       spacing.sm,
+    marginBottom:    spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.oliGreen,
   },
-  checkbox: {
-    width:         22,
-    height:        22,
-    borderRadius:  4,
-    borderWidth:   2,
-    borderColor:   colors.oliGreen,
-    justifyContent:'center',
-    alignItems:    'center',
-    marginTop:     2,
-    flexShrink:    0,
-  },
-  checkboxChecked: { backgroundColor: colors.oliGreen },
-  checkmark:       { color: colors.white, fontSize: 14, fontWeight: '700' },
-  consentText:     { flex: 1, fontSize: 13, color: colors.oliDarkGray, lineHeight: 20 },
-  consentLink:     { color: colors.oliGreen, fontWeight: '600' },
-  consentNote:     { color: colors.gray, fontSize: 12 },
+  lgpdTitle:   { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray },
+  lgpdBody:    { fontSize: 12, color: colors.gray, lineHeight: 18 },
+  lgpdPending: { color: colors.oliGold, fontWeight: '700' },
 
   saveButton: {
     backgroundColor: colors.oliGreen,
@@ -409,5 +396,4 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { backgroundColor: `${colors.gray}80` },
   saveText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-  footer:   { fontSize: 13, color: colors.gray, textAlign: 'center', paddingBottom: spacing.xxl },
 });
