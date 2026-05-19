@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Calendar from 'expo-calendar';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour, formatDate } from '../utils/formatters';
@@ -12,7 +13,7 @@ import type { Room, Reservation } from '../models/types';
 
 interface Props {
   room:               Room;
-  selectedDate:       Date;
+  selectedDate:       Date;          // data inicial sugerida (informativa)
   isCalendarGranted:  boolean;
   onReserve:          () => void;
   onClose:            () => void;
@@ -20,8 +21,10 @@ interface Props {
 
 const SLOT_MINUTES   = 30;
 const BUFFER_MINUTES = 15;
+const DAY_LABELS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-/** All 30-min slots where at least 30 min is free (valid start times). */
+// ─── Geração de slots ─────────────────────────────────────────────────────────
+
 function buildStartSlots(date: Date, reservations: Reservation[], roomName: string): Date[] {
   if (date.getDay() === 0 || date.getDay() === 6) return [];
 
@@ -29,17 +32,16 @@ function buildStartSlots(date: Date, reservations: Reservation[], roomName: stri
   const dayStart = new Date(date); dayStart.setHours(8, 0, 0, 0);
   const dayEnd   = new Date(date); dayEnd.setHours(18, 30, 0, 0);
 
-  // For today, skip slots that are already in the past
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
   let cursor: Date;
   if (isToday) {
-    // Round up to the next 30-min boundary from now
     const nextSlot = new Date(Math.ceil(now.getTime() / (SLOT_MINUTES * 60_000)) * (SLOT_MINUTES * 60_000));
     cursor = nextSlot > dayStart ? nextSlot : new Date(dayStart);
   } else {
     cursor = new Date(dayStart);
   }
+
   while (cursor <= dayEnd) {
     const slotEnd = new Date(cursor.getTime() + SLOT_MINUTES * 60_000);
     const conflict = reservations.some(r => {
@@ -54,19 +56,9 @@ function buildStartSlots(date: Date, reservations: Reservation[], roomName: stri
   return slots;
 }
 
-/**
- * Valid end times after a chosen start.
- * Advances in 30-min steps; stops as soon as a conflict is hit (can't skip blocked slots).
- */
-function buildEndSlots(
-  startTime: Date,
-  date: Date,
-  reservations: Reservation[],
-  roomName: string,
-): Date[] {
+function buildEndSlots(startTime: Date, date: Date, reservations: Reservation[], roomName: string): Date[] {
   const endSlots: Date[] = [];
   const dayEnd = new Date(date); dayEnd.setHours(19, 0, 0, 0);
-
   let cursor = new Date(startTime.getTime() + SLOT_MINUTES * 60_000);
 
   while (cursor <= dayEnd) {
@@ -91,27 +83,106 @@ function durationLabel(start: Date, end: Date): string {
   return m === 0 ? `${h}h` : `${h}h${m}`;
 }
 
+// ─── Seletor de dia (strip de 14 dias) ───────────────────────────────────────
+
+function DayStrip({
+  selected,
+  reservedDates,
+  onSelect,
+}: {
+  selected: Date;
+  reservedDates: Set<string>;
+  onSelect: (d: Date) => void;
+}) {
+  const today = new Date();
+
+  // 14 dias a partir de hoje
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const toKey = (d: Date) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayStripScroll}>
+      {days.map(d => {
+        const key        = toKey(d);
+        const isSelected = toKey(selected) === key;
+        const isToday    = toKey(d) === toKey(today);
+        const isWeekend  = d.getDay() === 0 || d.getDay() === 6;
+        const hasReserv  = reservedDates.has(key);
+
+        return (
+          <TouchableOpacity
+            key={key}
+            style={[
+              styles.dayCell,
+              isSelected && styles.dayCellSelected,
+              isWeekend && !isSelected && styles.dayCellWeekend,
+            ]}
+            onPress={() => onSelect(d)}
+            accessibilityLabel={`${DAY_LABELS_SHORT[d.getDay()]} ${d.getDate()}`}
+          >
+            <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected, isWeekend && !isSelected && styles.dayLabelWeekend]}>
+              {DAY_LABELS_SHORT[d.getDay()]}
+            </Text>
+            <Text style={[styles.dayNum, isSelected && styles.dayNumSelected, isToday && !isSelected && styles.dayNumToday, isWeekend && !isSelected && styles.dayLabelWeekend]}>
+              {d.getDate()}
+            </Text>
+            {hasReserv && (
+              <View style={[styles.dayDot, isSelected && styles.dayDotSelected]} />
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ReservationModal({
-  room, selectedDate, isCalendarGranted, onReserve, onClose,
+  room, selectedDate: initialDate, isCalendarGranted, onReserve, onClose,
 }: Props) {
   const { addReservation, todayReservations } = useAppStore();
 
+  // O dia é selecionado dentro do modal — começa com o dia sugerido pela agenda
+  const [pickedDate,    setPickedDate]    = useState<Date>(() => {
+    const d = new Date(initialDate);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
   const [selectedStart, setSelectedStart] = useState<Date | null>(null);
   const [selectedEnd,   setSelectedEnd]   = useState<Date | null>(null);
   const [loading,       setLoading]       = useState(false);
 
+  const handlePickDate = (d: Date) => {
+    setPickedDate(d);
+    setSelectedStart(null);
+    setSelectedEnd(null);
+  };
+
+  // Datas com reservas para marcar pontinhos no strip
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const reservedDates = useMemo(() => new Set<string>(
+    todayReservations.map(r => r.startTime.slice(0, 10)),
+  ), [todayReservations]);
+
   const startSlots = useMemo(
-    () => buildStartSlots(selectedDate, todayReservations, room.name),
-    [selectedDate, todayReservations, room.name],
+    () => buildStartSlots(pickedDate, todayReservations, room.name),
+    [pickedDate, todayReservations, room.name],
   );
 
   const endSlots = useMemo(
     () => selectedStart
-      ? buildEndSlots(selectedStart, selectedDate, todayReservations, room.name)
+      ? buildEndSlots(selectedStart, pickedDate, todayReservations, room.name)
       : [],
-    [selectedStart, selectedDate, todayReservations, room.name],
+    [selectedStart, pickedDate, todayReservations, room.name],
   );
 
   const handleSelectStart = (slot: Date) => {
@@ -163,7 +234,7 @@ export function ReservationModal({
     }
   };
 
-  const isWeekend = selectedDate.getDay() === 0 || selectedDate.getDay() === 6;
+  const isWeekend = pickedDate.getDay() === 0 || pickedDate.getDay() === 6;
 
   return (
     <SafeAreaProvider>
@@ -184,6 +255,17 @@ export function ReservationModal({
           <Text style={styles.roomSpecialties}>{room.specialties.join(' • ')}</Text>
         </View>
 
+        {/* Seleção de dia */}
+        <View style={[styles.card, shadows.small]}>
+          <Text style={styles.sectionLabel}>DIA</Text>
+          <DayStrip
+            selected={pickedDate}
+            reservedDates={reservedDates}
+            onSelect={handlePickDate}
+          />
+          <Text style={styles.pickedDateLabel}>{formatDate(pickedDate)}</Text>
+        </View>
+
         {/* Horário de início */}
         <View style={[styles.card, shadows.small]}>
           <Text style={styles.sectionLabel}>INÍCIO</Text>
@@ -191,7 +273,7 @@ export function ReservationModal({
             <Text style={styles.noSlots}>
               {isWeekend
                 ? 'Sem atendimento nos finais de semana.'
-                : 'Nenhum horário disponível para esta data.'}
+                : 'Nenhum horário disponível para este dia.'}
             </Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slotsRow}>
@@ -214,7 +296,7 @@ export function ReservationModal({
           )}
         </View>
 
-        {/* Horário de fim — só aparece após escolher início */}
+        {/* Horário de fim */}
         {selectedStart && (
           <View style={[styles.card, shadows.small]}>
             <Text style={styles.sectionLabel}>FIM · mínimo 30 min</Text>
@@ -249,7 +331,7 @@ export function ReservationModal({
         {canConfirm && (
           <View style={[styles.summaryCard, shadows.small]}>
             <Text style={styles.summaryText}>
-              {formatDate(selectedDate)}{'  '}
+              {formatDate(pickedDate)}{'  '}
               {formatHour(selectedStart!)} — {formatHour(selectedEnd!)}{'  '}·{'  '}
               {durationLabel(selectedStart!, selectedEnd!)}
             </Text>
@@ -298,6 +380,40 @@ const styles = StyleSheet.create({
   sectionLabel:    { fontSize: 11, fontWeight: '700', color: colors.gray, marginBottom: spacing.sm, letterSpacing: 0.5 },
   roomName:        { fontSize: 20, fontWeight: '700', color: colors.oliDarkGray },
   roomSpecialties: { fontSize: 13, color: colors.gray, marginTop: 4 },
+
+  // ── Day strip ──
+  dayStripScroll: { flexDirection: 'row' },
+  dayCell: {
+    alignItems:      'center',
+    paddingHorizontal: 10,
+    paddingVertical:  8,
+    borderRadius:    radius.md,
+    marginRight:     spacing.xs,
+    minWidth:        48,
+    backgroundColor: colors.oliBackground,
+  },
+  dayCellSelected: { backgroundColor: colors.oliGreen },
+  dayCellWeekend:  { opacity: 0.45 },
+  dayLabel: { fontSize: 11, fontWeight: '600', color: colors.gray, marginBottom: 2 },
+  dayLabelSelected: { color: colors.white },
+  dayLabelWeekend:  { color: colors.oliLightGray },
+  dayNum:  { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
+  dayNumSelected: { color: colors.white },
+  dayNumToday:    { color: colors.oliGreen },
+  dayDot: {
+    width: 5, height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.oliGreen,
+    marginTop: 3,
+  },
+  dayDotSelected: { backgroundColor: colors.white },
+  pickedDateLabel: {
+    marginTop:  spacing.sm,
+    fontSize:   13,
+    fontWeight: '600',
+    color:      colors.oliDarkGray,
+    textAlign:  'center',
+  },
 
   noSlots: { fontSize: 14, color: colors.oliRed, textAlign: 'center', paddingVertical: spacing.sm },
 

@@ -81,6 +81,10 @@ export type Database = {
           possui_funcionarios:      boolean | null
           previsao_contratacao:     boolean | null
           possui_socios:            boolean | null
+          tipos_atendimento:        string[]
+          convenios:                string[]
+          como_conheceu:            string | null
+          referido_por:             string | null
         }
         Insert: {
           consultation_duration_minutes?: number
@@ -104,6 +108,10 @@ export type Database = {
           possui_funcionarios?:     boolean | null
           previsao_contratacao?:    boolean | null
           possui_socios?:           boolean | null
+          tipos_atendimento?:       string[]
+          convenios?:               string[]
+          como_conheceu?:           string | null
+          referido_por?:            string | null
         }
         Update: {
           consultation_duration_minutes?: number
@@ -127,6 +135,10 @@ export type Database = {
           possui_funcionarios?:     boolean | null
           previsao_contratacao?:    boolean | null
           possui_socios?:           boolean | null
+          tipos_atendimento?:       string[]
+          convenios?:               string[]
+          como_conheceu?:           string | null
+          referido_por?:            string | null
         }
         Relationships: []
       }

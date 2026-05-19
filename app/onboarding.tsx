@@ -49,7 +49,7 @@ const ESTADOS = [
 
 // ─── Constantes e Helpers ─────────────────────────────────────────────────────
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 function OptionCard<T extends string | boolean>({
   label, sublabel, value, selected, onPress, icon,
@@ -123,7 +123,15 @@ export default function OnboardingScreen() {
   const [uf,                setUf]                = useState('');
   const [showEstadoPicker,  setShowEstadoPicker]  = useState(false);
 
-  // ── Step 3: Financeiro ──
+  // ── Step 3: Como nos conheceu ──
+  const [comoConheceu,       setComoConheceu]       = useState<string | null>(null);
+  const [referidoPorId,      setReferidoPorId]      = useState<string | null>(null);
+  const [referidoPorNome,    setReferidoPorNome]    = useState('');
+  const [memberSearch,       setMemberSearch]       = useState('');
+  const [memberResults,      setMemberResults]      = useState<{ id: string; nome: string; especialidade: string | null }[]>([]);
+  const [memberSearching,    setMemberSearching]    = useState(false);
+
+  // ── Step 4: Financeiro ──
   const [faturamentoRange,   setFaturamentoRange]   = useState<FaturamentoRange | null>(null);
   const [notasFiscaisRange,  setNotasFiscaisRange]  = useState<NotasFiscaisRange | null>(null);
   const [possuiFuncionarios, setPossuiFuncionarios] = useState<boolean | null>(null);
@@ -133,7 +141,8 @@ export default function OnboardingScreen() {
   const step1Valid = situacaoJuridica !== null && possuiCLT !== null && possuiSocios !== null;
   const cidadeUF   = cidade.trim() && uf ? `${cidade.trim()} / ${uf}` : '';
   const step2Valid = atividadeExercida.trim().length > 0 && localAtuacao !== null && numLocais !== null && cidade.trim().length > 0 && uf.length > 0;
-  const step3Valid = faturamentoRange !== null && notasFiscaisRange !== null &&
+  const step3Valid = comoConheceu !== null && (comoConheceu !== 'membro_oli' || referidoPorId !== null);
+  const step4Valid = faturamentoRange !== null && notasFiscaisRange !== null &&
     possuiFuncionarios !== null &&
     (possuiFuncionarios === true || previsaoContratacao !== null);
 
@@ -141,7 +150,21 @@ export default function OnboardingScreen() {
     if (step === 1) return step1Valid;
     if (step === 2) return step2Valid;
     if (step === 3) return step3Valid;
-    return true; // step 4 é resumo
+    if (step === 4) return step4Valid;
+    return true; // step 5 é resumo
+  };
+
+  const searchMembers = async (q: string) => {
+    if (q.trim().length < 2) { setMemberResults([]); return; }
+    setMemberSearching(true);
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, nome, especialidade')
+      .ilike('nome', `%${q.trim()}%`)
+      .neq('id', profile!.id)
+      .limit(8);
+    setMemberResults((data ?? []) as { id: string; nome: string; especialidade: string | null }[]);
+    setMemberSearching(false);
   };
 
   const animateProgress = (nextStep: number) => {
@@ -178,7 +201,7 @@ export default function OnboardingScreen() {
           situacao_juridica:     situacaoJuridica,
           faturamento_range:     faturamentoRange,
           atividade_exercida:    atividadeExercida.trim(),
-          especialidade:         atividadeExercida.trim(), // espelha para o campo do perfil
+          especialidade:         atividadeExercida.trim(),
           possui_clt:            possuiCLT,
           local_atuacao:         localAtuacao,
           num_locais:            numLocais,
@@ -187,6 +210,8 @@ export default function OnboardingScreen() {
           possui_funcionarios:   possuiFuncionarios,
           previsao_contratacao:  possuiFuncionarios ? null : previsaoContratacao,
           possui_socios:         possuiSocios,
+          como_conheceu:         comoConheceu,
+          referido_por:          referidoPorId,
         })
         .eq('id', profile!.id)
         .select()
@@ -452,12 +477,111 @@ export default function OnboardingScreen() {
           )}
 
           {/* ════════════════════════════════════════════════
-              STEP 3 — Financeiro e estrutura operacional
+              STEP 3 — Como nos conheceu
           ════════════════════════════════════════════════ */}
           {step === 3 && (
             <>
               <SectionTitle
                 step={3}
+                title="Como você nos conheceu?"
+                subtitle="Isso nos ajuda a entender como o OLI está crescendo e a fortalecer nossa comunidade."
+              />
+
+              {([
+                { value: 'membro_oli',  label: 'Indicação de membro OLI',   icon: 'people-outline',      sublabel: 'Outro profissional do cowork' },
+                { value: 'amigo',       label: 'Indicação de amigo',        icon: 'person-add-outline',  sublabel: 'Colega ou conhecido' },
+                { value: 'redes',       label: 'Redes sociais',             icon: 'logo-instagram',      sublabel: 'Instagram, LinkedIn…' },
+                { value: 'evento',      label: 'Evento OLI',                icon: 'calendar-outline',    sublabel: 'Palestra, workshop, open house' },
+                { value: 'google',      label: 'Google / Internet',         icon: 'search-outline',      sublabel: 'Pesquisa online' },
+                { value: 'outro',       label: 'Outro',                     icon: 'ellipsis-horizontal-outline' },
+              ] as const).map(o => (
+                <OptionCard
+                  key={o.value}
+                  value={o.value}
+                  label={o.label}
+                  sublabel={'sublabel' in o ? o.sublabel : undefined}
+                  icon={o.icon}
+                  selected={comoConheceu === o.value}
+                  onPress={(v) => {
+                    setComoConheceu(v);
+                    if (v !== 'membro_oli') { setReferidoPorId(null); setReferidoPorNome(''); setMemberResults([]); }
+                  }}
+                />
+              ))}
+
+              {/* Busca de membro — só aparece quando "membro_oli" está selecionado */}
+              {comoConheceu === 'membro_oli' && (
+                <View style={styles.memberSearchWrap}>
+                  <Text style={styles.question}>Qual é o nome desse profissional?</Text>
+                  <View style={styles.memberInputRow}>
+                    <Ionicons name="search-outline" size={18} color={colors.gray} />
+                    <TextInput
+                      style={styles.memberInput}
+                      placeholder="Buscar pelo nome…"
+                      placeholderTextColor={colors.gray}
+                      value={memberSearch}
+                      onChangeText={q => { setMemberSearch(q); searchMembers(q); }}
+                      autoCapitalize="words"
+                      accessibilityLabel="Buscar membro OLI que indicou"
+                    />
+                    {memberSearching && (
+                      <Ionicons name="hourglass-outline" size={16} color={colors.gray} />
+                    )}
+                  </View>
+
+                  {/* Resultado selecionado */}
+                  {referidoPorId && (
+                    <View style={styles.memberSelected}>
+                      <Ionicons name="checkmark-circle" size={18} color={colors.oliGreen} />
+                      <Text style={styles.memberSelectedText}>{referidoPorNome}</Text>
+                      <TouchableOpacity
+                        onPress={() => { setReferidoPorId(null); setReferidoPorNome(''); setMemberSearch(''); setMemberResults([]); }}
+                        accessibilityLabel="Remover seleção"
+                      >
+                        <Ionicons name="close-circle" size={18} color={colors.gray} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Lista de resultados */}
+                  {!referidoPorId && memberResults.length > 0 && (
+                    <View style={styles.memberList}>
+                      {memberResults.map(m => (
+                        <TouchableOpacity
+                          key={m.id}
+                          style={styles.memberItem}
+                          onPress={() => {
+                            setReferidoPorId(m.id);
+                            setReferidoPorNome(m.nome);
+                            setMemberSearch('');
+                            setMemberResults([]);
+                          }}
+                          accessibilityLabel={`Selecionar ${m.nome}`}
+                        >
+                          <Text style={styles.memberItemName}>{m.nome}</Text>
+                          {m.especialidade ? (
+                            <Text style={styles.memberItemSpec}>{m.especialidade}</Text>
+                          ) : null}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  {!referidoPorId && memberSearch.trim().length >= 2 && memberResults.length === 0 && !memberSearching && (
+                    <Text style={styles.memberNoResult}>Nenhum profissional encontrado com esse nome.</Text>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+
+          {/* ════════════════════════════════════════════════
+              STEP 4 — Financeiro e estrutura operacional
+          ════════════════════════════════════════════════ */}
+          {step === 4 && (
+            <>
+              <SectionTitle
+                step={4}
                 title="Financeiro e estrutura operacional"
                 subtitle="Quanto mais contexto o OLI tiver, mais assertivas serão as orientações."
               />
@@ -570,12 +694,12 @@ export default function OnboardingScreen() {
           )}
 
           {/* ════════════════════════════════════════════════
-              STEP 4 — Resumo e confirmação
+              STEP 5 — Resumo e confirmação
           ════════════════════════════════════════════════ */}
-          {step === 4 && (
+          {step === 5 && (
             <>
               <SectionTitle
-                step={4}
+                step={5}
                 title="Tudo certo!"
                 subtitle="Confira um resumo das suas respostas antes de finalizar."
               />
@@ -588,6 +712,8 @@ export default function OnboardingScreen() {
                 <SummaryRow label="Local de atuação"   value={LABELS_LOCAL[localAtuacao!]} />
                 <SummaryRow label="Nº de locais"       value={LABELS_LOCAIS[numLocais!]} />
                 <SummaryRow label="Cidade / UF"        value={cidadeUF} />
+                <SummaryRow label="Como nos conheceu"  value={LABELS_COMO_CONHECEU[comoConheceu!] ?? comoConheceu!} />
+                {referidoPorNome ? <SummaryRow label="Indicado por" value={referidoPorNome} /> : null}
                 <SummaryRow label="Faturamento mensal" value={LABELS_FATURAMENTO[faturamentoRange!]} />
                 <SummaryRow label="Notas fiscais/mês"  value={LABELS_NOTAS[notasFiscaisRange!]} />
                 <SummaryRow label="Funcionários"       value={possuiFuncionarios ? 'Sim' : 'Não'} />
@@ -695,6 +821,15 @@ const LABELS_NOTAS: Record<NotasFiscaisRange, string> = {
   '6_20':    '6 a 20 por mês',
   '21_50':   '21 a 50 por mês',
   acima_50:  'Mais de 50 por mês',
+};
+
+const LABELS_COMO_CONHECEU: Record<string, string> = {
+  membro_oli: 'Indicação de membro OLI',
+  amigo:      'Indicação de amigo/colega',
+  redes:      'Redes sociais',
+  evento:     'Evento OLI',
+  google:     'Google / Internet',
+  outro:      'Outro',
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -912,6 +1047,56 @@ const styles = StyleSheet.create({
   },
   nextBtnDisabled: { backgroundColor: `${colors.gray}80` },
   nextBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+
+  // ── Busca de membro (step 3) ──
+  memberSearchWrap: {
+    marginTop:       spacing.sm,
+    gap:             spacing.sm,
+  },
+  memberInputRow: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing.sm,
+    borderWidth:     1.5,
+    borderColor:     colors.oliGreen,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+    backgroundColor: colors.white,
+  },
+  memberInput: {
+    flex:     1,
+    fontSize: 15,
+    color:    colors.oliDarkGray,
+  },
+  memberSelected: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing.sm,
+    backgroundColor: `${colors.oliGreen}12`,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+  },
+  memberSelectedText: {
+    flex:       1,
+    fontSize:   14,
+    fontWeight: '600',
+    color:      colors.oliDarkGray,
+  },
+  memberList: {
+    backgroundColor: colors.white,
+    borderRadius:    radius.md,
+    borderWidth:     1,
+    borderColor:     colors.border,
+    overflow:        'hidden',
+  },
+  memberItem: {
+    padding:           spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  memberItemName: { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
+  memberItemSpec: { fontSize: 12, color: colors.gray, marginTop: 2 },
+  memberNoResult: { fontSize: 13, color: colors.oliLightGray, textAlign: 'center', paddingVertical: spacing.sm },
 });
 
 // ── Estilos do seletor de estados ─────────────────────────────────────────────
