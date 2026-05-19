@@ -125,16 +125,16 @@ export default function EcossistemaScreen() {
           icon="business-outline"
           title="OLI Convênios"
           description="Credenciamento, faturamento em operadoras e redução de no-show. Parceria AR Soluções."
-          ctaLabel="Falar com especialista"
-          onPress={() => contactReception('Olá! Tenho interesse nos serviços de convênios médicos do OLI (credenciamento e faturamento em operadoras).')}
+          ctaLabel="Consultar agora"
+          onPress={() => router.push('/chatbot?persona=convenios')}
         />
         <OLISolutionCard
           accent={colors.oliPurple}
           icon="briefcase-outline"
           title="OLI Carreira"
           description="Posicionamento profissional, gestão de agenda e captação de pacientes particular."
-          ctaLabel="Saiba mais"
-          onPress={() => contactReception('Olá! Tenho interesse nos serviços de gestão de carreira do OLI.')}
+          ctaLabel="Consultar agora"
+          onPress={() => router.push('/chatbot?persona=carreira')}
         />
 
         {/* ── Uso do plano ── */}
@@ -179,6 +179,22 @@ export default function EcossistemaScreen() {
             title="Olivia — OLI Hub"
             subtitle="Salas, planos e eventos"
             onPress={() => router.push('/chatbot?persona=olivia')}
+          />
+          <View style={styles.agentDivider} />
+          <AgentCard
+            avatar="C"
+            color="#C0714A"
+            title="Camila — OLI Convênios"
+            subtitle="Credenciamento, faturamento e glosas"
+            onPress={() => router.push('/chatbot?persona=convenios')}
+          />
+          <View style={styles.agentDivider} />
+          <AgentCard
+            avatar="S"
+            color="#7B6EA8"
+            title="Sofia — OLI Carreira"
+            subtitle="Posicionamento, marca pessoal e captação"
+            onPress={() => router.push('/chatbot?persona=carreira')}
           />
         </View>
 

@@ -16,7 +16,7 @@ const AGENT_PHOTOS: Partial<Record<string, ReturnType<typeof require>>> = {
 
 // ─── Personas ─────────────────────────────────────────────────────────────────
 
-type Persona = 'ana' | 'isabella' | 'olivia';
+type Persona = 'ana' | 'isabella' | 'olivia' | 'convenios' | 'carreira';
 
 interface PersonaConfig {
   name:      string;
@@ -89,6 +89,72 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
     },
   },
 
+  convenios: {
+    name:    'Camila',
+    role:    'OLI Convênios',
+    avatar:  'C',
+    color:   '#C0714A',
+    subtitle:'Credenciamento, faturamento e glosas',
+    welcome:
+      'Olá! Sou a Camila, especialista em convênios médicos do OLI Health Hub.\n\n' +
+      'Posso ajudar com:\n' +
+      '• Credenciamento em operadoras de saúde\n' +
+      '• Faturamento de guias e procedimentos\n' +
+      '• Contestação de glosas\n' +
+      '• Tabela CBHPM e reajuste de honorários\n' +
+      '• Redução de no-show e carência\n' +
+      '• Estratégias para atender mais planos',
+    respond(q) {
+      const query = q.toLowerCase();
+      if (query.includes('credenci') || query.includes('plano') || query.includes('operadora'))
+        return 'Para se credenciar em uma operadora:\n\n**Documentos gerais:**\n• CRM ativo e regular\n• Diploma e especialização registrada\n• RG, CPF ou CNPJ da PJ médica\n• Comprovante de endereço do consultório\n• Alvará de funcionamento\n\n**Processo:**\n1. Acesse o portal do credenciamento da operadora\n2. Envie a documentação digitalizada\n3. Aguarde vistoria (7 a 30 dias úteis)\n4. Assine o contrato de credenciamento\n\nDeseja uma lista das operadoras com credenciamento aberto na sua região?';
+      if (query.includes('faturamento') || query.includes('guia') || query.includes('tiss'))
+        return 'Faturamento pelo padrão TISS (ANS):\n\n• **Guia de consulta:** preencha CID, procedimento e assinatura do paciente\n• **Guia SADT:** para exames e procedimentos com autorização prévia\n• Prazo de envio: até **30 dias** após o atendimento\n• Lote: envie mensalmente ou por demanda\n\n⚠️ **Erros comuns:**\n• CID divergente do procedimento → glosa técnica\n• Assinatura ausente → glosa administrativa\n• Código de procedimento incorreto → glosa de código\n\nGuarde sempre a via assinada pelo paciente por 5 anos.';
+      if (query.includes('glosa') || query.includes('recurso') || query.includes('contest'))
+        return 'Recurso de glosa — passo a passo:\n\n1. Identifique o **tipo de glosa** (administrativa, técnica ou por código)\n2. Reúna o prontuário do atendimento gloseado\n3. Elabore o recurso citando a **Resolução ANS nº 20/1999**\n4. Envie no portal da operadora em até **30 dias**\n5. Guarde o protocolo de envio\n\n**Taxa de sucesso:** recursos bem documentados têm ~60–70% de aprovação.\n\nPosso te ajudar a montar o recurso passo a passo. Qual operadora glosou?';
+      if (query.includes('cbhpm') || query.includes('honorário') || query.includes('reajuste') || query.includes('tabela'))
+        return 'A CBHPM (Classificação Brasileira Hierarquizada de Procedimentos Médicos) é a referência oficial de honorários médicos.\n\n**Dicas de negociação:**\n• Exija no mínimo 100% da tabela CBHPM 5ª Edição\n• Reajuste anual: INPC ou IPCA — negocie no vencimento do contrato\n• Cláusula de reequilíbrio: inclua em novos contratos\n• CFM apoia recursos contra operadoras que pagam abaixo da tabela\n\n⚠️ Valores abaixo do custo operacional configuram concorrência desleal.';
+      if (query.includes('no-show') || query.includes('falta') || query.includes('cancelamento') || query.includes('confirmação'))
+        return 'Estratégias para reduzir no-show:\n\n• **Confirmação ativa:** WhatsApp 48h e 24h antes\n• **Lista de espera:** preencha vagas canceladas rapidamente\n• **Cobrança de taxa:** legalmente permitida se no contrato de serviço\n• **Horário de tolerância:** defina e comunique (ex.: 15 minutos)\n• **Encaixe inteligente:** use o OLI App para oferecer horários a outros pacientes\n\nO OLI Health Hub tem sistema de encaixe automático — explore a aba Pacientes!';
+      if (query.includes('carência') || query.includes('ans') || query.includes('prazo'))
+        return 'Regras de carência (Lei 9.656/98 e RN ANS nº 162):\n\n• **Consultas:** sem carência\n• **Urgência/emergência:** sem carência após 24h de vigência\n• **Internação eletiva:** até 180 dias\n• **Parto:** até 300 dias\n• **Cobertura parcial temporária:** até 24 meses para condições preexistentes\n\n⚠️ A operadora não pode negar cobertura dentro do Rol de Procedimentos da ANS.\n\nSe um paciente teve negativa indevida, oriente-o a acionar a ANS pelo 0800 701 9656.';
+      return 'Essa situação merece uma análise mais detalhada. A Camila pode verificar as especificidades do seu contrato de credenciamento e da operadora envolvida.\n\nEntre em contato com a recepção do OLI para agendar uma consultoria: **(11) 99763-9711**';
+    },
+  },
+
+  carreira: {
+    name:    'Sofia',
+    role:    'OLI Carreira',
+    avatar:  'S',
+    color:   '#7B6EA8',
+    subtitle:'Posicionamento, marca pessoal e captação',
+    welcome:
+      'Olá! Sou a Sofia, consultora de carreira médica do OLI Health Hub.\n\n' +
+      'Posso ajudar com:\n' +
+      '• Posicionamento de marca pessoal médica\n' +
+      '• Estratégias para atrair pacientes particular\n' +
+      '• Presença digital (Instagram, Google Meu Negócio)\n' +
+      '• Gestão de agenda e produtividade\n' +
+      '• LinkedIn e networking médico\n' +
+      '• Transição para atendimento premium',
+    respond(q) {
+      const query = q.toLowerCase();
+      if (query.includes('instagram') || query.includes('redes sociais') || query.includes('digital') || query.includes('conteúdo'))
+        return 'Presença digital para médicos — o que funciona:\n\n**Instagram médico:**\n• Poste 3–4x por semana (consistência > frequência)\n• Formatos que engajam: Reels educativos, bastidores, mitos x verdades\n• Bio otimizada: especialidade + cidade + CRM + link de agendamento\n\n**Google Meu Negócio:**\n• Crie ou reivindique seu perfil (gratuito)\n• Solicite avaliações de pacientes satisfeitos\n• Responda TODAS as avaliações (inclusive negativas)\n\n⚠️ Lembre-se: antes/depois só com consentimento escrito (CFM 2.336/2023).';
+      if (query.includes('particular') || query.includes('captação') || query.includes('paciente novo') || query.includes('atrair'))
+        return 'Para atrair mais pacientes particular:\n\n**Curto prazo:**\n• Google Meu Negócio com fotos profissionais do consultório\n• Peça indicações ativas: "Você tem alguém que poderia se beneficiar?"\n• Parcerias com outros especialistas (derma + gineco, por exemplo)\n\n**Médio prazo:**\n• Conteúdo educativo no Instagram sobre sua especialidade\n• E-mail marketing para pacientes inativos (com consentimento LGPD)\n• Programa de fidelização: "Paciente OLI" com benefícios\n\n**Longo prazo:**\n• Construa autoridade: participe de eventos, dê palestras\n• Seja referência: artigos, podcasts, press médica';
+      if (query.includes('agenda') || query.includes('produtividade') || query.includes('horário') || query.includes('organização'))
+        return 'Gestão de agenda de alta performance:\n\n• **Blocos temáticos:** agrupe tipos de consulta (novas, retorno, procedimentos)\n• **Tempo padrão realista:** se uma consulta leva 40min, agende 40min — não 30\n• **Buffer de 15min:** entre pacientes para nota, higiene e próximo\n• **"Horário de ouro":** reserve 2h para pacientes particulares premium nos melhores horários\n• **Lista de espera ativa:** use o OLI App para encaixes rápidos\n\nProdutividade real = menos pacientes, mais valor por consulta.';
+      if (query.includes('linkedin') || query.includes('networking') || query.includes('conexão') || query.includes('parceria'))
+        return 'LinkedIn médico — como usar estrategicamente:\n\n• **Perfil completo:** foto profissional, headline clara ("Cardiologista | São Paulo | Consultório próprio")\n• **Publique 1–2x por semana:** casos clínicos (sem identificação), opinião sobre guidelines, bastidores\n• **Conecte-se estrategicamente:** outros especialistas, gestores de clínicas, jornalistas de saúde\n• **Grupos:** participe de grupos de especialidade e de empreendedorismo médico\n\nO LinkedIn tem gerado parcerias e indicações profissionais de alto valor para médicos.';
+      if (query.includes('preço') || query.includes('honorário') || query.includes('valor') || query.includes('cobrar'))
+        return 'Precificação de consultas particulares:\n\n**Referência de mercado:**\n• Clínica Geral: R$200–R$350\n• Especialidades clínicas: R$300–R$600\n• Procedimentos: custo + 100–200% de honorário\n\n**Para aumentar seus honorários:**\n1. Invista em especialização e certificações\n2. Construa reputação digital (avaliações + conteúdo)\n3. Melhore a experiência do paciente (espaço, pontualidade, comunicação)\n4. Comunique seu diferencial — os pacientes pagam por percepção de valor\n\nCobrar pelo seu valor não é ganância — é sustentabilidade.';
+      if (query.includes('transição') || query.includes('sair de convênio') || query.includes('particular') || query.includes('migrar'))
+        return 'Transição convênio → particular — roteiro seguro:\n\n**Fase 1 (meses 1–3):**\n• Construa presença digital e Google Meu Negócio\n• Abra 2–3 horários/semana exclusivos para particular\n• Defina seu diferencial e preço\n\n**Fase 2 (meses 4–6):**\n• Aumente gradualmente os horários particulares\n• Solicite avaliações no Google e indicações ativas\n• Reduza convênios menos rentáveis primeiro\n\n**Fase 3 (meses 7–12):**\n• Avalie o retorno financeiro real\n• Mantenha 1–2 convênios estratégicos se fizer sentido\n• Foque em especialização e posicionamento premium\n\nA transição bem feita leva 6–18 meses. Sem pressa.';
+      return 'Essa é uma questão estratégica que merece uma conversa mais aprofundada. A Sofia pode ajudar com um plano personalizado para o seu perfil.\n\nAgende uma consultoria de carreira pela recepção do OLI: **(11) 99763-9711**';
+    },
+  },
+
   olivia: {
     name:    'Olivia',
     role:    'OLI Health Hub',
@@ -131,7 +197,7 @@ interface ChatMessage {
 export default function ChatbotScreen() {
   const { persona: rawPersona } = useLocalSearchParams<{ persona?: string }>();
   const isValidPersona = (p: string | undefined): p is Persona =>
-    p === 'ana' || p === 'isabella' || p === 'olivia';
+    p === 'ana' || p === 'isabella' || p === 'olivia' || p === 'convenios' || p === 'carreira';
   const persona = isValidPersona(rawPersona) ? rawPersona : 'ana';
   const cfg     = PERSONAS[persona];
 
