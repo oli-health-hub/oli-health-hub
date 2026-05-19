@@ -6,6 +6,7 @@ import {
   scheduleSessionNotifications,
   cancelSessionNotifications,
 } from '../services/notificationService';
+import { reportError, reportEvent } from '../services/sentryService';
 import { useAuthStore } from './authStore';
 
 // ─── Custo por minuto por plano ───────────────────────────────────────────────
@@ -239,8 +240,16 @@ export const useAppStore = create<AppStore>((set, get) => {
             plan:           userPlan,
             startedAt:      target.consultationStartedAt,
             endedAt:        target.consultationEndedAt ?? now,
-          }).catch(() => {
-            // Falha silenciosa — o dado é reconciliado pelo admin via Supabase
+          })
+          .then(() => {
+            reportEvent('usage_charge_logged', { plan: userPlan });
+          })
+          .catch((err: unknown) => {
+            // Reporta ao Sentry sem PII — só o tipo de erro e plano
+            reportError(err instanceof Error ? err : new Error(String(err)), {
+              context: 'logUsageCharge',
+              plan:    userPlan,
+            });
           });
         }
       }

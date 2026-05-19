@@ -12,6 +12,10 @@ import {
   requestNotificationPermission,
   addNotificationResponseListener,
 } from '../src/services/notificationService';
+import { initSentry, setSentryUser, clearSentryUser } from '../src/services/sentryService';
+
+// Inicializa Sentry antes da primeira renderização (sem PII — só DSN)
+initSentry();
 
 // Desativa o escalonamento de fonte do sistema em todos os textos do app,
 // garantindo tamanhos consistentes entre iOS e Android.
@@ -26,6 +30,15 @@ export default function RootLayout() {
   useSessionTimeout(); // logout automático após 30 min de inatividade
 
   useEffect(() => { initialize(); }, []);
+
+  // Sentry: identifica/desidentifica usuário ao mudar sessão (só UUID, sem PII)
+  useEffect(() => {
+    if (session?.user?.id) {
+      setSentryUser(session.user.id);
+    } else {
+      clearSentryUser();
+    }
+  }, [session?.user?.id]);
 
   // Pede permissão de notificação uma vez na inicialização
   useEffect(() => {
