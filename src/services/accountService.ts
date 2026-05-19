@@ -18,9 +18,12 @@ export async function exportMyData(): Promise<void> {
 
   const json     = JSON.stringify(data, null, 2);
   const filename = `oli-meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
-  const uri      = `${FileSystem.cacheDirectory}${filename}`;
+  const cacheDir = (FileSystem as unknown as { cacheDirectory: string }).cacheDirectory
+    ?? (FileSystem as unknown as { documentDirectory: string }).documentDirectory
+    ?? '';
+  const uri = `${cacheDir}${filename}`;
 
-  await FileSystem.writeAsStringAsync(uri, json, { encoding: FileSystem.EncodingType.UTF8 });
+  await FileSystem.writeAsStringAsync(uri, json, { encoding: 'utf8' as never });
 
   const canShare = await Sharing.isAvailableAsync();
   if (canShare) {
@@ -50,9 +53,10 @@ export async function deleteAccountData(userId: string): Promise<DeleteAccountRe
   // Após apagar dados, faz signOut para invalidar a sessão
   await supabase.auth.signOut();
 
+  const result = data as { deleted_patients: number; deleted_reservations: number; deleted_charges: number } | null;
   return {
-    deletedPatients:     data.deleted_patients     ?? 0,
-    deletedReservations: data.deleted_reservations ?? 0,
-    deletedCharges:      data.deleted_charges      ?? 0,
+    deletedPatients:     result?.deleted_patients     ?? 0,
+    deletedReservations: result?.deleted_reservations ?? 0,
+    deletedCharges:      result?.deleted_charges      ?? 0,
   };
 }

@@ -126,10 +126,7 @@ export function initSentry(): void {
     tracesSampleRate: 0.2,
 
     // ── beforeSend: scrubbing obrigatório LGPD ────────────────────────────────
-    beforeSend(event) {
-      // Nunca enviar erros de rede sem o request scrubbed
-      return scrubEvent(event);
-    },
+    beforeSend: ((event: Sentry.ErrorEvent) => scrubEvent(event as Sentry.Event) as unknown as Sentry.ErrorEvent),
 
     // ── beforeBreadcrumb: remove breadcrumbs com dados sensíveis ─────────────
     beforeBreadcrumb(breadcrumb) {

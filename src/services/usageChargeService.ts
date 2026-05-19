@@ -86,11 +86,12 @@ export async function checkAuthRateLimit(email: string): Promise<RateLimitResult
     return { allowed: true, failedCount: 0, remaining: 5 };
   }
 
+  const result = data as { allowed: boolean; failed_count: number; remaining?: number; blocked_until?: string } | null;
   return {
-    allowed:      data.allowed       as boolean,
-    failedCount:  data.failed_count  as number,
-    remaining:    data.remaining     as number | undefined,
-    blockedUntil: data.blocked_until as string | undefined,
+    allowed:      result?.allowed       ?? true,
+    failedCount:  result?.failed_count  ?? 0,
+    remaining:    result?.remaining,
+    blockedUntil: result?.blocked_until,
   };
 }
 
