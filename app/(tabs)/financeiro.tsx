@@ -56,62 +56,69 @@ const STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: string }> = {
 // ── Serviços inclusos no plano ────────────────────────────────────────────────
 
 type ServiceItem = {
-  icon:        string;
-  name:        string;
-  detail:      string;       // ex: "1 de 3 utilizadas"
-  used:        boolean;      // false = disponível mas não usado no mês
-  marketPrice: number;       // o que custaria contratar por fora
-  unit:        string;       // "mês" | "consulta" | "evento"
+  icon:           string;
+  name:           string;
+  detail:         string;          // ex: "1 de 3 utilizadas"
+  used:           boolean;         // false = disponível mas não usado no mês
+  marketPrice:    number;          // o que custaria contratar por fora
+  unit:           string;          // "mês" | "consulta" | "evento"
+  spentThisMonth: number;          // valor consumido este mês (0 se não usado)
 };
 
 const INCLUDED_SERVICES: ServiceItem[] = [
   {
-    icon:        'people-outline',
-    name:        'Recepção Assistida',
-    detail:      'Secretária compartilhada — 20 dias úteis',
-    used:        true,
-    marketPrice: 2_500.00,
-    unit:        'mês',
+    icon:           'people-outline',
+    name:           'Recepção Assistida',
+    detail:         'Secretária compartilhada — 20 dias úteis',
+    used:           true,
+    marketPrice:    2_500.00,
+    unit:           'mês',
+    spentThisMonth: 2_500.00,
   },
   {
-    icon:        'document-text-outline',
-    name:        'Consultoria Jurídica',
-    detail:      '1 de 3 consultas utilizadas',
-    used:        true,
-    marketPrice: 350.00,
-    unit:        'consulta',
+    icon:           'document-text-outline',
+    name:           'Consultoria Jurídica',
+    detail:         '1 de 3 consultas utilizadas',
+    used:           true,
+    marketPrice:    350.00,
+    unit:           'consulta',
+    spentThisMonth: 350.00,
   },
   {
-    icon:        'calculator-outline',
-    name:        'Consultoria Contábil',
-    detail:      '0 de 1 consulta — disponível',
-    used:        false,
-    marketPrice: 300.00,
-    unit:        'consulta',
+    icon:           'calculator-outline',
+    name:           'Consultoria Contábil',
+    detail:         '0 de 1 consulta — disponível',
+    used:           false,
+    marketPrice:    300.00,
+    unit:           'consulta',
+    spentThisMonth: 0,
   },
   {
-    icon:        'location-outline',
-    name:        'Endereço Fiscal',
-    detail:      'CNPJ registrado no OLI',
-    used:        true,
-    marketPrice: 150.00,
-    unit:        'mês',
+    icon:           'location-outline',
+    name:           'Endereço Fiscal',
+    detail:         'CNPJ registrado no OLI',
+    used:           true,
+    marketPrice:    150.00,
+    unit:           'mês',
+    spentThisMonth: 150.00,
   },
   {
-    icon:        'wifi-outline',
-    name:        'Internet Fibra 1 Gb',
-    detail:      '12h de uso nas salas',
-    used:        true,
-    marketPrice: 120.00,
-    unit:        'mês',
+    icon:           'wifi-outline',
+    name:           'Internet Fibra 1 Gb',
+    detail:         '12h de uso nas salas',
+    used:           true,
+    marketPrice:    120.00,
+    unit:           'mês',
+    spentThisMonth: 120.00,
   },
   {
-    icon:        'star-outline',
-    name:        'Evento OLI',
-    detail:      '0 de 1 evento — disponível',
-    used:        false,
-    marketPrice: 200.00,
-    unit:        'evento',
+    icon:           'star-outline',
+    name:           'Evento OLI',
+    detail:         '0 de 1 evento — disponível',
+    used:           false,
+    marketPrice:    200.00,
+    unit:           'evento',
+    spentThisMonth: 0,
   },
 ];
 
@@ -300,17 +307,17 @@ export default function FinanceiroScreen() {
           {/* ROI resumido */}
           <View style={styles.roiSummaryRow}>
             <View style={styles.roiSummaryItem}>
-              <Text style={styles.roiSummaryValue}>{roiMultiple}x</Text>
+              <Text style={styles.roiSummaryValue} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.6}>{roiMultiple}x</Text>
               <Text style={styles.roiSummaryLabel}>Retorno sobre{'\n'}o investimento</Text>
             </View>
             <View style={styles.roiSummaryDivider} />
             <View style={styles.roiSummaryItem}>
-              <Text style={styles.roiSummaryValue}>{oliPercent}%</Text>
+              <Text style={styles.roiSummaryValue} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.6}>{oliPercent}%</Text>
               <Text style={styles.roiSummaryLabel}>Do faturamento{'\n'}vai para o OLI</Text>
             </View>
             <View style={styles.roiSummaryDivider} />
             <View style={styles.roiSummaryItem}>
-              <Text style={styles.roiSummaryValue}>{formatCurrency(MONTHLY_STATS.grossRevenue / MONTHLY_STATS.horasUtilizadas)}</Text>
+              <Text style={styles.roiSummaryValue} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.6}>{formatCurrency(MONTHLY_STATS.grossRevenue / MONTHLY_STATS.horasUtilizadas)}</Text>
               <Text style={styles.roiSummaryLabel}>Faturado{'\n'}por hora OLI</Text>
             </View>
           </View>
@@ -341,8 +348,12 @@ export default function FinanceiroScreen() {
                 <Text style={svcStyles.detail}>{svc.detail}</Text>
               </View>
               <View style={svcStyles.priceCol}>
-                <Text style={svcStyles.marketPrice}>{formatCurrency(svc.marketPrice)}</Text>
-                <Text style={svcStyles.priceUnit}>/{svc.unit}</Text>
+                <Text style={svcStyles.marketPrice}>{formatCurrency(svc.marketPrice)}/{svc.unit}</Text>
+                {svc.spentThisMonth > 0 ? (
+                  <Text style={svcStyles.spentAmount}>Gasto: {formatCurrency(svc.spentThisMonth)}</Text>
+                ) : (
+                  <Text style={svcStyles.spentZero}>Não utilizado</Text>
+                )}
               </View>
             </View>
           ))}
@@ -394,26 +405,35 @@ export default function FinanceiroScreen() {
         </View>
 
         {/* ── Pacotes de Horas ── */}
-        <Text style={styles.sectionTitle}>Pacotes de Horas</Text>
+        <View style={styles.packagesSectionHeader}>
+          <Text style={styles.sectionTitle}>Pacotes de Horas</Text>
+          <View style={styles.scrollHintBadge}>
+            <Text style={styles.scrollHintText}>Deslize</Text>
+            <Ionicons name="chevron-forward" size={13} color={colors.oliGreen} />
+          </View>
+        </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.packagesRow}>
-          {HOUR_PACKAGES.map(pkg => (
-            <View key={pkg.hours} style={[styles.packageCard, shadows.small]}>
-              <Text style={styles.packageHours}>{pkg.hours} Horas</Text>
-              <Text style={styles.packagePrice}>{formatCurrency(pkg.price)}</Text>
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{pkg.discountPercent}% OFF</Text>
+        <View style={styles.packagesWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.packagesRow}>
+            {HOUR_PACKAGES.map(pkg => (
+              <View key={pkg.hours} style={[styles.packageCard, shadows.small]}>
+                <Text style={styles.packageHours}>{pkg.hours} Horas</Text>
+                <Text style={styles.packagePrice}>{formatCurrency(pkg.price)}</Text>
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>{pkg.discountPercent}% OFF</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.buyBtn}
+                  onPress={() => handleBuyPackage(pkg)}
+                  accessibilityLabel={`Comprar pacote de ${pkg.hours} horas`}
+                >
+                  <Text style={styles.buyBtnText}>Comprar</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.buyBtn}
-                onPress={() => handleBuyPackage(pkg)}
-                accessibilityLabel={`Comprar pacote de ${pkg.hours} horas`}
-              >
-                <Text style={styles.buyBtnText}>Comprar</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
+          <View style={styles.packagesScrollFade} pointerEvents="none" />
+        </View>
 
         {/* ── Extrato de Minutagem (dados reais do Supabase) ── */}
         <Text style={styles.sectionTitle}>Minutagem — {MONTHLY_STATS.period}</Text>
@@ -630,7 +650,21 @@ const styles = StyleSheet.create({
   payBtn:       { backgroundColor: colors.oliGreen, borderRadius: radius.md, padding: spacing.md, alignItems: 'center' },
   payBtnText:   { color: colors.white, fontSize: 16, fontWeight: '700' },
 
+  packagesSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scrollHintBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${colors.oliGreen}12`, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
+  scrollHintText:  { fontSize: 12, fontWeight: '600', color: colors.oliGreen },
+
+  packagesWrap: { position: 'relative' },
   packagesRow:  { marginBottom: spacing.xs },
+  packagesScrollFade: {
+    position:        'absolute',
+    right:           0,
+    top:             0,
+    bottom:          spacing.xs,
+    width:           40,
+    borderRadius:    radius.lg,
+    backgroundColor: `${colors.oliBackground}CC`,
+  },
   packageCard: {
     width:           160,
     backgroundColor: colors.white,
@@ -669,9 +703,10 @@ const svcStyles = StyleSheet.create({
   name:       { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
   nameUnused: { color: colors.gray },
   detail:     { fontSize: 12, color: colors.gray, marginTop: 2 },
-  priceCol:   { alignItems: 'flex-end' },
-  marketPrice:{ fontSize: 14, fontWeight: '700', color: colors.oliDarkGray },
-  priceUnit:  { fontSize: 11, color: colors.gray },
+  priceCol:    { alignItems: 'flex-end', minWidth: 90 },
+  marketPrice: { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray, textAlign: 'right' },
+  spentAmount: { fontSize: 11, fontWeight: '600', color: colors.oliGold, marginTop: 2 },
+  spentZero:   { fontSize: 11, color: colors.gray, marginTop: 2 },
 
   footer:       { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: 6 },
   footerRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
