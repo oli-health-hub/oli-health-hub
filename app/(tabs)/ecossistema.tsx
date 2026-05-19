@@ -108,6 +108,14 @@ export default function EcossistemaScreen() {
           onPress={() => router.push('/chatbot?persona=ana')}
         />
         <OLISolutionCard
+          accent="#2E7D6E"
+          icon="bar-chart-outline"
+          title="OLI BPO Financeiro"
+          description="Gestão financeira do consultório: fluxo de caixa, inadimplência, DRE e controle de custos."
+          ctaLabel="Consultar agora"
+          onPress={() => router.push('/chatbot?persona=bpo')}
+        />
+        <OLISolutionCard
           accent={colors.oliMint}
           icon="trending-up-outline"
           title="OLI Crescimento"
@@ -164,6 +172,14 @@ export default function EcossistemaScreen() {
             title="Ronaldo — OLI Carreira"
             subtitle="Posicionamento, marca pessoal e captação"
             onPress={() => router.push('/chatbot?persona=carreira')}
+          />
+          <View style={styles.agentDivider} />
+          <AgentCard
+            avatar="M"
+            color="#2E7D6E"
+            title="Miriam — BPO Financeiro"
+            subtitle="Fluxo de caixa, inadimplência e DRE"
+            onPress={() => router.push('/chatbot?persona=bpo')}
           />
         </View>
 
