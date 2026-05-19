@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, Alert, Switch, ActivityIndicator,
+  StyleSheet, Alert, Switch, ActivityIndicator, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { usePatientStore } from '../src/store/patientStore';
 import { signOut, updateProfile } from '../src/services/auth';
 import { exportMyData, deleteAccountData } from '../src/services/accountService';
+import { updateProfileAvatar, removeProfileAvatar } from '../src/services/avatarService';
 import { useAppLock } from '../src/hooks/useAppLock';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 
@@ -20,8 +21,10 @@ export default function PerfilScreen() {
   const { profile, session, setProfile } = useAuthStore();
   const { exportData } = usePatientStore();
 
-  const [editing,  setEditing]  = useState(false);
-  const [saving,   setSaving]   = useState(false);
+  const [editing,       setEditing]      = useState(false);
+  const [saving,        setSaving]       = useState(false);
+  const [uploadingPhoto,setUploadingPhoto]= useState(false);
+  const [fotoUrl,       setFotoUrl]      = useState<string | null>(profile?.foto_url ?? null);
 
   const [nome,         setNome]         = useState(profile?.nome ?? '');
   const [crm,          setCrm]          = useState(profile?.crm ?? '');
@@ -71,6 +74,58 @@ export default function PerfilScreen() {
     setBio(profile?.bio ?? '');
     setDuracao(String(profile?.consultation_duration_minutes ?? 60));
     setEditing(false);
+  };
+
+  const handleAvatarOptions = () => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    const options: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
+      {
+        text: 'Escolher da galeria',
+        onPress: async () => {
+          setUploadingPhoto(true);
+          try {
+            const url = await updateProfileAvatar(userId, 'gallery');
+            if (url) { setFotoUrl(url); setProfile({ ...profile!, foto_url: url }); }
+          } catch {
+            Alert.alert('Erro', 'Não foi possível atualizar a foto. Tente novamente.');
+          } finally { setUploadingPhoto(false); }
+        },
+      },
+      {
+        text: 'Tirar foto',
+        onPress: async () => {
+          setUploadingPhoto(true);
+          try {
+            const url = await updateProfileAvatar(userId, 'camera');
+            if (url) { setFotoUrl(url); setProfile({ ...profile!, foto_url: url }); }
+          } catch {
+            Alert.alert('Erro', 'Não foi possível atualizar a foto. Tente novamente.');
+          } finally { setUploadingPhoto(false); }
+        },
+      },
+    ];
+
+    if (fotoUrl) {
+      options.push({
+        text: 'Remover foto',
+        style: 'destructive',
+        onPress: async () => {
+          setUploadingPhoto(true);
+          try {
+            await removeProfileAvatar(userId);
+            setFotoUrl(null);
+            setProfile({ ...profile!, foto_url: null });
+          } catch {
+            Alert.alert('Erro', 'Não foi possível remover a foto.');
+          } finally { setUploadingPhoto(false); }
+        },
+      });
+    }
+
+    options.push({ text: 'Cancelar', style: 'cancel' });
+    Alert.alert('Foto de Perfil', 'Escolha uma opção', options);
   };
 
   const handleExportData = () => {
@@ -153,11 +208,26 @@ export default function PerfilScreen() {
 
         {/* ── Avatar + Nome ── */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarWrap}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarLetter}>{initial.toUpperCase()}</Text>
+          <TouchableOpacity
+            style={styles.avatarWrap}
+            onPress={handleAvatarOptions}
+            accessibilityLabel="Alterar foto de perfil"
+            disabled={uploadingPhoto}
+          >
+            {fotoUrl ? (
+              <Image source={{ uri: fotoUrl }} style={styles.avatarImg} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarLetter}>{initial.toUpperCase()}</Text>
+              </View>
+            )}
+            <View style={styles.avatarEditBadge}>
+              {uploadingPhoto
+                ? <ActivityIndicator size="small" color={colors.white} />
+                : <Ionicons name="camera" size={14} color={colors.white} />
+              }
             </View>
-          </View>
+          </TouchableOpacity>
           <Text style={styles.userName}>{displayName}</Text>
           <View style={styles.planBadge}>
             <Text style={styles.planBadgeText}>Plano {userPlan}</Text>
@@ -432,11 +502,28 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 48 },
 
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },
-  avatarWrap:    { marginBottom: spacing.md },
+  avatarWrap:    { marginBottom: spacing.md, position: 'relative' },
   avatar: {
     width: 96, height: 96, borderRadius: 48,
     backgroundColor: `${colors.oliGreen}26`,
     justifyContent: 'center', alignItems: 'center',
+  },
+  avatarImg: {
+    width: 96, height: 96, borderRadius: 48,
+    borderWidth: 2, borderColor: colors.oliGreen,
+  },
+  avatarEditBadge: {
+    position:        'absolute',
+    bottom:          0,
+    right:           0,
+    width:           28,
+    height:          28,
+    borderRadius:    14,
+    backgroundColor: colors.oliGreen,
+    justifyContent:  'center',
+    alignItems:      'center',
+    borderWidth:     2,
+    borderColor:     colors.white,
   },
   avatarLetter: { fontSize: 40, fontWeight: '700', color: colors.oliGreen },
   userName:     { fontSize: 22, fontWeight: '700', color: colors.oliDarkGray },

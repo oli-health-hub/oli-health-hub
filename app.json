@@ -16,7 +16,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.oli.healthhub",
       "infoPlist": {
-        "NSCameraUsageDescription": "Usamos a câmera para escanear o QR Code de checkout da sala.",
+        "NSCameraUsageDescription": "Usamos a câmera para escanear o QR Code de checkout da sala e para tirar foto de perfil.",
+        "NSPhotoLibraryUsageDescription": "Acesse sua galeria para escolher uma foto de perfil.",
+        "NSPhotoLibraryAddUsageDescription": "Salve sua foto de perfil na galeria.",
         "NSCalendarsUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
         "NSCalendarsFullAccessUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
         "ITSAppUsesNonExemptEncryption": false
@@ -36,6 +38,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.POST_NOTIFICATIONS"
@@ -52,7 +56,14 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Usamos a câmera para escanear o QR Code de checkout da sala."
+          "cameraPermission": "Usamos a câmera para escanear o QR Code de checkout da sala e para tirar foto de perfil."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Acesse sua galeria para escolher uma foto de perfil.",
+          "cameraPermission": "Tire uma foto para usar como foto de perfil."
         }
       ],
       [

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Modal, Alert,
+  StyleSheet, Modal, Alert, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -167,7 +167,7 @@ export default function DashboardScreen() {
     endRoomUse,
   } = useAppStore();
 
-  const { session } = useAuthStore();
+  const { session, profile } = useAuthStore();
   const timer = useTimer();
 
   const [showQR,              setShowQR]              = useState(false);
@@ -288,9 +288,13 @@ export default function DashboardScreen() {
             onPress={() => router.push('/perfil')}
             accessibilityLabel="Abrir perfil do profissional"
           >
-            <Text style={styles.avatarLetter}>
-              {userName.split(' ').pop()?.charAt(0) ?? 'G'}
-            </Text>
+            {profile?.foto_url ? (
+              <Image source={{ uri: profile.foto_url }} style={styles.avatarImg} />
+            ) : (
+              <Text style={styles.avatarLetter}>
+                {userName.split(' ').pop()?.charAt(0) ?? 'G'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -816,8 +820,9 @@ const styles = StyleSheet.create({
   header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
   greeting:     { fontSize: 24, fontWeight: '700', color: colors.oliDarkGray },
   plan:         { fontSize: 13, fontWeight: '500', color: colors.oliGold, marginTop: 2 },
-  avatarCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: `${colors.oliGreen}26`, justifyContent: 'center', alignItems: 'center' },
+  avatarCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: `${colors.oliGreen}26`, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarLetter: { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
+  avatarImg:    { width: 50, height: 50, borderRadius: 25 },
 
   // ── Saldo de horas ──────────────────────────────────────────────────────────
   hourBalanceCard:     { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.white, borderRadius: radius.lg, marginHorizontal: spacing.md, marginBottom: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.oliGreen },
