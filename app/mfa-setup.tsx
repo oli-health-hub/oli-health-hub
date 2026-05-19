@@ -64,47 +64,49 @@ export default function MFASetupScreen() {
             </View>
           </View>
 
-          {/* Passo 2 — QR Code */}
-          <View style={styles.step}>
-            <View style={styles.stepBadge}><Text style={styles.stepNum}>2</Text></View>
-            <View style={styles.stepBody}>
+          {/* Passo 2 — QR Code (layout centralizado, sem badge lateral) */}
+          <View style={styles.step2Card}>
+            <View style={styles.step2Header}>
+              <View style={styles.stepBadge}><Text style={styles.stepNum}>2</Text></View>
               <Text style={styles.stepTitle}>Escaneie o QR Code</Text>
-              {loading || !enrollData ? (
-                <View style={styles.qrPlaceholder}>
-                  <ActivityIndicator color={colors.oliGreen} />
-                </View>
-              ) : (
-                <View style={styles.qrWrap}>
-                  <Image
-                    source={{ uri: enrollData.qrCode }}
-                    style={styles.qrImage}
-                    accessibilityLabel="QR Code para configuração do MFA"
-                  />
-                </View>
-              )}
-              {enrollData && (
-                <TouchableOpacity
-                  style={styles.secretToggle}
-                  onPress={() => setShowSecret(v => !v)}
-                  accessibilityLabel="Mostrar código manual"
-                >
-                  <Ionicons
-                    name={showSecret ? 'eye-off-outline' : 'eye-outline'}
-                    size={14}
-                    color={colors.oliGreen}
-                  />
-                  <Text style={styles.secretToggleText}>
-                    {showSecret ? 'Ocultar' : 'Ver'} código manual
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {showSecret && enrollData && (
-                <View style={styles.secretBox}>
-                  <Text style={styles.secretLabel}>Código manual (TOTP secret)</Text>
-                  <Text style={styles.secretValue} selectable>{enrollData.secret}</Text>
-                </View>
-              )}
             </View>
+
+            {loading || !enrollData ? (
+              <View style={styles.qrPlaceholder}>
+                <ActivityIndicator color={colors.oliGreen} />
+              </View>
+            ) : (
+              <View style={styles.qrWrap}>
+                <Image
+                  source={{ uri: enrollData.qrCode }}
+                  style={styles.qrImage}
+                  accessibilityLabel="QR Code para configuração do MFA"
+                />
+              </View>
+            )}
+
+            {enrollData && (
+              <TouchableOpacity
+                style={styles.secretToggle}
+                onPress={() => setShowSecret(v => !v)}
+                accessibilityLabel="Mostrar código manual"
+              >
+                <Ionicons
+                  name={showSecret ? 'eye-off-outline' : 'eye-outline'}
+                  size={14}
+                  color={colors.oliGreen}
+                />
+                <Text style={styles.secretToggleText}>
+                  {showSecret ? 'Ocultar' : 'Ver'} código manual
+                </Text>
+              </TouchableOpacity>
+            )}
+            {showSecret && enrollData && (
+              <View style={styles.secretBox}>
+                <Text style={styles.secretLabel}>Código manual (TOTP secret)</Text>
+                <Text style={styles.secretValue} selectable>{enrollData.secret}</Text>
+              </View>
+            )}
           </View>
 
           {/* Passo 3 — Verificar */}
@@ -155,7 +157,7 @@ const styles = StyleSheet.create({
   header:    { padding: spacing.md, alignItems: 'flex-end' },
   closeText: { fontSize: 15, color: colors.oliGreen, fontWeight: '600' },
 
-  content: { padding: spacing.md, paddingBottom: 48, gap: spacing.lg },
+  content: { padding: spacing.md, paddingBottom: 48, gap: spacing.lg, alignItems: 'stretch' },
 
   iconWrap: {
     alignSelf:       'center',
@@ -169,6 +171,7 @@ const styles = StyleSheet.create({
   title:    { fontSize: 20, fontWeight: '700', color: colors.oliDarkGray, textAlign: 'center' },
   subtitle: { fontSize: 13, color: colors.gray, textAlign: 'center', lineHeight: 20 },
 
+  // Passos 1 e 3: layout em linha com badge lateral
   step: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   stepBadge: {
     width:           28,
@@ -185,22 +188,49 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
   stepDesc:  { fontSize: 13, color: colors.gray, lineHeight: 18 },
 
-  qrPlaceholder: {
-    width:           180,
-    height:          180,
+  // Passo 2: card centralizado, QR em destaque
+  step2Card: {
     backgroundColor: colors.white,
+    borderRadius:    radius.lg,
+    padding:         spacing.lg,
+    alignItems:      'center',
+    gap:             spacing.md,
+    borderWidth:     1,
+    borderColor:     colors.border,
+  },
+  step2Header: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing.sm,
+    alignSelf:     'flex-start',
+  },
+
+  qrPlaceholder: {
+    width:           200,
+    height:          200,
+    backgroundColor: `${colors.oliGreen}08`,
     borderRadius:    radius.md,
     justifyContent:  'center',
     alignItems:      'center',
+    borderWidth:     1,
+    borderColor:     colors.border,
   },
-  qrWrap:  { borderRadius: radius.md, overflow: 'hidden', alignSelf: 'flex-start' },
-  qrImage: { width: 180, height: 180 },
+  qrWrap:  {
+    borderRadius:    radius.md,
+    overflow:        'hidden',
+    alignSelf:       'center',
+    padding:         8,
+    backgroundColor: colors.white,
+    borderWidth:     1,
+    borderColor:     colors.border,
+  },
+  qrImage: { width: 200, height: 200 },
 
-  secretToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  secretToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   secretToggleText: { fontSize: 12, color: colors.oliGreen, fontWeight: '600' },
-  secretBox:    { backgroundColor: colors.white, borderRadius: radius.sm, padding: spacing.sm, gap: 4 },
-  secretLabel:  { fontSize: 11, color: colors.gray },
-  secretValue:  { fontSize: 12, fontWeight: '600', color: colors.oliDarkGray, letterSpacing: 1 },
+  secretBox:    { backgroundColor: `${colors.oliGreen}08`, borderRadius: radius.sm, padding: spacing.sm, gap: 4, width: '100%' },
+  secretLabel:  { fontSize: 11, color: colors.gray, textAlign: 'center' },
+  secretValue:  { fontSize: 12, fontWeight: '600', color: colors.oliDarkGray, letterSpacing: 2, textAlign: 'center' },
 
   codeInput: {
     borderWidth:     2,

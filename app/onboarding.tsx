@@ -178,6 +178,7 @@ export default function OnboardingScreen() {
           situacao_juridica:     situacaoJuridica,
           faturamento_range:     faturamentoRange,
           atividade_exercida:    atividadeExercida.trim(),
+          especialidade:         atividadeExercida.trim(), // espelha para o campo do perfil
           possui_clt:            possuiCLT,
           local_atuacao:         localAtuacao,
           num_locais:            numLocais,
