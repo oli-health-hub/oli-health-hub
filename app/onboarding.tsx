@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, KeyboardAvoidingView, Platform, Animated,
+  Modal, FlatList,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -13,6 +14,38 @@ import type {
   SituacaoJuridica, FaturamentoRange, LocalAtuacao,
   NumLocais, NotasFiscaisRange,
 } from '../src/models/types';
+
+// ─── Estados brasileiros ──────────────────────────────────────────────────────
+
+const ESTADOS = [
+  { uf: 'AC', nome: 'Acre' },
+  { uf: 'AL', nome: 'Alagoas' },
+  { uf: 'AP', nome: 'Amapá' },
+  { uf: 'AM', nome: 'Amazonas' },
+  { uf: 'BA', nome: 'Bahia' },
+  { uf: 'CE', nome: 'Ceará' },
+  { uf: 'DF', nome: 'Distrito Federal' },
+  { uf: 'ES', nome: 'Espírito Santo' },
+  { uf: 'GO', nome: 'Goiás' },
+  { uf: 'MA', nome: 'Maranhão' },
+  { uf: 'MT', nome: 'Mato Grosso' },
+  { uf: 'MS', nome: 'Mato Grosso do Sul' },
+  { uf: 'MG', nome: 'Minas Gerais' },
+  { uf: 'PA', nome: 'Pará' },
+  { uf: 'PB', nome: 'Paraíba' },
+  { uf: 'PR', nome: 'Paraná' },
+  { uf: 'PE', nome: 'Pernambuco' },
+  { uf: 'PI', nome: 'Piauí' },
+  { uf: 'RJ', nome: 'Rio de Janeiro' },
+  { uf: 'RN', nome: 'Rio Grande do Norte' },
+  { uf: 'RS', nome: 'Rio Grande do Sul' },
+  { uf: 'RO', nome: 'Rondônia' },
+  { uf: 'RR', nome: 'Roraima' },
+  { uf: 'SC', nome: 'Santa Catarina' },
+  { uf: 'SP', nome: 'São Paulo' },
+  { uf: 'SE', nome: 'Sergipe' },
+  { uf: 'TO', nome: 'Tocantins' },
+];
 
 // ─── Constantes e Helpers ─────────────────────────────────────────────────────
 
@@ -37,12 +70,13 @@ function OptionCard<T extends string | boolean>({
       accessibilityLabel={label}
     >
       {icon ? (
-        <Ionicons
-          name={icon as any}
-          size={20}
-          color={selected ? colors.white : colors.oliGreen}
-          style={styles.optIcon}
-        />
+        <View style={styles.optIconWrap}>
+          <Ionicons
+            name={icon as any}
+            size={20}
+            color={selected ? colors.white : colors.oliGreen}
+          />
+        </View>
       ) : null}
       <View style={styles.optTexts}>
         <Text style={[styles.optLabel, selected && styles.optLabelActive]}>{label}</Text>
@@ -85,7 +119,9 @@ export default function OnboardingScreen() {
   const [atividadeExercida, setAtividadeExercida] = useState('');
   const [localAtuacao,      setLocalAtuacao]      = useState<LocalAtuacao | null>(null);
   const [numLocais,         setNumLocais]         = useState<NumLocais | null>(null);
-  const [cidadeUF,          setCidadeUF]          = useState('');
+  const [cidade,            setCidade]            = useState('');
+  const [uf,                setUf]                = useState('');
+  const [showEstadoPicker,  setShowEstadoPicker]  = useState(false);
 
   // ── Step 3: Financeiro ──
   const [faturamentoRange,   setFaturamentoRange]   = useState<FaturamentoRange | null>(null);
@@ -95,7 +131,8 @@ export default function OnboardingScreen() {
 
   // ── Validação por step ──
   const step1Valid = situacaoJuridica !== null && possuiCLT !== null && possuiSocios !== null;
-  const step2Valid = atividadeExercida.trim().length > 0 && localAtuacao !== null && numLocais !== null && cidadeUF.trim().length > 0;
+  const cidadeUF   = cidade.trim() && uf ? `${cidade.trim()} / ${uf}` : '';
+  const step2Valid = atividadeExercida.trim().length > 0 && localAtuacao !== null && numLocais !== null && cidade.trim().length > 0 && uf.length > 0;
   const step3Valid = faturamentoRange !== null && notasFiscaisRange !== null &&
     possuiFuncionarios !== null &&
     (possuiFuncionarios === true || previsaoContratacao !== null);
@@ -173,6 +210,43 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaProvider>
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+
+      {/* ── Modal: Seletor de Estado ── */}
+      <Modal visible={showEstadoPicker} animationType="slide" transparent>
+        <View style={pickerStyles.overlay}>
+          <View style={pickerStyles.sheet}>
+            <View style={pickerStyles.header}>
+              <Text style={pickerStyles.title}>Selecionar Estado</Text>
+              <TouchableOpacity onPress={() => setShowEstadoPicker(false)} accessibilityLabel="Fechar">
+                <Ionicons name="close" size={24} color={colors.oliDarkGray} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={ESTADOS}
+              keyExtractor={item => item.uf}
+              renderItem={({ item }) => {
+                const selected = uf === item.uf;
+                return (
+                  <TouchableOpacity
+                    style={[pickerStyles.item, selected && pickerStyles.itemSelected]}
+                    onPress={() => { setUf(item.uf); setShowEstadoPicker(false); }}
+                    accessibilityLabel={item.nome}
+                  >
+                    <Text style={[pickerStyles.itemUF, selected && pickerStyles.itemUFSelected]}>
+                      {item.uf}
+                    </Text>
+                    <Text style={[pickerStyles.itemNome, selected && pickerStyles.itemNomeSelected]}>
+                      {item.nome}
+                    </Text>
+                    {selected && <Ionicons name="checkmark-circle" size={20} color={colors.oliGreen} />}
+                  </TouchableOpacity>
+                );
+              }}
+              ItemSeparatorComponent={() => <View style={pickerStyles.separator} />}
+            />
+          </View>
+        </View>
+      </Modal>
       {/* ── Barra de progresso ── */}
       <View style={styles.progressWrap}>
         <View style={styles.progressTrack}>
@@ -304,7 +378,7 @@ export default function OnboardingScreen() {
                   key={o.value}
                   value={o.value}
                   label={o.label}
-                  sublabel={o.sublabel}
+                  sublabel={'sublabel' in o ? o.sublabel : undefined}
                   icon={o.icon}
                   selected={localAtuacao === o.value}
                   onPress={setLocalAtuacao}
@@ -343,16 +417,35 @@ export default function OnboardingScreen() {
 
               {/* Q7 */}
               <Text style={[styles.question, styles.questionSpacing]}>
-                Cidade / UF de atuação principal
+                Cidade / Estado de atuação principal
               </Text>
+
+              {/* Seletor de Estado */}
+              <TouchableOpacity
+                style={[styles.pickerBtn, uf ? styles.pickerBtnFilled : null]}
+                onPress={() => setShowEstadoPicker(true)}
+                accessibilityLabel="Selecionar estado"
+              >
+                <Ionicons
+                  name="location-outline"
+                  size={18}
+                  color={uf ? colors.oliGreen : colors.gray}
+                />
+                <Text style={[styles.pickerBtnText, uf ? styles.pickerBtnTextFilled : null]}>
+                  {uf ? ESTADOS.find(e => e.uf === uf)?.nome + ` (${uf})` : 'Selecionar estado'}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={uf ? colors.oliGreen : colors.gray} />
+              </TouchableOpacity>
+
+              {/* Campo de Cidade */}
               <TextInput
-                style={styles.textInput}
-                placeholder="Ex: São Paulo / SP"
+                style={[styles.textInput, { marginTop: spacing.sm }]}
+                placeholder="Nome da cidade"
                 placeholderTextColor={colors.gray}
-                value={cidadeUF}
-                onChangeText={setCidadeUF}
+                value={cidade}
+                onChangeText={setCidade}
                 autoCapitalize="words"
-                accessibilityLabel="Cidade e UF de atuação"
+                accessibilityLabel="Cidade de atuação"
               />
             </>
           )}
@@ -670,7 +763,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.oliGreen,
     borderColor:     colors.oliGreen,
   },
-  optIcon:  {},
+  // Wrapper com dimensões explícitas garante centralização correta no Android
+  optIconWrap: {
+    width:           28,
+    height:          28,
+    justifyContent:  'center',
+    alignItems:      'center',
+    flexShrink:      0,
+  },
   optTexts: { flex: 1 },
   optLabel: { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
   optLabelActive: { color: colors.white },
@@ -734,6 +834,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
 
+  // ── Picker button (estado) ──
+  pickerBtn: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing.sm,
+    borderWidth:     1.5,
+    borderColor:     colors.border,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+    backgroundColor: colors.white,
+  },
+  pickerBtnFilled:     { borderColor: colors.oliGreen },
+  pickerBtnText:       { flex: 1, fontSize: 15, color: colors.gray },
+  pickerBtnTextFilled: { color: colors.oliDarkGray, fontWeight: '500' },
+
   // ── Resumo ──
   summaryCard: {
     backgroundColor: colors.white,
@@ -796,4 +911,44 @@ const styles = StyleSheet.create({
   },
   nextBtnDisabled: { backgroundColor: `${colors.gray}80` },
   nextBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+});
+
+// ── Estilos do seletor de estados ─────────────────────────────────────────────
+
+const pickerStyles = StyleSheet.create({
+  overlay: {
+    flex:            1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent:  'flex-end',
+  },
+  sheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius:  20,
+    borderTopRightRadius: 20,
+    maxHeight:       '75%',
+    paddingBottom:   spacing.xxl,
+  },
+  header: {
+    flexDirection:   'row',
+    justifyContent:  'space-between',
+    alignItems:      'center',
+    padding:         spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  title: { fontSize: 17, fontWeight: '700', color: colors.oliDarkGray },
+
+  item: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    gap:             spacing.sm,
+  },
+  itemSelected:  { backgroundColor: `${colors.oliGreen}10` },
+  itemUF:        { fontSize: 14, fontWeight: '700', color: colors.oliDarkGray, width: 32 },
+  itemUFSelected:{ color: colors.oliGreen },
+  itemNome:      { flex: 1, fontSize: 15, color: colors.oliDarkGray },
+  itemNomeSelected: { color: colors.oliGreen, fontWeight: '600' },
+  separator:     { height: 1, backgroundColor: colors.border, marginLeft: spacing.md },
 });
