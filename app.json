@@ -79,7 +79,13 @@
           "color": "#5F7D67"
         }
       ],
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "uploadSourceMaps": false
+        }
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
