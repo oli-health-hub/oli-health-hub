@@ -12,11 +12,6 @@ import { contactReception } from '../../src/utils/whatsapp';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { lumaService, type LumaEvent } from '../../src/services/luma';
 
-const AGENT_PHOTOS: Partial<Record<string, ReturnType<typeof require>>> = {
-  ana:      require('../../assets/images/agentes/ana-luiza.jpg'),
-  isabella: require('../../assets/images/agentes/isabella.jpg'),
-};
-
 // Cores de capa para eventos sem imagem (alterna por índice)
 const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
 
@@ -157,42 +152,16 @@ export default function EcossistemaScreen() {
         <View style={[styles.card, shadows.card]}>
           <AgentCard
             avatar="A"
-            photo={AGENT_PHOTOS.ana}
-            color={colors.oliNavy}
-            title="Ana Luiza — Jurídico"
-            subtitle="CFM, LGPD e contratos"
-            onPress={() => router.push('/chatbot?persona=ana')}
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
-            avatar="I"
-            photo={AGENT_PHOTOS.isabella}
-            color={colors.oliCyan}
-            title="Isabella — Contábil"
-            subtitle="Tributário, nota fiscal e planejamento"
-            onPress={() => router.push('/chatbot?persona=isabella')}
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
-            avatar="O"
-            color="#7B9E82"
-            title="Olivia — OLI Hub"
-            subtitle="Salas, planos e eventos"
-            onPress={() => router.push('/chatbot?persona=olivia')}
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
-            avatar="C"
             color="#C0714A"
-            title="Camila — OLI Convênios"
+            title="Amanda — OLI Convênios"
             subtitle="Credenciamento, faturamento e glosas"
             onPress={() => router.push('/chatbot?persona=convenios')}
           />
           <View style={styles.agentDivider} />
           <AgentCard
-            avatar="S"
+            avatar="R"
             color="#7B6EA8"
-            title="Sofia — OLI Carreira"
+            title="Ronaldo — OLI Carreira"
             subtitle="Posicionamento, marca pessoal e captação"
             onPress={() => router.push('/chatbot?persona=carreira')}
           />

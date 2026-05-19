@@ -90,13 +90,13 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
   },
 
   convenios: {
-    name:    'Camila',
+    name:    'Amanda',
     role:    'OLI Convênios',
-    avatar:  'C',
+    avatar:  'A',
     color:   '#C0714A',
     subtitle:'Credenciamento, faturamento e glosas',
     welcome:
-      'Olá! Sou a Camila, especialista em convênios médicos do OLI Health Hub.\n\n' +
+      'Olá! Sou a Amanda, especialista em convênios médicos do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +
       '• Credenciamento em operadoras de saúde\n' +
       '• Faturamento de guias e procedimentos\n' +
@@ -118,18 +118,18 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
         return 'Estratégias para reduzir no-show:\n\n• **Confirmação ativa:** WhatsApp 48h e 24h antes\n• **Lista de espera:** preencha vagas canceladas rapidamente\n• **Cobrança de taxa:** legalmente permitida se no contrato de serviço\n• **Horário de tolerância:** defina e comunique (ex.: 15 minutos)\n• **Encaixe inteligente:** use o OLI App para oferecer horários a outros pacientes\n\nO OLI Health Hub tem sistema de encaixe automático — explore a aba Pacientes!';
       if (query.includes('carência') || query.includes('ans') || query.includes('prazo'))
         return 'Regras de carência (Lei 9.656/98 e RN ANS nº 162):\n\n• **Consultas:** sem carência\n• **Urgência/emergência:** sem carência após 24h de vigência\n• **Internação eletiva:** até 180 dias\n• **Parto:** até 300 dias\n• **Cobertura parcial temporária:** até 24 meses para condições preexistentes\n\n⚠️ A operadora não pode negar cobertura dentro do Rol de Procedimentos da ANS.\n\nSe um paciente teve negativa indevida, oriente-o a acionar a ANS pelo 0800 701 9656.';
-      return 'Essa situação merece uma análise mais detalhada. A Camila pode verificar as especificidades do seu contrato de credenciamento e da operadora envolvida.\n\nEntre em contato com a recepção do OLI para agendar uma consultoria: **(11) 99763-9711**';
+      return 'Essa situação merece uma análise mais detalhada. A Amanda pode verificar as especificidades do seu contrato de credenciamento e da operadora envolvida.\n\nEntre em contato com a recepção do OLI para agendar uma consultoria: **(11) 99763-9711**';
     },
   },
 
   carreira: {
-    name:    'Sofia',
+    name:    'Ronaldo',
     role:    'OLI Carreira',
-    avatar:  'S',
+    avatar:  'R',
     color:   '#7B6EA8',
     subtitle:'Posicionamento, marca pessoal e captação',
     welcome:
-      'Olá! Sou a Sofia, consultora de carreira médica do OLI Health Hub.\n\n' +
+      'Olá! Sou o Ronaldo, consultor de carreira médica do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +
       '• Posicionamento de marca pessoal médica\n' +
       '• Estratégias para atrair pacientes particular\n' +
@@ -151,7 +151,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
         return 'Precificação de consultas particulares:\n\n**Referência de mercado:**\n• Clínica Geral: R$200–R$350\n• Especialidades clínicas: R$300–R$600\n• Procedimentos: custo + 100–200% de honorário\n\n**Para aumentar seus honorários:**\n1. Invista em especialização e certificações\n2. Construa reputação digital (avaliações + conteúdo)\n3. Melhore a experiência do paciente (espaço, pontualidade, comunicação)\n4. Comunique seu diferencial — os pacientes pagam por percepção de valor\n\nCobrar pelo seu valor não é ganância — é sustentabilidade.';
       if (query.includes('transição') || query.includes('sair de convênio') || query.includes('particular') || query.includes('migrar'))
         return 'Transição convênio → particular — roteiro seguro:\n\n**Fase 1 (meses 1–3):**\n• Construa presença digital e Google Meu Negócio\n• Abra 2–3 horários/semana exclusivos para particular\n• Defina seu diferencial e preço\n\n**Fase 2 (meses 4–6):**\n• Aumente gradualmente os horários particulares\n• Solicite avaliações no Google e indicações ativas\n• Reduza convênios menos rentáveis primeiro\n\n**Fase 3 (meses 7–12):**\n• Avalie o retorno financeiro real\n• Mantenha 1–2 convênios estratégicos se fizer sentido\n• Foque em especialização e posicionamento premium\n\nA transição bem feita leva 6–18 meses. Sem pressa.';
-      return 'Essa é uma questão estratégica que merece uma conversa mais aprofundada. A Sofia pode ajudar com um plano personalizado para o seu perfil.\n\nAgende uma consultoria de carreira pela recepção do OLI: **(11) 99763-9711**';
+      return 'Essa é uma questão estratégica que merece uma conversa mais aprofundada. O Ronaldo pode ajudar com um plano personalizado para o seu perfil.\n\nAgende uma consultoria de carreira pela recepção do OLI: **(11) 99763-9711**';
     },
   },
 
