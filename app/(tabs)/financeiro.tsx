@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator,
@@ -9,6 +9,8 @@ import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { formatCurrency } from '../../src/utils/formatters';
 import { generateAndShareMonthlyReport } from '../../src/services/reportService';
 import { useAuthStore } from '../../src/store/authStore';
+import { fetchUsageSummary } from '../../src/services/financeiroService';
+import type { UsageSummary } from '../../src/services/financeiroService';
 import type { Invoice, HourPackage, InvoiceStatus } from '../../src/models/types';
 
 // ── Mock — virão do Communicare + Supabase nas Fases 2 e 3 ───────────────────
@@ -126,8 +128,25 @@ const roiMultiple  = (MONTHLY_STATS.grossRevenue / MONTHLY_STATS.oliCost).toFixe
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function FinanceiroScreen() {
-  const { profile } = useAuthStore();
-  const [generatingPDF, setGeneratingPDF] = useState(false);
+  const { profile, session } = useAuthStore();
+  const [generatingPDF,   setGeneratingPDF]   = useState(false);
+  const [usageSummary,    setUsageSummary]     = useState<UsageSummary | null>(null);
+  const [loadingUsage,    setLoadingUsage]     = useState(false);
+
+  const now = new Date();
+  const currentYear  = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  // Busca extrato de minutagem do mês atual do Supabase
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    setLoadingUsage(true);
+    fetchUsageSummary(userId, currentYear, currentMonth)
+      .then(setUsageSummary)
+      .catch(() => {})
+      .finally(() => setLoadingUsage(false));
+  }, [session?.user?.id, currentYear, currentMonth]);
 
   const handleGeneratePDF = async () => {
     setGeneratingPDF(true);
@@ -396,6 +415,66 @@ export default function FinanceiroScreen() {
           ))}
         </ScrollView>
 
+        {/* ── Extrato de Minutagem (dados reais do Supabase) ── */}
+        <Text style={styles.sectionTitle}>Minutagem — {MONTHLY_STATS.period}</Text>
+
+        <View style={[styles.card, shadows.card]}>
+          {loadingUsage ? (
+            <ActivityIndicator size="small" color={colors.oliGreen} style={{ marginVertical: spacing.md }} />
+          ) : usageSummary && usageSummary.totalSessoes > 0 ? (
+            <>
+              {/* Resumo */}
+              <View style={usageStyles.summary}>
+                <View style={usageStyles.summaryItem}>
+                  <Text style={usageStyles.summaryValue}>{usageSummary.totalSessoes}</Text>
+                  <Text style={usageStyles.summaryLabel}>Sessões</Text>
+                </View>
+                <View style={usageStyles.summaryDivider} />
+                <View style={usageStyles.summaryItem}>
+                  <Text style={usageStyles.summaryValue}>{Math.floor(usageSummary.totalMinutos / 60)}h {usageSummary.totalMinutos % 60}min</Text>
+                  <Text style={usageStyles.summaryLabel}>Total</Text>
+                </View>
+                <View style={usageStyles.summaryDivider} />
+                <View style={usageStyles.summaryItem}>
+                  <Text style={[usageStyles.summaryValue, { color: colors.oliGold }]}>
+                    {formatCurrency(usageSummary.totalValor)}
+                  </Text>
+                  <Text style={usageStyles.summaryLabel}>Custo minutagem</Text>
+                </View>
+              </View>
+
+              {/* Detalhe sessão a sessão */}
+              {usageSummary.charges.map((charge, i) => {
+                const inicio  = new Date(charge.iniciado_em);
+                const dataStr = inicio.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                const horaStr = inicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <View
+                    key={charge.id}
+                    style={[usageStyles.chargeRow, i > 0 && usageStyles.chargeRowBorder]}
+                  >
+                    <View style={usageStyles.chargeLeft}>
+                      <Text style={usageStyles.chargeDate}>{dataStr} às {horaStr}</Text>
+                      {charge.room_name && (
+                        <Text style={usageStyles.chargeRoom}>{charge.room_name}</Text>
+                      )}
+                    </View>
+                    <View style={usageStyles.chargeRight}>
+                      <Text style={usageStyles.chargeMinutes}>{charge.minutos} min</Text>
+                      <Text style={usageStyles.chargeValue}>{formatCurrency(charge.valor_total)}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          ) : (
+            <View style={usageStyles.emptyState}>
+              <Ionicons name="time-outline" size={32} color={colors.oliLightGray} />
+              <Text style={usageStyles.emptyText}>Nenhuma sessão registrada este mês.</Text>
+            </View>
+          )}
+        </View>
+
         {/* ── Histórico ── */}
         <Text style={styles.sectionTitle}>Histórico de Faturas</Text>
 
@@ -610,4 +689,26 @@ const svcStyles = StyleSheet.create({
   },
   savingsBannerText:      { fontSize: 14, color: colors.oliDarkGray, flex: 1 },
   savingsBannerHighlight: { fontWeight: '700', color: colors.oliGreen },
+});
+
+// ── Usage / Minutagem ────────────────────────────────────────────────────────
+
+const usageStyles = StyleSheet.create({
+  summary:        { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: spacing.sm, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  summaryItem:    { alignItems: 'center', flex: 1 },
+  summaryDivider: { width: 1, height: 36, backgroundColor: colors.border },
+  summaryValue:   { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
+  summaryLabel:   { fontSize: 11, color: colors.gray, marginTop: 2 },
+
+  chargeRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+  chargeRowBorder: { borderTopWidth: 0.5, borderTopColor: colors.border },
+  chargeLeft:      { flex: 1 },
+  chargeDate:      { fontSize: 13, fontWeight: '600', color: colors.oliDarkGray },
+  chargeRoom:      { fontSize: 11, color: colors.gray, marginTop: 1 },
+  chargeRight:     { alignItems: 'flex-end' },
+  chargeMinutes:   { fontSize: 12, color: colors.gray },
+  chargeValue:     { fontSize: 14, fontWeight: '700', color: colors.oliGold },
+
+  emptyState: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
+  emptyText:  { fontSize: 14, color: colors.gray, textAlign: 'center' },
 });

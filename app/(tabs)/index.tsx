@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppStore, COST_PER_MINUTE } from '../../src/store/appStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { useTimer } from '../../src/hooks/useTimer';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import {
@@ -15,6 +16,8 @@ import {
 } from '../../src/utils/formatters';
 import type { Reservation, ReservationStatus } from '../../src/models/types';
 import { QRScannerModal } from '../../src/components/QRScannerModal';
+import { fetchHourBalance } from '../../src/services/financeiroService';
+import type { HourBalance } from '../../src/services/financeiroService';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -164,12 +167,23 @@ export default function DashboardScreen() {
     endRoomUse,
   } = useAppStore();
 
+  const { session } = useAuthStore();
   const timer = useTimer();
 
   const [showQR,              setShowQR]              = useState(false);
   const [alertKey,            setAlertKey]            = useState<string | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [hourBalance,         setHourBalance]         = useState<HourBalance | null>(null);
   const prevPhaseRef = useRef<typeof timer.phase>('normal');
+
+  // Busca saldo de horas do Supabase (apenas hour_users com pacote ativo)
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    fetchHourBalance(userId)
+      .then(setHourBalance)
+      .catch(() => {});  // silencioso — widget simplesmente não aparece
+  }, [session?.user?.id]);
 
   // Dispara alerta ao mudar de fase
   useEffect(() => {
@@ -279,6 +293,35 @@ export default function DashboardScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* ── Widget: Saldo de Horas (apenas se houver pacote ativo) ── */}
+        {hourBalance && (
+          <View style={[
+            styles.hourBalanceCard,
+            shadows.small,
+            hourBalance.baixo && styles.hourBalanceCardLow,
+          ]}>
+            <Ionicons
+              name={hourBalance.baixo ? 'warning-outline' : 'time-outline'}
+              size={18}
+              color={hourBalance.baixo ? colors.oliRed : colors.oliGreen}
+            />
+            <View style={styles.hourBalanceInfo}>
+              <Text style={styles.hourBalanceLabel}>Saldo de horas</Text>
+              <Text style={[
+                styles.hourBalanceValue,
+                hourBalance.baixo && { color: colors.oliRed },
+              ]}>
+                {hourBalance.horasLivres}h disponíveis
+              </Text>
+            </View>
+            {hourBalance.expiraEm && (
+              <Text style={styles.hourBalanceExpiry}>
+                expira {formatDate(hourBalance.expiraEm)}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* ── Timer Card ── */}
         <View style={[styles.timerCard, shadows.card]}>
@@ -775,6 +818,14 @@ const styles = StyleSheet.create({
   plan:         { fontSize: 13, fontWeight: '500', color: colors.oliGold, marginTop: 2 },
   avatarCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: `${colors.oliGreen}26`, justifyContent: 'center', alignItems: 'center' },
   avatarLetter: { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
+
+  // ── Saldo de horas ──────────────────────────────────────────────────────────
+  hourBalanceCard:     { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.white, borderRadius: radius.lg, marginHorizontal: spacing.md, marginBottom: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.oliGreen },
+  hourBalanceCardLow:  { borderLeftColor: colors.oliRed, backgroundColor: `${colors.oliRed}08` },
+  hourBalanceInfo:     { flex: 1 },
+  hourBalanceLabel:    { fontSize: 11, fontWeight: '600', color: colors.oliLightGray, textTransform: 'uppercase' },
+  hourBalanceValue:    { fontSize: 15, fontWeight: '700', color: colors.oliGreen, marginTop: 1 },
+  hourBalanceExpiry:   { fontSize: 11, color: colors.oliLightGray },
 
   timerCard:    { backgroundColor: colors.white, borderRadius: radius.xl, margin: spacing.md, padding: spacing.lg, alignItems: 'center' },
   badge:        { borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 4, marginBottom: spacing.xs },
