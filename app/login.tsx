@@ -85,7 +85,7 @@ export default function LoginScreen() {
         {/* Logo */}
         <View style={styles.logoArea}>
           <Image
-            source={require('../assets/icon.png')}
+            source={require('../assets/logo-circle.png')}
             style={styles.logoImage}
             accessibilityLabel="Logo OLI Health Hub"
           />
