@@ -11,7 +11,7 @@ interface PatientStore {
   patients:  Patient[];
   isLoaded:  boolean;
   setPatients:   (patients: Patient[]) => void;
-  loadPatients:  () => Promise<void>;
+  loadPatients:  (professionalId?: string) => Promise<void>;
   addPatient:    (data: Omit<Patient, 'id' | 'dataCadastro' | 'isSincronizado' | 'consentimentoTimestamp'> & { consentimentoTimestamp: string }, professionalId?: string) => Promise<void>;
   deletePatient: (id: string, professionalId?: string) => Promise<void>;
   markSynced:    (id: string) => Promise<void>;
@@ -29,11 +29,42 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
 
   setPatients: (patients) => set({ patients, isLoaded: true }),
 
-  loadPatients: async () => {
+  loadPatients: async (professionalId?: string) => {
     try {
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      const patients: Patient[] = raw ? JSON.parse(raw) : [];
-      set({ patients, isLoaded: true });
+      // 1. Carrega cache local imediatamente (UX rápida)
+      const raw   = await AsyncStorage.getItem(STORAGE_KEY);
+      const local: Patient[] = raw ? JSON.parse(raw) : [];
+      if (local.length > 0) set({ patients: local, isLoaded: true });
+
+      // 2. Supabase é a fonte de verdade — sincroniza em seguida
+      if (professionalId) {
+        const { data, error } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('professional_id', professionalId)
+          .order('nome', { ascending: true });
+
+        if (!error && data) {
+          const remote: Patient[] = data.map(row => ({
+            id:                     row.id,
+            nome:                   row.nome,
+            telefone:               row.telefone,
+            cpf:                    row.cpf_hash ?? '',     // hash, nunca texto puro
+            dataNascimento:         row.data_nascimento ?? '',
+            convenioTipo:           (row.convenio_tipo as Patient['convenioTipo']) ?? 'particular',
+            convenioNome:           row.convenio_nome ?? undefined,
+            dataCadastro:           row.created_at ?? new Date().toISOString(),
+            consentimentoTimestamp: row.consentimento_timestamp ?? '',
+            isSincronizado:         row.is_sincronizado ?? false,
+            communicareId:          row.communicare_id ?? undefined,
+          }));
+          // Supabase sobrescreve cache local
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+          set({ patients: remote, isLoaded: true });
+        }
+      } else {
+        set({ isLoaded: true });
+      }
     } catch {
       set({ isLoaded: true });
     }
@@ -44,29 +75,46 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     const cpfDigits = data.cpf?.replace(/\D/g, '') ?? '';
     const cpfHash   = cpfDigits.length === 11 ? await hashCPF(cpfDigits) : null;
 
+    // Converte DD/MM/AAAA → YYYY-MM-DD para o Supabase (tipo date)
+    function toBRDateToISO(br: string): string | null {
+      if (!br || br.length !== 10) return null;
+      const [dd, mm, yyyy] = br.split('/');
+      if (!dd || !mm || !yyyy) return null;
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Gera UUID compatível com o banco (uuid v4)
+    const newId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-4000-${(Math.random() * 0x3fff + 0x8000 | 0).toString(16)}-${Math.random().toString(16).slice(2)}`;
+
     const newPatient: Patient = {
       ...data,
       cpf:             cpfDigits,   // mantido em memória (nunca persiste em texto)
       convenioTipo:    data.convenioTipo ?? 'particular',
-      id:              `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+      id:              newId,
       dataCadastro:    new Date().toISOString(),
       isSincronizado:  false,
     };
 
     // Salva no Supabase — persiste o HASH, nunca o CPF em texto
     if (professionalId) {
-      await supabase.from('patients').insert({
-        id:                     newPatient.id,
-        professional_id:        professionalId,
-        nome:                   newPatient.nome,
-        telefone:               newPatient.telefone,
-        cpf_hash:               cpfHash,            // ← hash SHA-256, não texto puro
-        data_nascimento:        newPatient.dataNascimento || null,
-        convenio_tipo:          newPatient.convenioTipo,
-        convenio_nome:          newPatient.convenioNome ?? null,
-        consentimento_timestamp: newPatient.consentimentoTimestamp,
-        is_sincronizado:        false,
-      });
+      const { data: inserted, error } = await supabase.from('patients').insert({
+        id:                      newPatient.id,
+        professional_id:         professionalId,
+        nome:                    newPatient.nome,
+        telefone:                newPatient.telefone,
+        cpf_hash:                cpfHash,                              // hash SHA-256
+        data_nascimento:         toBRDateToISO(newPatient.dataNascimento ?? ''), // YYYY-MM-DD ou null
+        convenio_tipo:           newPatient.convenioTipo,
+        convenio_nome:           newPatient.convenioNome ?? null,
+        consentimento_timestamp: (newPatient.consentimentoTimestamp || null) as unknown as string, // null quando pendente
+        is_sincronizado:         false,
+      }).select('id').single();
+
+      if (error) throw new Error(error.message);
+      // Usa o ID gerado pelo banco (em caso de conflito)
+      if (inserted?.id) newPatient.id = inserted.id;
     }
 
     // Persiste localmente sem o CPF em texto — substitui pelo hash
@@ -95,6 +143,8 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
         targetType: 'patient',
         targetId:   id,
       });
+      // Remove do Supabase (RLS garante que só o dono pode deletar)
+      await supabase.from('patients').delete().eq('id', id);
     }
     const updated = get().patients.filter(p => p.id !== id);
     await persist(updated);

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { usePatientStore }  from '../../src/store/patientStore';
 import { useAppStore }      from '../../src/store/appStore';
+import { useAuthStore }     from '../../src/store/authStore';
 import { useTimer }         from '../../src/hooks/useTimer';
 import { PacienteRow }      from '../../src/components/PacienteRow';
 import { PacienteDetail }   from '../../src/components/PacienteDetail';
@@ -17,13 +18,17 @@ import type { Patient } from '../../src/models/types';
 export default function PacientesScreen() {
   const { patients, isLoaded, loadPatients } = usePatientStore();
   const { todayReservations } = useAppStore();
+  const { profile } = useAuthStore();
   const timer = useTimer();
 
   const [search,          setSearch]          = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAdd,         setShowAdd]         = useState(false);
 
-  useEffect(() => { if (!isLoaded) loadPatients(); }, [isLoaded]);
+  // Passa o professionalId para buscar do Supabase na primeira carga
+  useEffect(() => {
+    if (!isLoaded) loadPatients(profile?.id);
+  }, [isLoaded, profile?.id]);
 
   const filtered = search
     ? patients.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()))

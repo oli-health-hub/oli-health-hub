@@ -99,7 +99,7 @@ export function AddPacienteModal({ onClose }: Props) {
         convenioTipo,
         convenioNome:           convenioTipo === 'convenio' ? convenioNome.trim() : undefined,
         consentimentoTimestamp: '', // vazio = aguardando consentimento do paciente
-      });
+      }, profile?.id); // ← ID do profissional obrigatório para persistir no Supabase
       const doctorName = profile?.nome ?? 'seu médico';
       // Envia solicitação de consentimento LGPD ao paciente
       try { await notifyPatientLGPDConsent(nome, telefone, doctorName); } catch { /* sem WhatsApp */ }
@@ -252,21 +252,27 @@ export function AddPacienteModal({ onClose }: Props) {
             <Text style={styles.lgpdBody}>
               Ao salvar, o paciente receberá automaticamente um WhatsApp solicitando autorização expressa para uso dos dados,
               conforme a Lei 13.709/2018. O cadastro ficará marcado como{' '}
-              <Text style={styles.lgpdPending}>Aguardando LGPD</Text>
+              <Text style={styles.lgpdPending}>Aguardando Autorização</Text>
               {' '}até a confirmação.
             </Text>
           </View>
         </View>
 
+        {/* Espaço extra para não ficar colado na borda ao rolar */}
+        <View style={{ height: 8 }} />
+      </ScrollView>
+
+      {/* ── Botão fora do ScrollView — sempre visível acima do teclado ── */}
+      <View style={styles.saveArea}>
         <TouchableOpacity
           style={[styles.saveButton, !isValid && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={!isValid || loading}
-          accessibilityLabel="Salvar paciente e solicitar consentimento LGPD"
+          accessibilityLabel="Salvar paciente e solicitar autorização LGPD"
         >
-          <Text style={styles.saveText}>{loading ? 'Salvando...' : 'Salvar e Solicitar LGPD'}</Text>
+          <Text style={styles.saveText}>{loading ? 'Salvando...' : 'Salvar e Solicitar Autorização'}</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
     </SafeAreaView>
     </SafeAreaProvider>
@@ -308,7 +314,14 @@ const styles = StyleSheet.create({
   },
   title:  { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
   cancel: { fontSize: 16, color: colors.oliGreen },
-  scroll: { padding: spacing.md },
+  scroll: { padding: spacing.md, flex: 1 },
+  saveArea: {
+    padding:          spacing.md,
+    paddingTop:       spacing.sm,
+    borderTopWidth:   0.5,
+    borderTopColor:   colors.border,
+    backgroundColor:  colors.white,
+  },
 
   sectionLabel: {
     fontSize:     11,
@@ -392,7 +405,6 @@ const styles = StyleSheet.create({
     borderRadius:    radius.md,
     padding:         spacing.md,
     alignItems:      'center',
-    marginBottom:    spacing.md,
   },
   saveButtonDisabled: { backgroundColor: `${colors.gray}80` },
   saveText: { color: colors.white, fontSize: 16, fontWeight: '700' },
