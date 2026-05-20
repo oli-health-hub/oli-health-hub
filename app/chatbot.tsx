@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
+import Markdown from 'react-native-markdown-display';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 import { sendChatMessage, type ChatTurn } from '../src/services/chatService';
 
@@ -249,31 +250,52 @@ export default function ChatbotScreen() {
 // ─── Bubble ───────────────────────────────────────────────────────────────────
 
 function Bubble({ message, accentColor }: { message: ChatMessage; accentColor: string }) {
+  if (message.isUser) {
+    return (
+      <View style={bubbleStyles.wrapUser}>
+        <View style={[bubbleStyles.bubbleUser, { backgroundColor: accentColor }]}>
+          <Text style={bubbleStyles.textUser}>{message.text}</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={[bubbleStyles.wrap, message.isUser && bubbleStyles.wrapUser]}>
-      <View style={[
-        bubbleStyles.bubble,
-        message.isUser
-          ? [bubbleStyles.bubbleUser, { backgroundColor: accentColor }]
-          : bubbleStyles.bubbleBot,
-      ]}>
-        <Text style={[bubbleStyles.text, message.isUser && bubbleStyles.textUser]}>
-          {message.text}
-        </Text>
+    <View style={bubbleStyles.wrapBot}>
+      <View style={[bubbleStyles.bubbleBot, shadows.small]}>
+        <Markdown style={markdownStyles}>{message.text}</Markdown>
       </View>
     </View>
   );
 }
 
 const bubbleStyles = StyleSheet.create({
-  wrap:       { marginBottom: spacing.sm, maxWidth: '82%' },
-  wrapUser:   { alignSelf: 'flex-end' },
-  bubble:     { borderRadius: radius.lg, padding: 12 },
-  bubbleBot:  { backgroundColor: colors.white, ...shadows.small, alignSelf: 'flex-start' },
-  bubbleUser: {},
-  text:       { fontSize: 15, color: colors.oliDarkGray, lineHeight: 22 },
-  textUser:   { color: colors.white },
+  wrapUser:   { alignSelf: 'flex-end', maxWidth: '82%', marginBottom: spacing.sm },
+  wrapBot:    { alignSelf: 'flex-start', maxWidth: '92%', marginBottom: spacing.sm },
+  bubbleBot:  { backgroundColor: colors.white, borderRadius: radius.lg, padding: 12 },
+  bubbleUser: { borderRadius: radius.lg, padding: 12 },
+  textUser:   { fontSize: 15, color: colors.white, lineHeight: 22 },
 });
+
+const markdownStyles = {
+  body:        { fontSize: 15, color: colors.oliDarkGray, lineHeight: 22 },
+  heading1:    { fontSize: 17, fontWeight: '700' as const, color: colors.oliDarkGray, marginBottom: 6, marginTop: 8 },
+  heading2:    { fontSize: 16, fontWeight: '700' as const, color: colors.oliDarkGray, marginBottom: 4, marginTop: 8 },
+  heading3:    { fontSize: 15, fontWeight: '600' as const, color: colors.oliDarkGray, marginBottom: 4, marginTop: 6 },
+  strong:      { fontWeight: '700' as const, color: colors.oliDarkGray },
+  em:          { fontStyle: 'italic' as const },
+  bullet_list: { marginVertical: 4 },
+  ordered_list:{ marginVertical: 4 },
+  list_item:   { marginBottom: 2 },
+  hr:          { backgroundColor: colors.border, height: 1, marginVertical: 8 },
+  blockquote:  { borderLeftColor: colors.oliGreen, borderLeftWidth: 3, paddingLeft: 10, marginVertical: 4 },
+  table:       { borderWidth: 1, borderColor: colors.border, borderRadius: 6, marginVertical: 8, overflow: 'hidden' as const },
+  th:          { backgroundColor: colors.oliBackground, fontWeight: '700' as const, padding: 8, fontSize: 13 },
+  td:          { padding: 8, fontSize: 13 },
+  tr:          { borderBottomWidth: 1, borderBottomColor: colors.border },
+  code_inline: { backgroundColor: colors.oliBackground, borderRadius: 4, paddingHorizontal: 4, fontSize: 13, fontFamily: 'monospace' },
+  fence:       { backgroundColor: colors.oliBackground, borderRadius: 6, padding: 10, fontSize: 13 },
+};
 
 // ─── Typing indicator ─────────────────────────────────────────────────────────
 
