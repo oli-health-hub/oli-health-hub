@@ -12,9 +12,8 @@ function cleanPhone(phone: string): string {
 }
 
 async function openWhatsApp(phone: string, message: string): Promise<boolean> {
-  const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
-  const canOpen = await Linking.canOpenURL(url);
-  if (!canOpen) return false;
+  // wa.me funciona em Expo Go, builds e web — não depende do scheme whatsapp://
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   await Linking.openURL(url);
   return true;
 }
