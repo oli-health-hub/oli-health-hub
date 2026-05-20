@@ -86,60 +86,6 @@ export default function EcossistemaScreen() {
           </Text>
         </View>
 
-        {/* ── Soluções OLI ── */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
-          Soluções OLI
-        </Text>
-
-        <OLISolutionCard
-          accent={colors.oliCyan}
-          icon="calculator-outline"
-          title="OLI Contábil"
-          description="Planejamento tributário, abertura de PJ e diagnóstico financeiro para médicos."
-          ctaLabel="Falar com especialista"
-          onPress={() => router.push('/chatbot?persona=isabella')}
-        />
-        <OLISolutionCard
-          accent={colors.oliNavy}
-          icon="shield-checkmark-outline"
-          title="OLI Jurídico"
-          description="CFM, LGPD, contratos de sociedade e compliance no consultório."
-          ctaLabel="Consultar agora"
-          onPress={() => router.push('/chatbot?persona=ana')}
-        />
-        <OLISolutionCard
-          accent="#2E7D6E"
-          icon="bar-chart-outline"
-          title="OLI BPO Financeiro"
-          description="Gestão financeira do consultório: fluxo de caixa, inadimplência, DRE e controle de custos."
-          ctaLabel="Consultar agora"
-          onPress={() => router.push('/chatbot?persona=bpo')}
-        />
-        <OLISolutionCard
-          accent={colors.oliMint}
-          icon="trending-up-outline"
-          title="OLI Crescimento"
-          description="Estratégias de captação de pacientes e presença digital para médicos."
-          ctaLabel="Em breve"
-          disabled
-        />
-        <OLISolutionCard
-          accent={colors.oliCoral}
-          icon="business-outline"
-          title="OLI Convênios"
-          description="Credenciamento, faturamento em operadoras e redução de no-show. Parceria AR Soluções."
-          ctaLabel="Consultar agora"
-          onPress={() => router.push('/chatbot?persona=convenios')}
-        />
-        <OLISolutionCard
-          accent={colors.oliPurple}
-          icon="briefcase-outline"
-          title="OLI Carreira"
-          description="Posicionamento profissional, gestão de agenda e captação de pacientes particular."
-          ctaLabel="Consultar agora"
-          onPress={() => router.push('/chatbot?persona=carreira')}
-        />
-
         {/* ── Uso do plano ── */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
           Uso do Plano
@@ -156,30 +102,65 @@ export default function EcossistemaScreen() {
         <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
           Especialistas OLI
         </Text>
+        <Text style={[styles.sectionDesc, { paddingHorizontal: spacing.md }]}>
+          Tire suas dúvidas com nossa IA especializada ou agende uma consulta diretamente com o especialista.
+        </Text>
 
         <View style={[styles.card, shadows.card]}>
           <AgentCard
             avatar="A"
+            photo={require('../../assets/images/agentes/ana-luiza.jpg')}
+            color={colors.oliGreen}
+            title="Ana Luiza"
+            role="Direito Médico"
+            subtitle="CFM, LGPD, contratos e ética médica"
+            onPress={() => router.push('/chatbot?persona=ana')}
+          />
+          <View style={styles.agentDivider} />
+          <AgentCard
+            avatar="I"
+            photo={require('../../assets/images/agentes/isabella.jpg')}
+            color={colors.oliGold}
+            title="Isabella"
+            role="Contabilidade Médica"
+            subtitle="Impostos, PJ médica, nota fiscal e pró-labore"
+            onPress={() => router.push('/chatbot?persona=isabella')}
+          />
+          <View style={styles.agentDivider} />
+          <AgentCard
+            avatar="A"
             color="#C0714A"
-            title="Amanda — OLI Convênios"
-            subtitle="Credenciamento, faturamento e glosas"
+            title="Amanda"
+            role="OLI Convênios"
+            subtitle="Credenciamento, faturamento TISS e glosas"
             onPress={() => router.push('/chatbot?persona=convenios')}
           />
           <View style={styles.agentDivider} />
           <AgentCard
             avatar="R"
             color="#7B6EA8"
-            title="Ronaldo — OLI Carreira"
-            subtitle="Posicionamento, marca pessoal e captação"
+            title="Ronaldo"
+            role="OLI Carreira"
+            subtitle="Posicionamento, captação e gestão de no-show"
             onPress={() => router.push('/chatbot?persona=carreira')}
           />
           <View style={styles.agentDivider} />
           <AgentCard
             avatar="M"
             color="#2E7D6E"
-            title="Miriam — BPO Financeiro"
+            title="Miriam"
+            role="BPO Financeiro"
             subtitle="Fluxo de caixa, inadimplência e DRE"
             onPress={() => router.push('/chatbot?persona=bpo')}
+          />
+          <View style={styles.agentDivider} />
+          <AgentCard
+            avatar="O"
+            color="#7B9E82"
+            title="Olivia"
+            role="OLI Health Hub"
+            subtitle="Salas, planos, reservas e eventos"
+            onPress={() => router.push('/chatbot?persona=olivia')}
           />
         </View>
 
@@ -484,14 +465,24 @@ const solutionStyles = StyleSheet.create({
 // ── AgentCard ─────────────────────────────────────────────────────────────────
 
 function AgentCard({
-  avatar, photo, color, title, subtitle, onPress,
-}: { avatar: string; photo?: ReturnType<typeof require>; color: string; title: string; subtitle: string; onPress: () => void }) {
+  avatar, photo, color, title, role, subtitle, onPress,
+}: {
+  avatar:   string;
+  photo?:   ReturnType<typeof require>;
+  color:    string;
+  title:    string;
+  role:     string;
+  subtitle: string;
+  onPress:  () => void;
+}) {
   return (
     <TouchableOpacity
       style={agentStyles.row}
       onPress={onPress}
-      accessibilityLabel={`Acessar ${title}`}
+      activeOpacity={0.75}
+      accessibilityLabel={`Consultar ${title} — ${role}`}
     >
+      {/* Foto / avatar */}
       <View style={[agentStyles.avatar, { backgroundColor: color }]}>
         {photo ? (
           <Image source={photo} style={agentStyles.photo} />
@@ -499,23 +490,38 @@ function AgentCard({
           <Text style={agentStyles.avatarText}>{avatar}</Text>
         )}
       </View>
+
+      {/* Info */}
       <View style={agentStyles.info}>
-        <Text style={agentStyles.title}>{title}</Text>
-        <Text style={agentStyles.subtitle}>{subtitle}</Text>
+        <View style={agentStyles.nameRow}>
+          <Text style={agentStyles.name}>{title}</Text>
+          <View style={[agentStyles.roleBadge, { backgroundColor: `${color}18` }]}>
+            <Text style={[agentStyles.roleText, { color }]}>{role}</Text>
+          </View>
+        </View>
+        <Text style={agentStyles.subtitle} numberOfLines={1}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward-outline" size={18} color={colors.gray} />
+
+      {/* CTA */}
+      <View style={[agentStyles.chatBtn, { backgroundColor: `${color}15` }]}>
+        <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
+      </View>
     </TouchableOpacity>
   );
 }
 
 const agentStyles = StyleSheet.create({
   row:        { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 14, paddingHorizontal: spacing.md },
-  avatar:     { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
-  photo:      { width: 42, height: 42, borderRadius: 21 },
-  avatarText: { color: colors.white, fontSize: 18, fontWeight: '700' },
-  info:       { flex: 1 },
-  title:      { fontSize: 15, fontWeight: '600', color: colors.oliDarkGray },
-  subtitle:   { fontSize: 12, color: colors.gray, marginTop: 2 },
+  avatar:     { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
+  photo:      { width: 50, height: 50, borderRadius: 25 },
+  avatarText: { color: colors.white, fontSize: 20, fontWeight: '700' },
+  info:       { flex: 1, gap: 4 },
+  nameRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
+  name:       { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
+  roleBadge:  { borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  roleText:   { fontSize: 11, fontWeight: '700' },
+  subtitle:   { fontSize: 12, color: colors.gray },
+  chatBtn:    { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 });
 
 // ── PacoteHoras ───────────────────────────────────────────────────────────────
@@ -687,5 +693,6 @@ const styles = StyleSheet.create({
   activeBadgeText:{ color: colors.white, fontSize: 12, fontWeight: '700' },
   planDesc:       { fontSize: 14, color: colors.gray, lineHeight: 20 },
   agentDivider:   { height: 0.5, backgroundColor: colors.border, marginHorizontal: spacing.md },
+  sectionDesc:    { fontSize: 13, color: colors.gray, lineHeight: 18, marginTop: -spacing.xs },
   serviceDivider: { height: 0.5, backgroundColor: colors.border, marginBottom: spacing.md },
 });
