@@ -18,7 +18,7 @@ const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
 export default function EcossistemaScreen() {
   const { userPlan } = useAppStore();
   const router = useRouter();
-  const [showUpgrade,  setShowUpgrade]  = useState(false);
+  const [showBenefits, setShowBenefits] = useState(false);
   const [events,       setEvents]       = useState<LumaEvent[]>([]);
   const [loadingEvts,  setLoadingEvts]  = useState(true);
   const [showPastEvts, setShowPastEvts] = useState(false);
@@ -33,7 +33,7 @@ export default function EcossistemaScreen() {
   const handleWhatsApp = async () => { await contactReception(); };
 
   const handleUpgradeRequest = () => {
-    setShowUpgrade(false);
+    setShowBenefits(false);
     Alert.alert(
       'Solicitação Enviada',
       'Nossa equipe entrará em contato para processar seu upgrade via Communicare.',
@@ -68,10 +68,10 @@ export default function EcossistemaScreen() {
           <View style={styles.planHeader}>
             <Text style={styles.sectionTitle}>Meu Plano</Text>
             <TouchableOpacity
-              onPress={() => setShowUpgrade(true)}
-              accessibilityLabel="Fazer upgrade do plano"
+              onPress={() => setShowBenefits(true)}
+              accessibilityLabel="Ver benefícios e opções de upgrade"
             >
-              <Text style={styles.upgradeLink}>Fazer Upgrade</Text>
+              <Text style={styles.upgradeLink}>Ver benefícios</Text>
             </TouchableOpacity>
           </View>
 
@@ -84,6 +84,18 @@ export default function EcossistemaScreen() {
           <Text style={styles.planDesc}>
             Acesso à infraestrutura premium, recepção assistida e agendamento online.
           </Text>
+          {userPlan !== 'VIP' && (
+            <TouchableOpacity
+              style={styles.upgradeBtn}
+              onPress={() => setShowBenefits(true)}
+              accessibilityLabel="Fazer upgrade do plano"
+            >
+              <Ionicons name="arrow-up-circle-outline" size={15} color={colors.oliGold} />
+              <Text style={styles.upgradeBtnText}>
+                {userPlan === 'BASE' ? 'Fazer Upgrade para PRO ou VIP' : 'Fazer Upgrade para VIP'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── Uso do plano ── */}
@@ -242,9 +254,13 @@ export default function EcossistemaScreen() {
 
       </ScrollView>
 
-      {/* ── Modal Upgrade ── */}
-      <Modal visible={showUpgrade} animationType="slide" presentationStyle="pageSheet">
-        <UpgradeModal onConfirm={handleUpgradeRequest} onClose={() => setShowUpgrade(false)} />
+      {/* ── Modal Benefícios / Upgrade ── */}
+      <Modal visible={showBenefits} animationType="slide" presentationStyle="pageSheet">
+        <PlanBenefitsModal
+          currentPlan={userPlan}
+          onUpgrade={handleUpgradeRequest}
+          onClose={() => setShowBenefits(false)}
+        />
       </Modal>
     </SafeAreaView>
   );
@@ -617,47 +633,258 @@ const barStyles = StyleSheet.create({
   fill:      { height: 6, backgroundColor: colors.oliGreen, borderRadius: radius.full },
 });
 
-// ── UpgradeModal ──────────────────────────────────────────────────────────────
+// ── PlanBenefitsModal ─────────────────────────────────────────────────────────
 
-function UpgradeModal({ onConfirm, onClose }: { onConfirm: () => void; onClose: () => void }) {
+type PlanTier = 'BASE' | 'PRO' | 'VIP';
+
+interface Benefit {
+  category: string;
+  icon:     string;
+  items:    {
+    label:    string;
+    base:     string | boolean;
+    pro:      string | boolean;
+    vip:      string | boolean;
+  }[];
+}
+
+const PLAN_BENEFITS: Benefit[] = [
+  {
+    category: 'Infraestrutura',
+    icon: 'business-outline',
+    items: [
+      { label: 'Horas de sala/mês',      base: '10h',    pro: '20h',    vip: '40h' },
+      { label: 'Salas disponíveis',       base: 'Básica', pro: 'Todas',  vip: 'Todas + VIP' },
+      { label: 'Recepção assistida',      base: true,     pro: true,     vip: true },
+      { label: 'Sala exclusiva VIP',      base: false,    pro: false,    vip: true },
+    ],
+  },
+  {
+    category: 'Contabilidade · Contábil Mello',
+    icon: 'calculator-outline',
+    items: [
+      { label: 'Declaração IR (PF)',         base: true,       pro: true,        vip: true },
+      { label: 'Abertura de PJ Médica',      base: false,      pro: true,        vip: true },
+      { label: 'BPO Fiscal mensal',          base: false,      pro: true,        vip: true },
+      { label: 'Folha de pagamento',         base: false,      pro: true,        vip: true },
+      { label: 'Planejamento tributário',    base: false,      pro: false,       vip: true },
+      { label: 'DRE mensal',                 base: false,      pro: false,       vip: true },
+      { label: 'Assessoria dedicada',        base: false,      pro: false,       vip: true },
+    ],
+  },
+  {
+    category: 'Especialistas IA',
+    icon: 'sparkles-outline',
+    items: [
+      { label: 'Chatbot jurídico (Ana)',         base: true,  pro: true,  vip: true },
+      { label: 'Contabilidade (Isabella)',       base: false, pro: true,  vip: true },
+      { label: 'Convênios (Amanda)',             base: false, pro: true,  vip: true },
+      { label: 'Carreira (Ronaldo)',             base: false, pro: true,  vip: true },
+      { label: 'BPO Financeiro (Miriam)',        base: false, pro: true,  vip: true },
+      { label: 'OLI Hub (Olivia)',               base: true,  pro: true,  vip: true },
+    ],
+  },
+  {
+    category: 'Assessoria Jurídica',
+    icon: 'shield-checkmark-outline',
+    items: [
+      { label: 'Consultas via IA/mês',     base: '1',          pro: '3',           vip: 'Ilimitada' },
+      { label: 'Consulta com advogado',    base: false,        pro: '1/mês',       vip: '2/mês' },
+    ],
+  },
+  {
+    category: 'Eventos e Comunidade',
+    icon: 'people-outline',
+    items: [
+      { label: 'Eventos OLI gratuitos',   base: '1/mês',  pro: '2/mês',   vip: 'Ilimitado' },
+      { label: 'Workshops exclusivos',    base: false,    pro: false,     vip: true },
+      { label: 'Networking com médicos',  base: true,     pro: true,      vip: true },
+    ],
+  },
+  {
+    category: 'Suporte',
+    icon: 'headset-outline',
+    items: [
+      { label: 'WhatsApp recepção',       base: 'Comercial', pro: 'Prioritário', vip: 'Prioritário' },
+      { label: 'Gerente de conta',        base: false,       pro: false,         vip: true },
+    ],
+  },
+];
+
+const PLAN_COLORS: Record<PlanTier, string> = {
+  BASE: colors.gray,
+  PRO:  colors.oliGreen,
+  VIP:  colors.oliGold,
+};
+
+const PLAN_PRICES: Record<PlanTier, string> = {
+  BASE: 'R$ 890/mês',
+  PRO:  'R$ 1.490/mês',
+  VIP:  'R$ 2.490/mês',
+};
+
+function BenefitValue({ value, planColor }: { value: string | boolean; planColor: string }) {
+  if (value === false) {
+    return <Ionicons name="lock-closed" size={15} color={`${colors.gray}60`} />;
+  }
+  if (value === true) {
+    return <Ionicons name="checkmark-circle" size={17} color={planColor} />;
+  }
   return (
-    <SafeAreaView style={upgradeStyles.container}>
-      <View style={upgradeStyles.header}>
-        <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar modal de upgrade">
-          <Text style={upgradeStyles.closeText}>Fechar</Text>
+    <Text style={[benefitStyles.valueText, { color: planColor }]}>{value}</Text>
+  );
+}
+
+function PlanBenefitsModal({
+  currentPlan, onUpgrade, onClose,
+}: { currentPlan: PlanTier; onUpgrade: () => void; onClose: () => void }) {
+  const [selectedPlan, setSelectedPlan] = useState<PlanTier>(currentPlan);
+  const isCurrentPlan = selectedPlan === currentPlan;
+  const canUpgrade    = (
+    (currentPlan === 'BASE' && (selectedPlan === 'PRO' || selectedPlan === 'VIP')) ||
+    (currentPlan === 'PRO'  && selectedPlan === 'VIP')
+  );
+
+  const planColor = PLAN_COLORS[selectedPlan];
+
+  return (
+    <SafeAreaView style={benefitStyles.safe}>
+      {/* Header */}
+      <View style={benefitStyles.header}>
+        <Text style={benefitStyles.headerTitle}>Planos OLI Health Hub</Text>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar">
+          <Ionicons name="close" size={24} color={colors.oliDarkGray} />
         </TouchableOpacity>
       </View>
-      <ScrollView contentContainerStyle={upgradeStyles.body}>
-        <Ionicons name="star" size={48} color={colors.oliGold} style={{ marginBottom: spacing.md }} />
-        <Text style={upgradeStyles.title}>Upgrade para PRO ou VIP</Text>
-        <Text style={upgradeStyles.desc}>
-          Ao solicitar o upgrade, nossa recepção preparará a transição via Communicare,
-          garantindo que todos os seus dados e configurações sejam migrados com segurança.
+
+      {/* Seletor de plano */}
+      <View style={benefitStyles.planSelector}>
+        {(['BASE', 'PRO', 'VIP'] as PlanTier[]).map(plan => {
+          const active = selectedPlan === plan;
+          const isCurrent = plan === currentPlan;
+          return (
+            <TouchableOpacity
+              key={plan}
+              style={[
+                benefitStyles.planTab,
+                active && { backgroundColor: PLAN_COLORS[plan], borderColor: PLAN_COLORS[plan] },
+                !active && { borderColor: `${PLAN_COLORS[plan]}40` },
+              ]}
+              onPress={() => setSelectedPlan(plan)}
+              accessibilityLabel={`Plano ${plan}${isCurrent ? ' (seu plano atual)' : ''}`}
+            >
+              <Text style={[
+                benefitStyles.planTabText,
+                active  && { color: colors.white },
+                !active && { color: PLAN_COLORS[plan] },
+              ]}>
+                {plan}
+              </Text>
+              {isCurrent && (
+                <View style={[benefitStyles.currentDot, { backgroundColor: active ? colors.white : PLAN_COLORS[plan] }]} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Preço */}
+      <View style={[benefitStyles.priceRow, { borderColor: `${planColor}30` }]}>
+        <Text style={[benefitStyles.price, { color: planColor }]}>{PLAN_PRICES[selectedPlan]}</Text>
+        {isCurrentPlan && (
+          <View style={[benefitStyles.activePill, { backgroundColor: `${planColor}18` }]}>
+            <Ionicons name="checkmark-circle" size={13} color={planColor} />
+            <Text style={[benefitStyles.activePillText, { color: planColor }]}>Plano atual</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Lista de benefícios */}
+      <ScrollView contentContainerStyle={benefitStyles.list} showsVerticalScrollIndicator={false}>
+        {PLAN_BENEFITS.map(section => (
+          <View key={section.category} style={benefitStyles.section}>
+            <View style={benefitStyles.sectionHeader}>
+              <Ionicons name={section.icon as any} size={16} color={planColor} />
+              <Text style={[benefitStyles.sectionTitle, { color: planColor }]}>{section.category}</Text>
+            </View>
+            {section.items.map(item => {
+              const value = item[selectedPlan.toLowerCase() as 'base' | 'pro' | 'vip'];
+              const locked = value === false;
+              return (
+                <View key={item.label} style={[benefitStyles.item, locked && benefitStyles.itemLocked]}>
+                  <Text style={[benefitStyles.itemLabel, locked && benefitStyles.itemLabelLocked]}>
+                    {item.label}
+                  </Text>
+                  <BenefitValue value={value} planColor={planColor} />
+                </View>
+              );
+            })}
+          </View>
+        ))}
+
+        {/* Botão de ação */}
+        {canUpgrade ? (
+          <TouchableOpacity
+            style={[benefitStyles.ctaBtn, { backgroundColor: planColor }]}
+            onPress={onUpgrade}
+            accessibilityLabel={`Solicitar upgrade para o plano ${selectedPlan}`}
+          >
+            <Ionicons name="arrow-up-circle" size={18} color={colors.white} />
+            <Text style={benefitStyles.ctaBtnText}>Solicitar Upgrade para {selectedPlan}</Text>
+          </TouchableOpacity>
+        ) : isCurrentPlan ? (
+          <View style={benefitStyles.currentNotice}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.oliGreen} />
+            <Text style={benefitStyles.currentNoticeText}>Você já está neste plano</Text>
+          </View>
+        ) : null}
+
+        <Text style={benefitStyles.footnote}>
+          * Upgrade processado pela recepção OLI via Communicare. Entre em contato pelo WhatsApp para mais informações.
         </Text>
-        <TouchableOpacity style={upgradeStyles.btn} onPress={onConfirm}>
-          <Text style={upgradeStyles.btnText}>Solicitar Upgrade</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const upgradeStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.oliBackground },
-  header:    { padding: spacing.md, alignItems: 'flex-end' },
-  closeText: { fontSize: 16, color: colors.oliGreen },
-  body:      { flex: 1, alignItems: 'center', padding: spacing.lg },
-  title:     { fontSize: 24, fontWeight: '700', color: colors.oliDarkGray, textAlign: 'center', marginBottom: spacing.md },
-  desc:      { fontSize: 16, color: colors.gray, textAlign: 'center', lineHeight: 24, marginBottom: spacing.xl },
-  btn: {
-    backgroundColor: colors.oliGold,
-    borderRadius:    radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    width: '100%',
-    alignItems: 'center',
+const benefitStyles = StyleSheet.create({
+  safe:        { flex: 1, backgroundColor: colors.oliBackground },
+  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, paddingBottom: spacing.sm },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
+
+  planSelector: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
+  planTab:      {
+    flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
+    borderWidth: 1.5, position: 'relative',
   },
-  btnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  planTabText:  { fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
+  currentDot:   { width: 5, height: 5, borderRadius: 3, position: 'absolute', bottom: 5 },
+
+  priceRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm, borderBottomWidth: 1 },
+  price:       { fontSize: 20, fontWeight: '800' },
+  activePill:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  activePillText: { fontSize: 12, fontWeight: '700' },
+
+  list:        { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: 40, gap: spacing.sm },
+
+  section:      { backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden' },
+  sectionHeader:{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.md, paddingBottom: spacing.sm },
+  sectionTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+
+  item:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: 10, borderTopWidth: 0.5, borderTopColor: colors.border },
+  itemLocked:     { backgroundColor: `${colors.gray}06` },
+  itemLabel:      { fontSize: 14, color: colors.oliDarkGray, flex: 1, paddingRight: spacing.sm },
+  itemLabelLocked:{ color: `${colors.gray}80` },
+
+  valueText: { fontSize: 13, fontWeight: '700' },
+
+  ctaBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, borderRadius: radius.md, paddingVertical: spacing.md, marginTop: spacing.md },
+  ctaBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+
+  currentNotice:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, marginTop: spacing.md },
+  currentNoticeText: { fontSize: 14, color: colors.oliGreen, fontWeight: '600' },
+
+  footnote: { fontSize: 11, color: `${colors.gray}90`, textAlign: 'center', lineHeight: 16, marginTop: spacing.sm },
 });
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -692,6 +919,8 @@ const styles = StyleSheet.create({
   activeBadge:    { backgroundColor: colors.oliGreen, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
   activeBadgeText:{ color: colors.white, fontSize: 12, fontWeight: '700' },
   planDesc:       { fontSize: 14, color: colors.gray, lineHeight: 20 },
+  upgradeBtn:     { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm },
+  upgradeBtnText: { fontSize: 13, fontWeight: '700', color: colors.oliGold },
   agentDivider:   { height: 0.5, backgroundColor: colors.border, marginHorizontal: spacing.md },
   sectionDesc:    { fontSize: 13, color: colors.gray, lineHeight: 18, marginTop: -spacing.xs },
   serviceDivider: { height: 0.5, backgroundColor: colors.border, marginBottom: spacing.md },

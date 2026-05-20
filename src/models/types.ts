@@ -1,6 +1,6 @@
 // ─── Domínio ──────────────────────────────────────────────────────────────────
 
-export type PlanType = 'STARTER' | 'PRO' | 'VIP';
+export type PlanType = 'BASE' | 'PRO' | 'VIP';
 
 // ─── Onboarding Contábil ──────────────────────────────────────────────────────
 

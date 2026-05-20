@@ -133,7 +133,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
       'Olá! Sou a Olivia, assistente geral do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +
       '• Informações sobre salas e infraestrutura\n' +
-      '• Planos STARTER, PRO e VIP\n' +
+      '• Planos BASE, PRO e VIP\n' +
       '• Reservas e horários disponíveis\n' +
       '• Eventos e workshops do OLI\n' +
       '• Dúvidas gerais sobre o espaço',

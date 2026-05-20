@@ -11,7 +11,7 @@ import { useAuthStore } from './authStore';
 
 // ─── Custo por minuto por plano ───────────────────────────────────────────────
 export const COST_PER_MINUTE: Record<PlanType, number> = {
-  STARTER: 2.00,
+  BASE: 2.00,
   PRO:     1.60,
   VIP:     1.20,
 };
