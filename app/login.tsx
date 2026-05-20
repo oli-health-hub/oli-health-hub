@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform,
-  ScrollView, Alert, ActivityIndicator,
+  ScrollView, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -84,9 +84,11 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View style={styles.logoArea}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="medical" size={36} color={colors.white} />
-          </View>
+          <Image
+            source={require('../assets/icon.png')}
+            style={styles.logoImage}
+            accessibilityLabel="Logo OLI Health Hub"
+          />
           <Text style={styles.logoTitle}>OLI Health Hub</Text>
           <Text style={styles.logoSub}>Plataforma do profissional de saúde</Text>
         </View>
@@ -200,13 +202,8 @@ const styles = StyleSheet.create({
   flex:      { flex: 1, backgroundColor: colors.oliBackground },
   container: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
 
-  logoArea:   { alignItems: 'center', marginBottom: spacing.xl },
-  logoCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: colors.oliGreen,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
+  logoArea:  { alignItems: 'center', marginBottom: spacing.xl },
+  logoImage: { width: 80, height: 80, resizeMode: 'contain', marginBottom: spacing.md },
   logoTitle: { fontSize: 26, fontWeight: '800', color: colors.oliDarkGray },
   logoSub:   { fontSize: 13, color: colors.oliLightGray, marginTop: 4 },
 
