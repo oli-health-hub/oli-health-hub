@@ -4,8 +4,8 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 
 const LOCK_AFTER_MS      = 5 * 60 * 1000; // 5 minutos em background
-const SECURE_KEY_ENABLED = 'oli:biometric_enabled';
-const SECURE_KEY_BG_TIME = 'oli:background_time';
+const SECURE_KEY_ENABLED = 'oli_biometric_enabled';
+const SECURE_KEY_BG_TIME = 'oli_background_time';
 
 export interface AppLockState {
   isLocked:           boolean;
