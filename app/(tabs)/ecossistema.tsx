@@ -158,15 +158,6 @@ export default function EcossistemaScreen() {
           />
           <View style={styles.agentDivider} />
           <AgentCard
-            avatar="M"
-            color="#2E7D6E"
-            title="Miriam"
-            role="BPO Financeiro"
-            subtitle="Fluxo de caixa, inadimplência e DRE"
-            onPress={() => router.push('/chatbot?persona=bpo')}
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
             avatar="O"
             color="#7B9E82"
             title="Olivia"
@@ -680,7 +671,6 @@ const PLAN_BENEFITS: Benefit[] = [
       { label: 'Contabilidade (Isabella)',       base: false, pro: true,  vip: true },
       { label: 'Convênios (Amanda)',             base: false, pro: true,  vip: true },
       { label: 'Carreira (Ronaldo)',             base: false, pro: true,  vip: true },
-      { label: 'BPO Financeiro (Miriam)',        base: false, pro: true,  vip: true },
       { label: 'OLI Hub (Olivia)',               base: true,  pro: true,  vip: true },
     ],
   },

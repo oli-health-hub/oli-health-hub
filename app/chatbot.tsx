@@ -19,7 +19,7 @@ const AGENT_PHOTOS: Partial<Record<string, ReturnType<typeof require>>> = {
 
 // ─── Personas ─────────────────────────────────────────────────────────────────
 
-type Persona = 'ana' | 'isabella' | 'olivia' | 'convenios' | 'carreira' | 'bpo';
+type Persona = 'ana' | 'isabella' | 'olivia' | 'convenios' | 'carreira';
 
 interface PersonaConfig {
   name:        string;
@@ -104,24 +104,6 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
       '• Transição convênio → atendimento particular',
   },
 
-  bpo: {
-    name:        'Miriam',
-    role:        'BPO Financeiro',
-    avatar:      'M',
-    color:       '#2E7D6E',
-    subtitle:    'Fluxo de caixa, inadimplência e gestão financeira',
-    consultaUrl: null, // preencher com link Calendly da Miriam
-    welcome:
-      'Olá! Sou a Miriam, especialista em BPO Financeiro do OLI Health Hub.\n\n' +
-      'Posso ajudar com:\n' +
-      '• Gestão do fluxo de caixa do consultório\n' +
-      '• Controle de contas a pagar e a receber\n' +
-      '• Conciliação bancária e relatórios financeiros\n' +
-      '• Gestão de inadimplência e cobrança de pacientes\n' +
-      '• DRE e indicadores financeiros do consultório\n' +
-      '• Precificação e análise de custos operacionais',
-  },
-
   olivia: {
     name:        'Olivia',
     role:        'OLI Health Hub',
@@ -151,7 +133,7 @@ interface ChatMessage {
 export default function ChatbotScreen() {
   const { persona: rawPersona } = useLocalSearchParams<{ persona?: string }>();
   const isValidPersona = (p: string | undefined): p is Persona =>
-    p === 'ana' || p === 'isabella' || p === 'olivia' || p === 'convenios' || p === 'carreira' || p === 'bpo';
+    p === 'ana' || p === 'isabella' || p === 'olivia' || p === 'convenios' || p === 'carreira';
   const persona = isValidPersona(rawPersona) ? rawPersona : 'ana';
   const cfg     = PERSONAS[persona];
 
