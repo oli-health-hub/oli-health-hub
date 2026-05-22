@@ -1,6 +1,7 @@
 // ─── Domínio ──────────────────────────────────────────────────────────────────
 
-export type PlanType = 'BASE' | 'PRO' | 'VIP';
+// PlanType alinhado com oli-plans.ts (fonte única de verdade)
+export type PlanType = 'START' | 'BASE' | 'PRO' | 'VIP';
 
 // ─── Onboarding Contábil ──────────────────────────────────────────────────────
 

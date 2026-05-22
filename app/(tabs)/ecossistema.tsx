@@ -32,11 +32,11 @@ export default function EcossistemaScreen() {
 
   const handleWhatsApp = async () => { await contactReception(); };
 
-  const handleUpgradeRequest = () => {
+  const handleUpgradeRequest = (plan: string) => {
     setShowBenefits(false);
     Alert.alert(
       'Solicitação Enviada',
-      'Nossa equipe entrará em contato para processar seu upgrade via Communicare.',
+      `Nossa equipe entrará em contato para processar seu upgrade para o plano ${plan}.`,
     );
   };
 
@@ -92,7 +92,9 @@ export default function EcossistemaScreen() {
             >
               <Ionicons name="arrow-up-circle-outline" size={15} color={colors.oliGold} />
               <Text style={styles.upgradeBtnText}>
-                {userPlan === 'BASE' ? 'Fazer Upgrade para PRO ou VIP' : 'Fazer Upgrade para VIP'}
+                {userPlan === 'START' ? 'Fazer Upgrade para BASE ou PRO' :
+                 userPlan === 'BASE'  ? 'Fazer Upgrade para PRO' :
+                                        'Ver Plano VIP (em breve)'}
               </Text>
             </TouchableOpacity>
           )}
@@ -625,95 +627,90 @@ const barStyles = StyleSheet.create({
 });
 
 // ── PlanBenefitsModal ─────────────────────────────────────────────────────────
+// Dados de planos alinhados com src/models/oli-plans.ts (fonte única de verdade)
 
-type PlanTier = 'BASE' | 'PRO' | 'VIP';
+type PlanTier = 'START' | 'BASE' | 'PRO' | 'VIP';
 
 interface Benefit {
   category: string;
   icon:     string;
   items:    {
-    label:    string;
-    base:     string | boolean;
-    pro:      string | boolean;
-    vip:      string | boolean;
+    label: string;
+    start: string | boolean;
+    base:  string | boolean;
+    pro:   string | boolean;
+    vip:   string | boolean | null; // null = VIP em breve, ainda indefinido
   }[];
 }
 
 const PLAN_BENEFITS: Benefit[] = [
   {
-    category: 'Infraestrutura',
+    category: 'Infraestrutura e App',
     icon: 'business-outline',
     items: [
-      { label: 'Horas de sala/mês',      base: '10h',    pro: '20h',    vip: '40h' },
-      { label: 'Salas disponíveis',       base: 'Básica', pro: 'Todas',  vip: 'Todas + VIP' },
-      { label: 'Recepção assistida',      base: true,     pro: true,     vip: true },
-      { label: 'Sala exclusiva VIP',      base: false,    pro: false,    vip: true },
+      { label: 'Timer e gestão de sessão',    start: true,  base: true,  pro: true,  vip: null },
+      { label: 'Agenda própria no app',       start: true,  base: true,  pro: true,  vip: null },
+      { label: 'CRM de pacientes',            start: true,  base: true,  pro: true,  vip: null },
+      { label: 'Comunidade OLI',              start: true,  base: true,  pro: true,  vip: null },
+      { label: 'Conforto médico na sala',     start: false, base: true,  pro: true,  vip: null },
+      { label: 'Impressão',                   start: false, base: false, pro: true,  vip: null },
     ],
   },
   {
-    category: 'Contabilidade · Contábil Mello',
-    icon: 'calculator-outline',
-    items: [
-      { label: 'Declaração IR (PF)',         base: true,       pro: true,        vip: true },
-      { label: 'Abertura de PJ Médica',      base: false,      pro: true,        vip: true },
-      { label: 'BPO Fiscal mensal',          base: false,      pro: true,        vip: true },
-      { label: 'Folha de pagamento',         base: false,      pro: true,        vip: true },
-      { label: 'Planejamento tributário',    base: false,      pro: false,       vip: true },
-      { label: 'DRE mensal',                 base: false,      pro: false,       vip: true },
-      { label: 'Assessoria dedicada',        base: false,      pro: false,       vip: true },
-    ],
-  },
-  {
-    category: 'Especialistas IA',
-    icon: 'sparkles-outline',
-    items: [
-      { label: 'Chatbot jurídico (Ana)',         base: true,  pro: true,  vip: true },
-      { label: 'Contabilidade (Isabella)',       base: false, pro: true,  vip: true },
-      { label: 'Convênios (Amanda)',             base: false, pro: true,  vip: true },
-      { label: 'Carreira (Ronaldo)',             base: false, pro: true,  vip: true },
-      { label: 'OLI Hub (Olivia)',               base: true,  pro: true,  vip: true },
-    ],
-  },
-  {
-    category: 'Assessoria Jurídica',
-    icon: 'shield-checkmark-outline',
-    items: [
-      { label: 'Consultas via IA/mês',     base: '1',          pro: '3',           vip: 'Ilimitada' },
-      { label: 'Consulta com advogado',    base: false,        pro: '1/mês',       vip: '2/mês' },
-    ],
-  },
-  {
-    category: 'Eventos e Comunidade',
+    category: 'Diagnósticos com Parceiros',
     icon: 'people-outline',
     items: [
-      { label: 'Eventos OLI gratuitos',   base: '1/mês',  pro: '2/mês',   vip: 'Ilimitado' },
-      { label: 'Workshops exclusivos',    base: false,    pro: false,     vip: true },
-      { label: 'Networking com médicos',  base: true,     pro: true,      vip: true },
+      { label: 'Diagnóstico Contábil (Isabella)',   start: false, base: true, pro: true, vip: null },
+      { label: 'Diagnóstico Convênios/Carreira',    start: false, base: true, pro: true, vip: null },
+      { label: 'Diagnóstico Jurídico (Ana)',         start: false, base: true, pro: true, vip: null },
     ],
   },
   {
-    category: 'Suporte',
-    icon: 'headset-outline',
+    category: 'Gestão PRO · OLI',
+    icon: 'settings-outline',
     items: [
-      { label: 'WhatsApp recepção',       base: 'Comercial', pro: 'Prioritário', vip: 'Prioritário' },
-      { label: 'Gerente de conta',        base: false,       pro: false,         vip: true },
+      { label: 'CRM Communicare (Plano Básico)',   start: false, base: false, pro: true, vip: null },
+      { label: 'Gestão de agenda pela recepção',   start: false, base: false, pro: true, vip: null },
+      { label: 'Emissão de NF pela OLI',           start: false, base: false, pro: true, vip: null },
+    ],
+  },
+  {
+    category: 'Serviços Plenos · Exclusivo VIP',
+    icon: 'star-outline',
+    items: [
+      { label: 'Gestão contínua AR Soluções',      start: false, base: false, pro: false, vip: null },
+      { label: 'Consultoria jurídica contínua',    start: false, base: false, pro: false, vip: null },
+      { label: 'Contabilidade plena inclusa',      start: false, base: false, pro: false, vip: null },
+      { label: 'Gestão de carreira médica',        start: false, base: false, pro: false, vip: null },
     ],
   },
 ];
 
 const PLAN_COLORS: Record<PlanTier, string> = {
-  BASE: colors.gray,
-  PRO:  colors.oliGreen,
-  VIP:  colors.oliGold,
+  START: colors.gray,
+  BASE:  '#5B7FA6',
+  PRO:   colors.oliGreen,
+  VIP:   colors.oliGold,
 };
 
-const PLAN_PRICES: Record<PlanTier, string> = {
-  BASE: 'R$ 890/mês',
-  PRO:  'R$ 1.490/mês',
-  VIP:  'R$ 2.490/mês',
+const PLAN_INFO: Record<PlanTier, { price: string; rate: string; badge?: string; comingSoon?: boolean }> = {
+  START: { price: 'Grátis',       rate: 'R$ 2,00/min' },
+  BASE:  { price: 'R$ 299/mês',   rate: 'R$ 1,70/min' },
+  PRO:   { price: 'R$ 599/mês',   rate: 'R$ 1,60/min', badge: 'Mais popular' },
+  VIP:   { price: 'Em breve',     rate: '—',           badge: 'Em breve', comingSoon: true },
 };
 
-function BenefitValue({ value, planColor }: { value: string | boolean; planColor: string }) {
+// Ordem de upgrade para calcular se canUpgrade
+const PLAN_ORDER: PlanTier[] = ['START', 'BASE', 'PRO', 'VIP'];
+
+function BenefitValue({ value, planColor, comingSoon }: {
+  value: string | boolean | null;
+  planColor: string;
+  comingSoon?: boolean;
+}) {
+  if (comingSoon || value === null) {
+    return <Text style={[benefitStyles.valueText, { color: `${colors.gray}60` }]}>—</Text>;
+  }
   if (value === false) {
     return <Ionicons name="lock-closed" size={15} color={`${colors.gray}60`} />;
   }
@@ -727,15 +724,13 @@ function BenefitValue({ value, planColor }: { value: string | boolean; planColor
 
 function PlanBenefitsModal({
   currentPlan, onUpgrade, onClose,
-}: { currentPlan: PlanTier; onUpgrade: () => void; onClose: () => void }) {
+}: { currentPlan: PlanTier; onUpgrade: (plan: PlanTier) => void; onClose: () => void }) {
   const [selectedPlan, setSelectedPlan] = useState<PlanTier>(currentPlan);
   const isCurrentPlan = selectedPlan === currentPlan;
-  const canUpgrade    = (
-    (currentPlan === 'BASE' && (selectedPlan === 'PRO' || selectedPlan === 'VIP')) ||
-    (currentPlan === 'PRO'  && selectedPlan === 'VIP')
-  );
-
-  const planColor = PLAN_COLORS[selectedPlan];
+  const info          = PLAN_INFO[selectedPlan];
+  const planColor     = PLAN_COLORS[selectedPlan];
+  const canUpgrade    = !info.comingSoon &&
+    PLAN_ORDER.indexOf(selectedPlan) > PLAN_ORDER.indexOf(currentPlan);
 
   return (
     <SafeAreaView style={benefitStyles.safe}>
@@ -749,16 +744,17 @@ function PlanBenefitsModal({
 
       {/* Seletor de plano */}
       <View style={benefitStyles.planSelector}>
-        {(['BASE', 'PRO', 'VIP'] as PlanTier[]).map(plan => {
-          const active = selectedPlan === plan;
+        {(PLAN_ORDER).map(plan => {
+          const active    = selectedPlan === plan;
           const isCurrent = plan === currentPlan;
+          const color     = PLAN_COLORS[plan];
           return (
             <TouchableOpacity
               key={plan}
               style={[
                 benefitStyles.planTab,
-                active && { backgroundColor: PLAN_COLORS[plan], borderColor: PLAN_COLORS[plan] },
-                !active && { borderColor: `${PLAN_COLORS[plan]}40` },
+                active  && { backgroundColor: color, borderColor: color },
+                !active && { borderColor: `${color}40` },
               ]}
               onPress={() => setSelectedPlan(plan)}
               accessibilityLabel={`Plano ${plan}${isCurrent ? ' (seu plano atual)' : ''}`}
@@ -766,27 +762,41 @@ function PlanBenefitsModal({
               <Text style={[
                 benefitStyles.planTabText,
                 active  && { color: colors.white },
-                !active && { color: PLAN_COLORS[plan] },
+                !active && { color: color },
               ]}>
                 {plan}
               </Text>
               {isCurrent && (
-                <View style={[benefitStyles.currentDot, { backgroundColor: active ? colors.white : PLAN_COLORS[plan] }]} />
+                <View style={[benefitStyles.currentDot, { backgroundColor: active ? colors.white : color }]} />
               )}
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* Preço */}
+      {/* Preço + badge */}
       <View style={[benefitStyles.priceRow, { borderColor: `${planColor}30` }]}>
-        <Text style={[benefitStyles.price, { color: planColor }]}>{PLAN_PRICES[selectedPlan]}</Text>
-        {isCurrentPlan && (
-          <View style={[benefitStyles.activePill, { backgroundColor: `${planColor}18` }]}>
-            <Ionicons name="checkmark-circle" size={13} color={planColor} />
-            <Text style={[benefitStyles.activePillText, { color: planColor }]}>Plano atual</Text>
-          </View>
-        )}
+        <View>
+          <Text style={[benefitStyles.price, { color: info.comingSoon ? colors.gray : planColor }]}>
+            {info.price}
+          </Text>
+          <Text style={benefitStyles.rate}>{info.rate}</Text>
+        </View>
+        <View style={benefitStyles.priceRight}>
+          {info.badge && !isCurrentPlan && (
+            <View style={[benefitStyles.badgePill, { backgroundColor: info.comingSoon ? `${colors.gray}20` : `${planColor}18` }]}>
+              <Text style={[benefitStyles.badgePillText, { color: info.comingSoon ? colors.gray : planColor }]}>
+                {info.badge}
+              </Text>
+            </View>
+          )}
+          {isCurrentPlan && (
+            <View style={[benefitStyles.activePill, { backgroundColor: `${planColor}18` }]}>
+              <Ionicons name="checkmark-circle" size={13} color={planColor} />
+              <Text style={[benefitStyles.activePillText, { color: planColor }]}>Plano atual</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Lista de benefícios */}
@@ -798,14 +808,15 @@ function PlanBenefitsModal({
               <Text style={[benefitStyles.sectionTitle, { color: planColor }]}>{section.category}</Text>
             </View>
             {section.items.map(item => {
-              const value = item[selectedPlan.toLowerCase() as 'base' | 'pro' | 'vip'];
+              const key = selectedPlan.toLowerCase() as 'start' | 'base' | 'pro' | 'vip';
+              const value  = item[key];
               const locked = value === false;
               return (
                 <View key={item.label} style={[benefitStyles.item, locked && benefitStyles.itemLocked]}>
                   <Text style={[benefitStyles.itemLabel, locked && benefitStyles.itemLabelLocked]}>
                     {item.label}
                   </Text>
-                  <BenefitValue value={value} planColor={planColor} />
+                  <BenefitValue value={value} planColor={planColor} comingSoon={info.comingSoon} />
                 </View>
               );
             })}
@@ -816,7 +827,7 @@ function PlanBenefitsModal({
         {canUpgrade ? (
           <TouchableOpacity
             style={[benefitStyles.ctaBtn, { backgroundColor: planColor }]}
-            onPress={onUpgrade}
+            onPress={() => onUpgrade(selectedPlan)}
             accessibilityLabel={`Solicitar upgrade para o plano ${selectedPlan}`}
           >
             <Ionicons name="arrow-up-circle" size={18} color={colors.white} />
@@ -827,10 +838,15 @@ function PlanBenefitsModal({
             <Ionicons name="checkmark-circle" size={16} color={colors.oliGreen} />
             <Text style={benefitStyles.currentNoticeText}>Você já está neste plano</Text>
           </View>
+        ) : info.comingSoon ? (
+          <View style={benefitStyles.currentNotice}>
+            <Ionicons name="time-outline" size={16} color={colors.gray} />
+            <Text style={[benefitStyles.currentNoticeText, { color: colors.gray }]}>Em breve — fique ligado!</Text>
+          </View>
         ) : null}
 
         <Text style={benefitStyles.footnote}>
-          * Upgrade processado pela recepção OLI via Communicare. Entre em contato pelo WhatsApp para mais informações.
+          * Upgrade processado pela recepção OLI. Entre em contato pelo WhatsApp para mais informações.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -850,10 +866,14 @@ const benefitStyles = StyleSheet.create({
   planTabText:  { fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
   currentDot:   { width: 5, height: 5, borderRadius: 3, position: 'absolute', bottom: 5 },
 
-  priceRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm, borderBottomWidth: 1 },
+  priceRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingBottom: spacing.sm, borderBottomWidth: 1 },
   price:       { fontSize: 20, fontWeight: '800' },
+  rate:        { fontSize: 12, color: colors.gray, marginTop: 2 },
+  priceRight:  { alignItems: 'flex-end', gap: 4 },
   activePill:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
   activePillText: { fontSize: 12, fontWeight: '700' },
+  badgePill:      { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  badgePillText:  { fontSize: 12, fontWeight: '700' },
 
   list:        { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: 40, gap: spacing.sm },
 

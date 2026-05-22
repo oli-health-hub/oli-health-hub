@@ -11,7 +11,7 @@ export interface CommunicareProfessional {
   id: string;
   name: string;
   specialty: string;
-  planType: 'BASE' | 'PRO' | 'VIP';
+  planType: 'START' | 'BASE' | 'PRO' | 'VIP';
   registrationNumber: string; // CRM/CRP/CRO etc.
   /** Duração padrão de consulta definida pelo profissional no cadastro do Communicare (minutos) */
   consultationDurationMinutes: number;

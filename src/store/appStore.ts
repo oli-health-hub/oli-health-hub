@@ -9,11 +9,13 @@ import {
 import { reportError, reportEvent } from '../services/sentryService';
 import { useAuthStore } from './authStore';
 
-// ─── Custo por minuto por plano ───────────────────────────────────────────────
+// ─── Custo por minuto por plano (fonte: src/models/oli-plans.ts) ─────────────
+// VIP ainda não lançado — usar 0 como fallback seguro (nunca deve cobrar)
 export const COST_PER_MINUTE: Record<PlanType, number> = {
-  BASE: 2.00,
-  PRO:     1.60,
-  VIP:     1.20,
+  START: 2.00,
+  BASE:  1.70,
+  PRO:   1.60,
+  VIP:   0,    // coming_soon — sem cobrança até lançamento
 };
 
 const BUFFER_MS  = 15 * 60 * 1000; // 15 min
