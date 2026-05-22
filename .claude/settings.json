@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys; f=open('/Volumes/SanDisk/Developer/OLIHealthHub/.claude/worktrees/hopeful-sanderson-6de50e/CLAUDE.md'); c=f.read(); f.close(); print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'additionalContext': 'CLAUDE.md (contexto do projeto):\\n\\n' + c}}))\" 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
