@@ -162,6 +162,7 @@ export type Database = {
           descricao: string | null
           id: string
           nome: string
+          slug: string | null
           tipo: string
           updated_at: string
           valor: number
@@ -173,6 +174,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome: string
+          slug?: string | null
           tipo: string
           updated_at?: string
           valor: number
@@ -184,6 +186,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome?: string
+          slug?: string | null
           tipo?: string
           updated_at?: string
           valor?: number
@@ -685,45 +688,50 @@ export type Database = {
             referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "usage_charges_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions_readable"
-            referencedColumns: ["id"]
-          },
         ]
       }
       user_modules: {
         Row: {
+          activated_at: string | null
           asaas_id_enc: string | null
           asaas_id_plain: string | null
           ativo_ate: string | null
+          config: Json
+          contract_url: string | null
           created_at: string
           id: string
           module_id: string
           professional_id: string
           status: string
+          updated_at: string
         }
         Insert: {
+          activated_at?: string | null
           asaas_id_enc?: string | null
           asaas_id_plain?: string | null
           ativo_ate?: string | null
+          config?: Json
+          contract_url?: string | null
           created_at?: string
           id?: string
           module_id: string
           professional_id: string
           status?: string
+          updated_at?: string
         }
         Update: {
+          activated_at?: string | null
           asaas_id_enc?: string | null
           asaas_id_plain?: string | null
           ativo_ate?: string | null
+          config?: Json
+          contract_url?: string | null
           created_at?: string
           id?: string
           module_id?: string
           professional_id?: string
           status?: string
+          updated_at?: string
         }
         Relationships: [
           {
