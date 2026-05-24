@@ -11,6 +11,10 @@ import { useAppStore } from '../../src/store/appStore';
 import { contactReception } from '../../src/utils/whatsapp';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { lumaService, type LumaEvent } from '../../src/services/luma';
+import { useAuthStore } from '../../src/store/authStore';
+import { useModuleStore } from '../../src/store/moduleStore';
+import { MODULE_CATALOG, isModuleIncludedInPlan, type ModuleId, type OLIModule } from '../../src/models/modules';
+import type { PlanType } from '../../src/models/types';
 
 // Cores de capa para eventos sem imagem (alterna por índice)
 const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
@@ -23,12 +27,19 @@ export default function EcossistemaScreen() {
   const [loadingEvts,  setLoadingEvts]  = useState(true);
   const [showPastEvts, setShowPastEvts] = useState(false);
 
+  const user = useAuthStore((s) => s.user);
+  const { loadModules, isModuleActive, isLoaded: modulesLoaded } = useModuleStore();
+
   useEffect(() => {
     lumaService.getUpcomingEvents()
       .then(setEvents)
       .catch(() => setEvents([]))
       .finally(() => setLoadingEvts(false));
   }, []);
+
+  useEffect(() => {
+    if (user?.id) loadModules(user.id, userPlan);
+  }, [user?.id, userPlan]);
 
   const handleWhatsApp = async () => { await contactReception(); };
 
@@ -111,6 +122,33 @@ export default function EcossistemaScreen() {
           <ServiceBar title="Orientações Jurídicas" consumed={1} total={3} unit="consultas" />
           <ServiceBar title="Eventos OLI"           consumed={0} total={1} unit="evento" />
         </View>
+
+        {/* ── Módulos e Soluções ── */}
+        <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
+          Módulos e Soluções
+        </Text>
+        <Text style={[styles.sectionDesc, { paddingHorizontal: spacing.md }]}>
+          Add-ons que potencializam seu plano. Cada módulo pode ser contratado individualmente.
+        </Text>
+
+        {!modulesLoaded ? (
+          <View style={moduleStyles.loading}>
+            <ActivityIndicator color={colors.oliGreen} />
+          </View>
+        ) : (Object.keys(MODULE_CATALOG) as ModuleId[]).map((moduleId) => {
+          const mod      = MODULE_CATALOG[moduleId];
+          const included = isModuleIncludedInPlan(moduleId, userPlan);
+          const active   = isModuleActive(moduleId, userPlan);
+          return (
+            <ModuleCard
+              key={moduleId}
+              module={mod}
+              userPlan={userPlan}
+              isIncluded={included}
+              isActive={active && !included}
+            />
+          );
+        })}
 
         {/* ── Especialistas OLI ── */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
@@ -469,6 +507,137 @@ const solutionStyles = StyleSheet.create({
   ctaDisabled:     { borderColor: colors.border },
   ctaText:         { fontSize: 13, fontWeight: '700' },
   ctaTextDisabled: { color: colors.gray },
+});
+
+// ── ModuleCard ────────────────────────────────────────────────────────────────
+
+const PLAN_RANK: Record<PlanType, number> = { START: 0, BASE: 1, PRO: 2, VIP: 3 };
+
+type ModuleDisplayStatus = 'included' | 'active' | 'available' | 'locked' | 'coming_soon';
+
+function ModuleCard({
+  module, userPlan, isIncluded, isActive,
+}: {
+  module:     OLIModule;
+  userPlan:   PlanType;
+  isIncluded: boolean;
+  isActive:   boolean;
+}) {
+  const canContract = PLAN_RANK[userPlan] >= PLAN_RANK[module.requiredPlan];
+
+  let status: ModuleDisplayStatus;
+  if (module.status === 'coming_soon') status = 'coming_soon';
+  else if (isIncluded)  status = 'included';
+  else if (isActive)    status = 'active';
+  else if (canContract) status = 'available';
+  else                  status = 'locked';
+
+  const STATUS_LABEL: Record<ModuleDisplayStatus, string> = {
+    included:    'Incluso no plano',
+    active:      'Ativo',
+    available:   'Disponível',
+    locked:      `Requer ${module.requiredPlan}`,
+    coming_soon: 'Em breve',
+  };
+
+  const STATUS_COLOR: Record<ModuleDisplayStatus, string> = {
+    included:    colors.oliGreen,
+    active:      colors.oliGreen,
+    available:   colors.oliGold,
+    locked:      colors.oliLightGray,
+    coming_soon: colors.oliLightGray,
+  };
+
+  const statusColor = STATUS_COLOR[status];
+
+  const handleCTA = async () => {
+    await contactReception(
+      `Olá! Tenho interesse em contratar o módulo *${module.name}* (${module.provider}).`
+    );
+  };
+
+  const handleLocked = () => {
+    Alert.alert(
+      `Requer Plano ${module.requiredPlan}`,
+      `Este módulo está disponível a partir do plano ${module.requiredPlan}. Faça upgrade para acessá-lo.`,
+    );
+  };
+
+  return (
+    <View style={[moduleStyles.card, shadows.small]}>
+      <View style={[moduleStyles.accentBar, { backgroundColor: statusColor }]} />
+      <View style={moduleStyles.body}>
+
+        {/* Cabeçalho: nome + badge de status */}
+        <View style={moduleStyles.headerRow}>
+          <View style={moduleStyles.titleGroup}>
+            <Text style={moduleStyles.name}>{module.name}</Text>
+            <Text style={moduleStyles.provider}>{module.provider}</Text>
+          </View>
+          <View style={[moduleStyles.statusBadge, { backgroundColor: `${statusColor}18` }]}>
+            {(status === 'included' || status === 'active') && (
+              <Ionicons name="checkmark-circle" size={11} color={statusColor} />
+            )}
+            {status === 'locked' && (
+              <Ionicons name="lock-closed" size={11} color={statusColor} />
+            )}
+            <Text style={[moduleStyles.statusText, { color: statusColor }]}>
+              {STATUS_LABEL[status]}
+            </Text>
+          </View>
+        </View>
+
+        {/* Tagline */}
+        <Text style={moduleStyles.tagline}>{module.tagline}</Text>
+
+        {/* Rodapé: preço + CTA */}
+        <View style={moduleStyles.footer}>
+          <Text style={moduleStyles.price}>{module.pricing.displayLabel}</Text>
+
+          {status === 'available' && (
+            <TouchableOpacity
+              style={[moduleStyles.cta, { borderColor: statusColor }]}
+              onPress={handleCTA}
+              accessibilityLabel={`Contratar módulo ${module.name}`}
+            >
+              <Text style={[moduleStyles.ctaText, { color: statusColor }]}>Contratar</Text>
+              <Ionicons name="arrow-forward" size={13} color={statusColor} />
+            </TouchableOpacity>
+          )}
+
+          {status === 'locked' && (
+            <TouchableOpacity
+              style={[moduleStyles.cta, { borderColor: `${colors.oliLightGray}60` }]}
+              onPress={handleLocked}
+              accessibilityLabel={`Módulo requer plano ${module.requiredPlan}`}
+            >
+              <Text style={[moduleStyles.ctaText, { color: colors.oliLightGray }]}>
+                Upgrade para {module.requiredPlan}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const moduleStyles = StyleSheet.create({
+  loading:     { paddingVertical: spacing.lg, alignItems: 'center' },
+  card:        { flexDirection: 'row', backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden' },
+  accentBar:   { width: 4 },
+  body:        { flex: 1, padding: spacing.md, gap: 6 },
+  headerRow:   { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  titleGroup:  { flex: 1, gap: 2 },
+  name:        { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
+  provider:    { fontSize: 12, color: colors.oliLightGray },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
+  statusText:  { fontSize: 11, fontWeight: '700' },
+  tagline:     { fontSize: 13, color: colors.gray, lineHeight: 18 },
+  footer:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  price:       { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray },
+  cta:         { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderRadius: radius.md, paddingVertical: 5, paddingHorizontal: 10 },
+  ctaText:     { fontSize: 12, fontWeight: '700' },
 });
 
 // ── AgentCard ─────────────────────────────────────────────────────────────────
