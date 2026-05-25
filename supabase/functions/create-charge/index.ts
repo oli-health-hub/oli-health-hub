@@ -118,7 +118,16 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // ── 7. QR Code PIX (se aplicável) ────────────────────────────────────────
+    // ── 7. Notificação admin ─────────────────────────────────────────────────
+    supabaseAdmin.from('admin_notifications').insert({
+      type:            'module_purchased',
+      professional_id: user.id,
+      title:           `Módulo contratado: ${module.nome}`,
+      body:            `${profile.nome} iniciou compra de ${module.nome} via ${billingType}`,
+      metadata:        { module_id: module.id, charge_id: charge.id, billing_type: billingType, value: module.valor },
+    }).then(() => {}).catch(() => {}); // fire-and-forget — não bloqueia resposta
+
+    // ── 8. QR Code PIX (se aplicável) ────────────────────────────────────────
     const pix = billingType === 'PIX' ? await getPixQrCode(charge.id) : null;
 
     return json({

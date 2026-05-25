@@ -103,6 +103,10 @@ Deno.serve(async (req: Request) => {
       ? new Date(Date.now() + 366 * 24 * 60 * 60 * 1000).toISOString()
       : new Date(Date.now() +  31 * 24 * 60 * 60 * 1000).toISOString();
 
+    // Hash do ID Asaas para lookup no webhook (trigger zera asaas_id_plain)
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(subscription.id));
+    const asaasIdHash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
     const { data: newSub } = await supabaseAdmin
       .from('subscriptions')
       .insert({
@@ -113,9 +117,19 @@ Deno.serve(async (req: Request) => {
         starts_at:       new Date().toISOString(),
         ends_at:         endsAt,
         asaas_id_plain:  subscription.id,
+        asaas_id_hash:   asaasIdHash,
       })
       .select('id')
       .single();
+
+    // Notificação admin: plano contratado
+    supabaseAdmin.from('admin_notifications').insert({
+      type:            'plan_subscribed',
+      professional_id: user.id,
+      title:           `Plano contratado: ${plan.name}`,
+      body:            `${profile.nome} contratou o plano ${plan.name} (${ciclo === 'YEARLY' ? 'Anual' : 'Mensal'}) via ${billingType}`,
+      metadata:        { plan_id: planId, plan_name: plan.name, ciclo, billing_type: billingType, value },
+    }).then(() => {}).catch(() => {}); // fire-and-forget
 
     // ── 7. Primeiro pagamento (para exibir PIX/boleto no app) ────────────────
     const paymentsRes  = await fetch(

@@ -9,13 +9,17 @@
  *     → compra de módulo     → ativa user_modules
  *
  * Validação: header `asaas-access-token` deve bater com ASAAS_WEBHOOK_TOKEN.
- *
- * NÃO tem CORS — só o Asaas chama este endpoint, não o app.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const CONFIRMED_EVENTS = new Set(['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED']);
+
+/** SHA-256 hex — usado para lookup de subscription sem expor asaas_id_plain */
+async function sha256hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 Deno.serve(async (req: Request) => {
   // Asaas envia GET para validar o endpoint na configuração do webhook
@@ -56,23 +60,29 @@ Deno.serve(async (req: Request) => {
   );
 
   const paymentId      = payment.id           as string;
-  const subscriptionId = payment.subscription as string | undefined; // presente em cobranças recorrentes
+  const subscriptionId = payment.subscription as string | undefined;
 
   // ── 3. Assinatura de plano ────────────────────────────────────────────────
-  // Na cobrança recorrente, payment.subscription = ID da assinatura no Asaas
   if (subscriptionId) {
+    const hashKey = await sha256hex(subscriptionId);
+
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('id, professional_id, plan_id')
-      .eq('asaas_id_plain', subscriptionId)
+      .eq('asaas_id_hash', hashKey)
       .maybeSingle();
 
     if (sub) {
-      // Busca o nome do plano para atualizar profiles.plan
       const { data: plan } = await supabase
         .from('plans')
         .select('name')
         .eq('id', sub.plan_id)
+        .single();
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nome')
+        .eq('id', sub.professional_id)
         .single();
 
       await Promise.all([
@@ -86,9 +96,17 @@ Deno.serve(async (req: Request) => {
           .update({
             pre_paid_ok: true,
             plan_id:     sub.plan_id,
-            plan:        plan?.name ?? 'BASE',   // ex: 'BASE', 'PRO', 'VIP'
+            plan:        plan?.name ?? 'BASE',
           })
           .eq('id', sub.professional_id),
+
+        supabase.from('admin_notifications').insert({
+          type:            'plan_activated',
+          professional_id: sub.professional_id,
+          title:           `Plano ativado: ${plan?.name ?? 'BASE'}`,
+          body:            `${profile?.nome ?? 'Médico'} ativou o plano ${plan?.name ?? 'BASE'}`,
+          metadata:        { plan: plan?.name, subscription_id: sub.id, payment_id: paymentId },
+        }),
       ]);
 
       console.log(`[webhook] assinatura ${sub.id} ativada — profissional ${sub.professional_id}`);
@@ -97,27 +115,47 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 4. Compra avulsa de módulo ────────────────────────────────────────────
-  // Cobrança única: payment.id = ID do pagamento no Asaas
   const { data: userModule } = await supabase
     .from('user_modules')
-    .select('id, professional_id')
+    .select('id, professional_id, module_id')
     .eq('asaas_id_plain', paymentId)
     .maybeSingle();
 
   if (userModule) {
-    await supabase
-      .from('user_modules')
-      .update({
-        status:       'active',
-        activated_at: new Date().toISOString(),
-      })
-      .eq('id', userModule.id);
+    const { data: module } = await supabase
+      .from('modules')
+      .select('nome')
+      .eq('id', userModule.module_id)
+      .maybeSingle();
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nome')
+      .eq('id', userModule.professional_id)
+      .single();
+
+    await Promise.all([
+      supabase
+        .from('user_modules')
+        .update({
+          status:       'active',
+          activated_at: new Date().toISOString(),
+        })
+        .eq('id', userModule.id),
+
+      supabase.from('admin_notifications').insert({
+        type:            'module_activated',
+        professional_id: userModule.professional_id,
+        title:           `Módulo ativado: ${module?.nome ?? 'Módulo'}`,
+        body:            `${profile?.nome ?? 'Médico'} ativou ${module?.nome ?? 'módulo'} via pagamento confirmado`,
+        metadata:        { module_id: userModule.module_id, payment_id: paymentId },
+      }),
+    ]);
 
     console.log(`[webhook] módulo ${userModule.id} ativado — profissional ${userModule.professional_id}`);
     return new Response('ok', { status: 200 });
   }
 
-  // Pagamento não reconhecido — loga mas responde 200 para Asaas não retentar
   console.warn(`[webhook] pagamento ${paymentId} não encontrado nas tabelas`);
   return new Response('ok', { status: 200 });
 });
