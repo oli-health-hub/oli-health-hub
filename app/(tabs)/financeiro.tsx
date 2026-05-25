@@ -676,8 +676,8 @@ const styles = StyleSheet.create({
   packagePrice:  { fontSize: 16, fontWeight: '500', color: colors.oliGreen, marginBottom: spacing.sm },
   discountBadge: { alignSelf: 'flex-start', backgroundColor: colors.oliGold, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2, marginBottom: spacing.sm },
   discountText:  { color: colors.white, fontSize: 12, fontWeight: '700' },
-  buyBtn:        { backgroundColor: `${colors.oliGreen}1A`, borderRadius: radius.sm, padding: spacing.sm, alignItems: 'center' },
-  buyBtnText:    { color: colors.oliGreen, fontSize: 14, fontWeight: '700' },
+  buyBtn:        { backgroundColor: colors.oliGreen, borderRadius: radius.sm, padding: spacing.sm, alignItems: 'center' },
+  buyBtnText:    { color: colors.white, fontSize: 14, fontWeight: '700' },
 
   historyList:   { gap: spacing.sm },
   historyRow: {

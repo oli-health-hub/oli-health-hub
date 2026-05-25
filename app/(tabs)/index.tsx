@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
 
   stateBlock: { alignItems: 'center', marginBottom: spacing.sm },
   stateTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
-  stateInfo:  { fontSize: 12, color: colors.gray, textAlign: 'center' },
+  stateInfo:  { fontSize: 14, color: colors.oliLightGray, textAlign: 'center' },
   remaining:  { fontSize: 24, fontWeight: '700', color: colors.oliDarkGray, marginTop: 4 },
 
   checkoutBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: spacing.lg, marginTop: spacing.sm, width: '100%' },

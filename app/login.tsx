@@ -204,14 +204,14 @@ const styles = StyleSheet.create({
 
   logoArea:  { alignItems: 'center', marginBottom: spacing.xl },
   logoImage: { width: 80, height: 80, resizeMode: 'contain', marginBottom: spacing.md },
-  logoTitle: { fontSize: 26, fontWeight: '800', color: colors.oliDarkGray },
+  logoTitle: { fontSize: 26, fontWeight: '700', color: colors.oliDarkGray },
   logoSub:   { fontSize: 13, color: colors.oliLightGray, marginTop: 4 },
 
   card:      { backgroundColor: colors.white, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.md },
   cardTitle: { fontSize: 20, fontWeight: '700', color: colors.oliDarkGray, marginBottom: spacing.lg },
 
   field: { marginBottom: spacing.md },
-  label: { fontSize: 12, fontWeight: '600', color: colors.gray, marginBottom: spacing.xs },
+  label: { fontSize: 12, fontWeight: '600', color: colors.oliLightGray, marginBottom: spacing.xs },
   input: {
     borderWidth:   1,
     borderColor:   colors.border,
@@ -222,10 +222,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   passwordRow:  { flexDirection: 'row', alignItems: 'center' },
-  passwordInput:{ flex: 1 },
+  passwordInput:{ flex: 1, paddingRight: 44 },
   eyeBtn:       { position: 'absolute', right: spacing.md },
 
-  btn:         { backgroundColor: colors.oliGreen, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm },
+  btn:         { backgroundColor: colors.oliGreen, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm, minHeight: 50 },
   btnDisabled: { backgroundColor: colors.oliLightGray },
   btnText:     { color: colors.white, fontSize: 16, fontWeight: '700' },
 

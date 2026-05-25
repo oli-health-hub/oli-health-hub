@@ -184,7 +184,7 @@ export default function EcossistemaScreen() {
           <View style={styles.agentDivider} />
           <AgentCard
             avatar="A"
-            color="#C0714A"
+            color={colors.oliCoral}
             title="Amanda"
             role="OLI Convênios"
             subtitle="Credenciamento, faturamento TISS e glosas"
@@ -193,7 +193,7 @@ export default function EcossistemaScreen() {
           <View style={styles.agentDivider} />
           <AgentCard
             avatar="R"
-            color="#7B6EA8"
+            color={colors.oliPurple}
             title="Ronaldo"
             role="OLI Carreira"
             subtitle="Posicionamento, captação e gestão de no-show"
@@ -655,7 +655,7 @@ const moduleStyles = StyleSheet.create({
   tagline:     { fontSize: 13, color: colors.gray, lineHeight: 18 },
   footer:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   price:       { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray },
-  cta:         { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderRadius: radius.md, paddingVertical: 5, paddingHorizontal: 10 },
+  cta:         { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderRadius: radius.md, paddingVertical: 8, paddingHorizontal: 14 },
   ctaText:     { fontSize: 12, fontWeight: '700' },
 });
 

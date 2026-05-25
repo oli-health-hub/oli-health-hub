@@ -505,6 +505,7 @@ export default function CheckoutModal({
                 onPress={handleClose}
                 accessibilityLabel="Fechar e voltar ao app"
               >
+                <Ionicons name="checkmark-outline" size={18} color={colors.white} />
                 <Text style={styles.confirmBtnText}>Continuar</Text>
               </TouchableOpacity>
             </View>
@@ -732,7 +733,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap:            spacing.sm,
     paddingVertical: spacing.sm,
-    backgroundColor: `${colors.oliGold}10`,
+    backgroundColor: `${colors.oliGold}1A`,
     borderRadius:   radius.md,
   },
   pollingText: { fontSize: 13, color: colors.oliGold, fontWeight: '600' },
@@ -801,18 +802,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems:     'center',
   },
-  successTitle: { fontSize: 24, fontWeight: '700', color: colors.oliDarkGray },
+  successTitle: { fontSize: 22, fontWeight: '700', color: colors.oliDarkGray },
   successSub:   { fontSize: 15, color: colors.gray, textAlign: 'center' },
 
   // ── error ──
   errorCircle: {
-    width:          80,
-    height:         80,
-    borderRadius:   40,
+    width:          88,
+    height:         88,
+    borderRadius:   44,
     backgroundColor: colors.oliRed,
     justifyContent: 'center',
     alignItems:     'center',
   },
-  errorTitle: { fontSize: 20, fontWeight: '700', color: colors.oliDarkGray },
+  errorTitle: { fontSize: 22, fontWeight: '700', color: colors.oliDarkGray },
   errorMsg:   { fontSize: 14, color: colors.gray, textAlign: 'center', lineHeight: 20 },
 });

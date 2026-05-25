@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  TextInput, StyleSheet, Modal, Alert,
+  TextInput, StyleSheet, Modal, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -84,6 +84,7 @@ export default function PacientesScreen() {
       {/* ── Lista ── */}
       {!isLoaded ? (
         <View style={styles.centerMsg}>
+          <ActivityIndicator size="large" color={colors.oliGreen} />
           <Text style={styles.centerText}>Carregando...</Text>
         </View>
       ) : filtered.length === 0 ? (
@@ -162,7 +163,7 @@ function MetricCard({ title, value, trend, positive }: {
 }
 
 const metricStyles = StyleSheet.create({
-  card:     { flex: 1, backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.sm, alignItems: 'flex-start' },
+  card:     { flex: 1, backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.md, alignItems: 'flex-start' },
   title:    { fontSize: 11, fontWeight: '500', color: colors.gray, marginBottom: 4 },
   value:    { fontSize: 20, fontWeight: '700', color: colors.oliDarkGray },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
@@ -188,6 +189,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical:   spacing.md,
     backgroundColor: colors.white,
+    borderRadius:    radius.lg,
     ...shadows.small,
   },
 

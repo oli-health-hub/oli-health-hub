@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop:      2,
   },
-  miniAxisLabel: { fontSize: 8, color: `${colors.gray}80` },
+  miniAxisLabel: { fontSize: 10, color: `${colors.gray}80` },
 
   roomFreeText: { fontSize: 11, fontWeight: '600', marginTop: 4 },
 
