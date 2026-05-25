@@ -18,6 +18,11 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const CONFIRMED_EVENTS = new Set(['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED']);
 
 Deno.serve(async (req: Request) => {
+  // Asaas envia GET para validar o endpoint na configuração do webhook
+  if (req.method === 'GET') {
+    return new Response('ok', { status: 200 });
+  }
+
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
