@@ -15,6 +15,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { useModuleStore } from '../../src/store/moduleStore';
 import { MODULE_CATALOG, isModuleIncludedInPlan, type ModuleId, type OLIModule } from '../../src/models/modules';
 import type { PlanType } from '../../src/models/types';
+import CheckoutModal from '../../src/components/CheckoutModal';
 
 // Cores de capa para eventos sem imagem (alterna por índice)
 const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
@@ -22,10 +23,11 @@ const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
 export default function EcossistemaScreen() {
   const { userPlan } = useAppStore();
   const router = useRouter();
-  const [showBenefits, setShowBenefits] = useState(false);
-  const [events,       setEvents]       = useState<LumaEvent[]>([]);
-  const [loadingEvts,  setLoadingEvts]  = useState(true);
-  const [showPastEvts, setShowPastEvts] = useState(false);
+  const [showBenefits,   setShowBenefits]   = useState(false);
+  const [events,         setEvents]         = useState<LumaEvent[]>([]);
+  const [loadingEvts,    setLoadingEvts]    = useState(true);
+  const [showPastEvts,   setShowPastEvts]   = useState(false);
+  const [checkoutModule, setCheckoutModule] = useState<OLIModule | null>(null);
 
   const user = useAuthStore((s) => s.user);
   const { loadModules, isModuleActive, isLoaded: modulesLoaded } = useModuleStore();
@@ -146,6 +148,7 @@ export default function EcossistemaScreen() {
               userPlan={userPlan}
               isIncluded={included}
               isActive={active && !included}
+              onContractPress={setCheckoutModule}
             />
           );
         })}
@@ -293,6 +296,15 @@ export default function EcossistemaScreen() {
           onClose={() => setShowBenefits(false)}
         />
       </Modal>
+
+      {/* ── Modal de Checkout ── */}
+      {checkoutModule && (
+        <CheckoutModal
+          visible={!!checkoutModule}
+          module={checkoutModule}
+          onClose={() => setCheckoutModule(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -516,12 +528,13 @@ const PLAN_RANK: Record<PlanType, number> = { START: 0, BASE: 1, PRO: 2, VIP: 3 
 type ModuleDisplayStatus = 'included' | 'active' | 'available' | 'locked' | 'coming_soon';
 
 function ModuleCard({
-  module, userPlan, isIncluded, isActive,
+  module, userPlan, isIncluded, isActive, onContractPress,
 }: {
-  module:     OLIModule;
-  userPlan:   PlanType;
-  isIncluded: boolean;
-  isActive:   boolean;
+  module:           OLIModule;
+  userPlan:         PlanType;
+  isIncluded:       boolean;
+  isActive:         boolean;
+  onContractPress?: (module: OLIModule) => void;
 }) {
   const canContract = PLAN_RANK[userPlan] >= PLAN_RANK[module.requiredPlan];
 
@@ -551,8 +564,14 @@ function ModuleCard({
   const statusColor = STATUS_COLOR[status];
 
   const handleCTA = async () => {
+    // Módulos com preço definido e fluxo in_app_form → checkout self-service
+    if (module.activationType === 'in_app_form' && module.pricing.amount !== undefined) {
+      onContractPress?.(module);
+      return;
+    }
+    // contact_sales e tbd → WhatsApp OLI comercial
     await contactReception(
-      `Olá! Tenho interesse em contratar o módulo *${module.name}* (${module.provider}).`
+      `Olá! Tenho interesse em contratar o módulo *${module.name}* (${module.provider}). Poderia me passar mais informações?`
     );
   };
 

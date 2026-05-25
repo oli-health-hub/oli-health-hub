@@ -52,11 +52,11 @@ Deno.serve(async (req: Request) => {
     // ── 2. Body ──────────────────────────────────────────────────────────────
     const {
       moduleSlug,
-      billingType = 'PIX',
+      billingType = 'CREDIT_CARD',
       cpfCnpj,
     } = await req.json() as {
       moduleSlug:   string;
-      billingType?: 'PIX' | 'BOLETO_BANCARIO';
+      billingType?: 'CREDIT_CARD' | 'PIX' | 'BOLETO_BANCARIO';
       cpfCnpj?:     string;
     };
 

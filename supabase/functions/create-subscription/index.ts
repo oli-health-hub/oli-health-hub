@@ -51,13 +51,13 @@ Deno.serve(async (req: Request) => {
     // ── 2. Body ──────────────────────────────────────────────────────────────
     const {
       planId,
-      ciclo      = 'MONTHLY',
-      billingType = 'PIX',
+      ciclo       = 'MONTHLY',
+      billingType = 'CREDIT_CARD',
       cpfCnpj,
     } = await req.json() as {
       planId:       string;
       ciclo?:       'MONTHLY' | 'YEARLY';
-      billingType?: 'PIX' | 'BOLETO_BANCARIO';
+      billingType?: 'CREDIT_CARD' | 'PIX' | 'BOLETO_BANCARIO';
       cpfCnpj?:     string;
     };
 
