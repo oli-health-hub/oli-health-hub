@@ -114,7 +114,51 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── 4. Compra avulsa de módulo ────────────────────────────────────────────
+  // ── 4. Compra de pacote de horas ─────────────────────────────────────────
+  const externalRef = payment.externalReference as string | undefined;
+
+  if (externalRef?.startsWith('hour_package::')) {
+    const parts     = externalRef.split('::');
+    const userId    = parts[1];
+    const packageId = parts[2];
+
+    if (userId && packageId) {
+      const { data: pkg } = await supabase
+        .from('hour_packages')
+        .select('horas, validade_dias')
+        .eq('id', packageId)
+        .maybeSingle();
+
+      if (pkg) {
+        const expiraEm = new Date();
+        expiraEm.setDate(expiraEm.getDate() + (pkg.validade_dias ?? 365));
+
+        await Promise.all([
+          supabase.from('hour_balance').insert({
+            professional_id: userId,
+            package_id:      packageId,
+            minutos_total:   pkg.horas * 60,
+            minutos_usados:  0,
+            expira_em:       expiraEm.toISOString(),
+            asaas_charge_id: paymentId,
+          }),
+
+          supabase.from('admin_notifications').insert({
+            type:            'hour_package_activated',
+            professional_id: userId,
+            title:           `Pacote de horas ativado: ${pkg.horas}h`,
+            body:            `Pacote de ${pkg.horas}h ativado via pagamento confirmado`,
+            metadata:        { package_id: packageId, payment_id: paymentId, horas: pkg.horas },
+          }),
+        ]);
+
+        console.log(`[webhook] pacote ${packageId} ativado — profissional ${userId} — ${pkg.horas}h`);
+        return new Response('ok', { status: 200 });
+      }
+    }
+  }
+
+  // ── 5. Compra avulsa de módulo ────────────────────────────────────────────
   const { data: userModule } = await supabase
     .from('user_modules')
     .select('id, professional_id, module_id')
@@ -156,6 +200,6 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { status: 200 });
   }
 
-  console.warn(`[webhook] pagamento ${paymentId} não encontrado nas tabelas`);
+  console.warn(`[webhook] pagamento ${paymentId} não encontrado (externalRef: ${externalRef ?? 'none'})`);
   return new Response('ok', { status: 200 });
 });

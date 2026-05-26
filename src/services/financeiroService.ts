@@ -138,6 +138,59 @@ export interface SubscriptionInfo {
   endsAt:     string | null;
 }
 
+// ─── Histórico mensal de minutagem ──────────────────────────────────────────
+
+export interface MonthlyUsageSummary {
+  period:        string;   // "Abril 2026"
+  totalValor:    number;
+  totalMinutos:  number;
+  totalSessoes:  number;
+}
+
+/**
+ * Busca os últimos N meses de minutagem agregada por mês.
+ * Usado para o histórico na tela Financeiro.
+ */
+export async function fetchMonthlyUsageHistory(
+  professionalId: string,
+  months: number = 3,
+): Promise<MonthlyUsageSummary[]> {
+  const now = new Date();
+  const results: MonthlyUsageSummary[] = [];
+
+  for (let i = 1; i <= months; i++) {
+    const d     = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year  = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const start = new Date(year, month - 1, 1).toISOString();
+    const end   = new Date(year, month,     1).toISOString();
+
+    const { data } = await supabase
+      .from('usage_charges')
+      .select('valor_total, minutos')
+      .eq('professional_id', professionalId)
+      .gte('iniciado_em', start)
+      .lt('iniciado_em', end);
+
+    const charges      = data ?? [];
+    const totalValor   = charges.reduce((s: number, c: { valor_total: number }) => s + (c.valor_total ?? 0), 0);
+    const totalMinutos = charges.reduce((s: number, c: { minutos: number }) => s + (c.minutos ?? 0), 0);
+
+    const periodLabel = d
+      .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+      .replace(/^\w/, ch => ch.toUpperCase());
+
+    results.push({
+      period:       periodLabel,
+      totalValor:   parseFloat(totalValor.toFixed(2)),
+      totalMinutos,
+      totalSessoes: charges.length,
+    });
+  }
+
+  return results;
+}
+
 export async function fetchActiveSubscription(
   professionalId: string,
 ): Promise<SubscriptionInfo | null> {

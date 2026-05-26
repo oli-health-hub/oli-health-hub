@@ -5,6 +5,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
+import { useAuthStore } from '../store/authStore';
 import { communicareService } from '../services/communicare';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour, formatDate } from '../utils/formatters';
@@ -115,6 +116,7 @@ export function RescheduleModal({ reservation, onClose, onConfirm }: Props) {
     todayReservations,
     rescheduleReservation,
   } = useAppStore();
+  const { session } = useAuthStore();
 
   const weekdays = useMemo(buildWeekdays, []);
 
@@ -173,7 +175,7 @@ export function RescheduleModal({ reservation, onClose, onConfirm }: Props) {
           await communicareService.cancelReservation(reservation.id);
           await communicareService.createReservation({
             roomId:         selectedRoom.id,
-            professionalId: 'prof-mock-001',
+            professionalId: session?.user?.id ?? '',
             startTime:      selectedStart!,
             endTime:        selectedEnd!,
           });

@@ -53,10 +53,10 @@ export default function PacientesScreen() {
 
       {/* ── Métricas CRM ── */}
       <View style={styles.metricsWrap}>
-        <MetricCard title="Conversão" value="68%"                    trend="+5%"  positive />
-        <MetricCard title="Retornos"  value={String(Math.floor(patients.length * 0.6))} trend="+12" positive />
-        <MetricCard title="NPS"       value="9.2"                    trend="Estável" positive />
-        <MetricCard title="Pacientes" value={String(patients.length)} trend=""    positive />
+        <MetricCard title="Conversão" value="—" trend="" positive />
+        <MetricCard title="Retornos"  value="—" trend="" positive />
+        <MetricCard title="NPS"       value="—" trend="" positive />
+        <MetricCard title="Pacientes" value={String(patients.length)} trend="" positive />
       </View>
 
       {/* ── Barra de busca + botão adicionar ── */}

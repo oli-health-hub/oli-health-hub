@@ -27,13 +27,22 @@
     },
     "production": {
       "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": ""
+      },
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "distribution": "store"
       }
     }
   },
   "submit": {
     "production": {
+      "ios": {
+        "language": "pt-BR"
+      },
       "android": {
         "serviceAccountKeyPath": "./google-services.json",
         "track": "internal"

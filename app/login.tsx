@@ -7,6 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { signIn, signUp } from '../src/services/auth';
+import { supabase } from '../src/services/supabase';
 import { checkAuthRateLimit, recordAuthAttempt } from '../src/services/usageChargeService';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 
@@ -21,6 +22,7 @@ export default function LoginScreen() {
   const [password,      setPassword]     = useState('');
   const [showPassword,  setShowPassword] = useState(false);
   const [loading,       setLoading]      = useState(false);
+  const [resetLoading,  setResetLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -70,6 +72,28 @@ export default function LoginScreen() {
       Alert.alert('Erro', translateAuthError(msg));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      Alert.alert('Informe o e-mail', 'Digite seu e-mail no campo acima para receber o link de redefinição.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed);
+      if (error) throw error;
+      Alert.alert(
+        'E-mail enviado',
+        `Enviamos um link de redefinição de senha para ${trimmed}. Verifique sua caixa de entrada.`,
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao enviar e-mail';
+      Alert.alert('Erro', msg);
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -168,6 +192,20 @@ export default function LoginScreen() {
               : <Text style={styles.btnText}>{mode === 'login' ? 'Entrar' : 'Criar conta'}</Text>
             }
           </TouchableOpacity>
+
+          {mode === 'login' && (
+            <TouchableOpacity
+              style={styles.forgotBtn}
+              onPress={handleForgotPassword}
+              disabled={resetLoading}
+              accessibilityLabel="Esqueci minha senha"
+            >
+              {resetLoading
+                ? <ActivityIndicator size="small" color={colors.oliGreen} />
+                : <Text style={styles.forgotText}>Esqueci minha senha</Text>
+              }
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Alternar modo */}
@@ -228,6 +266,9 @@ const styles = StyleSheet.create({
   btn:         { backgroundColor: colors.oliGreen, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm, minHeight: 50 },
   btnDisabled: { backgroundColor: colors.oliLightGray },
   btnText:     { color: colors.white, fontSize: 16, fontWeight: '700' },
+
+  forgotBtn:  { alignItems: 'center', paddingVertical: spacing.sm, marginTop: spacing.xs },
+  forgotText: { fontSize: 13, color: colors.oliGreen, fontWeight: '500' },
 
   switchBtn:  { alignItems: 'center', paddingVertical: spacing.md },
   switchText: { fontSize: 14, color: colors.gray },

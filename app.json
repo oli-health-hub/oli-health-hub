@@ -15,6 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.oli.healthhub",
+      "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "Usamos a câmera para escanear o QR Code de checkout da sala e para tirar foto de perfil.",
         "NSPhotoLibraryUsageDescription": "Acesse sua galeria para escolher uma foto de perfil.",

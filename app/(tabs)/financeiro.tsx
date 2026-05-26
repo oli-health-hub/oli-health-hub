@@ -1,45 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { formatCurrency } from '../../src/utils/formatters';
 import { generateAndShareMonthlyReport } from '../../src/services/reportService';
 import { useAuthStore } from '../../src/store/authStore';
-import { fetchUsageSummary } from '../../src/services/financeiroService';
-import type { UsageSummary } from '../../src/services/financeiroService';
-import type { Invoice, HourPackage, InvoiceStatus } from '../../src/models/types';
+import {
+  fetchUsageSummary,
+  fetchMonthlyUsageHistory,
+} from '../../src/services/financeiroService';
+import type { UsageSummary, MonthlyUsageSummary } from '../../src/services/financeiroService';
+import type { HourPackage } from '../../src/models/types';
+import HourCheckoutModal from '../../src/components/HourCheckoutModal';
 
-// ── Mock — virão do Communicare + Supabase nas Fases 2 e 3 ───────────────────
-
-const MONTHLY_STATS = {
-  period:         'Maio 2026',
-  grossRevenue:   18_500.00,   // total faturado aos pacientes
-  consultations:  37,
-  ticketMedio:    500.00,
-  horasUtilizadas: 12,
-  oliCost:        1_240.00,    // valor da fatura OLI deste mês
-};
-
-// Custo estimado de manter consultório próprio (aluguel + secretária + utilidades)
+// ── Custo estimado de manter consultório próprio (aluguel + secretária + utilidades) ──
 const TRADITIONAL_OFFICE_COST = 5_500.00;
-
-const CURRENT_INVOICE: Invoice = {
-  id:      'inv-current',
-  period:  'Maio 2026',
-  amount:  MONTHLY_STATS.oliCost,
-  dueDate: '2026-05-10',
-  status:  'pendente',
-};
-
-const PAST_INVOICES: Invoice[] = [
-  { id: 'inv-3', period: 'Abril 2026',     amount: 1_150.00, dueDate: '2026-04-10', status: 'paga' },
-  { id: 'inv-2', period: 'Março 2026',     amount:   980.00, dueDate: '2026-03-10', status: 'paga' },
-  { id: 'inv-1', period: 'Fevereiro 2026', amount: 1_050.00, dueDate: '2026-02-10', status: 'paga' },
-];
 
 const HOUR_PACKAGES: HourPackage[] = [
   { hours: 10, price:   900.00, discountPercent: 10 },
@@ -47,104 +27,59 @@ const HOUR_PACKAGES: HourPackage[] = [
   { hours: 50, price: 4_000.00, discountPercent: 20 },
 ];
 
-const STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: string }> = {
-  pendente: { label: 'Pendente', color: colors.oliGold },
-  paga:     { label: 'Paga',     color: colors.oliGreen },
-  vencida:  { label: 'Vencida',  color: colors.oliRed },
-};
-
-// ── Serviços inclusos no plano ────────────────────────────────────────────────
-
+// ── Serviços inclusos no plano (informativos — não variam por usuário) ──────────
 type ServiceItem = {
-  icon:           string;
-  name:           string;
-  detail:         string;          // ex: "1 de 3 utilizadas"
-  used:           boolean;         // false = disponível mas não usado no mês
-  marketPrice:    number;          // o que custaria contratar por fora
-  unit:           string;          // "mês" | "consulta" | "evento"
-  spentThisMonth: number;          // valor consumido este mês (0 se não usado)
+  icon:        string;
+  name:        string;
+  detail:      string;
+  marketPrice: number;
+  unit:        string;
 };
 
 const INCLUDED_SERVICES: ServiceItem[] = [
-  {
-    icon:           'people-outline',
-    name:           'Recepção Assistida',
-    detail:         'Secretária compartilhada — 20 dias úteis',
-    used:           true,
-    marketPrice:    2_500.00,
-    unit:           'mês',
-    spentThisMonth: 2_500.00,
-  },
-  {
-    icon:           'document-text-outline',
-    name:           'Consultoria Jurídica',
-    detail:         '1 de 3 consultas utilizadas',
-    used:           true,
-    marketPrice:    350.00,
-    unit:           'consulta',
-    spentThisMonth: 350.00,
-  },
-  {
-    icon:           'calculator-outline',
-    name:           'Consultoria Contábil',
-    detail:         '0 de 1 consulta — disponível',
-    used:           false,
-    marketPrice:    300.00,
-    unit:           'consulta',
-    spentThisMonth: 0,
-  },
-  {
-    icon:           'location-outline',
-    name:           'Endereço Fiscal',
-    detail:         'CNPJ registrado no OLI',
-    used:           true,
-    marketPrice:    150.00,
-    unit:           'mês',
-    spentThisMonth: 150.00,
-  },
-  {
-    icon:           'wifi-outline',
-    name:           'Internet Fibra 1 Gb',
-    detail:         '12h de uso nas salas',
-    used:           true,
-    marketPrice:    120.00,
-    unit:           'mês',
-    spentThisMonth: 120.00,
-  },
-  {
-    icon:           'star-outline',
-    name:           'Evento OLI',
-    detail:         '0 de 1 evento — disponível',
-    used:           false,
-    marketPrice:    200.00,
-    unit:           'evento',
-    spentThisMonth: 0,
-  },
+  { icon: 'people-outline',         name: 'Recepção Assistida',  detail: 'Secretária compartilhada — 20 dias úteis', marketPrice: 2_500.00, unit: 'mês'     },
+  { icon: 'document-text-outline',  name: 'Consultoria Jurídica', detail: '1 de 3 consultas incluídas',              marketPrice:   350.00, unit: 'consulta' },
+  { icon: 'calculator-outline',     name: 'Consultoria Contábil', detail: '1 consulta incluída',                     marketPrice:   300.00, unit: 'consulta' },
+  { icon: 'location-outline',       name: 'Endereço Fiscal',      detail: 'CNPJ registrado no OLI',                  marketPrice:   150.00, unit: 'mês'     },
+  { icon: 'wifi-outline',           name: 'Internet Fibra 1 Gb',  detail: 'Uso nas salas',                           marketPrice:   120.00, unit: 'mês'     },
+  { icon: 'star-outline',           name: 'Evento OLI',           detail: '1 evento incluído / mês',                 marketPrice:   200.00, unit: 'evento'  },
 ];
 
-const totalMarketValue   = INCLUDED_SERVICES.reduce((acc, s) => acc + s.marketPrice, 0);
-const servicesSaving     = totalMarketValue - MONTHLY_STATS.oliCost;   // economia bruta
-
-// ── Derivados gerais ──────────────────────────────────────────────────────────
-
-const netRevenue   = MONTHLY_STATS.grossRevenue - MONTHLY_STATS.oliCost;
-const savings      = TRADITIONAL_OFFICE_COST - MONTHLY_STATS.oliCost;
-const oliPercent   = ((MONTHLY_STATS.oliCost / MONTHLY_STATS.grossRevenue) * 100).toFixed(1);
-const roiMultiple  = (MONTHLY_STATS.grossRevenue / MONTHLY_STATS.oliCost).toFixed(1);
+const totalMarketValue = INCLUDED_SERVICES.reduce((acc, s) => acc + s.marketPrice, 0);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function FinanceiroScreen() {
   const { profile, session } = useAuthStore();
-  const [generatingPDF,   setGeneratingPDF]   = useState(false);
-  const [usageSummary,    setUsageSummary]     = useState<UsageSummary | null>(null);
-  const [loadingUsage,    setLoadingUsage]     = useState(false);
+  const { section } = useLocalSearchParams<{ section?: string }>();
 
-  const now = new Date();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const packagesY     = useRef(0);
+
+  const [generatingPDF,    setGeneratingPDF]    = useState(false);
+  const [usageSummary,     setUsageSummary]     = useState<UsageSummary | null>(null);
+  const [loadingUsage,     setLoadingUsage]     = useState(true);
+  const [monthlyHistory,   setMonthlyHistory]   = useState<MonthlyUsageSummary[]>([]);
+  const [loadingHistory,   setLoadingHistory]   = useState(true);
+  const [selectedPackage,  setSelectedPackage]  = useState<HourPackage | null>(null);
+
+  // ── Scroll para seção de pacotes quando navegado com ?section=packages ──
+  useEffect(() => {
+    if (section !== 'packages') return;
+    const timeout = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: packagesY.current, animated: true });
+    }, 350);
+    return () => clearTimeout(timeout);
+  }, [section]);
+
+  const now          = new Date();
   const currentYear  = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
+  const currentPeriod = now
+    .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    .replace(/^\w/, c => c.toUpperCase());
 
-  // Busca extrato de minutagem do mês atual do Supabase
+  // ── Dados reais de minutagem (mês atual) ──
   useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) return;
@@ -155,30 +90,54 @@ export default function FinanceiroScreen() {
       .finally(() => setLoadingUsage(false));
   }, [session?.user?.id, currentYear, currentMonth]);
 
+  // ── Histórico dos últimos 3 meses ──
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    setLoadingHistory(true);
+    fetchMonthlyUsageHistory(userId, 3)
+      .then(setMonthlyHistory)
+      .catch(() => {})
+      .finally(() => setLoadingHistory(false));
+  }, [session?.user?.id]);
+
+  // ── Valores derivados (todos reais) ──
+  const oliCost      = usageSummary?.totalValor   ?? 0;
+  const totalMinutos = usageSummary?.totalMinutos ?? 0;
+  const totalSessoes = usageSummary?.totalSessoes ?? 0;
+  const horasH       = Math.floor(totalMinutos / 60);
+  const horasMin     = totalMinutos % 60;
+  const horasLabel   = totalMinutos > 0
+    ? (horasMin > 0 ? `${horasH}h ${horasMin}min` : `${horasH}h`)
+    : '—';
+  const servicesSaving = totalMarketValue - oliCost;
+  const savingsVsTrad  = TRADITIONAL_OFFICE_COST - oliCost;
+
+  // ── Gerar PDF com dados reais ──
   const handleGeneratePDF = async () => {
     setGeneratingPDF(true);
     try {
       await generateAndShareMonthlyReport({
-        period:          MONTHLY_STATS.period,
+        period:          currentPeriod,
         doctorName:      profile?.nome ?? 'Profissional',
-        crm:             profile?.crm ?? '',
-        plan:            'PRO',
-        grossRevenue:    MONTHLY_STATS.grossRevenue,
-        consultations:   MONTHLY_STATS.consultations,
-        horasUtilizadas: MONTHLY_STATS.horasUtilizadas,
-        taxaMin:         1.60,
-        oliCost:         MONTHLY_STATS.oliCost,
-        invoiceHistory:  PAST_INVOICES.map(i => ({
-          period:  i.period,
-          amount:  i.amount,
-          status:  i.status,
+        crm:             profile?.crm  ?? '',
+        plan:            profile?.plan ?? '—',
+        grossRevenue:    0,           // Communicare — fase 3
+        consultations:   0,
+        horasUtilizadas: horasH,
+        taxaMin:         oliCost > 0 && totalMinutos > 0 ? oliCost / totalMinutos : 0,
+        oliCost,
+        invoiceHistory:  monthlyHistory.map(m => ({
+          period: m.period,
+          amount: m.totalValor,
+          status: 'paga' as const,
         })),
         includedServices: INCLUDED_SERVICES.map(s => ({
           name:        s.name,
           detail:      s.detail,
           marketPrice: s.marketPrice,
           unit:        s.unit,
-          used:        s.used,
+          used:        true,
         })),
         traditionalOfficeCost: TRADITIONAL_OFFICE_COST,
       });
@@ -190,45 +149,57 @@ export default function FinanceiroScreen() {
     }
   };
 
-  const handlePayInvoice = () => {
-    Alert.alert(
-      'Pagar Fatura',
-      'O pagamento será processado pela recepção do OLI via Communicare.',
-    );
+  const handleBuyPackage = (pkg: HourPackage) => {
+    setSelectedPackage(pkg);
   };
 
-  const handleBuyPackage = (pkg: HourPackage) => {
-    Alert.alert(
-      `Pacote de ${pkg.hours} Horas`,
-      `${formatCurrency(pkg.price)} com ${pkg.discountPercent}% de desconto.\n\nDeseja solicitar este pacote?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Solicitar', onPress: () =>
-          Alert.alert('Solicitação Enviada', 'A recepção do OLI processará seu pacote em breve.'),
-        },
-      ],
-    );
+  const handleHourPackageSuccess = () => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    setLoadingUsage(true);
+    fetchUsageSummary(userId, currentYear, currentMonth)
+      .then(setUsageSummary)
+      .catch(() => {})
+      .finally(() => setLoadingUsage(false));
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content}>
 
-        {/* ── Faturamento do Mês ── */}
+        {/* ── Custo OLI este mês ── */}
         <View style={[styles.card, shadows.card]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Faturamento · {MONTHLY_STATS.period}</Text>
-            <View style={styles.consultBadge}>
-              <Ionicons name="people-outline" size={13} color={colors.oliGreen} />
-              <Text style={styles.consultBadgeText}>{MONTHLY_STATS.consultations} consultas</Text>
-            </View>
+            <Text style={styles.cardTitle}>Custo OLI · {currentPeriod}</Text>
+            {totalSessoes > 0 && (
+              <View style={styles.consultBadge}>
+                <Ionicons name="time-outline" size={13} color={colors.oliGreen} />
+                <Text style={styles.consultBadgeText}>{totalSessoes} sessões</Text>
+              </View>
+            )}
           </View>
 
-          <Text style={styles.revenueAmount}>{formatCurrency(MONTHLY_STATS.grossRevenue)}</Text>
+          {loadingUsage ? (
+            <ActivityIndicator color={colors.oliGreen} style={{ marginVertical: spacing.md }} />
+          ) : (
+            <>
+              <Text style={styles.revenueAmount}>{formatCurrency(oliCost)}</Text>
+              <View style={styles.statsRow}>
+                <StatPill icon="time-outline"    label="Horas utilizadas" value={horasLabel} />
+                <StatPill icon="receipt-outline" label="Minutagem"        value={`R$ ${oliCost > 0 && totalMinutos > 0 ? (oliCost / totalMinutos).toFixed(2) : '—'}/min`} />
+              </View>
+              {oliCost === 0 && (
+                <Text style={styles.zeroNote}>Nenhuma sessão registrada este mês.</Text>
+              )}
+            </>
+          )}
 
-          <View style={styles.statsRow}>
-            <StatPill icon="time-outline" label="Horas OLI" value={`${MONTHLY_STATS.horasUtilizadas}h`} />
-            <StatPill icon="receipt-outline" label="Ticket médio" value={formatCurrency(MONTHLY_STATS.ticketMedio)} />
+          {/* Faturamento ao paciente — disponível com Communicare */}
+          <View style={styles.phaseNotice}>
+            <Ionicons name="information-circle-outline" size={14} color={colors.gray} />
+            <Text style={styles.phaseNoticeText}>
+              Faturamento ao paciente disponível com integração Communicare (em breve)
+            </Text>
           </View>
         </View>
 
@@ -247,40 +218,19 @@ export default function FinanceiroScreen() {
           ) : (
             <>
               <Ionicons name="document-text-outline" size={18} color={colors.white} />
-              <Text style={styles.pdfBtnText}>Gerar Extrato PDF — {MONTHLY_STATS.period}</Text>
+              <Text style={styles.pdfBtnText}>Gerar Extrato PDF — {currentPeriod}</Text>
             </>
           )}
         </TouchableOpacity>
 
-        {/* ── Vale a Pena Estar no OLI? ── */}
+        {/* ── Vale a pena estar no OLI? ── */}
         <View style={[styles.card, shadows.card]}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Vale a pena estar no OLI?</Text>
             <Ionicons name="trending-up" size={20} color={colors.oliGreen} />
           </View>
 
-          {/* Receita líquida */}
-          <View style={styles.roiLines}>
-            <RoiLine
-              label="Você faturou"
-              value={formatCurrency(MONTHLY_STATS.grossRevenue)}
-              valueColor={colors.oliDarkGray}
-            />
-            <RoiLine
-              label="Custo OLI (plano + horas)"
-              value={`- ${formatCurrency(MONTHLY_STATS.oliCost)}`}
-              valueColor={colors.oliGold}
-            />
-            <View style={styles.roiDivider} />
-            <RoiLine
-              label="Receita líquida"
-              value={formatCurrency(netRevenue)}
-              valueColor={colors.oliGreen}
-              bold
-            />
-          </View>
-
-          {/* Economia vs. consultório próprio */}
+          {/* Economia vs. consultório próprio — usando custo real de minutagem */}
           <View style={styles.savingsCard}>
             <View style={styles.savingsHeader}>
               <Ionicons name="business-outline" size={16} color={colors.oliGold} />
@@ -292,34 +242,28 @@ export default function FinanceiroScreen() {
                 <Text style={styles.savingsTraditional}>{formatCurrency(TRADITIONAL_OFFICE_COST)}/mês</Text>
               </View>
               <View style={styles.savingsRow}>
-                <Text style={styles.savingsLabel}>Você paga no OLI</Text>
-                <Text style={styles.savingsOli}>{formatCurrency(MONTHLY_STATS.oliCost)}/mês</Text>
+                <Text style={styles.savingsLabel}>Você pagou no OLI este mês</Text>
+                <Text style={styles.savingsOli}>{formatCurrency(oliCost)}/mês</Text>
               </View>
             </View>
-            <View style={styles.savingsResult}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.oliGreen} />
-              <Text style={styles.savingsResultText}>
-                Economia de <Text style={styles.savingsHighlight}>{formatCurrency(savings)}</Text> este mês
-              </Text>
-            </View>
+            {savingsVsTrad > 0 && (
+              <View style={styles.savingsResult}>
+                <Ionicons name="checkmark-circle" size={18} color={colors.oliGreen} />
+                <Text style={styles.savingsResultText}>
+                  Economia de{' '}
+                  <Text style={styles.savingsHighlight}>{formatCurrency(savingsVsTrad)}</Text>
+                  {' '}este mês
+                </Text>
+              </View>
+            )}
           </View>
 
-          {/* ROI resumido */}
-          <View style={styles.roiSummaryRow}>
-            <View style={styles.roiSummaryItem}>
-              <Text style={styles.roiSummaryValue} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.6}>{roiMultiple}x</Text>
-              <Text style={styles.roiSummaryLabel}>Retorno sobre{'\n'}o investimento</Text>
-            </View>
-            <View style={styles.roiSummaryDivider} />
-            <View style={styles.roiSummaryItem}>
-              <Text style={styles.roiSummaryValue} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.6}>{oliPercent}%</Text>
-              <Text style={styles.roiSummaryLabel}>Do faturamento{'\n'}vai para o OLI</Text>
-            </View>
-            <View style={styles.roiSummaryDivider} />
-            <View style={styles.roiSummaryItem}>
-              <Text style={styles.roiSummaryValue} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.6}>{formatCurrency(MONTHLY_STATS.grossRevenue / MONTHLY_STATS.horasUtilizadas)}</Text>
-              <Text style={styles.roiSummaryLabel}>Faturado{'\n'}por hora OLI</Text>
-            </View>
+          {/* Comparativo ROI — aguarda Communicare */}
+          <View style={styles.roiPending}>
+            <Ionicons name="stats-chart-outline" size={20} color={colors.oliLightGray} />
+            <Text style={styles.roiPendingText}>
+              Análise de ROI (retorno sobre faturamento) disponível com integração Communicare
+            </Text>
           </View>
         </View>
 
@@ -333,79 +277,42 @@ export default function FinanceiroScreen() {
           {INCLUDED_SERVICES.map((svc, i) => (
             <View
               key={svc.name}
-              style={[
-                svcStyles.row,
-                i < INCLUDED_SERVICES.length - 1 && svcStyles.rowBorder,
-              ]}
+              style={[svcStyles.row, i < INCLUDED_SERVICES.length - 1 && svcStyles.rowBorder]}
             >
-              <View style={[svcStyles.iconWrap, { opacity: svc.used ? 1 : 0.4 }]}>
+              <View style={svcStyles.iconWrap}>
                 <Ionicons name={svc.icon as any} size={18} color={colors.oliGreen} />
               </View>
               <View style={svcStyles.info}>
-                <Text style={[svcStyles.name, !svc.used && svcStyles.nameUnused]}>
-                  {svc.name}
-                </Text>
+                <Text style={svcStyles.name}>{svc.name}</Text>
                 <Text style={svcStyles.detail}>{svc.detail}</Text>
               </View>
-              <View style={svcStyles.priceCol}>
-                <Text style={svcStyles.marketPrice}>{formatCurrency(svc.marketPrice)}/{svc.unit}</Text>
-                {svc.spentThisMonth > 0 ? (
-                  <Text style={svcStyles.spentAmount}>Gasto: {formatCurrency(svc.spentThisMonth)}</Text>
-                ) : (
-                  <Text style={svcStyles.spentZero}>Não utilizado</Text>
-                )}
-              </View>
+              <Text style={svcStyles.marketPrice}>{formatCurrency(svc.marketPrice)}/{svc.unit}</Text>
             </View>
           ))}
 
-          {/* Rodapé da economia */}
           <View style={svcStyles.footer}>
             <View style={svcStyles.footerRow}>
               <Text style={svcStyles.footerLabel}>Valor de mercado destes serviços</Text>
               <Text style={svcStyles.footerMarket}>{formatCurrency(totalMarketValue)}/mês</Text>
             </View>
-            <View style={svcStyles.footerRow}>
-              <Text style={svcStyles.footerLabel}>Você paga no OLI (plano)</Text>
-              <Text style={svcStyles.footerOli}>{formatCurrency(MONTHLY_STATS.oliCost)}/mês</Text>
-            </View>
-            <View style={svcStyles.savingsBanner}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.oliGreen} />
-              <Text style={svcStyles.savingsBannerText}>
-                {'Economia de '}
-                <Text style={svcStyles.savingsBannerHighlight}>{formatCurrency(servicesSaving)}</Text>
-                {' só em serviços inclusos'}
-              </Text>
-            </View>
+            {oliCost > 0 && servicesSaving > 0 && (
+              <View style={svcStyles.savingsBanner}>
+                <Ionicons name="checkmark-circle" size={18} color={colors.oliGreen} />
+                <Text style={svcStyles.savingsBannerText}>
+                  {'Economia de '}
+                  <Text style={svcStyles.savingsBannerHighlight}>{formatCurrency(servicesSaving)}</Text>
+                  {' só em serviços inclusos este mês'}
+                </Text>
+              </View>
+            )}
           </View>
-        </View>
-
-        {/* ── Fatura Atual ── */}
-        <Text style={styles.sectionTitle}>Fatura Atual</Text>
-
-        <View style={[styles.invoiceCard, shadows.card]}>
-          <View style={styles.invoiceTop}>
-            <Text style={styles.invoiceLabel}>{CURRENT_INVOICE.period}</Text>
-            <Text style={styles.invoiceDue}>Vence em 10/05</Text>
-          </View>
-
-          <View style={styles.amountRow}>
-            <Text style={styles.amountPrefix}>R$</Text>
-            <Text style={styles.amount}>
-              {CURRENT_INVOICE.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.payBtn}
-            onPress={handlePayInvoice}
-            accessibilityLabel="Pagar fatura atual"
-          >
-            <Text style={styles.payBtnText}>Pagar Fatura</Text>
-          </TouchableOpacity>
         </View>
 
         {/* ── Pacotes de Horas ── */}
-        <View style={styles.packagesSectionHeader}>
+        <View
+          style={styles.packagesSectionHeader}
+          onLayout={(e) => { packagesY.current = e.nativeEvent.layout.y; }}
+        >
           <Text style={styles.sectionTitle}>Pacotes de Horas</Text>
           <View style={styles.scrollHintBadge}>
             <Text style={styles.scrollHintText}>Deslize</Text>
@@ -435,15 +342,14 @@ export default function FinanceiroScreen() {
           <View style={styles.packagesScrollFade} pointerEvents="none" />
         </View>
 
-        {/* ── Extrato de Minutagem (dados reais do Supabase) ── */}
-        <Text style={styles.sectionTitle}>Minutagem — {MONTHLY_STATS.period}</Text>
+        {/* ── Extrato de Minutagem ── */}
+        <Text style={styles.sectionTitle}>Minutagem — {currentPeriod}</Text>
 
         <View style={[styles.card, shadows.card]}>
           {loadingUsage ? (
             <ActivityIndicator size="small" color={colors.oliGreen} style={{ marginVertical: spacing.md }} />
           ) : usageSummary && usageSummary.totalSessoes > 0 ? (
             <>
-              {/* Resumo */}
               <View style={usageStyles.summary}>
                 <View style={usageStyles.summaryItem}>
                   <Text style={usageStyles.summaryValue}>{usageSummary.totalSessoes}</Text>
@@ -451,7 +357,7 @@ export default function FinanceiroScreen() {
                 </View>
                 <View style={usageStyles.summaryDivider} />
                 <View style={usageStyles.summaryItem}>
-                  <Text style={usageStyles.summaryValue}>{Math.floor(usageSummary.totalMinutos / 60)}h {usageSummary.totalMinutos % 60}min</Text>
+                  <Text style={usageStyles.summaryValue}>{horasLabel}</Text>
                   <Text style={usageStyles.summaryLabel}>Total</Text>
                 </View>
                 <View style={usageStyles.summaryDivider} />
@@ -459,20 +365,16 @@ export default function FinanceiroScreen() {
                   <Text style={[usageStyles.summaryValue, { color: colors.oliGold }]}>
                     {formatCurrency(usageSummary.totalValor)}
                   </Text>
-                  <Text style={usageStyles.summaryLabel}>Custo minutagem</Text>
+                  <Text style={usageStyles.summaryLabel}>Custo</Text>
                 </View>
               </View>
 
-              {/* Detalhe sessão a sessão */}
               {usageSummary.charges.map((charge, i) => {
                 const inicio  = new Date(charge.iniciado_em);
                 const dataStr = inicio.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 const horaStr = inicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 return (
-                  <View
-                    key={charge.id}
-                    style={[usageStyles.chargeRow, i > 0 && usageStyles.chargeRowBorder]}
-                  >
+                  <View key={charge.id} style={[usageStyles.chargeRow, i > 0 && usageStyles.chargeRowBorder]}>
                     <View style={usageStyles.chargeLeft}>
                       <Text style={usageStyles.chargeDate}>{dataStr} às {horaStr}</Text>
                       {charge.room_name && (
@@ -495,35 +397,49 @@ export default function FinanceiroScreen() {
           )}
         </View>
 
-        {/* ── Histórico ── */}
-        <Text style={styles.sectionTitle}>Histórico de Faturas</Text>
+        {/* ── Histórico de Minutagem (últimos 3 meses) ── */}
+        <Text style={styles.sectionTitle}>Histórico de Minutagem</Text>
 
         <View style={styles.historyList}>
-          {PAST_INVOICES.map(inv => {
-            const cfg = STATUS_CONFIG[inv.status];
-            return (
-              <TouchableOpacity
-                key={inv.id}
-                style={[styles.historyRow, shadows.small]}
-                onPress={() => Alert.alert(inv.period, `Valor: ${formatCurrency(inv.amount)}\nStatus: ${cfg.label}`)}
-                accessibilityLabel={`Fatura de ${inv.period}, ${cfg.label}`}
-              >
+          {loadingHistory ? (
+            <ActivityIndicator color={colors.oliGreen} />
+          ) : monthlyHistory.length === 0 ? (
+            <View style={[styles.card, shadows.card]}>
+              <Text style={{ color: colors.gray, fontSize: 14, textAlign: 'center', padding: spacing.md }}>
+                Sem histórico ainda.
+              </Text>
+            </View>
+          ) : (
+            monthlyHistory.map(m => (
+              <View key={m.period} style={[styles.historyRow, shadows.small]}>
                 <View>
-                  <Text style={styles.historyPeriod}>{inv.period}</Text>
-                  <Text style={styles.historyAmount}>{formatCurrency(inv.amount)}</Text>
+                  <Text style={styles.historyPeriod}>{m.period}</Text>
+                  <Text style={styles.historyAmount}>
+                    {m.totalSessoes} sessão{m.totalSessoes !== 1 ? 'ões' : ''} · {formatCurrency(m.totalValor)}
+                  </Text>
                 </View>
                 <View style={styles.historyRight}>
-                  <View style={[styles.statusBadge, { backgroundColor: `${cfg.color}1A` }]}>
-                    <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: `${colors.oliGreen}1A` }]}>
+                    <Text style={[styles.statusText, { color: colors.oliGreen }]}>
+                      {m.totalSessoes > 0 ? 'Com uso' : 'Sem uso'}
+                    </Text>
                   </View>
-                  <Ionicons name="chevron-forward-outline" size={14} color={colors.gray} />
                 </View>
-              </TouchableOpacity>
-            );
-          })}
+              </View>
+            ))
+          )}
         </View>
 
       </ScrollView>
+
+      {selectedPackage && (
+        <HourCheckoutModal
+          visible={!!selectedPackage}
+          onClose={() => setSelectedPackage(null)}
+          pkg={selectedPackage}
+          onSuccess={handleHourPackageSuccess}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -540,39 +456,20 @@ function StatPill({ icon, label, value }: { icon: string; label: string; value: 
   );
 }
 
-function RoiLine({ label, value, valueColor, bold }: {
-  label: string; value: string; valueColor: string; bold?: boolean;
-}) {
-  return (
-    <View style={roiStyles.line}>
-      <Text style={[roiStyles.label, bold && roiStyles.boldLabel]}>{label}</Text>
-      <Text style={[roiStyles.value, { color: valueColor }, bold && roiStyles.boldValue]}>{value}</Text>
-    </View>
-  );
-}
-
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const pillStyles = StyleSheet.create({
   container: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             5,
-    backgroundColor: `${colors.oliGreen}0F`,
-    borderRadius:    radius.sm,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               5,
+    backgroundColor:   `${colors.oliGreen}0F`,
+    borderRadius:      radius.sm,
     paddingHorizontal: 10,
-    paddingVertical:  6,
+    paddingVertical:   6,
   },
   label: { fontSize: 12, color: colors.gray },
   value: { fontSize: 13, fontWeight: '700', color: colors.oliGreen },
-});
-
-const roiStyles = StyleSheet.create({
-  line:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
-  label:     { fontSize: 14, color: colors.gray },
-  value:     { fontSize: 14, fontWeight: '500' },
-  boldLabel: { fontWeight: '700', color: colors.oliDarkGray, fontSize: 15 },
-  boldValue: { fontWeight: '700', fontSize: 15 },
 });
 
 const styles = StyleSheet.create({
@@ -584,19 +481,26 @@ const styles = StyleSheet.create({
     borderRadius:    radius.lg,
     padding:         spacing.md,
   },
-  cardHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  cardTitle:    { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
-  consultBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.oliGreen}0F`, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
+  cardHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  cardTitle:        { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
+  consultBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.oliGreen}0F`, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
   consultBadgeText: { fontSize: 12, fontWeight: '600', color: colors.oliGreen },
+  revenueAmount:    { fontSize: 38, fontWeight: '700', color: colors.oliGreen, marginBottom: spacing.md },
+  statsRow:         { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  zeroNote:         { fontSize: 13, color: colors.gray, marginTop: spacing.sm },
 
-  revenueAmount: { fontSize: 38, fontWeight: '700', color: colors.oliGreen, marginBottom: spacing.md },
+  phaseNotice: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    gap:            6,
+    marginTop:      spacing.md,
+    paddingTop:     spacing.sm,
+    borderTopWidth: 0.5,
+    borderTopColor: colors.border,
+  },
+  phaseNoticeText: { fontSize: 12, color: colors.gray, flex: 1, lineHeight: 16 },
 
-  statsRow: { flexDirection: 'row', gap: spacing.sm },
-
-  // ROI card
-  roiLines:    { marginBottom: spacing.md },
-  roiDivider:  { height: 1, backgroundColor: colors.border, marginVertical: spacing.xs },
-
+  // Savings card
   savingsCard: {
     backgroundColor: `${colors.oliGold}0A`,
     borderRadius:    radius.md,
@@ -616,11 +520,16 @@ const styles = StyleSheet.create({
   savingsResultText:  { fontSize: 14, color: colors.oliDarkGray },
   savingsHighlight:   { fontWeight: '700', color: colors.oliGreen },
 
-  roiSummaryRow:     { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  roiSummaryItem:    { alignItems: 'center', flex: 1 },
-  roiSummaryValue:   { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
-  roiSummaryLabel:   { fontSize: 11, color: colors.gray, textAlign: 'center', marginTop: 2, lineHeight: 16 },
-  roiSummaryDivider: { width: 1, height: 36, backgroundColor: colors.border },
+  // ROI pending placeholder
+  roiPending: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing.sm,
+    backgroundColor: colors.oliBackground,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+  },
+  roiPendingText: { fontSize: 13, color: colors.gray, flex: 1, lineHeight: 18 },
 
   pdfBtn: {
     flexDirection:   'row',
@@ -636,26 +545,12 @@ const styles = StyleSheet.create({
 
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray, marginTop: spacing.xs },
 
-  invoiceCard: {
-    backgroundColor: colors.white,
-    borderRadius:    radius.lg,
-    padding:         spacing.md,
-  },
-  invoiceTop:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
-  invoiceLabel: { fontSize: 16, fontWeight: '500', color: colors.oliDarkGray },
-  invoiceDue:   { fontSize: 14, color: colors.gray },
-  amountRow:    { flexDirection: 'row', alignItems: 'flex-end', marginBottom: spacing.md },
-  amountPrefix: { fontSize: 20, fontWeight: '700', color: colors.oliGreen, marginBottom: 4, marginRight: 4 },
-  amount:       { fontSize: 36, fontWeight: '700', color: colors.oliGreen },
-  payBtn:       { backgroundColor: colors.oliGreen, borderRadius: radius.md, padding: spacing.md, alignItems: 'center' },
-  payBtnText:   { color: colors.white, fontSize: 16, fontWeight: '700' },
-
   packagesSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   scrollHintBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${colors.oliGreen}12`, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
   scrollHintText:  { fontSize: 12, fontWeight: '600', color: colors.oliGreen },
 
-  packagesWrap: { position: 'relative' },
-  packagesRow:  { marginBottom: spacing.xs },
+  packagesWrap:       { position: 'relative' },
+  packagesRow:        { marginBottom: spacing.xs },
   packagesScrollFade: {
     position:        'absolute',
     right:           0,
@@ -701,32 +596,17 @@ const svcStyles = StyleSheet.create({
   iconWrap:   { width: 34, height: 34, borderRadius: 17, backgroundColor: `${colors.oliGreen}12`, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   info:       { flex: 1 },
   name:       { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
-  nameUnused: { color: colors.gray },
   detail:     { fontSize: 12, color: colors.gray, marginTop: 2 },
-  priceCol:    { alignItems: 'flex-end', minWidth: 90 },
-  marketPrice: { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray, textAlign: 'right' },
-  spentAmount: { fontSize: 11, fontWeight: '600', color: colors.oliGold, marginTop: 2 },
-  spentZero:   { fontSize: 11, color: colors.gray, marginTop: 2 },
+  marketPrice:{ fontSize: 13, fontWeight: '700', color: colors.oliDarkGray, textAlign: 'right' },
 
-  footer:       { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: 6 },
-  footerRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footerLabel:  { fontSize: 13, color: colors.gray },
-  footerMarket: { fontSize: 13, fontWeight: '600', color: colors.oliRed },
-  footerOli:    { fontSize: 13, fontWeight: '600', color: colors.oliGreen },
-  savingsBanner:{
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             6,
-    backgroundColor: `${colors.oliGreen}12`,
-    borderRadius:    radius.sm,
-    padding:         spacing.sm,
-    marginTop:       4,
-  },
-  savingsBannerText:      { fontSize: 14, color: colors.oliDarkGray, flex: 1 },
+  footer:              { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: 6 },
+  footerRow:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  footerLabel:         { fontSize: 13, color: colors.gray },
+  footerMarket:        { fontSize: 13, fontWeight: '600', color: colors.oliRed },
+  savingsBanner:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.oliGreen}12`, borderRadius: radius.sm, padding: spacing.sm, marginTop: 4 },
+  savingsBannerText:   { fontSize: 14, color: colors.oliDarkGray, flex: 1 },
   savingsBannerHighlight: { fontWeight: '700', color: colors.oliGreen },
 });
-
-// ── Usage / Minutagem ────────────────────────────────────────────────────────
 
 const usageStyles = StyleSheet.create({
   summary:        { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: spacing.sm, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },

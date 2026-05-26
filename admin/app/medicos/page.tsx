@@ -1,11 +1,13 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
 const PLAN_COLOR: Record<string, string> = {
-  BASE: 'bg-gray-100 text-gray-600',
-  PRO:  'bg-green-50 text-oli-green',
-  VIP:  'bg-yellow-50 text-yellow-700',
+  START: 'bg-blue-50 text-blue-600',
+  BASE:  'bg-gray-100 text-gray-600',
+  PRO:   'bg-green-50 text-oli-green',
+  VIP:   'bg-yellow-50 text-yellow-700',
 };
 
 export default async function MedicosPage() {
@@ -61,7 +63,11 @@ export default async function MedicosPage() {
 
                 return (
                   <tr key={m.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-oli-dark">{m.nome ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <Link href={`/medicos/${m.id}`} className="font-semibold text-oli-dark hover:text-oli-green transition-colors">
+                        {m.nome ?? '—'}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3 text-oli-gray">{m.crm ?? '—'}</td>
                     <td className="px-4 py-3 text-oli-gray">{m.especialidade ?? '—'}</td>
                     <td className="px-4 py-3">

@@ -8,15 +8,36 @@ const NAV = [
   {
     section: 'Principal',
     items: [
-      { href: '/',       label: 'Dashboard',        icon: '▦' },
-      { href: '/fila',   label: 'Fila de Trabalho', icon: '🔔', badge: true },
+      { href: '/',     label: 'Dashboard',        icon: '▦' },
+      { href: '/fila', label: 'Fila de Trabalho', icon: '🔔', badge: true },
     ],
   },
   {
-    section: 'Cadastros',
+    section: 'Salas',
     items: [
-      { href: '/medicos',    label: 'Médicos',    icon: '👥' },
-      { href: '/pagamentos', label: 'Pagamentos', icon: '$'  },
+      { href: '/salas',    label: 'Mapa do Dia',  icon: '🏢' },
+      { href: '/historico',label: 'Histórico',    icon: '📅' },
+    ],
+  },
+  {
+    section: 'Médicos',
+    items: [
+      { href: '/medicos', label: 'Cadastros', icon: '👥' },
+      { href: '/planos',  label: 'Planos',    icon: '📋' },
+      { href: '/modulos', label: 'Módulos',   icon: '🧩' },
+      { href: '/horas',   label: 'Horas',     icon: '⏱'  },
+    ],
+  },
+  {
+    section: 'Financeiro',
+    items: [
+      { href: '/pagamentos', label: 'Pagamentos', icon: '💳' },
+    ],
+  },
+  {
+    section: 'Sistema',
+    items: [
+      { href: '/usuarios', label: 'Usuários', icon: '⚙️' },
     ],
   },
 ];

@@ -119,7 +119,7 @@ export default function EcossistemaScreen() {
         </Text>
 
         <View style={[styles.card, shadows.card]}>
-          <PacoteHoras consumed={12} total={20} />
+          <PacoteHoras consumed={12} total={20} onBuyMore={() => router.push('/(tabs)/financeiro?section=packages')} />
           <View style={styles.serviceDivider} />
           <ServiceBar title="Orientações Jurídicas" consumed={1} total={3} unit="consultas" />
           <ServiceBar title="Eventos OLI"           consumed={0} total={1} unit="evento" />
@@ -723,7 +723,7 @@ const agentStyles = StyleSheet.create({
 
 // ── PacoteHoras ───────────────────────────────────────────────────────────────
 
-function PacoteHoras({ consumed, total }: { consumed: number; total: number }) {
+function PacoteHoras({ consumed, total, onBuyMore }: { consumed: number; total: number; onBuyMore?: () => void }) {
   const remaining = total - consumed;
   const progress  = total > 0 ? consumed / total : 0;
   const isLow     = remaining <= total * 0.2;          // últimos 20%
@@ -735,7 +735,7 @@ function PacoteHoras({ consumed, total }: { consumed: number; total: number }) {
           <Ionicons name="time-outline" size={15} color={colors.oliGreen} />
           <Text style={pacoteStyles.title}>Pacote {total}h</Text>
         </View>
-        <TouchableOpacity accessibilityLabel="Comprar mais horas">
+        <TouchableOpacity onPress={onBuyMore} accessibilityLabel="Comprar mais horas">
           <Text style={pacoteStyles.addMore}>+ Comprar horas</Text>
         </TouchableOpacity>
       </View>

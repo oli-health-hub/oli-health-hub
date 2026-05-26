@@ -99,3 +99,22 @@ export async function notifyPatientEncaixe(
 export async function openPatientChat(nome: string, telefone: string): Promise<void> {
   await openWhatsApp(cleanPhone(telefone), `Olá ${nome}, tudo bem?`);
 }
+
+/**
+ * Solicita pacote de horas pré-pago para a recepção do OLI.
+ * Abre WhatsApp com mensagem pré-preenchida para a recepção processar.
+ */
+export async function requestHourPackage(
+  doctorName: string,
+  hours:       number,
+  price:       number,
+): Promise<void> {
+  const valorStr = price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const message =
+    `📦 *Solicitação de Pacote de Horas*\n\n` +
+    `Médico: ${doctorName}\n` +
+    `Pacote: ${hours} horas\n` +
+    `Valor: ${valorStr}\n\n` +
+    `Por favor, confirme a disponibilidade e envie o link de pagamento. Obrigado!`;
+  await openWhatsApp(OLI_RECEPTION_PHONE, message);
+}

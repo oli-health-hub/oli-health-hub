@@ -238,10 +238,11 @@ export const useAppStore = create<AppStore>((set, get) => {
         if (professionalId) {
           logUsageCharge({
             professionalId,
-            reservationId:  target.id,
-            plan:           userPlan,
-            startedAt:      target.consultationStartedAt,
-            endedAt:        target.consultationEndedAt ?? now,
+            reservationId:     target.id,
+            plan:              userPlan,
+            startedAt:         target.consultationStartedAt,
+            endedAt:           target.consultationEndedAt ?? now,
+            scheduledEndTime:  target.endTime,   // excedente cobrado em blocos de 30 min
           })
           .then(() => {
             reportEvent('usage_charge_logged', { plan: userPlan });

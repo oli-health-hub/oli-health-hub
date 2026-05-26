@@ -16,11 +16,12 @@ import type { PlanType } from '../models/types';
 import { COST_PER_MINUTE } from '../store/appStore';
 
 export interface UsageChargeParams {
-  professionalId:  string;
-  reservationId:   string | null;
-  plan:            PlanType;
-  startedAt:       string;   // ISO — consultationStartedAt da reserva
-  endedAt:         string;   // ISO — agora (quando endRoomUse foi chamado)
+  professionalId:     string;
+  reservationId:      string | null;
+  plan:               PlanType;
+  startedAt:          string;   // ISO — consultationStartedAt da reserva
+  endedAt:            string;   // ISO — agora (quando endRoomUse foi chamado)
+  scheduledEndTime?:  string;   // ISO — end_time da reserva (para cálculo de excedente)
 }
 
 export interface UsageChargeSummary {
@@ -32,14 +33,33 @@ export interface UsageChargeSummary {
 /**
  * Calcula o resumo de cobrança sem efeitos colaterais.
  * Útil para exibir o custo no alerta de checkout antes de confirmar.
+ *
+ * Regras de granularidade:
+ *   • Tempo dentro da reserva (locação): contado por minuto (Math.ceil).
+ *   • Excedente (após scheduledEndTime): arredondado para cima em blocos de 30 min.
+ *     Ex.: 31 min excedentes → cobra 60 min; 1 min excedente → cobra 30 min.
  */
 export function calcUsageCharge(params: UsageChargeParams): UsageChargeSummary {
-  const taxaMin    = COST_PER_MINUTE[params.plan];
-  const startMs    = new Date(params.startedAt).getTime();
-  const endMs      = new Date(params.endedAt).getTime();
-  const minutos    = Math.max(0, Math.ceil((endMs - startMs) / 60_000));
-  const valorTotal = parseFloat((minutos * taxaMin).toFixed(2));
+  const taxaMin   = COST_PER_MINUTE[params.plan];
+  const startMs   = new Date(params.startedAt).getTime();
+  const endMs     = new Date(params.endedAt).getTime();
+  const schedEnd  = params.scheduledEndTime ? new Date(params.scheduledEndTime).getTime() : null;
 
+  let minutos: number;
+
+  if (schedEnd && endMs > schedEnd) {
+    // Tempo dentro da reserva: por minuto
+    const minutosLocacao   = Math.max(0, Math.ceil((schedEnd - startMs) / 60_000));
+    // Excedente: arredonda para cima em blocos de 30 min
+    const msExcedente      = endMs - schedEnd;
+    const minutosExcedente = Math.ceil(msExcedente / (30 * 60_000)) * 30;
+    minutos = minutosLocacao + minutosExcedente;
+  } else {
+    // Sem excedente: tudo por minuto
+    minutos = Math.max(0, Math.ceil((endMs - startMs) / 60_000));
+  }
+
+  const valorTotal = parseFloat((minutos * taxaMin).toFixed(2));
   return { minutos, taxaMin, valorTotal };
 }
 
