@@ -107,7 +107,6 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     };
 
     // Salva no Supabase — persiste o HASH, nunca o CPF em texto
-    let finalConsentToken = consentToken;
     if (professionalId) {
       const { data: inserted, error } = await supabase.from('patients').insert({
         id:                      newPatient.id,
@@ -121,12 +120,11 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
         consentimento_timestamp: null,                                 // null = aguardando
         consentimento_token:     consentToken,
         is_sincronizado:         false,
-      }).select('id, consentimento_token').single();
+      }).select('id').single();
 
       if (error) throw new Error(error.message);
-      // Usa valores retornados pelo banco
+      // Usa ID retornado pelo banco (token gerado localmente é suficiente)
       if (inserted?.id) newPatient.id = inserted.id;
-      if (inserted?.consentimento_token) finalConsentToken = inserted.consentimento_token;
     }
 
     // Persiste localmente sem o CPF em texto — substitui pelo hash
@@ -146,7 +144,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       });
     }
 
-    return { consentToken: finalConsentToken };
+    return { consentToken };
   },
 
   deletePatient: async (id, professionalId?: string) => {
