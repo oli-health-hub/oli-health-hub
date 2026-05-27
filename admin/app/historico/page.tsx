@@ -196,7 +196,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
             <select name="room" defaultValue={room}
               className="text-sm border border-oli-border rounded-lg px-3 py-1.5 text-oli-dark bg-white focus:outline-none focus:ring-1 focus:ring-oli-green">
               <option value="">Todas</option>
-              {['Sala 1','Sala 2','Sala 3','Sala 4','Sala 5'].map(r => (
+              {['Sala 1','Sala 2','Sala 3','Sala 4','Sala 5','Sala 6','Sala Digital'].map(r => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>

@@ -89,7 +89,7 @@ export default async function HomePage() {
         <div className={`bg-white rounded-2xl border p-4 ${salaEmUso > 0 ? 'border-oli-green/40' : 'border-oli-border'}`}>
           <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Salas em uso</p>
           <p className="text-3xl font-extrabold text-oli-dark leading-none mt-2">
-            {salaEmUso}<span className="text-base font-semibold text-oli-lgray ml-1">/5</span>
+            {salaEmUso}<span className="text-base font-semibold text-oli-lgray ml-1">/7</span>
           </p>
           {salaEmUso > 0 && (
             <p className="mt-1.5 text-[10px] font-bold text-oli-green">● ao vivo</p>

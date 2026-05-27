@@ -3,15 +3,17 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-const ROOMS = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5'];
+const ROOMS = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala Digital'];
 
-const ROOM_THEME = {
-  'Sala 1': { free: 'bg-emerald-50',  occ: 'bg-emerald-200',  border: 'border-emerald-300',  dot: 'bg-emerald-500',  text: 'text-emerald-900' },
-  'Sala 2': { free: 'bg-blue-50',     occ: 'bg-blue-200',     border: 'border-blue-300',     dot: 'bg-blue-500',     text: 'text-blue-900' },
-  'Sala 3': { free: 'bg-violet-50',   occ: 'bg-violet-200',   border: 'border-violet-300',   dot: 'bg-violet-500',   text: 'text-violet-900' },
-  'Sala 4': { free: 'bg-amber-50',    occ: 'bg-amber-200',    border: 'border-amber-300',    dot: 'bg-amber-500',    text: 'text-amber-900' },
-  'Sala 5': { free: 'bg-rose-50',     occ: 'bg-rose-200',     border: 'border-rose-300',     dot: 'bg-rose-500',     text: 'text-rose-900' },
-} as const;
+const ROOM_THEME: Record<string, { free: string; occ: string; border: string; dot: string; text: string }> = {
+  'Sala 1':      { free: 'bg-emerald-50',  occ: 'bg-emerald-200',  border: 'border-emerald-300',  dot: 'bg-emerald-500',  text: 'text-emerald-900' },
+  'Sala 2':      { free: 'bg-blue-50',     occ: 'bg-blue-200',     border: 'border-blue-300',     dot: 'bg-blue-500',     text: 'text-blue-900' },
+  'Sala 3':      { free: 'bg-violet-50',   occ: 'bg-violet-200',   border: 'border-violet-300',   dot: 'bg-violet-500',   text: 'text-violet-900' },
+  'Sala 4':      { free: 'bg-amber-50',    occ: 'bg-amber-200',    border: 'border-amber-300',    dot: 'bg-amber-500',    text: 'text-amber-900' },
+  'Sala 5':      { free: 'bg-rose-50',     occ: 'bg-rose-200',     border: 'border-rose-300',     dot: 'bg-rose-500',     text: 'text-rose-900' },
+  'Sala 6':      { free: 'bg-teal-50',     occ: 'bg-teal-200',     border: 'border-teal-300',     dot: 'bg-teal-500',     text: 'text-teal-900' },
+  'Sala Digital':{ free: 'bg-indigo-50',   occ: 'bg-indigo-200',   border: 'border-indigo-300',   dot: 'bg-indigo-500',   text: 'text-indigo-900' },
+};
 
 const STATUS_LABEL: Record<string, string> = {
   agendado:  'Agendado',
@@ -172,7 +174,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
           {/* Room rows */}
           <div className="space-y-2" style={{ minWidth: 620 }}>
             {ROOMS.map(room => {
-              const theme = ROOM_THEME[room as keyof typeof ROOM_THEME];
+              const theme = ROOM_THEME[room] ?? ROOM_THEME['Sala 1'];
               const roomRecs = recs.filter(r => r.room_name === room);
               const hasActive = roomRecs.some(r => r.consultation_started_at && !r.consultation_ended_at);
 
