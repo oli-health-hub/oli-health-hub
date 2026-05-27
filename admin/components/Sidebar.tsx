@@ -224,19 +224,25 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
       </nav>
 
       {/* Footer — usuário + logout */}
-      <div className="border-t border-white/8 px-3 py-3">
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl hover:bg-white/6 transition-colors group"
-          aria-label="Sair da conta"
-        >
+      <div className="border-t border-white/8 px-3 py-3 space-y-1">
+        {/* Info do usuário */}
+        <div className="flex items-center gap-2.5 px-3 py-2">
           <div className="w-7 h-7 rounded-full bg-oli-green/80 flex items-center justify-center text-white text-xs font-bold shrink-0">
             {initial}
           </div>
-          <span className="text-white/45 text-xs truncate flex-1 text-left">{userEmail}</span>
-          <span className="text-white/25 group-hover:text-white/50 transition-colors">
+          <span className="text-white/40 text-xs truncate flex-1">{userEmail}</span>
+        </div>
+
+        {/* Botão Sair explícito */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl bg-white/5 hover:bg-oli-red/20 hover:text-oli-red transition-colors group text-white/50 hover:text-oli-red"
+          aria-label="Sair da conta"
+        >
+          <span className="shrink-0">
             <IconLogOut />
           </span>
+          <span className="text-sm font-medium">Sair da conta</span>
         </button>
       </div>
     </aside>
