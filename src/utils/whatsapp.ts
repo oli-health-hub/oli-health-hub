@@ -59,14 +59,25 @@ export async function notifyPatientAppointment(
   await openWhatsApp(cleanPhone(telefone), message);
 }
 
-/** Solicita consentimento LGPD ao paciente via WhatsApp */
-export async function notifyPatientLGPDConsent(nome: string, telefone: string, doctorName: string): Promise<void> {
+/**
+ * Solicita consentimento LGPD ao paciente via WhatsApp com link único.
+ * O paciente acessa a página, lê os termos e clica "Autorizo".
+ * O aceite é gravado no Supabase com timestamp e IP — prova jurídica LGPD Art. 7.
+ */
+export async function notifyPatientLGPDConsent(
+  nome:        string,
+  telefone:    string,
+  doctorName:  string,
+  consentToken: string,
+): Promise<void> {
+  const link = `https://olihealthhub.com.br/consentimento?token=${consentToken}`;
   const message =
     `Olá ${nome}! 👋\n\n` +
-    `Dr(a). ${doctorName} acabou de realizar seu cadastro no OLI Health Hub para facilitar o agendamento das suas consultas.\n\n` +
-    `Para estar em conformidade com a LGPD (Lei 13.709/2018), precisamos da sua autorização expressa para armazenar seus dados.\n\n` +
-    `✅ *Autorizo* o uso dos meus dados (nome, telefone e informações de saúde) exclusivamente para agendamento e comunicação com meu médico no OLI Health Hub, conforme a Política de Privacidade.\n\n` +
-    `Responda *SIM* para confirmar. Sem essa confirmação, seus dados não serão utilizados.`;
+    `Dr(a). ${doctorName} realizou seu cadastro no *OLI Health Hub* para facilitar seus agendamentos.\n\n` +
+    `Precisamos da sua autorização para armazenar seus dados, conforme a *LGPD (Lei 13.709/2018)*.\n\n` +
+    `👉 Acesse o link abaixo, leia os termos e autorize em 1 toque:\n` +
+    `${link}\n\n` +
+    `_Este link é exclusivo para você e expira após o uso._`;
   await openWhatsApp(cleanPhone(telefone), message);
 }
 

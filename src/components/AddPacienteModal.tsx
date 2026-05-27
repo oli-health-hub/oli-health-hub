@@ -90,8 +90,8 @@ export function AddPacienteModal({ onClose }: Props) {
     }
     setLoading(true);
     try {
-      // Salva sem consentimento — pendente até o paciente confirmar via WhatsApp
-      await addPatient({
+      // Salva sem consentimento — pendente até o paciente confirmar via link
+      const { consentToken } = await addPatient({
         nome:                   nome.trim(),
         telefone:               telefone.trim(),
         cpf:                    cpf.replace(/\D/g, ''),
@@ -101,8 +101,8 @@ export function AddPacienteModal({ onClose }: Props) {
         consentimentoTimestamp: '', // vazio = aguardando consentimento do paciente
       }, profile?.id); // ← ID do profissional obrigatório para persistir no Supabase
       const doctorName = profile?.nome ?? 'seu médico';
-      // Envia solicitação de consentimento LGPD ao paciente
-      try { await notifyPatientLGPDConsent(nome, telefone, doctorName); } catch { /* sem WhatsApp */ }
+      // Envia link de consentimento LGPD ao paciente (token único)
+      try { await notifyPatientLGPDConsent(nome, telefone, doctorName, consentToken); } catch { /* sem WhatsApp */ }
       // Notifica a recepção do OLI
       try { await notifyOLINewPatient(nome, telefone); } catch { /* sem WhatsApp */ }
       onClose();

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autorização de Dados — OLI Health Hub</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F4EFEA;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 40px;
+    }
+
+    .logo {
+      width: 80px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 24px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #5F7D6715;
+      color: #5F7D67;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #2F2F2F;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6B6B6B;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .subtitle strong { color: #2F2F2F; }
+
+    .termos {
+      background: #F4EFEA;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .termos h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2F2F2F;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .termos ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .termos li {
+      font-size: 13px;
+      color: #2F2F2F;
+      line-height: 1.5;
+      display: flex;
+      gap: 8px;
+    }
+
+    .termos li::before {
+      content: '✓';
+      color: #5F7D67;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .aviso-lgpd {
+      border: 1.5px solid #5F7D6730;
+      border-left: 4px solid #5F7D67;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #6B6B6B;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .aviso-lgpd strong { color: #2F2F2F; }
+
+    .btn-aceitar {
+      width: 100%;
+      background: #5F7D67;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-aceitar:hover:not(:disabled) { background: #4a6450; }
+    .btn-aceitar:disabled { background: #c5c5c5; cursor: not-allowed; }
+
+    .btn-recusar {
+      width: 100%;
+      background: transparent;
+      color: #6B6B6B;
+      font-size: 14px;
+      border: none;
+      padding: 12px;
+      cursor: pointer;
+      margin-top: 8px;
+      text-decoration: underline;
+    }
+
+    /* Estados */
+    #estado-carregando,
+    #estado-erro,
+    #estado-aceito,
+    #estado-recusado { display: none; }
+
+    #estado-carregando.visivel,
+    #estado-erro.visivel,
+    #estado-aceito.visivel,
+    #estado-recusado.visivel { display: block; }
+
+    #estado-formulario { display: block; }
+    #estado-formulario.oculto { display: none; }
+
+    .spinner {
+      text-align: center;
+      padding: 40px 0;
+      color: #6B6B6B;
+      font-size: 14px;
+    }
+
+    .resultado {
+      text-align: center;
+      padding: 32px 0 8px;
+    }
+
+    .resultado .icone {
+      font-size: 56px;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .resultado h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #2F2F2F;
+      margin-bottom: 8px;
+    }
+
+    .resultado p {
+      font-size: 14px;
+      color: #6B6B6B;
+      line-height: 1.6;
+    }
+
+    .footer-legal {
+      margin-top: 24px;
+      font-size: 11px;
+      color: #6B6B6B;
+      text-align: center;
+      max-width: 480px;
+    }
+
+    .footer-legal a { color: #5F7D67; }
+  </style>
+</head>
+<body>
+
+  <img src="logo_oli_transparent.png" alt="OLI Health Hub" class="logo" />
+
+  <div class="card">
+
+    <!-- Carregando -->
+    <div id="estado-carregando" class="spinner">
+      <p>Carregando informações...</p>
+    </div>
+
+    <!-- Erro -->
+    <div id="estado-erro">
+      <div class="resultado">
+        <div class="icone">❌</div>
+        <h2>Link inválido</h2>
+        <p>Este link de autorização é inválido ou já expirou.<br>Entre em contato com seu médico para um novo link.</p>
+      </div>
+    </div>
+
+    <!-- Já consentiu -->
+    <div id="estado-aceito">
+      <div class="resultado">
+        <div class="icone">✅</div>
+        <h2>Autorização já registrada</h2>
+        <p id="texto-ja-aceito">Você já autorizou o uso dos seus dados no OLI Health Hub.<br>Obrigado!</p>
+      </div>
+    </div>
+
+    <!-- Recusou -->
+    <div id="estado-recusado">
+      <div class="resultado">
+        <div class="icone">🙏</div>
+        <h2>Entendemos</h2>
+        <p>Seus dados não serão utilizados.<br>Para qualquer dúvida, entre em contato com seu médico.</p>
+      </div>
+    </div>
+
+    <!-- Formulário principal -->
+    <div id="estado-formulario">
+      <div class="badge">🔒 LGPD — Lei 13.709/2018</div>
+
+      <h1 id="titulo-paciente">Autorização de Uso de Dados</h1>
+      <p class="subtitle" id="subtitulo">
+        <strong id="nome-medico">Seu médico</strong> cadastrou você no
+        <strong>OLI Health Hub</strong> para facilitar seus agendamentos.
+        Para continuar, precisamos da sua autorização.
+      </p>
+
+      <div class="termos">
+        <h2>O que você está autorizando:</h2>
+        <ul>
+          <li>Armazenar seu nome, telefone e data de nascimento</li>
+          <li>Utilizar seus dados exclusivamente para agendamentos e comunicação com seu médico</li>
+          <li>Manter seus dados protegidos conforme a LGPD</li>
+          <li>Você pode revogar esta autorização a qualquer momento</li>
+        </ul>
+      </div>
+
+      <div class="aviso-lgpd">
+        <strong>Seus direitos (LGPD Art. 18):</strong> você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento diretamente com seu médico ou pelo e-mail <strong>privacidade@olihealthhub.com.br</strong>.
+      </div>
+
+      <button class="btn-aceitar" id="btn-aceitar" onclick="aceitar()">
+        ✅ Autorizo o uso dos meus dados
+      </button>
+      <button class="btn-recusar" onclick="recusar()">
+        Não autorizo
+      </button>
+    </div>
+
+  </div>
+
+  <p class="footer-legal">
+    OLI Health Hub · <a href="/politica-de-privacidade">Política de Privacidade</a> · LGPD Lei 13.709/2018
+  </p>
+
+  <script>
+    const SUPABASE_URL       = 'https://xwcarrurjvfxisuaihid.supabase.co';
+    const EDGE_FUNCTION_BASE = SUPABASE_URL + '/functions/v1/accept-consent';
+    const ANON_KEY           = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3Y2FycnVyanZmeGlzdWFpaGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ1ODM0MzMsImV4cCI6MjA2MDE1OTQzM30.lBtUWmXsRi7MHgFxFBCxBV5hS1LSUS3jwLhRzYd1fes';
+
+    const params = new URLSearchParams(window.location.search);
+    const token  = params.get('token');
+
+    function mostrar(id) {
+      ['estado-carregando','estado-erro','estado-aceito','estado-recusado','estado-formulario']
+        .forEach(s => {
+          const el = document.getElementById(s);
+          if (s === id) {
+            el.classList.add('visivel');
+            if (s === 'estado-formulario') el.classList.remove('oculto');
+          } else {
+            el.classList.remove('visivel');
+            if (s === 'estado-formulario') el.classList.add('oculto');
+          }
+        });
+    }
+
+    async function carregar() {
+      if (!token) { mostrar('estado-erro'); return; }
+
+      mostrar('estado-carregando');
+
+      try {
+        const res = await fetch(EDGE_FUNCTION_BASE + '?token=' + encodeURIComponent(token), {
+          headers: { 'apikey': ANON_KEY },
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) { mostrar('estado-erro'); return; }
+
+        if (data.jaConsentiu) {
+          mostrar('estado-aceito');
+          return;
+        }
+
+        document.getElementById('titulo-paciente').textContent =
+          'Olá, ' + data.pacienteNome.split(' ')[0] + '! 👋';
+        document.getElementById('nome-medico').textContent =
+          'Dr(a). ' + data.medicoNome;
+
+        mostrar('estado-formulario');
+      } catch (e) {
+        mostrar('estado-erro');
+      }
+    }
+
+    async function aceitar() {
+      const btn = document.getElementById('btn-aceitar');
+      btn.disabled = true;
+      btn.textContent = 'Registrando...';
+
+      try {
+        const res = await fetch(EDGE_FUNCTION_BASE, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
+          body:    JSON.stringify({ token }),
+        });
+        const data = await res.json();
+
+        if (res.ok && (data.ok)) {
+          mostrar('estado-aceito');
+        } else {
+          btn.disabled = false;
+          btn.textContent = '✅ Autorizo o uso dos meus dados';
+          alert('Erro ao registrar. Tente novamente.');
+        }
+      } catch {
+        btn.disabled = false;
+        btn.textContent = '✅ Autorizo o uso dos meus dados';
+        alert('Erro de conexão. Verifique sua internet e tente novamente.');
+      }
+    }
+
+    function recusar() {
+      if (confirm('Tem certeza? Seus dados não serão utilizados e seu cadastro será mantido apenas pelo seu médico.')) {
+        mostrar('estado-recusado');
+      }
+    }
+
+    carregar();
+  </script>
+
+</body>
+</html>

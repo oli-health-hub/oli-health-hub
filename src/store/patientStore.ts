@@ -12,7 +12,7 @@ interface PatientStore {
   isLoaded:  boolean;
   setPatients:   (patients: Patient[]) => void;
   loadPatients:  (professionalId?: string) => Promise<void>;
-  addPatient:    (data: Omit<Patient, 'id' | 'dataCadastro' | 'isSincronizado' | 'consentimentoTimestamp'> & { consentimentoTimestamp: string }, professionalId?: string) => Promise<void>;
+  addPatient:    (data: Omit<Patient, 'id' | 'dataCadastro' | 'isSincronizado' | 'consentimentoTimestamp'> & { consentimentoTimestamp: string }, professionalId?: string) => Promise<{ consentToken: string }>;
   deletePatient: (id: string, professionalId?: string) => Promise<void>;
   markSynced:    (id: string) => Promise<void>;
   exportData:    () => string;
@@ -83,10 +83,19 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    // Gera UUID compatível com o banco (uuid v4)
-    const newId = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-4000-${(Math.random() * 0x3fff + 0x8000 | 0).toString(16)}-${Math.random().toString(16).slice(2)}`;
+    // Gera UUID v4 compatível com o banco
+    function genUUID(): string {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+    }
+
+    const newId            = genUUID();
+    const consentToken     = genUUID(); // token para link de consentimento LGPD
 
     const newPatient: Patient = {
       ...data,
@@ -98,6 +107,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
     };
 
     // Salva no Supabase — persiste o HASH, nunca o CPF em texto
+    let finalConsentToken = consentToken;
     if (professionalId) {
       const { data: inserted, error } = await supabase.from('patients').insert({
         id:                      newPatient.id,
@@ -108,13 +118,15 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
         data_nascimento:         toBRDateToISO(newPatient.dataNascimento ?? ''), // YYYY-MM-DD ou null
         convenio_tipo:           newPatient.convenioTipo,
         convenio_nome:           newPatient.convenioNome ?? null,
-        consentimento_timestamp: (newPatient.consentimentoTimestamp || null) as unknown as string, // null quando pendente
+        consentimento_timestamp: null,                                 // null = aguardando
+        consentimento_token:     consentToken,
         is_sincronizado:         false,
-      }).select('id').single();
+      }).select('id, consentimento_token').single();
 
       if (error) throw new Error(error.message);
-      // Usa o ID gerado pelo banco (em caso de conflito)
+      // Usa valores retornados pelo banco
       if (inserted?.id) newPatient.id = inserted.id;
+      if (inserted?.consentimento_token) finalConsentToken = inserted.consentimento_token;
     }
 
     // Persiste localmente sem o CPF em texto — substitui pelo hash
@@ -133,6 +145,8 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
         targetId:   newPatient.id,
       });
     }
+
+    return { consentToken: finalConsentToken };
   },
 
   deletePatient: async (id, professionalId?: string) => {
