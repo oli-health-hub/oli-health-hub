@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLI Health Hub – Operação Invisível, Crescimento Visível.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --verde:        #5F7D67;
+            --verde-escuro: #4a6454;
+            --bege:         #F4EFEA;
+            --bege-escuro:  #EDE7DF;
+            --dourado:      #B8893C;
+            --cinza:        #2F2F2F;
+            --cinza-medio:  #666;
+            --cinza-leve:   #999;
+            --branco:       #FFFFFF;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--cinza);
+            background: var(--bege);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Poppins', sans-serif; }
+
+        /* ─── SCROLLBAR ─────────────────────────────── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bege); }
+        ::-webkit-scrollbar-thumb { background: var(--verde); border-radius: 2px; }
+
+        /* ─── HEADER ────────────────────────────────── */
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: #FFFFFF;
+            height: 96px;
+            padding: 0 72px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid rgba(95,125,103,0.12);
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+        }
+
+        .logo img {
+            height: 88px;
+            display: block;
+        }
+
+        nav { display: flex; align-items: center; gap: 36px; }
+
+        nav a {
+            text-decoration: none;
+            color: var(--cinza);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: color .2s;
+        }
+        nav a:hover { color: var(--verde); }
+
+        .nav-cta {
+            background: var(--verde);
+            color: var(--branco) !important;
+            padding: 11px 26px;
+            border-radius: 7px;
+            font-weight: 600 !important;
+            letter-spacing: 0.01em;
+        }
+        .nav-cta:hover { background: var(--verde-escuro) !important; }
+
+        /* ─── BOTÕES ────────────────────────────────── */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 16px 40px;
+            background: var(--verde);
+            color: var(--branco);
+            text-decoration: none;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 15px;
+            border: none; cursor: pointer;
+            transition: background .25s, transform .2s, box-shadow .25s;
+        }
+        .btn:hover {
+            background: var(--verde-escuro);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(95,125,103,0.25);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1.5px solid var(--verde);
+            color: var(--verde);
+        }
+        .btn-ghost:hover { background: var(--verde); color: var(--branco); }
+
+        .btn-dourado {
+            background: var(--dourado);
+        }
+        .btn-dourado:hover {
+            background: #9e7530;
+            box-shadow: 0 8px 24px rgba(184,137,60,0.3);
+        }
+
+        /* ─── HERO ──────────────────────────────────── */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: calc(100vh - 96px);
+        }
+
+        .hero-content {
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 80px 64px 80px 72px;
+        }
+
+        .eyebrow {
+            display: inline-flex; align-items: center; gap: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--dourado);
+            margin-bottom: 28px;
+        }
+        .eyebrow::before {
+            content: '';
+            display: block;
+            width: 28px; height: 1.5px;
+            background: var(--dourado);
+        }
+
+        .hero-content h1 {
+            font-size: 54px;
+            font-weight: 700;
+            line-height: 1.15;
+            color: var(--verde);
+            margin-bottom: 28px;
+        }
+
+        .hero-content p {
+            font-size: 17px;
+            line-height: 1.8;
+            color: var(--cinza-medio);
+            max-width: 480px;
+            margin-bottom: 48px;
+            font-weight: 300;
+        }
+
+        .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+
+        .hero-image {
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-image img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .hero-image::before {
+            content: '';
+            position: absolute; inset: 0; left: 0;
+            background: linear-gradient(to right, var(--bege) 0%, transparent 12%);
+            z-index: 1;
+        }
+
+        /* ─── SEÇÃO GENÉRICA ────────────────────────── */
+        .section {
+            padding: 112px 72px;
+        }
+        .section-white  { background: var(--branco); }
+        .section-bege   { background: var(--bege); }
+        .section-verde  { background: var(--verde); }
+        .section-escuro { background: var(--cinza); }
+
+        .section-header { margin-bottom: 72px; }
+        .section-header.centered { text-align: center; }
+        .section-header.centered .section-sub { margin-left: auto; margin-right: auto; }
+
+        .section-label {
+            display: inline-flex; align-items: center; gap: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--dourado);
+            margin-bottom: 16px;
+        }
+        .section-label::before {
+            content: '';
+            display: block;
+            width: 24px; height: 1.5px;
+            background: var(--dourado);
+        }
+
+        .section-title {
+            font-size: 40px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--cinza);
+            margin-bottom: 20px;
+        }
+        .section-verde  .section-title,
+        .section-escuro .section-title { color: var(--branco); }
+
+        .section-sub {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--cinza-medio);
+            max-width: 600px;
+            font-weight: 300;
+        }
+        .section-verde  .section-sub,
+        .section-escuro .section-sub { color: rgba(255,255,255,0.72); }
+
+        /* ─── DOR / PROBLEMA (NOVA SEÇÃO) ───────────── */
+        .dor-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 64px;
+        }
+        .dor-card {
+            background: var(--bege);
+            padding: 48px 40px;
+            border-radius: 16px;
+            border-left: 4px solid var(--dourado);
+        }
+        .dor-card h3 {
+            font-size: 20px;
+            color: var(--cinza);
+            margin-bottom: 16px;
+        }
+        .dor-card p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--cinza-medio);
+            font-weight: 300;
+        }
+
+        /* ─── MODELO (COMO FUNCIONA) ────────────────── */
+        .modelo-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+            margin-bottom: 96px;
+        }
+        .modelo-row:last-child { margin-bottom: 0; }
+        .modelo-row.reverse { direction: rtl; }
+        .modelo-row.reverse > * { direction: ltr; }
+
+        .step-num {
+            font-family: 'Poppins', sans-serif;
+            font-size: 80px;
+            font-weight: 700;
+            line-height: 1;
+            color: rgba(95,125,103,0.08);
+            margin-bottom: -16px;
+            letter-spacing: -2px;
+        }
+
+        .modelo-text h3 {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--verde);
+            margin-bottom: 18px;
+        }
+
+        .modelo-text p {
+            font-size: 16px;
+            line-height: 1.85;
+            color: var(--cinza-medio);
+            font-weight: 300;
+        }
+
+        .modelo-img {
+            border-radius: 14px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        .modelo-img img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform .7s ease;
+        }
+        .modelo-img:hover img { transform: scale(1.04); }
+
+        /* ─── PLANOS ────────────────────────────────── */
+        .planos-wrapper {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            min-height: 680px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.12);
+        }
+
+        .plano-painel {
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plano-painel.base {
+            background: var(--branco);
+        }
+
+        .plano-painel.vip {
+            background: var(--verde);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plano-painel.vip::after {
+            content: '';
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 280px; height: 280px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+        }
+
+        .plano-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--dourado);
+            color: var(--branco);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-bottom: 28px;
+            align-self: flex-start;
+        }
+
+        .plano-painel h3 {
+            font-size: 34px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .plano-painel.base h3 { color: var(--cinza); }
+        .plano-painel.vip  h3 { color: var(--branco); }
+
+        .plano-tagline {
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+        .plano-painel.base .plano-tagline { color: var(--cinza-medio); }
+        .plano-painel.vip  .plano-tagline { color: rgba(255,255,255,0.75); }
+
+        .plano-divider {
+            height: 1px;
+            margin-bottom: 36px;
+        }
+        .plano-painel.base .plano-divider { background: var(--bege-escuro); }
+        .plano-painel.vip  .plano-divider { background: rgba(255,255,255,0.18); }
+
+        .plano-features {
+            list-style: none;
+            flex: 1;
+            margin-bottom: 44px;
+        }
+
+        .plano-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            font-size: 15px;
+            line-height: 1.6;
+            padding: 13px 0;
+            border-bottom: 1px solid;
+        }
+        .plano-painel.base .plano-features li {
+            color: var(--cinza);
+            border-bottom-color: var(--bege-escuro);
+        }
+        .plano-painel.vip .plano-features li {
+            color: rgba(255,255,255,0.88);
+            border-bottom-color: rgba(255,255,255,0.12);
+        }
+        .plano-features li:last-child { border-bottom: none; }
+
+        .feat-icon {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--branco);
+        }
+        .plano-painel.base .feat-icon { background: var(--verde); }
+        .plano-painel.vip  .feat-icon { background: var(--dourado); }
+
+        .feat-text strong {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .feat-text span {
+            font-size: 13px;
+            font-weight: 300;
+            opacity: 0.7;
+        }
+        .plano-painel.vip .feat-text span { opacity: 0.65; }
+
+        /* ─── INFRAESTRUTURA ────────────────────────── */
+        .infra-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+        }
+
+        .infra-card {
+            border-radius: 14px;
+            overflow: hidden;
+            background: var(--branco);
+            transition: transform .3s, box-shadow .3s;
+        }
+        .infra-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 48px rgba(0,0,0,0.1);
+        }
+
+        .infra-img {
+            width: 100%;
+            aspect-ratio: 3/2;
+            object-fit: cover;
+            display: block;
+        }
+
+        .infra-body { padding: 28px 28px 32px; }
+
+        .infra-body h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--verde);
+            margin-bottom: 10px;
+        }
+
+        .infra-body p {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--cinza-medio);
+            font-weight: 300;
+        }
+
+        /* ─── CONTATO ───────────────────────────────── */
+        .contato-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: start;
+        }
+
+        .contato-info { padding-top: 8px; }
+
+        .contato-info .section-label::before { background: rgba(184,137,60,0.7); }
+
+        .contato-detail {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 16px;
+        }
+        .contato-detail strong { color: var(--branco); font-weight: 500; }
+
+        .form-card {
+            background: var(--branco);
+            border-radius: 18px;
+            padding: 52px 48px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+        }
+
+        .form-card h3 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--cinza);
+            margin-bottom: 36px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 28px;
+        }
+
+        .form-group { margin-bottom: 24px; }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--cinza-leve);
+            margin-bottom: 10px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 0;
+            background: transparent;
+            border: none;
+            border-bottom: 1.5px solid #ddd;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            color: var(--cinza);
+            transition: border-color .25s;
+            appearance: none;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-bottom-color: var(--verde);
+        }
+        .form-group input::placeholder { color: #ccc; }
+
+        .form-card .btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 18px;
+            font-size: 16px;
+        }
+
+        /* ─── FOOTER ────────────────────────────────── */
+        footer {
+            background: #222;
+            padding: 40px 72px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        footer img { height: 60px; opacity: 0.65; }
+
+        .footer-text {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            line-height: 1.7;
+        }
+
+        .footer-admin-link {
+            display: block;
+            margin-top: 12px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.18);
+            text-decoration: none;
+            letter-spacing: 0.3px;
+            transition: color .2s;
+        }
+        .footer-admin-link:hover { color: rgba(255,255,255,0.5); }
+
+        /* ─── WHATSAPP FLOAT ────────────────────────── */
+        .wa-float {
+            position: fixed; bottom: 28px; right: 28px; z-index: 999;
+            width: 56px; height: 56px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 20px rgba(37,211,102,0.4);
+            transition: transform .25s;
+            text-decoration: none;
+        }
+        .wa-float:hover { transform: scale(1.1); }
+        .wa-float svg { width: 28px; height: 28px; fill: white; }
+
+        /* ─── ANIMAÇÕES ─────────────────────────────── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(32px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .hero-content { animation: fadeUp .7s ease both; }
+        .hero-image   { animation: fadeUp .7s .12s ease both; }
+
+        /* ─── RESPONSIVE ────────────────────────────── */
+        @media (max-width: 1024px) {
+            header { padding: 0 32px; }
+            .section { padding: 80px 32px; }
+            .hero-content { padding: 60px 32px; }
+            .hero-content h1 { font-size: 42px; }
+            .planos-wrapper { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .logo img { height: 60px; }
+            nav { display: none; }
+            .hero { grid-template-columns: 1fr; min-height: auto; }
+            .hero-image { height: 260px; }
+            .hero-content h1 { font-size: 34px; }
+            .section { padding: 64px 24px; }
+            .dor-grid { grid-template-columns: 1fr; gap: 24px; }
+            .modelo-row, .modelo-row.reverse { grid-template-columns: 1fr; direction: ltr; gap: 32px; }
+            .planos-wrapper { border-radius: 14px; }
+            .plano-painel { padding: 48px 32px; }
+            .infra-grid { grid-template-columns: 1fr 1fr; }
+            .contato-grid { grid-template-columns: 1fr; gap: 48px; }
+            .form-card { padding: 36px 28px; }
+            .form-row { grid-template-columns: 1fr; }
+            footer { flex-direction: column; gap: 20px; padding: 32px 24px; text-align: center; }
+            .footer-text { text-align: center; }
+        }
+
+        @media (max-width: 480px) {
+            .infra-grid { grid-template-columns: 1fr; }
+            .hero-actions { flex-direction: column; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────── -->
+<header>
+    <div class="logo">
+        <img src="logo_oli_transparent.png" alt="OLI Health Hub">
+    </div>
+    <nav>
+        <a href="#problema">O Desafio</a>
+        <a href="#modelo">A Solução</a>
+        <a href="#planos">Planos</a>
+        <a href="#infraestrutura">Infraestrutura</a>
+        <a href="#contato" class="nav-cta">Agendar Visita</a>
+    </nav>
+</header>
+
+<!-- ── HERO ────────────────────────────────────────────── -->
+<section class="hero">
+    <div class="hero-content">
+        <span class="eyebrow">Hub de Saúde Premium · Consolação, São Paulo</span>
+        <h1>Operação invisível.<br>Crescimento visível.</h1>
+        <p>O único hub de saúde em São Paulo que assume 100% da sua operação burocrática. Você foca no paciente. Nós cuidamos da agenda, da cobrança e da estrutura.</p>
+        <div class="hero-actions">
+            <a href="#contato" class="btn">Agendar Visita Gratuita</a>
+            <a href="#modelo" class="btn btn-ghost">Entender o Modelo</a>
+        </div>
+    </div>
+    <div class="hero-image">
+        <img src="img_recepcao.jpg" alt="Recepção OLI Health Hub">
+    </div>
+</section>
+
+<!-- ── DOR / PROBLEMA ───────────────────────────────────── -->
+<section class="section section-white" id="problema">
+    <div class="section-header centered">
+        <div class="section-label">A Realidade do Consultório</div>
+        <h2 class="section-title">O que impede você de<br>escalar seus atendimentos?</h2>
+        <p class="section-sub">A maioria dos espaços oferece apenas paredes bonitas. Mas o que realmente esgota o profissional de saúde particular é a operação invisível.</p>
+    </div>
+
+    <div class="dor-grid">
+        <div class="dor-card">
+            <h3>O constrangimento da cobrança</h3>
+            <p>Ter que cobrar o paciente após um atendimento profundo quebra o vínculo terapêutico. A relação deve ser de cuidado, não financeira.</p>
+        </div>
+        <div class="dor-card">
+            <h3>O custo oculto da secretária</h3>
+            <p>Contratar, treinar, gerenciar faltas e lidar com passivos trabalhistas. Uma secretária própria consome tempo e energia que deveriam ir para o paciente.</p>
+        </div>
+        <div class="dor-card">
+            <h3>A burocracia do faturamento</h3>
+            <p>Emitir notas fiscais, gerenciar inadimplência e organizar a contabilidade PJ de madrugada, após um dia inteiro de atendimentos exaustivos.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ── COMO FUNCIONA (A SOLUÇÃO) ────────────────────────── -->
+<section class="section section-bege" id="modelo">
+    <div class="section-header">
+        <div class="section-label">A Solução OLI</div>
+        <h2 class="section-title">Nós assumimos a operação.<br>Você assume o consultório.</h2>
+        <p class="section-sub">Desenhamos um ecossistema onde a burocracia desaparece. Você reserva, atende e vai embora. O resto é com a nossa equipe.</p>
+    </div>
+
+    <div class="modelo-row">
+        <div class="modelo-text">
+            <div class="step-num">01</div>
+            <h3>Cobrança e Faturamento Integrados</h3>
+            <p>Fim do constrangimento. Nossa recepção profissional realiza a cobrança do seu paciente, processa o pagamento e emite a nota fiscal diretamente no seu CNPJ. Você preserva a relação terapêutica.</p>
+        </div>
+        <div class="modelo-img">
+            <img src="img_operacao.jpg" alt="Recepção realizando cobrança">
+        </div>
+    </div>
+
+    <div class="modelo-row reverse">
+        <div class="modelo-text">
+            <div class="step-num">02</div>
+            <h3>O Hub: Conexão e Crescimento</h3>
+            <p>Mais que um espaço, um ecossistema vivo. Promovemos eventos, palestras, imersões e rodas de conversa exclusivas. Um ambiente desenhado para networking de alto nível, troca de experiências e parcerias estratégicas que colocam você em outro patamar no mercado.</p>
+        </div>
+        <div class="modelo-img">
+            <img src="img_eventos.jpg" alt="Sala de treinamentos e eventos do OLI">
+        </div>
+    </div>
+
+    <div class="modelo-row">
+        <div class="modelo-text">
+            <div class="step-num">03</div>
+            <h3>Assessoria e Marketing Integrado</h3>
+            <p>Oferecemos suporte contábil especializado, assessoria jurídica, consultoria para convênios e ações de marketing direto nas plataformas e redes do OLI. Uma estrutura completa para blindar e expandir o seu negócio.</p>
+        </div>
+        <div class="modelo-img">
+            <img src="img_consultorio_especializado.jpg" alt="Consultório especializado do OLI">
+        </div>
+    </div>
+
+    <div class="modelo-row reverse">
+        <div class="modelo-text">
+            <div class="step-num">04</div>
+            <h3>Infraestrutura Premium Pay-Per-Use</h3>
+            <p>Consultórios de alto padrão no centro de São Paulo. Você escolhe quando usar, por minuto ou hora, sem compromisso de aluguel fixo. Máxima flexibilidade para a sua agenda e lucro real para o seu bolso.</p>
+        </div>
+        <div class="modelo-img">
+            <img src="img_consultorio_premium.jpg" alt="Consultório premium OLI Health Hub">
+        </div>
+    </div>
+</section>
+
+<!-- ── PLANOS ───────────────────────────────────────────── -->
+<section class="section section-white" id="planos">
+    <div class="section-header centered">
+        <div class="section-label">Planos e Benefícios</div>
+        <h2 class="section-title">Escolha o nível de suporte<br>que a sua prática precisa.</h2>
+        <p class="section-sub">Dois modelos desenhados para diferentes momentos da carreira. Ambos com a mesma infraestrutura premium.</p>
+    </div>
+
+    <div class="planos-wrapper" style="grid-template-columns: repeat(3, 1fr);">
+        
+        <!-- PLANO BASE -->
+        <div class="plano-painel base">
+            <h3>BASE</h3>
+            <p class="plano-tagline">Infraestrutura profissional completa para quem já tem sua operação organizada.</p>
+            <div class="plano-divider"></div>
+            <ul class="plano-features">
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Consultórios equipados</strong>
+                        <span>Climatizados e com internet de alta velocidade</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Recepção presencial</strong>
+                        <span>Equipe profissional para receber seus pacientes</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Endereço comercial</strong>
+                        <span>Endereço de prestígio em São Paulo</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Minutagem Padrão</strong>
+                        <span>Locação flexível por minuto ou hora</span>
+                    </span>
+                </li>
+            </ul>
+            <a href="#contato" class="btn btn-ghost">Conhecer o BASE</a>
+        </div>
+
+        <!-- PLANO PRO -->
+        <div class="plano-painel base" style="border: 1px solid var(--color-gold);">
+            <h3>PRO</h3>
+            <p class="plano-tagline">O degrau intermediário. Resolvemos a dor imediata da sua agenda e cobrança.</p>
+            <div class="plano-divider"></div>
+            <ul class="plano-features">
+                <li>
+                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-text">
+                        <strong>Tudo do Plano BASE</strong>
+                        <span>Toda a infraestrutura premium</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-text">
+                        <strong>Sistema CRM Integrado</strong>
+                        <span>Agenda e prontuário eletrônico</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-text">
+                        <strong>Cobrança Integrada</strong>
+                        <span>Nós cobramos o paciente por você</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-text">
+                        <strong>Minutagem Reduzida</strong>
+                        <span>Desconto no valor do minuto utilizado</span>
+                    </span>
+                </li>
+            </ul>
+            <a href="#contato" class="btn btn-ghost" style="border-color: var(--color-gold); color: var(--color-gold);">Conhecer o PRO</a>
+        </div>
+
+        <!-- PLANO VIP -->
+        <div class="plano-painel vip">
+            <div class="plano-badge">✦ Recomendado</div>
+            <h3>VIP</h3>
+            <p class="plano-tagline">O ecossistema completo. Nós assumimos 100% da burocracia e aceleramos seu crescimento.</p>
+            <div class="plano-divider"></div>
+            <ul class="plano-features">
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Tudo do Plano PRO</strong>
+                        <span>Infraestrutura, CRM e Cobrança</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Contabilidade Inclusa</strong>
+                        <span>Emissão de notas e gestão contábil</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Mentoria e Eventos</strong>
+                        <span>Acesso VIP a imersões e networking</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Consultoria de Convênios</strong>
+                        <span>Assessoria para credenciamento</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Minutagem Premium</strong>
+                        <span>O maior desconto no valor do minuto</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="feat-icon">✓</span>
+                    <span class="feat-text">
+                        <strong>Programa Olicoins</strong>
+                        <span>Cashback em serviços do Hub</span>
+                    </span>
+                </li>
+            </ul>
+            <a href="#contato" class="btn btn-dourado">Aplicar para o VIP</a>
+        </div>
+
+    </div>
+</section>
+
+<!-- ── INFRAESTRUTURA ───────────────────────────────────── -->
+<section class="section section-bege" id="infraestrutura">
+    <div class="section-header">
+        <div class="section-label">Infraestrutura</div>
+        <h2 class="section-title">Cada detalhe pensado<br>para a sua prática.</h2>
+        <p class="section-sub">Um espaço que transmite profissionalismo e acolhimento, localizado no centro de São Paulo, próximo a metrô, hospitais e serviços.</p>
+    </div>
+
+    <div class="infra-grid">
+        <div class="infra-card">
+            <img class="infra-img" src="img_consultorio.jpg" alt="Consultórios">
+            <div class="infra-body">
+                <h3>Consultórios Multidisciplinares</h3>
+                <p>Salas equipadas, climatizadas, com isolamento acústico e privacidade garantida para médicos, psicólogos e nutricionistas.</p>
+            </div>
+        </div>
+        <div class="infra-card">
+            <img class="infra-img" src="img_operacao.jpg" alt="Recepção">
+            <div class="infra-body">
+                <h3>Recepção Profissional</h3>
+                <p>O núcleo operacional do hub. Nossa equipe recebe seus pacientes com excelência e gerencia toda a burocracia.</p>
+            </div>
+        </div>
+        <div class="infra-card">
+            <img class="infra-img" src="img_coworking.jpg" alt="Áreas Comuns">
+            <div class="infra-body">
+                <h3>Lounge e Networking</h3>
+                <p>Espaços de convivência desenhados para troca de experiências e conexão com outros profissionais de elite.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── CONTATO ──────────────────────────────────────────── -->
+<section class="section section-verde" id="contato">
+    <div class="contato-grid">
+        <div class="contato-info">
+            <div class="section-label">Vamos Conversar</div>
+            <h2 class="section-title">Dê o próximo passo<br>na sua carreira.</h2>
+            <p class="section-sub" style="margin-bottom: 48px;">Agende uma visita gratuita. Venha conhecer a infraestrutura e entender como o OLI pode assumir a sua operação para você focar no que realmente importa.</p>
+            <div class="contato-detail">
+                <strong>R. Marquês de Paranaguá, nº 348</strong>&ensp;·&ensp;Consolação, São Paulo, SP
+            </div>
+            <div class="contato-detail">
+                <strong>WhatsApp</strong>&ensp;(11) 91998-0777
+            </div>
+            <div class="contato-detail">
+                <strong>E-mail</strong>&ensp;contato@olihealthhub.com.br
+            </div>
+            <div class="contato-detail">
+                <strong>Edifício Ralph Center, CJ 61 ao 68</strong>&ensp;·&ensp;CEP: 01303-905
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h3>Preencha e entraremos em contato</h3>
+            <form>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" placeholder="Dr. João Silva" required>
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp</label>
+                        <input type="tel" placeholder="(11) 91998-0777" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" placeholder="joao@email.com" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Especialidade</label>
+                        <input type="text" placeholder="Psicologia, Nutrição..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Interesse de Plano</label>
+                        <select required>
+                            <option value="">Selecione...</option>
+                            <option value="base">Plano BASE</option>
+                            <option value="vip">Plano VIP</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Agendar Visita Gratuita</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- ── FOOTER ───────────────────────────────────────────── -->
+<footer>
+    <img src="logo_oli_transparent.png" alt="OLI Health Hub">
+    <div class="footer-text">
+        © 2026 OLI Health Hub · São Paulo, SP<br>
+        R. Marquês de Paranaguá, 348 · Edifício Ralph Center, CJ 61 ao 68<br>
+        (11) 91998-0777 · contato@olihealthhub.com.br
+        <a href="https://admin.olihealthhub.com.br" class="footer-admin-link" target="_blank" rel="noopener">
+            Acesso restrito
+        </a>
+    </div>
+</footer>
+
+<!-- ── WHATSAPP FLOAT ───────────────────────────────────── -->
+<a href="https://wa.me/5511919980777?text=Ol%C3%A1%2C+vim+pelo+site+do+OLI+Health+Hub!" class="wa-float" target="_blank" aria-label="WhatsApp">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+</a>
+
+</body>
+</html>
