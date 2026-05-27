@@ -16,6 +16,7 @@ import { useModuleStore } from '../../src/store/moduleStore';
 import { MODULE_CATALOG, isModuleIncludedInPlan, type ModuleId, type OLIModule } from '../../src/models/modules';
 import type { PlanType } from '../../src/models/types';
 import CheckoutModal from '../../src/components/CheckoutModal';
+import { fetchHourBalance, type HourBalance } from '../../src/services/financeiroService';
 
 // Cores de capa para eventos sem imagem (alterna por índice)
 const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
@@ -31,6 +32,12 @@ export default function EcossistemaScreen() {
 
   const user = useAuthStore((s) => s.user);
   const { loadModules, isModuleActive, isLoaded: modulesLoaded } = useModuleStore();
+  const [hourBalance, setHourBalance] = useState<HourBalance | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchHourBalance(user.id).then(setHourBalance).catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     lumaService.getUpcomingEvents()
@@ -119,7 +126,12 @@ export default function EcossistemaScreen() {
         </Text>
 
         <View style={[styles.card, shadows.card]}>
-          <PacoteHoras consumed={12} total={20} onBuyMore={() => router.push('/(tabs)/financeiro?section=packages')} />
+          <PacoteHoras
+            consumed={hourBalance ? Math.floor(hourBalance.minutosUsados / 60) : 0}
+            total={hourBalance ? Math.floor(hourBalance.minutosTotal / 60) : 0}
+            hasPackage={hourBalance !== null}
+            onBuyMore={() => router.push('/(tabs)/financeiro?section=packages')}
+          />
           <View style={styles.serviceDivider} />
           <ServiceBar title="Orientações Jurídicas" consumed={1} total={3} unit="consultas" />
           <ServiceBar title="Eventos OLI"           consumed={0} total={1} unit="evento" />
@@ -723,10 +735,41 @@ const agentStyles = StyleSheet.create({
 
 // ── PacoteHoras ───────────────────────────────────────────────────────────────
 
-function PacoteHoras({ consumed, total, onBuyMore }: { consumed: number; total: number; onBuyMore?: () => void }) {
+function PacoteHoras({
+  consumed,
+  total,
+  hasPackage,
+  onBuyMore,
+}: {
+  consumed: number;
+  total: number;
+  hasPackage?: boolean;
+  onBuyMore?: () => void;
+}) {
+  // Empty state: no active package
+  if (!hasPackage) {
+    return (
+      <View style={pacoteStyles.container}>
+        <View style={pacoteStyles.emptyState}>
+          <Ionicons name="time-outline" size={32} color={colors.oliGreen} style={{ marginBottom: 8 }} />
+          <Text style={pacoteStyles.emptyTitle}>Sem pacote ativo</Text>
+          <Text style={pacoteStyles.emptySubtitle}>Adquira horas para usar as salas OLI</Text>
+          <TouchableOpacity
+            style={pacoteStyles.buyBtn}
+            onPress={onBuyMore}
+            accessibilityLabel="Comprar horas"
+          >
+            <Ionicons name="add-circle-outline" size={16} color={colors.white} />
+            <Text style={pacoteStyles.buyBtnText}>Comprar horas</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   const remaining = total - consumed;
   const progress  = total > 0 ? consumed / total : 0;
-  const isLow     = remaining <= total * 0.2;          // últimos 20%
+  const isLow     = remaining <= total * 0.2;
 
   return (
     <View style={pacoteStyles.container}>
@@ -771,19 +814,24 @@ function PacoteHoras({ consumed, total, onBuyMore }: { consumed: number; total: 
 }
 
 const pacoteStyles = StyleSheet.create({
-  container:   { paddingBottom: spacing.md },
-  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  titleRow:    { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  title:       { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
-  addMore:     { fontSize: 13, fontWeight: '700', color: colors.oliGold },
-  track:       { height: 8, backgroundColor: `${colors.oliGreen}1A`, borderRadius: radius.full, overflow: 'hidden', marginBottom: spacing.sm },
-  fill:        { height: 8, backgroundColor: colors.oliGreen, borderRadius: radius.full },
-  fillLow:     { backgroundColor: colors.oliRed },
-  stats:       { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  statItem:    { alignItems: 'center', flex: 1 },
-  statValue:   { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
-  statLabel:   { fontSize: 11, color: colors.gray, marginTop: 2 },
-  statDivider: { width: 1, height: 28, backgroundColor: colors.border },
+  container:     { paddingBottom: spacing.md },
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  titleRow:      { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  title:         { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
+  addMore:       { fontSize: 13, fontWeight: '700', color: colors.oliGold },
+  track:         { height: 8, backgroundColor: `${colors.oliGreen}1A`, borderRadius: radius.full, overflow: 'hidden', marginBottom: spacing.sm },
+  fill:          { height: 8, backgroundColor: colors.oliGreen, borderRadius: radius.full },
+  fillLow:       { backgroundColor: colors.oliRed },
+  stats:         { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  statItem:      { alignItems: 'center', flex: 1 },
+  statValue:     { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
+  statLabel:     { fontSize: 11, color: colors.gray, marginTop: 2 },
+  statDivider:   { width: 1, height: 28, backgroundColor: colors.border },
+  emptyState:    { alignItems: 'center', paddingVertical: spacing.lg },
+  emptyTitle:    { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray, marginBottom: 4 },
+  emptySubtitle: { fontSize: 13, color: colors.gray, marginBottom: spacing.md, textAlign: 'center' },
+  buyBtn:        { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.oliGreen, paddingHorizontal: spacing.lg, paddingVertical: 10, borderRadius: radius.full },
+  buyBtnText:    { fontSize: 14, fontWeight: '700', color: colors.white },
 });
 
 // ── ServiceBar ────────────────────────────────────────────────────────────────

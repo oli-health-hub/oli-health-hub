@@ -21,10 +21,12 @@ import HourCheckoutModal from '../../src/components/HourCheckoutModal';
 // ── Custo estimado de manter consultório próprio (aluguel + secretária + utilidades) ──
 const TRADITIONAL_OFFICE_COST = 5_500.00;
 
+// Pacotes espelham exatamente a tabela hour_packages no Supabase
 const HOUR_PACKAGES: HourPackage[] = [
-  { hours: 10, price:   900.00, discountPercent: 10 },
-  { hours: 20, price: 1_700.00, discountPercent: 15 },
-  { hours: 50, price: 4_000.00, discountPercent: 20 },
+  { hours:  1, price:   140.00, discountPercent:  0 },
+  { hours: 10, price: 1_100.00, discountPercent: 21 }, // R$110/h vs R$140 base
+  { hours: 20, price: 2_000.00, discountPercent: 29 }, // R$100/h
+  { hours: 40, price: 3_600.00, discountPercent: 36 }, // R$90/h
 ];
 
 // ── Serviços inclusos no plano (informativos — não variam por usuário) ──────────

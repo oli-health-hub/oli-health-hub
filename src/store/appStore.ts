@@ -120,6 +120,7 @@ interface AppStore {
   setTodayReservations:    (reservations: Reservation[]) => void;
   setConsultationDuration: (minutes: number) => void;
   setUserName:             (name: string) => void;
+  setUserPlan:             (plan: PlanType) => void;
   _syncNextReservation:    () => void;
 }
 
@@ -284,6 +285,8 @@ export const useAppStore = create<AppStore>((set, get) => {
     setConsultationDuration: (minutes) => set({ consultationDurationMinutes: minutes }),
 
     setUserName: (name) => set({ userName: name }),
+
+    setUserPlan: (plan) => set({ userPlan: plan }),
 
     _syncNextReservation: () => {
       const { todayReservations, sessionEndTime } = get();

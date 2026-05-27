@@ -5,11 +5,11 @@ import { usePatientStore } from '../store/patientStore';
 import { fetchRooms } from '../services/roomService';
 import { fetchTodayReservations } from '../services/reservationService';
 import { supabase } from '../services/supabase';
-import type { Patient } from '../models/types';
+import type { Patient, PlanType } from '../models/types';
 
 export function useSupabaseInit() {
   const { session, profile } = useAuthStore();
-  const { setRooms, setTodayReservations, setConsultationDuration, setUserName } = useAppStore();
+  const { setRooms, setTodayReservations, setConsultationDuration, setUserName, setUserPlan } = useAppStore();
   const { setPatients } = usePatientStore();
 
   useEffect(() => {
@@ -17,10 +17,11 @@ export function useSupabaseInit() {
 
     const userId = session.user.id;
 
-    // Atualiza nome e duração padrão de consulta a partir do perfil
+    // Atualiza nome, plano e duração padrão de consulta a partir do perfil
     if (profile) {
       setUserName(profile.nome);
       setConsultationDuration(profile.consultation_duration_minutes);
+      if (profile.plan) setUserPlan(profile.plan as PlanType);
     }
 
     // Carrega salas e reservas do dia em paralelo

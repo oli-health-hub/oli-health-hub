@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, Stack } from 'expo-router';
 import Markdown from 'react-native-markdown-display';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 import { sendChatMessage, type ChatTurn } from '../src/services/chatService';
@@ -132,6 +132,7 @@ interface ChatMessage {
 
 export default function ChatbotScreen() {
   const { persona: rawPersona } = useLocalSearchParams<{ persona?: string }>();
+
   const isValidPersona = (p: string | undefined): p is Persona =>
     p === 'ana' || p === 'isabella' || p === 'olivia' || p === 'convenios' || p === 'carreira';
   const persona = isValidPersona(rawPersona) ? rawPersona : 'ana';
@@ -182,6 +183,8 @@ export default function ChatbotScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
+      {/* Título dinâmico por persona */}
+      <Stack.Screen options={{ title: `${cfg.role} — ${cfg.name}` }} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
