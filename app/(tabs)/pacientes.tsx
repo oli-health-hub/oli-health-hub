@@ -14,6 +14,7 @@ import { PacienteDetail }   from '../../src/components/PacienteDetail';
 import { AddPacienteModal }  from '../../src/components/AddPacienteModal';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import type { Patient } from '../../src/models/types';
+import { getNPSStats, type NPSStats } from '../../src/services/npsService';
 
 export default function PacientesScreen() {
   const { patients, isLoaded, loadPatients } = usePatientStore();
@@ -24,11 +25,18 @@ export default function PacientesScreen() {
   const [search,          setSearch]          = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAdd,         setShowAdd]         = useState(false);
+  const [npsStats,        setNpsStats]        = useState<NPSStats | null>(null);
 
-  // Passa o professionalId para buscar do Supabase na primeira carga
+  // Carrega pacientes do Supabase na primeira carga
   useEffect(() => {
     if (!isLoaded) loadPatients(profile?.id);
   }, [isLoaded, profile?.id]);
+
+  // Carrega estatísticas de NPS
+  useEffect(() => {
+    if (!profile?.id) return;
+    getNPSStats(profile.id).then(setNpsStats).catch(() => {});
+  }, [profile?.id]);
 
   const filtered = search
     ? patients.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()))
@@ -53,9 +61,14 @@ export default function PacientesScreen() {
 
       {/* ── Métricas CRM ── */}
       <View style={styles.metricsWrap}>
-        <MetricCard title="Conversão" value="—" trend="" positive />
-        <MetricCard title="Retornos"  value="—" trend="" positive />
-        <MetricCard title="NPS"       value="—" trend="" positive />
+        <MetricCard title="Conversão" value="—"                                                    trend="" positive />
+        <MetricCard title="Retornos"  value="—"                                                    trend="" positive />
+        <MetricCard
+          title="NPS"
+          value={npsStats?.nps != null ? String(npsStats.nps) : '—'}
+          trend={npsStats?.count ? `${npsStats.count} resp.` : ''}
+          positive={npsStats?.nps != null ? npsStats.nps >= 0 : true}
+        />
         <MetricCard title="Pacientes" value={String(patients.length)} trend="" positive />
       </View>
 

@@ -1,5 +1,6 @@
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { setUserType } from '@/app/actions';
+import { InviteUserForm } from './InviteUserForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,9 @@ export default async function UsuariosPage() {
         <h1 className="text-xl font-bold text-oli-dark">Usuários do Sistema</h1>
         <span className="text-sm text-oli-lgray">{admins.length} admin{admins.length !== 1 ? 's' : ''}</span>
       </div>
+
+      {/* Convidar usuário */}
+      <InviteUserForm />
 
       {/* Admins */}
       <section>

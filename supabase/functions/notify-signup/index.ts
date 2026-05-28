@@ -51,8 +51,13 @@ Deno.serve(async (req: Request) => {
   );
 
   // ── 3. Busca e-mail do auth.users ─────────────────────────────────────────
-  const { data: authUser } = await supabase.auth.admin.getUserById(professionalId);
-  const email = authUser?.user?.email ?? null;
+  let email: string | null = null;
+  try {
+    const { data: authUser } = await supabase.auth.admin.getUserById(professionalId);
+    email = authUser?.user?.email ?? null;
+  } catch {
+    // ignora — e-mail é opcional na notificação
+  }
 
   const nome         = (record.nome          as string | null) ?? 'Sem nome';
   const crm          = (record.crm           as string | null) ?? null;
@@ -67,13 +72,26 @@ Deno.serve(async (req: Request) => {
   ].filter(Boolean).join(' · ');
 
   // ── 4. Insere notificação ─────────────────────────────────────────────────
-  const { error } = await supabase.from('admin_notifications').insert({
+  // Tenta com professional_id; se FK falhar (perfil deletado antes do trigger),
+  // reinsere com null para não perder o evento
+  let { error } = await supabase.from('admin_notifications').insert({
     type:            'new_signup',
     professional_id: professionalId,
     title:           `Novo médico: ${nome}`,
     body:            bodyText,
     metadata:        { email, crm, especialidade, plan },
   });
+
+  if (error?.code === '23503') {
+    // FK constraint — tenta sem professional_id
+    const fallback = await supabase.from('admin_notifications').insert({
+      type:     'new_signup',
+      title:    `Novo médico: ${nome}`,
+      body:     bodyText,
+      metadata: { email, crm, especialidade, plan },
+    });
+    error = fallback.error;
+  }
 
   if (error) {
     console.error('notify-signup: erro ao inserir notificação', error);

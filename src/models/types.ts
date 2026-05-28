@@ -19,6 +19,12 @@ export type FaturamentoRange =
 /** Q5: Onde exerce a atividade? */
 export type LocalAtuacao = 'proprio' | 'terceiros' | 'ambos';
 
+/** Modalidade de atendimento */
+export type TipoAtendimento = 'presencial' | 'telemedicina' | 'ambos';
+
+/** Título de tratamento do profissional */
+export type Tratamento = 'Dr.' | 'Dra.';
+
 /** Q6: Quantidade de locais de atuação */
 export type NumLocais = '1' | '2_3' | '4_6' | 'mais_6';
 
@@ -171,7 +177,7 @@ export interface Invoice {
 }
 
 export interface HourPackage {
-  hours: number;
-  price: number;
-  discountPercent: number;
+  hours:      number;
+  price:      number;
+  bonusHours: number;  // horas bônus grátis (1 a cada 10h compradas)
 }

@@ -22,6 +22,7 @@
         "NSPhotoLibraryAddUsageDescription": "Salve sua foto de perfil na galeria.",
         "NSCalendarsUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
         "NSCalendarsFullAccessUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
+        "NSFaceIDUsageDescription": "Usamos o Face ID para proteger o acesso ao app e desbloquear após inatividade.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },

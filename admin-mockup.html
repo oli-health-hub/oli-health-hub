@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OLI Health Hub — Admin Dashboard</title>
+<style>
+  :root {
+    --green:  #5F7D67;
+    --gold:   #B8893C;
+    --bg:     #F4EFEA;
+    --dark:   #2F2F2F;
+    --gray:   #6B6B6B;
+    --lgray:  #9B9B9B;
+    --border: #E0D8D0;
+    --white:  #FFFFFF;
+    --red:    #D9534F;
+    --sidebar:#1E2A22;
+    --sidebar-hover: #2C3E30;
+    --green-light: #EDF2EE;
+    --gold-light:  #FBF4E8;
+    --red-light:   #FDEEEE;
+    --blue:   #4A7FB5;
+    --blue-light: #EAF1F8;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--dark); display:flex; height:100vh; overflow:hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px; min-width: 240px; background: var(--sidebar);
+    display: flex; flex-direction: column; padding: 0; overflow: hidden;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--green); display:flex; align-items:center; justify-content:center;
+    font-weight: 800; font-size: 15px; color: white; letter-spacing: -0.5px;
+  }
+  .logo-text { color: white; }
+  .logo-text strong { display:block; font-size: 14px; font-weight: 700; }
+  .logo-text span { font-size: 10px; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .8px; }
+
+  .nav { flex: 1; padding: 16px 12px; display:flex; flex-direction:column; gap:2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    color: rgba(255,255,255,.55); font-size: 13.5px; font-weight: 500;
+    transition: background .15s, color .15s; text-decoration: none;
+  }
+  .nav-item:hover { background: var(--sidebar-hover); color: rgba(255,255,255,.85); }
+  .nav-item.active { background: var(--green); color: white; }
+  .nav-item svg { width:16px; height:16px; flex-shrink:0; }
+  .nav-badge {
+    margin-left: auto; background: var(--red); color: white;
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px;
+  }
+  .nav-section {
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,.25);
+    text-transform: uppercase; letter-spacing: 1px; padding: 16px 12px 6px;
+  }
+  .sidebar-footer {
+    padding: 16px; border-top: 1px solid rgba(255,255,255,.08);
+    display:flex; align-items:center; gap:10px; cursor:pointer;
+  }
+  .avatar-sm {
+    width:30px; height:30px; border-radius:50%; background: var(--green);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white;
+  }
+  .sidebar-footer span { font-size:12px; color:rgba(255,255,255,.5); }
+
+  /* ── MAIN ── */
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+  .topbar {
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 0 28px; height: 60px; display:flex; align-items:center; justify-content:space-between;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size:17px; font-weight:700; color:var(--dark); }
+  .topbar-right { display:flex; align-items:center; gap:16px; }
+  .topbar-date { font-size:12px; color:var(--gray); }
+  .notif-btn {
+    position:relative; width:36px; height:36px; border-radius:8px;
+    background:var(--green-light); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .notif-dot {
+    position:absolute; top:6px; right:6px; width:8px; height:8px;
+    border-radius:50%; background:var(--red); border:2px solid var(--white);
+  }
+
+  .content { flex:1; overflow-y:auto; padding: 24px 28px; }
+
+  /* ── KPIs ── */
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .kpi-card {
+    background:var(--white); border-radius:14px; padding:20px;
+    border:1px solid var(--border);
+  }
+  .kpi-label { font-size:11px; font-weight:600; color:var(--lgray); text-transform:uppercase; letter-spacing:.7px; margin-bottom:10px; }
+  .kpi-value { font-size:30px; font-weight:800; color:var(--dark); line-height:1; }
+  .kpi-sub { margin-top:8px; font-size:12px; color:var(--gray); display:flex; align-items:center; gap:4px; }
+  .kpi-badge {
+    font-size:10px; font-weight:700; padding:2px 7px; border-radius:99px;
+  }
+  .badge-green { background:var(--green-light); color:var(--green); }
+  .badge-gold  { background:var(--gold-light);  color:var(--gold); }
+  .badge-red   { background:var(--red-light);   color:var(--red); }
+
+  /* ── COLUMNS ── */
+  .two-col { display:grid; grid-template-columns:1fr 380px; gap:20px; }
+
+  /* ── FEED ── */
+  .card { background:var(--white); border-radius:14px; border:1px solid var(--border); overflow:hidden; }
+  .card-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-header h3 { font-size:14px; font-weight:700; color:var(--dark); }
+  .live-dot { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--green); font-weight:600; }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.5; transform:scale(.8); } }
+
+  .feed-list { overflow-y:auto; max-height: 420px; }
+  .feed-item {
+    padding:14px 20px; border-bottom:1px solid var(--border);
+    display:flex; gap:12px; align-items:flex-start; cursor:pointer;
+  }
+  .feed-item:hover { background:#FAFAF8; }
+  .feed-item:last-child { border-bottom:none; }
+  .feed-icon {
+    width:36px; height:36px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+  .icon-signup  { background:var(--green-light); }
+  .icon-module  { background:var(--gold-light); }
+  .icon-plan    { background:var(--blue-light); }
+  .icon-payment { background:#F0EBF8; }
+
+  .feed-body { flex:1; min-width:0; }
+  .feed-title { font-size:13px; font-weight:600; color:var(--dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .feed-desc  { font-size:12px; color:var(--gray); margin-top:2px; }
+  .feed-time  { font-size:10px; color:var(--lgray); margin-top:4px; }
+  .feed-unread { width:7px; height:7px; border-radius:50%; background:var(--green); flex-shrink:0; margin-top:5px; }
+
+  /* ── FILA CARD ── */
+  .queue-list { overflow-y:auto; max-height: 420px; }
+  .queue-item {
+    padding:14px 20px; border-bottom:1px solid var(--border);
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .queue-item:last-child { border-bottom:none; }
+  .queue-top { display:flex; justify-content:space-between; align-items:center; }
+  .queue-name { font-size:13px; font-weight:600; color:var(--dark); }
+  .queue-tag {
+    font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px;
+  }
+  .tag-new     { background:var(--green-light); color:var(--green); }
+  .tag-module  { background:var(--gold-light);  color:var(--gold); }
+  .tag-plan    { background:var(--blue-light);  color:var(--blue); }
+  .queue-desc { font-size:12px; color:var(--gray); }
+  .queue-actions { display:flex; gap:8px; margin-top:2px; }
+  .btn-sm {
+    font-size:11px; font-weight:600; padding:5px 12px; border-radius:7px; cursor:pointer; border:none;
+  }
+  .btn-primary { background:var(--green); color:white; }
+  .btn-ghost   { background:transparent; color:var(--gray); border:1px solid var(--border); }
+  .btn-wpp     { background:#25D366; color:white; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:10px 16px; font-size:11px; font-weight:700; color:var(--lgray); text-transform:uppercase; letter-spacing:.6px; border-bottom:1px solid var(--border); }
+  td { padding:12px 16px; border-bottom:1px solid var(--border); color:var(--dark); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#FAFAF8; }
+  .plan-pill {
+    font-size:10px; font-weight:800; padding:2px 8px; border-radius:99px; letter-spacing:.4px;
+  }
+  .plan-base { background:#EBEBEB; color:var(--gray); }
+  .plan-pro  { background:var(--green-light); color:var(--green); }
+  .plan-vip  { background:var(--gold-light); color:var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-circle">OLI</div>
+    <div class="logo-text">
+      <strong>OLI Health Hub</strong>
+      <span>Admin</span>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">Principal</div>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Dashboard
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      Fila de Trabalho
+      <span class="nav-badge">7</span>
+    </a>
+
+    <div class="nav-section">Cadastros</div>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      Médicos
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+      Pagamentos
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      Módulos
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar-sm">G</div>
+    <span>guilherme.pasquetti</span>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-title">Dashboard</div>
+    <div class="topbar-right">
+      <span class="topbar-date">Domingo, 25 de maio de 2026</span>
+      <div class="notif-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#5F7D67"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <div class="notif-dot"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total de Médicos</div>
+        <div class="kpi-value">142</div>
+        <div class="kpi-sub">
+          <span class="kpi-badge badge-green">+12 este mês</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Novos Hoje</div>
+        <div class="kpi-value">3</div>
+        <div class="kpi-sub">
+          <span class="kpi-badge badge-green">↑ vs ontem</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Módulos Ativados (30d)</div>
+        <div class="kpi-value">28</div>
+        <div class="kpi-sub">
+          <span class="kpi-badge badge-gold">+6 vs mês ant.</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Receita (30d)</div>
+        <div class="kpi-value">R$ 18.4k</div>
+        <div class="kpi-sub">
+          <span class="kpi-badge badge-green">+22%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TWO COLUMNS -->
+    <div class="two-col">
+
+      <!-- Feed ao vivo -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Feed ao Vivo</h3>
+          <div class="live-dot"><span class="dot"></span>Tempo real</div>
+        </div>
+        <div class="feed-list">
+
+          <div class="feed-item">
+            <div class="feed-icon icon-signup">👤</div>
+            <div class="feed-body">
+              <div class="feed-title">Novo cadastro: Dr. Ricardo Mendes</div>
+              <div class="feed-desc">CRM-SP 98.123 · Cardiologia · Plano BASE</div>
+              <div class="feed-time">Agora mesmo</div>
+            </div>
+            <div class="feed-unread"></div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon icon-module">📦</div>
+            <div class="feed-body">
+              <div class="feed-title">Módulo ativado: AR Credenciamento</div>
+              <div class="feed-desc">Dra. Ana Carolina Souza · R$ 297,00 via PIX</div>
+              <div class="feed-time">há 4 minutos</div>
+            </div>
+            <div class="feed-unread"></div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon icon-plan">⭐</div>
+            <div class="feed-body">
+              <div class="feed-title">Upgrade de plano: BASE → PRO</div>
+              <div class="feed-desc">Dr. Felipe Rocha · R$ 590/mês</div>
+              <div class="feed-time">há 18 minutos</div>
+            </div>
+            <div class="feed-unread"></div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon icon-module">📦</div>
+            <div class="feed-body">
+              <div class="feed-title">Módulo contratado: OLI Convênios</div>
+              <div class="feed-desc">Dra. Marina Castro · aguardando confirmação</div>
+              <div class="feed-time">há 31 minutos</div>
+            </div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon icon-signup">👤</div>
+            <div class="feed-body">
+              <div class="feed-title">Novo cadastro: Dra. Juliana Pires</div>
+              <div class="feed-desc">CRM-RJ 45.210 · Dermatologia · Plano BASE</div>
+              <div class="feed-time">há 1 hora</div>
+            </div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon icon-payment">💳</div>
+            <div class="feed-body">
+              <div class="feed-title">Pagamento confirmado: Pacote 20h</div>
+              <div class="feed-desc">Dr. Lucas Almeida · R$ 2.400,00 via Cartão</div>
+              <div class="feed-time">há 2 horas</div>
+            </div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon icon-plan">⭐</div>
+            <div class="feed-body">
+              <div class="feed-title">Novo assinante VIP</div>
+              <div class="feed-desc">Dr. Gustavo Neves · R$ 890/mês</div>
+              <div class="feed-time">há 3 horas</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Fila de Trabalho -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Fila de Trabalho</h3>
+          <span class="kpi-badge badge-red" style="font-size:11px; padding:3px 9px;">7 pendentes</span>
+        </div>
+        <div class="queue-list">
+
+          <div class="queue-item">
+            <div class="queue-top">
+              <div class="queue-name">Dr. Ricardo Mendes</div>
+              <span class="queue-tag tag-new">Novo cadastro</span>
+            </div>
+            <div class="queue-desc">Cardiologia · CRM-SP 98.123 · há 2 min</div>
+            <div class="queue-actions">
+              <button class="btn-sm btn-wpp">WhatsApp</button>
+              <button class="btn-sm btn-primary">Ver perfil</button>
+              <button class="btn-sm btn-ghost">Dispensar</button>
+            </div>
+          </div>
+
+          <div class="queue-item">
+            <div class="queue-top">
+              <div class="queue-name">Dra. Marina Castro</div>
+              <span class="queue-tag tag-module">Módulo pendente</span>
+            </div>
+            <div class="queue-desc">OLI Convênios · aguardando boleto · há 31 min</div>
+            <div class="queue-actions">
+              <button class="btn-sm btn-wpp">WhatsApp</button>
+              <button class="btn-sm btn-ghost">Dispensar</button>
+            </div>
+          </div>
+
+          <div class="queue-item">
+            <div class="queue-top">
+              <div class="queue-name">Dra. Juliana Pires</div>
+              <span class="queue-tag tag-new">Novo cadastro</span>
+            </div>
+            <div class="queue-desc">Dermatologia · CRM-RJ 45.210 · há 1h</div>
+            <div class="queue-actions">
+              <button class="btn-sm btn-wpp">WhatsApp</button>
+              <button class="btn-sm btn-primary">Ver perfil</button>
+              <button class="btn-sm btn-ghost">Dispensar</button>
+            </div>
+          </div>
+
+          <div class="queue-item">
+            <div class="queue-top">
+              <div class="queue-name">Dr. Henrique Faria</div>
+              <span class="queue-tag tag-plan">Upgrade plano</span>
+            </div>
+            <div class="queue-desc">BASE → PRO · aguardando assinatura · há 2h</div>
+            <div class="queue-actions">
+              <button class="btn-sm btn-wpp">WhatsApp</button>
+              <button class="btn-sm btn-ghost">Dispensar</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Médicos Recentes -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <h3>Médicos Recentes</h3>
+        <span style="font-size:12px; color:var(--green); font-weight:600; cursor:pointer;">Ver todos →</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>CRM</th>
+              <th>Especialidade</th>
+              <th>Plano</th>
+              <th>Módulos</th>
+              <th>Cadastro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Dr. Ricardo Mendes</strong></td>
+              <td style="color:var(--gray)">CRM-SP 98.123</td>
+              <td>Cardiologia</td>
+              <td><span class="plan-pill plan-base">BASE</span></td>
+              <td style="color:var(--gray)">—</td>
+              <td style="color:var(--gray)">hoje, 14:32</td>
+            </tr>
+            <tr>
+              <td><strong>Dra. Ana Carolina Souza</strong></td>
+              <td style="color:var(--gray)">CRM-SP 77.450</td>
+              <td>Ginecologia</td>
+              <td><span class="plan-pill plan-pro">PRO</span></td>
+              <td style="color:var(--green); font-weight:600">2 ativos</td>
+              <td style="color:var(--gray)">hoje, 14:28</td>
+            </tr>
+            <tr>
+              <td><strong>Dr. Felipe Rocha</strong></td>
+              <td style="color:var(--gray)">CRM-MG 34.891</td>
+              <td>Ortopedia</td>
+              <td><span class="plan-pill plan-pro">PRO</span></td>
+              <td style="color:var(--green); font-weight:600">1 ativo</td>
+              <td style="color:var(--gray)">hoje, 14:14</td>
+            </tr>
+            <tr>
+              <td><strong>Dra. Juliana Pires</strong></td>
+              <td style="color:var(--gray)">CRM-RJ 45.210</td>
+              <td>Dermatologia</td>
+              <td><span class="plan-pill plan-base">BASE</span></td>
+              <td style="color:var(--gray)">—</td>
+              <td style="color:var(--gray)">hoje, 13:47</td>
+            </tr>
+            <tr>
+              <td><strong>Dr. Gustavo Neves</strong></td>
+              <td style="color:var(--gray)">CRM-SP 55.002</td>
+              <td>Neurologia</td>
+              <td><span class="plan-pill plan-vip">VIP</span></td>
+              <td style="color:var(--green); font-weight:600">4 ativos</td>
+              <td style="color:var(--gray)">ontem, 18:05</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+</body>
+</html>

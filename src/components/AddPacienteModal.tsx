@@ -98,7 +98,7 @@ export function AddPacienteModal({ onClose }: Props) {
         dataNascimento:         dataNasc.trim(),
         convenioTipo,
         convenioNome:           convenioTipo === 'convenio' ? convenioNome.trim() : undefined,
-        consentimentoTimestamp: '', // vazio = aguardando consentimento do paciente
+        consentimentoTimestamp: new Date().toISOString(), // timestamp do cadastro
       }, profile?.id); // ← ID do profissional obrigatório para persistir no Supabase
       const doctorName = profile?.nome ?? 'seu médico';
       // Envia link de consentimento LGPD ao paciente (token único)

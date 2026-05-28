@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, Modal, Image, Linking,
+  StyleSheet, Alert, Image, Linking,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,88 +10,70 @@ import { useRouter } from 'expo-router';
 import { useAppStore } from '../../src/store/appStore';
 import { contactReception } from '../../src/utils/whatsapp';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
-import { lumaService, type LumaEvent } from '../../src/services/luma';
 import { useAuthStore } from '../../src/store/authStore';
 import { useModuleStore } from '../../src/store/moduleStore';
 import { MODULE_CATALOG, isModuleIncludedInPlan, type ModuleId, type OLIModule } from '../../src/models/modules';
 import type { PlanType } from '../../src/models/types';
 import CheckoutModal from '../../src/components/CheckoutModal';
-import { fetchHourBalance, type HourBalance } from '../../src/services/financeiroService';
+import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
 
-// Cores de capa para eventos sem imagem (alterna por índice)
-const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
+// ─── Serviços Inclusos no Plano ───────────────────────────────────────────────
+
+type ServiceItem = {
+  icon:        string;
+  name:        string;
+  detail:      string;
+  marketPrice: number;
+  unit:        string;
+};
+
+const INCLUDED_SERVICES: ServiceItem[] = [
+  { icon: 'people-outline',         name: 'Recepção Assistida',  detail: 'Secretária compartilhada — 20 dias úteis', marketPrice: 2_500.00, unit: 'mês'     },
+  { icon: 'document-text-outline',  name: 'Consultoria Jurídica', detail: '1 de 3 consultas incluídas',              marketPrice:   350.00, unit: 'consulta' },
+  { icon: 'calculator-outline',     name: 'Consultoria Contábil', detail: '1 consulta incluída',                     marketPrice:   300.00, unit: 'consulta' },
+  { icon: 'location-outline',       name: 'Endereço Fiscal',      detail: 'CNPJ registrado no OLI',                  marketPrice:   150.00, unit: 'mês'     },
+  { icon: 'wifi-outline',           name: 'Internet Fibra 1 Gb',  detail: 'Uso nas salas',                           marketPrice:   120.00, unit: 'mês'     },
+  { icon: 'star-outline',           name: 'Evento OLI',           detail: '1 evento incluído / mês',                 marketPrice:   200.00, unit: 'evento'  },
+];
+
+const totalMarketValue = INCLUDED_SERVICES.reduce((acc, s) => acc + s.marketPrice, 0);
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function EcossistemaScreen() {
   const { userPlan } = useAppStore();
   const router = useRouter();
-  const [showBenefits,   setShowBenefits]   = useState(false);
-  const [events,         setEvents]         = useState<LumaEvent[]>([]);
-  const [loadingEvts,    setLoadingEvts]    = useState(true);
-  const [showPastEvts,   setShowPastEvts]   = useState(false);
   const [checkoutModule, setCheckoutModule] = useState<OLIModule | null>(null);
+  const [showScrollHint, setShowScrollHint] = useState(true);
 
   const user = useAuthStore((s) => s.user);
   const { loadModules, isModuleActive, isLoaded: modulesLoaded } = useModuleStore();
-  const [hourBalance, setHourBalance] = useState<HourBalance | null>(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    fetchHourBalance(user.id).then(setHourBalance).catch(() => {});
-  }, [user?.id]);
-
-  useEffect(() => {
-    lumaService.getUpcomingEvents()
-      .then(setEvents)
-      .catch(() => setEvents([]))
-      .finally(() => setLoadingEvts(false));
-  }, []);
 
   useEffect(() => {
     if (user?.id) loadModules(user.id, userPlan);
   }, [user?.id, userPlan]);
 
-  const handleWhatsApp = async () => { await contactReception(); };
-
-  const handleUpgradeRequest = (plan: string) => {
-    setShowBenefits(false);
-    Alert.alert(
-      'Solicitação Enviada',
-      `Nossa equipe entrará em contato para processar seu upgrade para o plano ${plan}.`,
-    );
-  };
-
-  const handleOpenEvent = async (url: string) => {
-    const supported = await Linking.canOpenURL(url);
-    if (supported) {
-      await Linking.openURL(url);
-    } else {
-      Alert.alert('Erro', 'Não foi possível abrir o evento. Acesse lu.ma pelo navegador.');
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
-
-        {/* ── Botão WhatsApp Recepção ── */}
-        <TouchableOpacity
-          style={styles.receptionBtn}
-          onPress={handleWhatsApp}
-          accessibilityLabel="Falar com a recepção do OLI via WhatsApp"
-        >
-          <Ionicons name="logo-whatsapp" size={22} color={colors.white} />
-          <Text style={styles.receptionBtnText}>Falar com a Recepção</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1 }}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        scrollEventThrottle={100}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          setShowScrollHint(contentOffset.y + layoutMeasurement.height < contentSize.height - 60);
+        }}
+      >
 
         {/* ── Meu Plano ── */}
         <View style={[styles.card, shadows.card]}>
           <View style={styles.planHeader}>
             <Text style={styles.sectionTitle}>Meu Plano</Text>
             <TouchableOpacity
-              onPress={() => setShowBenefits(true)}
+              onPress={() => router.push('/meu-plano')}
               accessibilityLabel="Ver benefícios e opções de upgrade"
             >
-              <Text style={styles.upgradeLink}>Ver benefícios</Text>
+              <Text style={styles.upgradeLink}>Ver planos</Text>
             </TouchableOpacity>
           </View>
 
@@ -107,7 +89,7 @@ export default function EcossistemaScreen() {
           {userPlan !== 'VIP' && (
             <TouchableOpacity
               style={styles.upgradeBtn}
-              onPress={() => setShowBenefits(true)}
+              onPress={() => router.push('/meu-plano')}
               accessibilityLabel="Fazer upgrade do plano"
             >
               <Ionicons name="arrow-up-circle-outline" size={15} color={colors.oliGold} />
@@ -120,27 +102,62 @@ export default function EcossistemaScreen() {
           )}
         </View>
 
-        {/* ── Uso do plano ── */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
-          Uso do Plano
-        </Text>
-
+        {/* ── Serviços Inclusos no Plano ── */}
         <View style={[styles.card, shadows.card]}>
-          <PacoteHoras
-            consumed={hourBalance ? Math.floor(hourBalance.minutosUsados / 60) : 0}
-            total={hourBalance ? Math.floor(hourBalance.minutosTotal / 60) : 0}
-            hasPackage={hourBalance !== null}
-            onBuyMore={() => router.push('/(tabs)/financeiro?section=packages')}
-          />
-          <View style={styles.serviceDivider} />
-          <ServiceBar title="Orientações Jurídicas" consumed={1} total={3} unit="consultas" />
-          <ServiceBar title="Eventos OLI"           consumed={0} total={1} unit="evento" />
+          <View style={styles.cardHeader}>
+            <Text style={styles.sectionTitle}>Serviços Inclusos</Text>
+            <Ionicons name="gift-outline" size={20} color={colors.oliGold} />
+          </View>
+
+          {INCLUDED_SERVICES.map((svc, i) => (
+            <View
+              key={svc.name}
+              style={[svcStyles.row, i < INCLUDED_SERVICES.length - 1 && svcStyles.rowBorder]}
+            >
+              <View style={svcStyles.iconWrap}>
+                <Ionicons name={svc.icon as any} size={18} color={colors.oliGreen} />
+              </View>
+              <View style={svcStyles.info}>
+                <Text style={svcStyles.name}>{svc.name}</Text>
+                <Text style={svcStyles.detail}>{svc.detail}</Text>
+              </View>
+              <Text style={svcStyles.marketPrice}>
+                R${svc.marketPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}/{svc.unit}
+              </Text>
+            </View>
+          ))}
+
+          <View style={svcStyles.footer}>
+            <Text style={svcStyles.footerLabel}>Valor de mercado destes serviços</Text>
+            <Text style={svcStyles.footerValue}>
+              R${totalMarketValue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}/mês
+            </Text>
+          </View>
         </View>
 
+        {/* ── WhatsApp Recepção ── */}
+        <TouchableOpacity
+          style={styles.receptionBtn}
+          onPress={() => contactReception()}
+          accessibilityLabel="Falar com a recepção do OLI via WhatsApp"
+        >
+          <Ionicons name="logo-whatsapp" size={22} color={colors.white} />
+          <Text style={styles.receptionBtnText}>Falar com a Recepção</Text>
+        </TouchableOpacity>
+
         {/* ── Módulos e Soluções ── */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
-          Módulos e Soluções
-        </Text>
+        <View style={styles.sectionRow}>
+          <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
+            Módulos e Soluções
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/modulos')}
+            accessibilityLabel="Ver todos os módulos"
+            style={{ paddingHorizontal: spacing.md }}
+          >
+            <Text style={styles.seeAllLink}>Ver todos</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={[styles.sectionDesc, { paddingHorizontal: spacing.md }]}>
           Add-ons que potencializam seu plano. Cada módulo pode ser contratado individualmente.
         </Text>
@@ -222,92 +239,7 @@ export default function EcossistemaScreen() {
           />
         </View>
 
-        {/* ── Eventos Luma ── */}
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
-            Eventos OLI
-          </Text>
-          <TouchableOpacity
-            onPress={() => handleOpenEvent('https://lu.ma/oli')}
-            accessibilityLabel="Ver todos os eventos no Luma"
-            style={{ paddingHorizontal: spacing.md }}
-          >
-            <Text style={styles.seeAllLink}>Ver todos</Text>
-          </TouchableOpacity>
-        </View>
-
-        {loadingEvts ? (
-          <View style={eventStyles.loading}>
-            <ActivityIndicator color={colors.oliGreen} />
-            <Text style={eventStyles.loadingText}>Carregando eventos…</Text>
-          </View>
-        ) : (() => {
-          const now          = Date.now();
-          const upcoming     = events.filter(e => new Date(e.endAt).getTime() >= now);
-          const past         = events.filter(e => new Date(e.endAt).getTime() <  now);
-
-          return (
-            <>
-              {/* Próximos eventos */}
-              {upcoming.length === 0 ? (
-                <View style={[styles.card, shadows.card, eventStyles.emptyCard]}>
-                  <Ionicons name="calendar-outline" size={32} color={colors.gray} />
-                  <Text style={eventStyles.emptyText}>Nenhum evento programado no momento.</Text>
-                </View>
-              ) : (
-                upcoming.map((evt, i) => (
-                  <EventCard
-                    key={evt.id}
-                    event={evt}
-                    accentColor={EVENT_COVER_COLORS[i % EVENT_COVER_COLORS.length]}
-                    onPress={() => handleOpenEvent(evt.eventUrl)}
-                  />
-                ))
-              )}
-
-              {/* Eventos passados (seção recolhida) */}
-              {past.length > 0 && (
-                <>
-                  <TouchableOpacity
-                    style={eventStyles.pastToggle}
-                    onPress={() => setShowPastEvts(v => !v)}
-                    accessibilityLabel={showPastEvts ? 'Recolher eventos passados' : 'Ver eventos passados'}
-                  >
-                    <Ionicons
-                      name={showPastEvts ? 'chevron-up' : 'chevron-down'}
-                      size={16}
-                      color={colors.oliLightGray}
-                    />
-                    <Text style={eventStyles.pastToggleText}>
-                      {showPastEvts ? 'Ocultar' : 'Ver'} eventos anteriores ({past.length})
-                    </Text>
-                  </TouchableOpacity>
-
-                  {showPastEvts && past.map((evt, i) => (
-                    <EventCard
-                      key={evt.id}
-                      event={evt}
-                      accentColor={`${colors.gray}80`}
-                      onPress={() => handleOpenEvent(evt.eventUrl)}
-                      isPast
-                    />
-                  ))}
-                </>
-              )}
-            </>
-          );
-        })()}
-
       </ScrollView>
-
-      {/* ── Modal Benefícios / Upgrade ── */}
-      <Modal visible={showBenefits} animationType="slide" presentationStyle="pageSheet">
-        <PlanBenefitsModal
-          currentPlan={userPlan}
-          onUpgrade={handleUpgradeRequest}
-          onClose={() => setShowBenefits(false)}
-        />
-      </Modal>
 
       {/* ── Modal de Checkout ── */}
       {checkoutModule && (
@@ -317,221 +249,12 @@ export default function EcossistemaScreen() {
           onClose={() => setCheckoutModule(null)}
         />
       )}
+
+      <ScrollMoreIndicator visible={showScrollHint} />
+      </View>
     </SafeAreaView>
   );
 }
-
-// ── EventCard ─────────────────────────────────────────────────────────────────
-
-function EventCard({
-  event, accentColor, onPress, isPast = false,
-}: { event: LumaEvent; accentColor: string; onPress: () => void; isPast?: boolean }) {
-  const start     = new Date(event.startAt);
-  const end       = new Date(event.endAt);
-  const dateLabel = start.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
-  const timeLabel = `${start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-
-  const daysUntil = Math.ceil((start.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const countdownLabel = isPast ? 'Encerrado' :
-    daysUntil === 0 ? 'Hoje' :
-    daysUntil === 1 ? 'Amanhã' :
-    `Em ${daysUntil} dias`;
-
-  return (
-    <TouchableOpacity
-      style={[eventStyles.card, shadows.card, isPast && eventStyles.cardPast]}
-      onPress={onPress}
-      activeOpacity={0.85}
-      accessibilityLabel={`Evento ${event.title}. ${countdownLabel}. Toque para abrir no Luma.`}
-    >
-      {/* Capa colorida */}
-      <View style={[eventStyles.cover, { backgroundColor: accentColor }]}>
-        {event.coverUrl ? (
-          <Image source={{ uri: event.coverUrl }} style={eventStyles.coverImage} />
-        ) : (
-          <View style={eventStyles.coverPlaceholder}>
-            <Ionicons name="calendar" size={32} color="rgba(255,255,255,0.6)" />
-            <Text style={eventStyles.coverTitle} numberOfLines={2}>{event.title}</Text>
-          </View>
-        )}
-        {/* Badges sobre a capa */}
-        <View style={eventStyles.coverBadges}>
-          <View style={eventStyles.countdownBadge}>
-            <Text style={eventStyles.countdownText}>{countdownLabel}</Text>
-          </View>
-          {event.isFree && (
-            <View style={eventStyles.freeBadge}>
-              <Text style={eventStyles.freeBadgeText}>Gratuito</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Corpo */}
-      <View style={eventStyles.body}>
-        <Text style={eventStyles.title} numberOfLines={2}>{event.title}</Text>
-
-        <View style={eventStyles.metaRow}>
-          <Ionicons name="calendar-outline" size={13} color={colors.gray} />
-          <Text style={eventStyles.meta}>{dateLabel} · {timeLabel}</Text>
-        </View>
-        <View style={eventStyles.metaRow}>
-          <Ionicons name="location-outline" size={13} color={colors.gray} />
-          <Text style={eventStyles.meta} numberOfLines={1}>{event.location}</Text>
-        </View>
-        <View style={eventStyles.metaRow}>
-          <Ionicons name="people-outline" size={13} color={colors.gray} />
-          <Text style={eventStyles.meta}>{event.guestCount} confirmados</Text>
-        </View>
-
-        {/* Tags */}
-        {event.tags.length > 0 && (
-          <View style={eventStyles.tags}>
-            {event.tags.map(tag => (
-              <View key={tag} style={[eventStyles.tag, { borderColor: accentColor }]}>
-                <Text style={[eventStyles.tagText, { color: accentColor }]}>{tag}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {!isPast && (
-          <TouchableOpacity
-            style={[eventStyles.cta, { backgroundColor: accentColor }]}
-            onPress={onPress}
-            accessibilityLabel={`Inscrever-se em ${event.title}`}
-          >
-            <Text style={eventStyles.ctaText}>Abrir no Luma</Text>
-            <Ionicons name="arrow-forward" size={15} color={colors.white} />
-          </TouchableOpacity>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-const eventStyles = StyleSheet.create({
-  loading:      { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.lg, justifyContent: 'center' },
-  loadingText:  { fontSize: 14, color: colors.gray },
-  emptyCard:    { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
-  emptyText:    { fontSize: 14, color: colors.gray, textAlign: 'center' },
-
-  card:     { backgroundColor: colors.white, borderRadius: radius.xl, overflow: 'hidden' },
-  cardPast: { opacity: 0.55 },
-
-  pastToggle: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    justifyContent: 'center',
-    gap:            6,
-    paddingVertical: spacing.sm,
-  },
-  pastToggleText: { fontSize: 13, fontWeight: '600', color: colors.oliLightGray },
-  cover:  { height: 120, justifyContent: 'flex-end' },
-  coverImage:       { ...StyleSheet.absoluteFillObject, resizeMode: 'cover' },
-  coverPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'flex-start', padding: spacing.md, gap: 8 },
-  coverTitle:       { fontSize: 16, fontWeight: '700', color: colors.white, lineHeight: 22, maxWidth: '80%' },
-  coverBadges:      { flexDirection: 'row', gap: spacing.xs, padding: spacing.sm },
-  countdownBadge:   { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  countdownText:    { fontSize: 12, fontWeight: '700', color: colors.white },
-  freeBadge:        { backgroundColor: `${colors.oliGreen}DD`, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  freeBadgeText:    { fontSize: 12, fontWeight: '700', color: colors.white },
-
-  body:    { padding: spacing.md, gap: 6 },
-  title:   { fontSize: 16, fontWeight: '700', color: colors.oliDarkGray, lineHeight: 22, marginBottom: 2 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  meta:    { fontSize: 13, color: colors.gray, flex: 1 },
-
-  tags:    { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 2 },
-  tag:     { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
-  tagText: { fontSize: 11, fontWeight: '600' },
-
-  cta:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: radius.md, paddingVertical: 10, marginTop: spacing.xs },
-  ctaText: { color: colors.white, fontSize: 14, fontWeight: '700' },
-});
-
-// ── OLISolutionCard ───────────────────────────────────────────────────────────
-
-function OLISolutionCard({
-  accent, icon, title, description, ctaLabel, onPress, disabled = false,
-}: {
-  accent:      string;
-  icon:        string;
-  title:       string;
-  description: string;
-  ctaLabel:    string;
-  onPress?:    () => void;
-  disabled?:   boolean;
-}) {
-  return (
-    <View style={[solutionStyles.card, shadows.small]}>
-      <View style={[solutionStyles.accentBar, { backgroundColor: accent }]} />
-      <View style={solutionStyles.body}>
-        <View style={solutionStyles.headerRow}>
-          <View style={[solutionStyles.iconWrap, { backgroundColor: `${accent}18` }]}>
-            <Ionicons name={icon as any} size={20} color={accent} />
-          </View>
-          <Text style={solutionStyles.title}>{title}</Text>
-          {disabled && (
-            <View style={solutionStyles.badge}>
-              <Text style={solutionStyles.badgeText}>Em breve</Text>
-            </View>
-          )}
-        </View>
-        <Text style={solutionStyles.description}>{description}</Text>
-        <TouchableOpacity
-          style={[solutionStyles.cta, disabled && solutionStyles.ctaDisabled, { borderColor: accent }]}
-          onPress={onPress}
-          disabled={disabled}
-          accessibilityLabel={ctaLabel}
-        >
-          <Text style={[solutionStyles.ctaText, disabled && solutionStyles.ctaTextDisabled, { color: disabled ? colors.gray : accent }]}>
-            {ctaLabel}
-          </Text>
-          {!disabled && <Ionicons name="arrow-forward" size={14} color={accent} />}
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-const solutionStyles = StyleSheet.create({
-  card: {
-    flexDirection:   'row',
-    backgroundColor: colors.white,
-    borderRadius:    radius.lg,
-    overflow:        'hidden',
-  },
-  accentBar: { width: 4 },
-  body:      { flex: 1, padding: spacing.md, gap: 8 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  iconWrap:  {
-    width:          34,
-    height:         34,
-    borderRadius:   radius.sm,
-    justifyContent: 'center',
-    alignItems:     'center',
-    flexShrink:     0,
-  },
-  title:    { flex: 1, fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
-  badge:    { backgroundColor: `${colors.gray}20`, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText:{ fontSize: 11, fontWeight: '600', color: colors.gray },
-  description: { fontSize: 13, color: colors.gray, lineHeight: 18 },
-  cta: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             4,
-    alignSelf:       'flex-start',
-    borderWidth:     1.5,
-    borderRadius:    radius.md,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginTop:       2,
-  },
-  ctaDisabled:     { borderColor: colors.border },
-  ctaText:         { fontSize: 13, fontWeight: '700' },
-  ctaTextDisabled: { color: colors.gray },
-});
 
 // ── ModuleCard ────────────────────────────────────────────────────────────────
 
@@ -576,12 +299,10 @@ function ModuleCard({
   const statusColor = STATUS_COLOR[status];
 
   const handleCTA = async () => {
-    // Módulos com preço definido e fluxo in_app_form → checkout self-service
     if (module.activationType === 'in_app_form' && module.pricing.amount !== undefined) {
       onContractPress?.(module);
       return;
     }
-    // contact_sales e tbd → WhatsApp OLI comercial
     await contactReception(
       `Olá! Tenho interesse em contratar o módulo *${module.name}* (${module.provider}). Poderia me passar mais informações?`
     );
@@ -598,8 +319,6 @@ function ModuleCard({
     <View style={[moduleStyles.card, shadows.small]}>
       <View style={[moduleStyles.accentBar, { backgroundColor: statusColor }]} />
       <View style={moduleStyles.body}>
-
-        {/* Cabeçalho: nome + badge de status */}
         <View style={moduleStyles.headerRow}>
           <View style={moduleStyles.titleGroup}>
             <Text style={moduleStyles.name}>{module.name}</Text>
@@ -618,10 +337,8 @@ function ModuleCard({
           </View>
         </View>
 
-        {/* Tagline */}
         <Text style={moduleStyles.tagline}>{module.tagline}</Text>
 
-        {/* Rodapé: preço + CTA */}
         <View style={moduleStyles.footer}>
           <Text style={moduleStyles.price}>{module.pricing.displayLabel}</Text>
 
@@ -691,7 +408,6 @@ function AgentCard({
       activeOpacity={0.75}
       accessibilityLabel={`Consultar ${title} — ${role}`}
     >
-      {/* Foto / avatar */}
       <View style={[agentStyles.avatar, { backgroundColor: color }]}>
         {photo ? (
           <Image source={photo} style={agentStyles.photo} />
@@ -699,8 +415,6 @@ function AgentCard({
           <Text style={agentStyles.avatarText}>{avatar}</Text>
         )}
       </View>
-
-      {/* Info */}
       <View style={agentStyles.info}>
         <View style={agentStyles.nameRow}>
           <Text style={agentStyles.name}>{title}</Text>
@@ -710,8 +424,6 @@ function AgentCard({
         </View>
         <Text style={agentStyles.subtitle} numberOfLines={1}>{subtitle}</Text>
       </View>
-
-      {/* CTA */}
       <View style={[agentStyles.chatBtn, { backgroundColor: `${color}15` }]}>
         <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
       </View>
@@ -733,412 +445,47 @@ const agentStyles = StyleSheet.create({
   chatBtn:    { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
 });
 
-// ── PacoteHoras ───────────────────────────────────────────────────────────────
+// ── Serviços Inclusos Styles ──────────────────────────────────────────────────
 
-function PacoteHoras({
-  consumed,
-  total,
-  hasPackage,
-  onBuyMore,
-}: {
-  consumed: number;
-  total: number;
-  hasPackage?: boolean;
-  onBuyMore?: () => void;
-}) {
-  // Empty state: no active package
-  if (!hasPackage) {
-    return (
-      <View style={pacoteStyles.container}>
-        <View style={pacoteStyles.emptyState}>
-          <Ionicons name="time-outline" size={32} color={colors.oliGreen} style={{ marginBottom: 8 }} />
-          <Text style={pacoteStyles.emptyTitle}>Sem pacote ativo</Text>
-          <Text style={pacoteStyles.emptySubtitle}>Adquira horas para usar as salas OLI</Text>
-          <TouchableOpacity
-            style={pacoteStyles.buyBtn}
-            onPress={onBuyMore}
-            accessibilityLabel="Comprar horas"
-          >
-            <Ionicons name="add-circle-outline" size={16} color={colors.white} />
-            <Text style={pacoteStyles.buyBtnText}>Comprar horas</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  const remaining = total - consumed;
-  const progress  = total > 0 ? consumed / total : 0;
-  const isLow     = remaining <= total * 0.2;
-
-  return (
-    <View style={pacoteStyles.container}>
-      <View style={pacoteStyles.header}>
-        <View style={pacoteStyles.titleRow}>
-          <Ionicons name="time-outline" size={15} color={colors.oliGreen} />
-          <Text style={pacoteStyles.title}>Pacote {total}h</Text>
-        </View>
-        <TouchableOpacity onPress={onBuyMore} accessibilityLabel="Comprar mais horas">
-          <Text style={pacoteStyles.addMore}>+ Comprar horas</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={pacoteStyles.track}>
-        <View style={[
-          pacoteStyles.fill,
-          { width: `${Math.min(progress * 100, 100)}%` },
-          isLow && pacoteStyles.fillLow,
-        ]} />
-      </View>
-
-      <View style={pacoteStyles.stats}>
-        <View style={pacoteStyles.statItem}>
-          <Text style={pacoteStyles.statValue}>{consumed}h</Text>
-          <Text style={pacoteStyles.statLabel}>utilizadas</Text>
-        </View>
-        <View style={pacoteStyles.statDivider} />
-        <View style={pacoteStyles.statItem}>
-          <Text style={[pacoteStyles.statValue, isLow && { color: colors.oliRed }]}>
-            {remaining}h
-          </Text>
-          <Text style={pacoteStyles.statLabel}>restantes</Text>
-        </View>
-        <View style={pacoteStyles.statDivider} />
-        <View style={pacoteStyles.statItem}>
-          <Text style={pacoteStyles.statValue}>{total}h</Text>
-          <Text style={pacoteStyles.statLabel}>contratadas</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const pacoteStyles = StyleSheet.create({
-  container:     { paddingBottom: spacing.md },
-  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  titleRow:      { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  title:         { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
-  addMore:       { fontSize: 13, fontWeight: '700', color: colors.oliGold },
-  track:         { height: 8, backgroundColor: `${colors.oliGreen}1A`, borderRadius: radius.full, overflow: 'hidden', marginBottom: spacing.sm },
-  fill:          { height: 8, backgroundColor: colors.oliGreen, borderRadius: radius.full },
-  fillLow:       { backgroundColor: colors.oliRed },
-  stats:         { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  statItem:      { alignItems: 'center', flex: 1 },
-  statValue:     { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
-  statLabel:     { fontSize: 11, color: colors.gray, marginTop: 2 },
-  statDivider:   { width: 1, height: 28, backgroundColor: colors.border },
-  emptyState:    { alignItems: 'center', paddingVertical: spacing.lg },
-  emptyTitle:    { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray, marginBottom: 4 },
-  emptySubtitle: { fontSize: 13, color: colors.gray, marginBottom: spacing.md, textAlign: 'center' },
-  buyBtn:        { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.oliGreen, paddingHorizontal: spacing.lg, paddingVertical: 10, borderRadius: radius.full },
-  buyBtnText:    { fontSize: 14, fontWeight: '700', color: colors.white },
+const svcStyles = StyleSheet.create({
+  row:        { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 11 },
+  rowBorder:  { borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  iconWrap:   { width: 34, height: 34, borderRadius: 17, backgroundColor: `${colors.oliGreen}12`, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  info:       { flex: 1 },
+  name:       { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
+  detail:     { fontSize: 12, color: colors.gray, marginTop: 2 },
+  marketPrice:{ fontSize: 13, fontWeight: '700', color: colors.oliDarkGray },
+  footer:     { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  footerLabel:{ fontSize: 13, color: colors.gray },
+  footerValue:{ fontSize: 14, fontWeight: '700', color: colors.oliGold },
 });
 
-// ── ServiceBar ────────────────────────────────────────────────────────────────
-
-function ServiceBar({
-  title, consumed, total, unit,
-}: { title: string; consumed: number; total: number; unit: string }) {
-  const progress = total > 0 ? consumed / total : 0;
-  return (
-    <View style={barStyles.container}>
-      <View style={barStyles.row}>
-        <Text style={barStyles.title}>{title}</Text>
-        <Text style={barStyles.count}>{consumed}/{total} {unit}</Text>
-      </View>
-      <View style={barStyles.track}>
-        <View style={[barStyles.fill, { width: `${Math.min(progress * 100, 100)}%` }]} />
-      </View>
-    </View>
-  );
-}
-
-const barStyles = StyleSheet.create({
-  container: { marginBottom: spacing.md },
-  row:       { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  title:     { fontSize: 14, fontWeight: '500', color: colors.oliDarkGray },
-  count:     { fontSize: 14, fontWeight: '700', color: colors.oliGreen },
-  track:     { height: 6, backgroundColor: `${colors.oliGreen}1A`, borderRadius: radius.full, overflow: 'hidden' },
-  fill:      { height: 6, backgroundColor: colors.oliGreen, borderRadius: radius.full },
-});
-
-// ── PlanBenefitsModal ─────────────────────────────────────────────────────────
-// Dados de planos alinhados com src/models/oli-plans.ts (fonte única de verdade)
-
-type PlanTier = 'START' | 'BASE' | 'PRO' | 'VIP';
-
-interface Benefit {
-  category: string;
-  icon:     string;
-  items:    {
-    label: string;
-    start: string | boolean;
-    base:  string | boolean;
-    pro:   string | boolean;
-    vip:   string | boolean | null; // null = VIP em breve, ainda indefinido
-  }[];
-}
-
-const PLAN_BENEFITS: Benefit[] = [
-  {
-    category: 'Infraestrutura e App',
-    icon: 'business-outline',
-    items: [
-      { label: 'Timer e gestão de sessão',    start: true,  base: true,  pro: true,  vip: null },
-      { label: 'Agenda própria no app',       start: true,  base: true,  pro: true,  vip: null },
-      { label: 'CRM de pacientes',            start: true,  base: true,  pro: true,  vip: null },
-      { label: 'Comunidade OLI',              start: true,  base: true,  pro: true,  vip: null },
-      { label: 'Conforto médico na sala',     start: false, base: true,  pro: true,  vip: null },
-      { label: 'Impressão',                   start: false, base: false, pro: true,  vip: null },
-    ],
-  },
-  {
-    category: 'Diagnósticos com Parceiros',
-    icon: 'people-outline',
-    items: [
-      { label: 'Diagnóstico Contábil (Isabella)',   start: false, base: true, pro: true, vip: null },
-      { label: 'Diagnóstico Convênios/Carreira',    start: false, base: true, pro: true, vip: null },
-      { label: 'Diagnóstico Jurídico (Ana)',         start: false, base: true, pro: true, vip: null },
-    ],
-  },
-  {
-    category: 'Gestão PRO · OLI',
-    icon: 'settings-outline',
-    items: [
-      { label: 'CRM Communicare (Plano Básico)',   start: false, base: false, pro: true, vip: null },
-      { label: 'Gestão de agenda pela recepção',   start: false, base: false, pro: true, vip: null },
-      { label: 'Emissão de NF pela OLI',           start: false, base: false, pro: true, vip: null },
-    ],
-  },
-  {
-    category: 'Serviços Plenos · Exclusivo VIP',
-    icon: 'star-outline',
-    items: [
-      { label: 'Gestão contínua AR Soluções',      start: false, base: false, pro: false, vip: null },
-      { label: 'Consultoria jurídica contínua',    start: false, base: false, pro: false, vip: null },
-      { label: 'Contabilidade plena inclusa',      start: false, base: false, pro: false, vip: null },
-      { label: 'Gestão de carreira médica',        start: false, base: false, pro: false, vip: null },
-    ],
-  },
-];
-
-const PLAN_COLORS: Record<PlanTier, string> = {
-  START: colors.gray,
-  BASE:  '#5B7FA6',
-  PRO:   colors.oliGreen,
-  VIP:   colors.oliGold,
-};
-
-const PLAN_INFO: Record<PlanTier, { price: string; rate: string; badge?: string; comingSoon?: boolean }> = {
-  START: { price: 'Grátis',       rate: 'R$ 2,00/min' },
-  BASE:  { price: 'R$ 299/mês',   rate: 'R$ 1,70/min' },
-  PRO:   { price: 'R$ 599/mês',   rate: 'R$ 1,60/min', badge: 'Mais popular' },
-  VIP:   { price: 'Em breve',     rate: '—',           badge: 'Em breve', comingSoon: true },
-};
-
-// Ordem de upgrade para calcular se canUpgrade
-const PLAN_ORDER: PlanTier[] = ['START', 'BASE', 'PRO', 'VIP'];
-
-function BenefitValue({ value, planColor, comingSoon }: {
-  value: string | boolean | null;
-  planColor: string;
-  comingSoon?: boolean;
-}) {
-  if (comingSoon || value === null) {
-    return <Text style={[benefitStyles.valueText, { color: `${colors.gray}60` }]}>—</Text>;
-  }
-  if (value === false) {
-    return <Ionicons name="lock-closed" size={15} color={`${colors.gray}60`} />;
-  }
-  if (value === true) {
-    return <Ionicons name="checkmark-circle" size={17} color={planColor} />;
-  }
-  return (
-    <Text style={[benefitStyles.valueText, { color: planColor }]}>{value}</Text>
-  );
-}
-
-function PlanBenefitsModal({
-  currentPlan, onUpgrade, onClose,
-}: { currentPlan: PlanTier; onUpgrade: (plan: PlanTier) => void; onClose: () => void }) {
-  const [selectedPlan, setSelectedPlan] = useState<PlanTier>(currentPlan);
-  const isCurrentPlan = selectedPlan === currentPlan;
-  const info          = PLAN_INFO[selectedPlan];
-  const planColor     = PLAN_COLORS[selectedPlan];
-  const canUpgrade    = !info.comingSoon &&
-    PLAN_ORDER.indexOf(selectedPlan) > PLAN_ORDER.indexOf(currentPlan);
-
-  return (
-    <SafeAreaView style={benefitStyles.safe}>
-      {/* Header */}
-      <View style={benefitStyles.header}>
-        <Text style={benefitStyles.headerTitle}>Planos OLI Health Hub</Text>
-        <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar">
-          <Ionicons name="close" size={24} color={colors.oliDarkGray} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Seletor de plano */}
-      <View style={benefitStyles.planSelector}>
-        {(PLAN_ORDER).map(plan => {
-          const active    = selectedPlan === plan;
-          const isCurrent = plan === currentPlan;
-          const color     = PLAN_COLORS[plan];
-          return (
-            <TouchableOpacity
-              key={plan}
-              style={[
-                benefitStyles.planTab,
-                active  && { backgroundColor: color, borderColor: color },
-                !active && { borderColor: `${color}40` },
-              ]}
-              onPress={() => setSelectedPlan(plan)}
-              accessibilityLabel={`Plano ${plan}${isCurrent ? ' (seu plano atual)' : ''}`}
-            >
-              <Text style={[
-                benefitStyles.planTabText,
-                active  && { color: colors.white },
-                !active && { color: color },
-              ]}>
-                {plan}
-              </Text>
-              {isCurrent && (
-                <View style={[benefitStyles.currentDot, { backgroundColor: active ? colors.white : color }]} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Preço + badge */}
-      <View style={[benefitStyles.priceRow, { borderColor: `${planColor}30` }]}>
-        <View>
-          <Text style={[benefitStyles.price, { color: info.comingSoon ? colors.gray : planColor }]}>
-            {info.price}
-          </Text>
-          <Text style={benefitStyles.rate}>{info.rate}</Text>
-        </View>
-        <View style={benefitStyles.priceRight}>
-          {info.badge && !isCurrentPlan && (
-            <View style={[benefitStyles.badgePill, { backgroundColor: info.comingSoon ? `${colors.gray}20` : `${planColor}18` }]}>
-              <Text style={[benefitStyles.badgePillText, { color: info.comingSoon ? colors.gray : planColor }]}>
-                {info.badge}
-              </Text>
-            </View>
-          )}
-          {isCurrentPlan && (
-            <View style={[benefitStyles.activePill, { backgroundColor: `${planColor}18` }]}>
-              <Ionicons name="checkmark-circle" size={13} color={planColor} />
-              <Text style={[benefitStyles.activePillText, { color: planColor }]}>Plano atual</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Lista de benefícios */}
-      <ScrollView contentContainerStyle={benefitStyles.list} showsVerticalScrollIndicator={false}>
-        {PLAN_BENEFITS.map(section => (
-          <View key={section.category} style={benefitStyles.section}>
-            <View style={benefitStyles.sectionHeader}>
-              <Ionicons name={section.icon as any} size={16} color={planColor} />
-              <Text style={[benefitStyles.sectionTitle, { color: planColor }]}>{section.category}</Text>
-            </View>
-            {section.items.map(item => {
-              const key = selectedPlan.toLowerCase() as 'start' | 'base' | 'pro' | 'vip';
-              const value  = item[key];
-              const locked = value === false;
-              return (
-                <View key={item.label} style={[benefitStyles.item, locked && benefitStyles.itemLocked]}>
-                  <Text style={[benefitStyles.itemLabel, locked && benefitStyles.itemLabelLocked]}>
-                    {item.label}
-                  </Text>
-                  <BenefitValue value={value} planColor={planColor} comingSoon={info.comingSoon} />
-                </View>
-              );
-            })}
-          </View>
-        ))}
-
-        {/* Botão de ação */}
-        {canUpgrade ? (
-          <TouchableOpacity
-            style={[benefitStyles.ctaBtn, { backgroundColor: planColor }]}
-            onPress={() => onUpgrade(selectedPlan)}
-            accessibilityLabel={`Solicitar upgrade para o plano ${selectedPlan}`}
-          >
-            <Ionicons name="arrow-up-circle" size={18} color={colors.white} />
-            <Text style={benefitStyles.ctaBtnText}>Solicitar Upgrade para {selectedPlan}</Text>
-          </TouchableOpacity>
-        ) : isCurrentPlan ? (
-          <View style={benefitStyles.currentNotice}>
-            <Ionicons name="checkmark-circle" size={16} color={colors.oliGreen} />
-            <Text style={benefitStyles.currentNoticeText}>Você já está neste plano</Text>
-          </View>
-        ) : info.comingSoon ? (
-          <View style={benefitStyles.currentNotice}>
-            <Ionicons name="time-outline" size={16} color={colors.gray} />
-            <Text style={[benefitStyles.currentNoticeText, { color: colors.gray }]}>Em breve — fique ligado!</Text>
-          </View>
-        ) : null}
-
-        <Text style={benefitStyles.footnote}>
-          * Upgrade processado pela recepção OLI. Entre em contato pelo WhatsApp para mais informações.
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const benefitStyles = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: colors.oliBackground },
-  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, paddingBottom: spacing.sm },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
-
-  planSelector: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
-  planTab:      {
-    flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
-    borderWidth: 1.5, position: 'relative',
-  },
-  planTabText:  { fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
-  currentDot:   { width: 5, height: 5, borderRadius: 3, position: 'absolute', bottom: 5 },
-
-  priceRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingBottom: spacing.sm, borderBottomWidth: 1 },
-  price:       { fontSize: 20, fontWeight: '800' },
-  rate:        { fontSize: 12, color: colors.gray, marginTop: 2 },
-  priceRight:  { alignItems: 'flex-end', gap: 4 },
-  activePill:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  activePillText: { fontSize: 12, fontWeight: '700' },
-  badgePill:      { borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4 },
-  badgePillText:  { fontSize: 12, fontWeight: '700' },
-
-  list:        { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: 40, gap: spacing.sm },
-
-  section:      { backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden' },
-  sectionHeader:{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.md, paddingBottom: spacing.sm },
-  sectionTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
-
-  item:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: 10, borderTopWidth: 0.5, borderTopColor: colors.border },
-  itemLocked:     { backgroundColor: `${colors.gray}06` },
-  itemLabel:      { fontSize: 14, color: colors.oliDarkGray, flex: 1, paddingRight: spacing.sm },
-  itemLabelLocked:{ color: `${colors.gray}80` },
-
-  valueText: { fontSize: 13, fontWeight: '700' },
-
-  ctaBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, borderRadius: radius.md, paddingVertical: spacing.md, marginTop: spacing.md },
-  ctaBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-
-  currentNotice:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, marginTop: spacing.md },
-  currentNoticeText: { fontSize: 14, color: colors.oliGreen, fontWeight: '600' },
-
-  footnote: { fontSize: 11, color: `${colors.gray}90`, textAlign: 'center', lineHeight: 16, marginTop: spacing.sm },
-});
-
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Main Styles ───────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: colors.oliBackground },
   content: { padding: spacing.md, paddingBottom: 40, gap: spacing.md },
 
+  card: {
+    backgroundColor: colors.white,
+    borderRadius:    radius.lg,
+    padding:         spacing.md,
+  },
+  cardHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  sectionRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  seeAllLink:       { fontSize: 13, fontWeight: '600', color: colors.oliGold },
+  planHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  sectionTitle:     { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
+  upgradeLink:      { fontSize: 14, fontWeight: '700', color: colors.oliGold },
+  planRow:          { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  planName:         { fontSize: 24, fontWeight: '700', color: colors.oliGreen },
+  activeBadge:      { backgroundColor: colors.oliGreen, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
+  activeBadgeText:  { color: colors.white, fontSize: 12, fontWeight: '700' },
+  planDesc:         { fontSize: 14, color: colors.gray, lineHeight: 20 },
+  upgradeBtn:       { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm },
+  upgradeBtnText:   { fontSize: 13, fontWeight: '700', color: colors.oliGold },
+  agentDivider:     { height: 0.5, backgroundColor: colors.border, marginHorizontal: spacing.md },
+  sectionDesc:      { fontSize: 13, color: colors.gray, lineHeight: 18, marginTop: -spacing.xs },
   receptionBtn: {
     flexDirection:   'row',
     alignItems:      'center',
@@ -1149,25 +496,4 @@ const styles = StyleSheet.create({
     padding:         spacing.md,
   },
   receptionBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-
-  card: {
-    backgroundColor: colors.white,
-    borderRadius:    radius.lg,
-    padding:         spacing.md,
-  },
-  sectionRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  seeAllLink:     { fontSize: 13, fontWeight: '600', color: colors.oliGold },
-  planHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  sectionTitle:   { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
-  upgradeLink:    { fontSize: 14, fontWeight: '700', color: colors.oliGold },
-  planRow:        { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-  planName:       { fontSize: 24, fontWeight: '700', color: colors.oliGreen },
-  activeBadge:    { backgroundColor: colors.oliGreen, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
-  activeBadgeText:{ color: colors.white, fontSize: 12, fontWeight: '700' },
-  planDesc:       { fontSize: 14, color: colors.gray, lineHeight: 20 },
-  upgradeBtn:     { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm },
-  upgradeBtnText: { fontSize: 13, fontWeight: '700', color: colors.oliGold },
-  agentDivider:   { height: 0.5, backgroundColor: colors.border, marginHorizontal: spacing.md },
-  sectionDesc:    { fontSize: 13, color: colors.gray, lineHeight: 18, marginTop: -spacing.xs },
-  serviceDivider: { height: 0.5, backgroundColor: colors.border, marginBottom: spacing.md },
 });

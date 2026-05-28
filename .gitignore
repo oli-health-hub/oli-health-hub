@@ -25,3 +25,5 @@ android/
 # Misc
 .DS_Store
 *.log
+# Local Netlify folder
+.netlify

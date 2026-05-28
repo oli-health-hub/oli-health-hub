@@ -1,23 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Modal, Alert, Image,
+  StyleSheet, Modal, Alert, Image, FlatList, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppStore, COST_PER_MINUTE } from '../../src/store/appStore';
 import { useAuthStore } from '../../src/store/authStore';
+import { usePatientStore } from '../../src/store/patientStore';
 import { useTimer } from '../../src/hooks/useTimer';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import {
   formatElapsedTime, formatRemainingTime,
   formatHour, formatCurrency, formatDate,
 } from '../../src/utils/formatters';
-import type { Reservation, ReservationStatus } from '../../src/models/types';
+import type { Reservation, ReservationStatus, Patient } from '../../src/models/types';
 import { QRScannerModal } from '../../src/components/QRScannerModal';
 import { fetchHourBalance } from '../../src/services/financeiroService';
 import type { HourBalance } from '../../src/services/financeiroService';
+import { sendNPS } from '../../src/services/npsService';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -174,7 +176,15 @@ export default function DashboardScreen() {
   const [alertKey,            setAlertKey]            = useState<string | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [hourBalance,         setHourBalance]         = useState<HourBalance | null>(null);
+  const [showNPSPicker,       setShowNPSPicker]       = useState(false);
+  const [npsSendingId,        setNpsSendingId]        = useState<string | null>(null);
   const prevPhaseRef = useRef<typeof timer.phase>('normal');
+
+  const { patients } = usePatientStore();
+  // Os 6 pacientes mais recentes (por data de cadastro) para o picker de NPS
+  const recentPatients = [...patients]
+    .sort((a, b) => new Date(b.dataCadastro).getTime() - new Date(a.dataCadastro).getTime())
+    .slice(0, 6);
 
   // Busca saldo de horas do Supabase (apenas hour_users com pacote ativo)
   useEffect(() => {
@@ -274,8 +284,30 @@ export default function DashboardScreen() {
   const handleCheckout = useCallback(() => {
     setShowQR(false);
     checkout();
-    setTimeout(() => setAlertKey('checkoutSuccess'), 300);
-  }, [checkout]);
+    // Abre picker NPS se houver pacientes cadastrados; caso contrário alert padrão
+    setTimeout(() => {
+      if (patients.length > 0) {
+        setShowNPSPicker(true);
+      } else {
+        setAlertKey('checkoutSuccess');
+      }
+    }, 300);
+  }, [checkout, patients.length]);
+
+  const handleNPSSelect = useCallback(async (patient: Patient) => {
+    const professionalId = session?.user?.id;
+    if (!professionalId) return;
+    setNpsSendingId(patient.id);
+    try {
+      await sendNPS(patient, professionalId);
+    } catch {
+      // falha silenciosa — NPS não é bloqueante
+    } finally {
+      setNpsSendingId(null);
+      setShowNPSPicker(false);
+      setAlertKey('checkoutSuccess');
+    }
+  }, [session?.user?.id]);
 
 
   const handleCancelReservation = useCallback((id: string) => {
@@ -523,6 +555,57 @@ export default function DashboardScreen() {
         <QRScannerModal onCheckout={handleCheckout} onClose={() => setShowQR(false)} />
       </Modal>
 
+      {/* ── Modal: NPS picker pós-checkout ── */}
+      <Modal visible={showNPSPicker} animationType="slide" transparent>
+        <View style={npsStyles.overlay}>
+          <View style={npsStyles.sheet}>
+            {/* Handle */}
+            <View style={npsStyles.handle} />
+
+            <Text style={npsStyles.title}>Checkout realizado! ✅</Text>
+            <Text style={npsStyles.sub}>Para quem foi o atendimento? Vamos enviar uma pesquisa rápida de satisfação.</Text>
+
+            <FlatList
+              data={recentPatients}
+              keyExtractor={p => p.id}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={npsStyles.patientRow}
+                  onPress={() => handleNPSSelect(item)}
+                  disabled={npsSendingId !== null}
+                  accessibilityLabel={`Selecionar paciente ${item.nome} para NPS`}
+                >
+                  <View style={npsStyles.patientAvatar}>
+                    <Text style={npsStyles.patientAvatarText}>
+                      {item.nome.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={npsStyles.patientInfo}>
+                    <Text style={npsStyles.patientName}>{item.nome}</Text>
+                    <Text style={npsStyles.patientPhone}>{item.telefone}</Text>
+                  </View>
+                  {npsSendingId === item.id ? (
+                    <ActivityIndicator size="small" color={colors.oliGreen} />
+                  ) : (
+                    <Ionicons name="send-outline" size={18} color={colors.oliGreen} />
+                  )}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={npsStyles.sep} />}
+            />
+
+            <TouchableOpacity
+              style={npsStyles.skipBtn}
+              onPress={() => { setShowNPSPicker(false); setAlertKey('checkoutSuccess'); }}
+              accessibilityLabel="Pular envio de NPS"
+            >
+              <Text style={npsStyles.skipText}>Pular — não enviar pesquisa</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* ── Modal: Opções de Reserva ── */}
       <Modal visible={!!selectedReservation} animationType="slide" transparent>
         {selectedReservation && (
@@ -542,6 +625,7 @@ export default function DashboardScreen() {
           />
         )}
       </Modal>
+
     </SafeAreaView>
   );
 }
@@ -958,4 +1042,21 @@ const optStyles = StyleSheet.create({
   divider: { height: 1, backgroundColor: colors.border, marginHorizontal: spacing.lg },
   option:  { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 18, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   optionLabel: { fontSize: 16, fontWeight: '500' },
+});
+
+const npsStyles = StyleSheet.create({
+  overlay:           { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet:             { backgroundColor: colors.white, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  handle:            { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.sm },
+  title:             { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray, textAlign: 'center' },
+  sub:               { fontSize: 14, color: colors.gray, textAlign: 'center', lineHeight: 20 },
+  patientRow:        { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 12 },
+  patientAvatar:     { width: 42, height: 42, borderRadius: 21, backgroundColor: `${colors.oliGreen}20`, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  patientAvatarText: { fontSize: 18, fontWeight: '700', color: colors.oliGreen },
+  patientInfo:       { flex: 1 },
+  patientName:       { fontSize: 15, fontWeight: '600', color: colors.oliDarkGray },
+  patientPhone:      { fontSize: 12, color: colors.gray, marginTop: 2 },
+  sep:               { height: 0.5, backgroundColor: colors.border },
+  skipBtn:           { alignItems: 'center', paddingVertical: spacing.md },
+  skipText:          { fontSize: 14, color: colors.gray, fontWeight: '500' },
 });

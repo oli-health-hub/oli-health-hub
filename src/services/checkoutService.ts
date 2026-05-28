@@ -124,6 +124,24 @@ export async function checkHourPackageActivation(
 }
 
 /**
+ * Verifica se a assinatura de plano já foi ativada (status = active).
+ * Chamado periodicamente pelo PlanCheckoutModal (intervalo de 5 s).
+ */
+export async function checkPlanActivation(
+  professionalId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('status')
+    .eq('professional_id', professionalId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+
+  return data !== null;
+}
+
+/**
  * Verifica uma vez se o módulo já está ativo para o profissional.
  * Chamado periodicamente pelo CheckoutModal (intervalo de 5 s).
  */

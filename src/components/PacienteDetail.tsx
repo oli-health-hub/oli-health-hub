@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { Patient } from '../models/types';
@@ -7,6 +7,8 @@ import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatDate } from '../utils/formatters';
 import { openPatientChat } from '../utils/whatsapp';
 import { EncaixeModal } from './EncaixeModal';
+import { sendNPS } from '../services/npsService';
+import { useAuthStore } from '../store/authStore';
 
 interface Props {
   paciente:              Patient;
@@ -33,6 +35,22 @@ function DetailRow({ label, value }: DetailRowProps) {
 
 export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendimento }: Props) {
   const [showEncaixe, setShowEncaixe] = useState(false);
+  const [sendingNPS,  setSendingNPS]  = useState(false);
+  const [npsSent,     setNpsSent]     = useState(false);
+  const { profile } = useAuthStore();
+
+  const handleSendNPS = async () => {
+    if (!profile?.id) return;
+    setSendingNPS(true);
+    try {
+      await sendNPS(paciente, profile.id);
+      setNpsSent(true);
+    } catch {
+      Alert.alert('Erro', 'Não foi possível enviar a pesquisa NPS. Tente novamente.');
+    } finally {
+      setSendingNPS(false);
+    }
+  };
 
   const handleWhatsApp = async () => {
     await openPatientChat(paciente.nome, paciente.telefone);
@@ -116,7 +134,7 @@ export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendi
             }
           />
           <DetailRow label="Cadastro"      value={formatDate(paciente.dataCadastro)} />
-          <DetailRow label="Consentimento" value={formatDate(paciente.consentimentoTimestamp)} />
+          <DetailRow label="Consentimento" value={paciente.consentimentoTimestamp ? formatDate(paciente.consentimentoTimestamp) : 'Aguardando'} />
         </View>
 
         {/* Métricas CRM */}
@@ -159,6 +177,27 @@ export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendi
         >
           <Ionicons name="calendar-outline" size={18} color={colors.oliGold} />
           <Text style={styles.actionBtnEncaixeText}>Sugerir Encaixe</Text>
+        </TouchableOpacity>
+
+        {/* Pesquisa NPS */}
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.actionBtnNPS, npsSent && styles.actionBtnNPSSent]}
+          onPress={handleSendNPS}
+          disabled={sendingNPS || npsSent}
+          accessibilityLabel={`Enviar pesquisa NPS para ${paciente.nome}`}
+        >
+          {sendingNPS ? (
+            <ActivityIndicator size="small" color={colors.oliGreen} />
+          ) : (
+            <Ionicons
+              name={npsSent ? 'checkmark-circle-outline' : 'star-outline'}
+              size={18}
+              color={npsSent ? colors.oliGreen : colors.oliGreen}
+            />
+          )}
+          <Text style={styles.actionBtnNPSText}>
+            {npsSent ? 'NPS enviado!' : 'Enviar pesquisa NPS'}
+          </Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -264,4 +303,21 @@ const styles = StyleSheet.create({
     borderColor:     `${colors.oliGold}40`,
   },
   actionBtnEncaixeText: { color: colors.oliGold, fontSize: 15, fontWeight: '700' },
+
+  actionBtnNPS: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'center',
+    gap:             8,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+    backgroundColor: `${colors.oliGreen}12`,
+    borderWidth:     1,
+    borderColor:     `${colors.oliGreen}35`,
+  },
+  actionBtnNPSSent: {
+    backgroundColor: `${colors.oliGreen}20`,
+    borderColor:     colors.oliGreen,
+  },
+  actionBtnNPSText: { color: colors.oliGreen, fontSize: 15, fontWeight: '700' },
 });

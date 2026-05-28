@@ -27,9 +27,6 @@
     },
     "production": {
       "channel": "production",
-      "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": ""
-      },
       "android": {
         "buildType": "app-bundle"
       },

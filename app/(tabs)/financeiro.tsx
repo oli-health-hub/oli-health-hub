@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity, Modal, Pressable,
   StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
+import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,41 +14,37 @@ import { useAuthStore } from '../../src/store/authStore';
 import {
   fetchUsageSummary,
   fetchMonthlyUsageHistory,
+  fetchHourBalance,
 } from '../../src/services/financeiroService';
-import type { UsageSummary, MonthlyUsageSummary } from '../../src/services/financeiroService';
+import type { UsageSummary, MonthlyUsageSummary, HourBalance } from '../../src/services/financeiroService';
 import type { HourPackage } from '../../src/models/types';
 import HourCheckoutModal from '../../src/components/HourCheckoutModal';
 
 // ── Custo estimado de manter consultório próprio (aluguel + secretária + utilidades) ──
 const TRADITIONAL_OFFICE_COST = 5_500.00;
 
-// Pacotes espelham exatamente a tabela hour_packages no Supabase
+// Dados dos serviços inclusos — usados apenas no PDF; a seção visual fica em Ecossistema
+const INCLUDED_SERVICES = [
+  { name: 'Recepção Assistida',  detail: 'Secretária compartilhada — 20 dias úteis', marketPrice: 2_500, unit: 'mês'     },
+  { name: 'Consultoria Jurídica', detail: '1 de 3 consultas incluídas',              marketPrice:   350, unit: 'consulta' },
+  { name: 'Consultoria Contábil', detail: '1 consulta incluída',                     marketPrice:   300, unit: 'consulta' },
+  { name: 'Endereço Fiscal',      detail: 'CNPJ registrado no OLI',                  marketPrice:   150, unit: 'mês'     },
+  { name: 'Internet Fibra 1 Gb',  detail: 'Uso nas salas',                           marketPrice:   120, unit: 'mês'     },
+  { name: 'Evento OLI',           detail: '1 evento incluído / mês',                 marketPrice:   200, unit: 'evento'  },
+];
+
+// Valor de mercado dos serviços inclusos no plano (calculado em ecossistema.tsx)
+const TOTAL_MARKET_VALUE = 3_620.00;
+
+// Preço fixo: R$140/h. A cada 10h compradas → 1h bônus grátis.
+const PRICE_PER_HOUR = 140.00;
+
 const HOUR_PACKAGES: HourPackage[] = [
-  { hours:  1, price:   140.00, discountPercent:  0 },
-  { hours: 10, price: 1_100.00, discountPercent: 21 }, // R$110/h vs R$140 base
-  { hours: 20, price: 2_000.00, discountPercent: 29 }, // R$100/h
-  { hours: 40, price: 3_600.00, discountPercent: 36 }, // R$90/h
+  { hours:  1, price: PRICE_PER_HOUR *  1, bonusHours: 0 },
+  { hours: 10, price: PRICE_PER_HOUR * 10, bonusHours: 1 },
+  { hours: 20, price: PRICE_PER_HOUR * 20, bonusHours: 2 },
+  { hours: 40, price: PRICE_PER_HOUR * 40, bonusHours: 4 },
 ];
-
-// ── Serviços inclusos no plano (informativos — não variam por usuário) ──────────
-type ServiceItem = {
-  icon:        string;
-  name:        string;
-  detail:      string;
-  marketPrice: number;
-  unit:        string;
-};
-
-const INCLUDED_SERVICES: ServiceItem[] = [
-  { icon: 'people-outline',         name: 'Recepção Assistida',  detail: 'Secretária compartilhada — 20 dias úteis', marketPrice: 2_500.00, unit: 'mês'     },
-  { icon: 'document-text-outline',  name: 'Consultoria Jurídica', detail: '1 de 3 consultas incluídas',              marketPrice:   350.00, unit: 'consulta' },
-  { icon: 'calculator-outline',     name: 'Consultoria Contábil', detail: '1 consulta incluída',                     marketPrice:   300.00, unit: 'consulta' },
-  { icon: 'location-outline',       name: 'Endereço Fiscal',      detail: 'CNPJ registrado no OLI',                  marketPrice:   150.00, unit: 'mês'     },
-  { icon: 'wifi-outline',           name: 'Internet Fibra 1 Gb',  detail: 'Uso nas salas',                           marketPrice:   120.00, unit: 'mês'     },
-  { icon: 'star-outline',           name: 'Evento OLI',           detail: '1 evento incluído / mês',                 marketPrice:   200.00, unit: 'evento'  },
-];
-
-const totalMarketValue = INCLUDED_SERVICES.reduce((acc, s) => acc + s.marketPrice, 0);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -64,6 +61,9 @@ export default function FinanceiroScreen() {
   const [monthlyHistory,   setMonthlyHistory]   = useState<MonthlyUsageSummary[]>([]);
   const [loadingHistory,   setLoadingHistory]   = useState(true);
   const [selectedPackage,  setSelectedPackage]  = useState<HourPackage | null>(null);
+  const [showPackagePicker, setShowPackagePicker] = useState(false);
+  const [hourBalance,       setHourBalance]       = useState<HourBalance | null>(null);
+  const [showScrollHint,    setShowScrollHint]    = useState(true);
 
   // ── Scroll para seção de pacotes quando navegado com ?section=packages ──
   useEffect(() => {
@@ -103,6 +103,13 @@ export default function FinanceiroScreen() {
       .finally(() => setLoadingHistory(false));
   }, [session?.user?.id]);
 
+  // ── Saldo de pacote de horas ──
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    fetchHourBalance(userId).then(setHourBalance).catch(() => {});
+  }, [session?.user?.id]);
+
   // ── Valores derivados (todos reais) ──
   const oliCost      = usageSummary?.totalValor   ?? 0;
   const totalMinutos = usageSummary?.totalMinutos ?? 0;
@@ -112,7 +119,6 @@ export default function FinanceiroScreen() {
   const horasLabel   = totalMinutos > 0
     ? (horasMin > 0 ? `${horasH}h ${horasMin}min` : `${horasH}h`)
     : '—';
-  const servicesSaving = totalMarketValue - oliCost;
   const savingsVsTrad  = TRADITIONAL_OFFICE_COST - oliCost;
 
   // ── Gerar PDF com dados reais ──
@@ -151,10 +157,6 @@ export default function FinanceiroScreen() {
     }
   };
 
-  const handleBuyPackage = (pkg: HourPackage) => {
-    setSelectedPackage(pkg);
-  };
-
   const handleHourPackageSuccess = () => {
     const userId = session?.user?.id;
     if (!userId) return;
@@ -163,11 +165,29 @@ export default function FinanceiroScreen() {
       .then(setUsageSummary)
       .catch(() => {})
       .finally(() => setLoadingUsage(false));
+    fetchHourBalance(userId).then(setHourBalance).catch(() => {});
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content}>
+      <View style={{ flex: 1 }}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.content}
+        scrollEventThrottle={100}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          setShowScrollHint(contentOffset.y + layoutMeasurement.height < contentSize.height - 60);
+        }}
+      >
+
+        {/* ── Saldo de Horas ── */}
+        <PacoteHoras
+          consumed={hourBalance ? Math.floor(hourBalance.minutosUsados / 60) : 0}
+          total={hourBalance ? Math.floor(hourBalance.minutosTotal / 60) : 0}
+          hasPackage={hourBalance !== null}
+          onBuyMore={() => setShowPackagePicker(true)}
+        />
 
         {/* ── Custo OLI este mês ── */}
         <View style={[styles.card, shadows.card]}>
@@ -232,7 +252,6 @@ export default function FinanceiroScreen() {
             <Ionicons name="trending-up" size={20} color={colors.oliGreen} />
           </View>
 
-          {/* Economia vs. consultório próprio — usando custo real de minutagem */}
           <View style={styles.savingsCard}>
             <View style={styles.savingsHeader}>
               <Ionicons name="business-outline" size={16} color={colors.oliGold} />
@@ -260,88 +279,46 @@ export default function FinanceiroScreen() {
             )}
           </View>
 
-          {/* Comparativo ROI — aguarda Communicare */}
-          <View style={styles.roiPending}>
-            <Ionicons name="stats-chart-outline" size={20} color={colors.oliLightGray} />
-            <Text style={styles.roiPendingText}>
-              Análise de ROI (retorno sobre faturamento) disponível com integração Communicare
-            </Text>
-          </View>
-        </View>
-
-        {/* ── Serviços Inclusos ── */}
-        <View style={[styles.card, shadows.card]}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Serviços Inclusos no Plano</Text>
-            <Ionicons name="gift-outline" size={20} color={colors.oliGold} />
-          </View>
-
-          {INCLUDED_SERVICES.map((svc, i) => (
-            <View
-              key={svc.name}
-              style={[svcStyles.row, i < INCLUDED_SERVICES.length - 1 && svcStyles.rowBorder]}
-            >
-              <View style={svcStyles.iconWrap}>
-                <Ionicons name={svc.icon as any} size={18} color={colors.oliGreen} />
-              </View>
-              <View style={svcStyles.info}>
-                <Text style={svcStyles.name}>{svc.name}</Text>
-                <Text style={svcStyles.detail}>{svc.detail}</Text>
-              </View>
-              <Text style={svcStyles.marketPrice}>{formatCurrency(svc.marketPrice)}/{svc.unit}</Text>
+          {/* Serviços inclusos — valor agregado */}
+          <View style={[styles.savingsCard, { borderColor: `${colors.oliGreen}30`, backgroundColor: `${colors.oliGreen}06` }]}>
+            <View style={styles.savingsHeader}>
+              <Ionicons name="gift-outline" size={16} color={colors.oliGreen} />
+              <Text style={[styles.savingsTitle, { color: colors.oliGreen }]}>Valor em serviços inclusos</Text>
             </View>
-          ))}
-
-          <View style={svcStyles.footer}>
-            <View style={svcStyles.footerRow}>
-              <Text style={svcStyles.footerLabel}>Valor de mercado destes serviços</Text>
-              <Text style={svcStyles.footerMarket}>{formatCurrency(totalMarketValue)}/mês</Text>
+            <View style={styles.savingsLines}>
+              <View style={styles.savingsRow}>
+                <Text style={styles.savingsLabel}>Serviços inclusos no plano</Text>
+                <Text style={[styles.savingsTraditional, { color: colors.oliLightGray }]}>{formatCurrency(TOTAL_MARKET_VALUE)}/mês</Text>
+              </View>
+              <View style={styles.savingsRow}>
+                <Text style={styles.savingsLabel}>Mensalidade do plano</Text>
+                <Text style={styles.savingsOli}>{oliCost > 0 ? formatCurrency(oliCost) : '—'}</Text>
+              </View>
             </View>
-            {oliCost > 0 && servicesSaving > 0 && (
-              <View style={svcStyles.savingsBanner}>
+            {oliCost > 0 && TOTAL_MARKET_VALUE > oliCost && (
+              <View style={styles.savingsResult}>
                 <Ionicons name="checkmark-circle" size={18} color={colors.oliGreen} />
-                <Text style={svcStyles.savingsBannerText}>
-                  {'Economia de '}
-                  <Text style={svcStyles.savingsBannerHighlight}>{formatCurrency(servicesSaving)}</Text>
-                  {' só em serviços inclusos este mês'}
+                <Text style={styles.savingsResultText}>
+                  <Text style={styles.savingsHighlight}>{formatCurrency(TOTAL_MARKET_VALUE - oliCost)}</Text>
+                  {' '}em valor incluso além do que pagou
                 </Text>
               </View>
             )}
+          </View>
+
+          <View style={styles.roiPending}>
+            <Ionicons name="stats-chart-outline" size={20} color={colors.oliLightGray} />
+            <Text style={styles.roiPendingText}>
+              Análise de ROI disponível com integração Communicare (em breve)
+            </Text>
           </View>
         </View>
 
         {/* ── Pacotes de Horas ── */}
         <View
-          style={styles.packagesSectionHeader}
           onLayout={(e) => { packagesY.current = e.nativeEvent.layout.y; }}
         >
           <Text style={styles.sectionTitle}>Pacotes de Horas</Text>
-          <View style={styles.scrollHintBadge}>
-            <Text style={styles.scrollHintText}>Deslize</Text>
-            <Ionicons name="chevron-forward" size={13} color={colors.oliGreen} />
-          </View>
-        </View>
-
-        <View style={styles.packagesWrap}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.packagesRow}>
-            {HOUR_PACKAGES.map(pkg => (
-              <View key={pkg.hours} style={[styles.packageCard, shadows.small]}>
-                <Text style={styles.packageHours}>{pkg.hours} Horas</Text>
-                <Text style={styles.packagePrice}>{formatCurrency(pkg.price)}</Text>
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>{pkg.discountPercent}% OFF</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.buyBtn}
-                  onPress={() => handleBuyPackage(pkg)}
-                  accessibilityLabel={`Comprar pacote de ${pkg.hours} horas`}
-                >
-                  <Text style={styles.buyBtnText}>Comprar</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
-          <View style={styles.packagesScrollFade} pointerEvents="none" />
         </View>
 
         {/* ── Extrato de Minutagem ── */}
@@ -434,6 +411,16 @@ export default function FinanceiroScreen() {
 
       </ScrollView>
 
+      {/* Package picker modal */}
+      <HourPackagePickerModal
+        visible={showPackagePicker}
+        onClose={() => setShowPackagePicker(false)}
+        onSelect={(pkg) => {
+          setShowPackagePicker(false);
+          setSelectedPackage(pkg);
+        }}
+      />
+
       {selectedPackage && (
         <HourCheckoutModal
           visible={!!selectedPackage}
@@ -442,9 +429,210 @@ export default function FinanceiroScreen() {
           onSuccess={handleHourPackageSuccess}
         />
       )}
+
+      <ScrollMoreIndicator visible={showScrollHint} />
+      </View>
     </SafeAreaView>
   );
 }
+
+// ── PacoteHoras ───────────────────────────────────────────────────────────────
+
+function PacoteHoras({
+  consumed, total, hasPackage, onBuyMore,
+}: { consumed: number; total: number; hasPackage?: boolean; onBuyMore?: () => void }) {
+  if (!hasPackage) {
+    return (
+      <View style={[pacoteStyles.card, shadows.card]}>
+        <View style={pacoteStyles.emptyState}>
+          <Ionicons name="time-outline" size={32} color={colors.oliGreen} style={{ marginBottom: 8 }} />
+          <Text style={pacoteStyles.emptyTitle}>Sem pacote ativo</Text>
+          <Text style={pacoteStyles.emptySubtitle}>Adquira horas para usar as salas OLI</Text>
+          <TouchableOpacity
+            style={pacoteStyles.buyBtn}
+            onPress={onBuyMore}
+            accessibilityLabel="Comprar horas"
+          >
+            <Ionicons name="add-circle-outline" size={16} color={colors.white} />
+            <Text style={pacoteStyles.buyBtnText}>Comprar horas</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const remaining = total - consumed;
+  const progress  = total > 0 ? consumed / total : 0;
+  const isLow     = remaining <= total * 0.2;
+
+  return (
+    <View style={[pacoteStyles.card, shadows.card]}>
+      <View style={pacoteStyles.header}>
+        <View style={pacoteStyles.titleRow}>
+          <Ionicons name="time-outline" size={15} color={colors.oliGreen} />
+          <Text style={pacoteStyles.title}>Saldo de Horas — Pacote {total}h</Text>
+        </View>
+        <TouchableOpacity onPress={onBuyMore} accessibilityLabel="Comprar mais horas">
+          <Text style={pacoteStyles.addMore}>+ Comprar</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={pacoteStyles.track}>
+        <View style={[
+          pacoteStyles.fill,
+          { width: `${Math.min(progress * 100, 100)}%` as any },
+          isLow && pacoteStyles.fillLow,
+        ]} />
+      </View>
+
+      <View style={pacoteStyles.stats}>
+        <View style={pacoteStyles.statItem}>
+          <Text style={pacoteStyles.statValue}>{consumed}h</Text>
+          <Text style={pacoteStyles.statLabel}>utilizadas</Text>
+        </View>
+        <View style={pacoteStyles.statDivider} />
+        <View style={pacoteStyles.statItem}>
+          <Text style={[pacoteStyles.statValue, isLow && { color: colors.oliRed }]}>
+            {remaining}h
+          </Text>
+          <Text style={pacoteStyles.statLabel}>restantes</Text>
+        </View>
+        <View style={pacoteStyles.statDivider} />
+        <View style={pacoteStyles.statItem}>
+          <Text style={pacoteStyles.statValue}>{total}h</Text>
+          <Text style={pacoteStyles.statLabel}>contratadas</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const pacoteStyles = StyleSheet.create({
+  card:          { backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md },
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  titleRow:      { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  title:         { fontSize: 14, fontWeight: '700', color: colors.oliDarkGray },
+  addMore:       { fontSize: 13, fontWeight: '700', color: colors.oliGold },
+  track:         { height: 8, backgroundColor: `${colors.oliGreen}1A`, borderRadius: radius.full, overflow: 'hidden', marginBottom: spacing.sm },
+  fill:          { height: 8, backgroundColor: colors.oliGreen, borderRadius: radius.full },
+  fillLow:       { backgroundColor: colors.oliRed },
+  stats:         { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  statItem:      { alignItems: 'center', flex: 1 },
+  statValue:     { fontSize: 20, fontWeight: '700', color: colors.oliGreen },
+  statLabel:     { fontSize: 11, color: colors.gray, marginTop: 2 },
+  statDivider:   { width: 1, height: 28, backgroundColor: colors.border },
+  emptyState:    { alignItems: 'center', paddingVertical: spacing.lg },
+  emptyTitle:    { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray, marginBottom: 4 },
+  emptySubtitle: { fontSize: 13, color: colors.gray, marginBottom: spacing.md, textAlign: 'center' },
+  buyBtn:        { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.oliGreen, paddingHorizontal: spacing.lg, paddingVertical: 10, borderRadius: radius.full },
+  buyBtnText:    { fontSize: 14, fontWeight: '700', color: colors.white },
+});
+
+// ── HourPackagePickerModal ────────────────────────────────────────────────────
+
+function HourPackagePickerModal({
+  visible, onClose, onSelect,
+}: { visible: boolean; onClose: () => void; onSelect: (pkg: HourPackage) => void }) {
+  const [selected, setSelected] = useState<number | null>(null);
+
+  const handleContinue = () => {
+    const pkg = HOUR_PACKAGES.find(p => p.hours === selected);
+    if (pkg) onSelect(pkg);
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={pickerStyles.overlay} onPress={onClose}>
+        <Pressable style={pickerStyles.sheet} onPress={e => e.stopPropagation()}>
+
+          <View style={pickerStyles.handle} />
+          <View style={pickerStyles.header}>
+            <View>
+              <Text style={pickerStyles.title}>Escolha um pacote</Text>
+              <Text style={pickerStyles.subtitle}>R$140/h · a cada 10h compradas = 1h bônus</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar">
+              <Ionicons name="close" size={22} color={colors.oliDarkGray} />
+            </TouchableOpacity>
+          </View>
+
+          {HOUR_PACKAGES.map((pkg, i) => {
+            const isSelected = selected === pkg.hours;
+            return (
+              <TouchableOpacity
+                key={pkg.hours}
+                style={[
+                  pickerStyles.row,
+                  i < HOUR_PACKAGES.length - 1 && pickerStyles.rowBorder,
+                  isSelected && pickerStyles.rowSelected,
+                ]}
+                onPress={() => setSelected(pkg.hours)}
+                accessibilityLabel={`Pacote ${pkg.hours} horas, ${formatCurrency(pkg.price)}`}
+              >
+                <View style={[pickerStyles.radio, isSelected && pickerStyles.radioSelected]}>
+                  {isSelected && <View style={pickerStyles.radioDot} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={pickerStyles.pkgHours}>
+                    <Text style={pickerStyles.pkgHoursNum}>{pkg.hours}</Text>
+                    {' '}hora{pkg.hours > 1 ? 's' : ''}
+                  </Text>
+                  {pkg.bonusHours > 0 && (
+                    <View style={pickerStyles.bonusBadge}>
+                      <Ionicons name="gift-outline" size={11} color={colors.oliGreen} />
+                      <Text style={pickerStyles.bonusText}>
+                        +{pkg.bonusHours}h bônus · {pkg.hours + pkg.bonusHours}h no total
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={pickerStyles.pkgPrice}>{formatCurrency(pkg.price)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          <TouchableOpacity
+            style={[pickerStyles.continueBtn, !selected && pickerStyles.continueBtnDisabled]}
+            onPress={handleContinue}
+            disabled={!selected}
+            accessibilityLabel="Continuar para pagamento"
+          >
+            <Text style={pickerStyles.continueBtnText}>Continuar</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.white} />
+          </TouchableOpacity>
+
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  overlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet:    { backgroundColor: colors.white, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingBottom: 36, overflow: 'hidden' },
+  handle:   { width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  header:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: spacing.md, paddingBottom: spacing.sm },
+  title:    { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
+  subtitle: { fontSize: 12, color: colors.gray, marginTop: 2 },
+
+  row:         { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: 14 },
+  rowBorder:   { borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  rowSelected: { backgroundColor: `${colors.oliGreen}08` },
+
+  radio:         { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  radioSelected: { borderColor: colors.oliGreen },
+  radioDot:      { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.oliGreen },
+
+  pkgHours:    { fontSize: 14, color: colors.oliDarkGray, fontWeight: '400' },
+  pkgHoursNum: { fontSize: 20, fontWeight: '800' },
+  bonusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', backgroundColor: `${colors.oliGreen}14`, borderRadius: radius.sm, paddingHorizontal: 7, paddingVertical: 2, marginTop: 4 },
+  bonusText:   { fontSize: 11, fontWeight: '600', color: colors.oliGreen },
+  pkgPrice:    { fontSize: 16, fontWeight: '700', color: colors.oliDarkGray },
+
+  continueBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.oliGreen, borderRadius: radius.md, paddingVertical: 14, marginHorizontal: spacing.md, marginTop: spacing.md },
+  continueBtnDisabled: { backgroundColor: `${colors.gray}50` },
+  continueBtnText:     { color: colors.white, fontSize: 16, fontWeight: '700' },
+});
 
 // ── Sub-componentes ───────────────────────────────────────────────────────────
 
@@ -547,35 +735,6 @@ const styles = StyleSheet.create({
 
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray, marginTop: spacing.xs },
 
-  packagesSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  scrollHintBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${colors.oliGreen}12`, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
-  scrollHintText:  { fontSize: 12, fontWeight: '600', color: colors.oliGreen },
-
-  packagesWrap:       { position: 'relative' },
-  packagesRow:        { marginBottom: spacing.xs },
-  packagesScrollFade: {
-    position:        'absolute',
-    right:           0,
-    top:             0,
-    bottom:          spacing.xs,
-    width:           40,
-    borderRadius:    radius.lg,
-    backgroundColor: `${colors.oliBackground}CC`,
-  },
-  packageCard: {
-    width:           160,
-    backgroundColor: colors.white,
-    borderRadius:    radius.lg,
-    padding:         spacing.md,
-    marginRight:     spacing.md,
-  },
-  packageHours:  { fontSize: 20, fontWeight: '700', color: colors.oliDarkGray, marginBottom: spacing.xs },
-  packagePrice:  { fontSize: 16, fontWeight: '500', color: colors.oliGreen, marginBottom: spacing.sm },
-  discountBadge: { alignSelf: 'flex-start', backgroundColor: colors.oliGold, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2, marginBottom: spacing.sm },
-  discountText:  { color: colors.white, fontSize: 12, fontWeight: '700' },
-  buyBtn:        { backgroundColor: colors.oliGreen, borderRadius: radius.sm, padding: spacing.sm, alignItems: 'center' },
-  buyBtnText:    { color: colors.white, fontSize: 14, fontWeight: '700' },
-
   historyList:   { gap: spacing.sm },
   historyRow: {
     flexDirection:   'row',
@@ -592,23 +751,6 @@ const styles = StyleSheet.create({
   statusText:    { fontSize: 13, fontWeight: '700' },
 });
 
-const svcStyles = StyleSheet.create({
-  row:        { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 12 },
-  rowBorder:  { borderBottomWidth: 0.5, borderBottomColor: colors.border },
-  iconWrap:   { width: 34, height: 34, borderRadius: 17, backgroundColor: `${colors.oliGreen}12`, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  info:       { flex: 1 },
-  name:       { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
-  detail:     { fontSize: 12, color: colors.gray, marginTop: 2 },
-  marketPrice:{ fontSize: 13, fontWeight: '700', color: colors.oliDarkGray, textAlign: 'right' },
-
-  footer:              { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: 6 },
-  footerRow:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footerLabel:         { fontSize: 13, color: colors.gray },
-  footerMarket:        { fontSize: 13, fontWeight: '600', color: colors.oliRed },
-  savingsBanner:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.oliGreen}12`, borderRadius: radius.sm, padding: spacing.sm, marginTop: 4 },
-  savingsBannerText:   { fontSize: 14, color: colors.oliDarkGray, flex: 1 },
-  savingsBannerHighlight: { fontWeight: '700', color: colors.oliGreen },
-});
 
 const usageStyles = StyleSheet.create({
   summary:        { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: spacing.sm, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },

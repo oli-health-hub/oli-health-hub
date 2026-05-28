@@ -95,6 +95,27 @@ function IconCreditCard() {
   );
 }
 
+function IconTruck() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="1" />
+      <path d="M16 8h4l3 5v3h-7V8z" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </svg>
+  );
+}
+
+function IconArrowsUpDown() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="2" x2="12" y2="22" />
+      <polyline points="17 7 12 2 7 7" />
+      <polyline points="17 17 12 22 7 17" />
+    </svg>
+  );
+}
+
 function IconSettings() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -143,7 +164,9 @@ const NAV = [
   {
     section: 'Financeiro',
     items: [
-      { href: '/pagamentos', label: 'Pagamentos', Icon: IconCreditCard, badge: false },
+      { href: '/pagamentos',   label: 'Pagamentos',  Icon: IconCreditCard,   badge: false },
+      { href: '/contas',       label: 'Contas',       Icon: IconArrowsUpDown, badge: false },
+      { href: '/fornecedores', label: 'Fornecedores', Icon: IconTruck,        badge: false },
     ],
   },
   {

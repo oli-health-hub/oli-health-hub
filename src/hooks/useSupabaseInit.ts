@@ -52,7 +52,7 @@ export function useSupabaseInit() {
           convenioTipo:           (p.convenio_tipo as 'particular' | 'convenio'),
           convenioNome:           p.convenio_nome ?? undefined,
           isSincronizado:         p.is_sincronizado,
-          consentimentoTimestamp: p.consentimento_timestamp,
+          consentimentoTimestamp: p.consentimento_timestamp ?? new Date().toISOString(),
           dataCadastro:           p.created_at,
           communicareId:          p.communicare_id ?? undefined,
         }));

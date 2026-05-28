@@ -54,7 +54,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
             convenioTipo:           (row.convenio_tipo as Patient['convenioTipo']) ?? 'particular',
             convenioNome:           row.convenio_nome ?? undefined,
             dataCadastro:           row.created_at ?? new Date().toISOString(),
-            consentimentoTimestamp: row.consentimento_timestamp ?? '',
+            consentimentoTimestamp: row.consentimento_timestamp ?? new Date().toISOString(),
             isSincronizado:         row.is_sincronizado ?? false,
             communicareId:          row.communicare_id ?? undefined,
           }));
@@ -117,8 +117,7 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
         data_nascimento:         toBRDateToISO(newPatient.dataNascimento ?? ''), // YYYY-MM-DD ou null
         convenio_tipo:           newPatient.convenioTipo,
         convenio_nome:           newPatient.convenioNome ?? null,
-        consentimento_timestamp: null,                                 // null = aguardando
-        consentimento_token:     consentToken,
+        consentimento_timestamp: new Date().toISOString(), // timestamp do cadastro = consentimento obtido
         is_sincronizado:         false,
       }).select('id').single();
 

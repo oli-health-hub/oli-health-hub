@@ -38,7 +38,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
     avatar:      'A',
     color:       colors.oliGreen,
     subtitle:    'CFM, LGPD, contratos e ética médica',
-    consultaUrl: null, // preencher com link Calendly da Ana Luiza
+    consultaUrl: 'https://calendly.com/olihealthhub/30min',
     welcome:
       'Olá! Sou a Ana Luiza, especialista em Direito Médico do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +
@@ -56,7 +56,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
     avatar:      'I',
     color:       colors.oliGold,
     subtitle:    'Impostos, PJ médica, nota fiscal e pró-labore',
-    consultaUrl: null, // preencher com link Calendly da Isabella
+    consultaUrl: 'https://calendly.com/olihealthhub/30min',
     welcome:
       'Olá! Sou a Isabella, especialista em Contabilidade Médica do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +
@@ -74,7 +74,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
     avatar:      'A',
     color:       '#C0714A',
     subtitle:    'Credenciamento, faturamento TISS e glosas',
-    consultaUrl: null, // preencher com link Calendly da Amanda
+    consultaUrl: 'https://calendly.com/olihealthhub/30min',
     welcome:
       'Olá! Sou a Amanda, especialista em Credenciamento de Operadoras do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +
@@ -92,7 +92,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
     avatar:      'R',
     color:       '#7B6EA8',
     subtitle:    'Posicionamento, captação e gestão de no-show',
-    consultaUrl: null, // preencher com link Calendly do Ronaldo
+    consultaUrl: 'https://calendly.com/olihealthhub/30min',
     welcome:
       'Olá! Sou o Ronaldo, especialista em Carreira Médica do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +
@@ -110,7 +110,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
     avatar:      'O',
     color:       '#7B9E82',
     subtitle:    'Salas, planos, reservas e eventos',
-    consultaUrl: null,
+    consultaUrl: 'https://calendly.com/olihealthhub/30min',
     welcome:
       'Olá! Sou a Olivia, assistente geral do OLI Health Hub.\n\n' +
       'Posso ajudar com:\n' +

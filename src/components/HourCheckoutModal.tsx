@@ -262,9 +262,11 @@ export default function HourCheckoutModal({
                   </View>
                   <View style={styles.pkgPriceCol}>
                     <Text style={styles.pkgPrice}>{formatPrice(pkg.price)}</Text>
-                    <View style={styles.discountBadge}>
-                      <Text style={styles.discountText}>{pkg.discountPercent}% OFF</Text>
-                    </View>
+                    {pkg.bonusHours > 0 && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>+{pkg.bonusHours}h bônus</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
@@ -497,7 +499,8 @@ export default function HourCheckoutModal({
               </View>
               <Text style={styles.successTitle}>Pacote Ativado!</Text>
               <Text style={styles.successSub}>
-                {pkg.hours} horas foram adicionadas ao seu saldo.
+                {pkg.hours + pkg.bonusHours} horas foram adicionadas ao seu saldo
+                {pkg.bonusHours > 0 ? ` (inclui ${pkg.bonusHours}h bônus).` : '.'}
               </Text>
               <TouchableOpacity
                 style={styles.confirmBtn}

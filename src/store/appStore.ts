@@ -13,9 +13,9 @@ import { useAuthStore } from './authStore';
 // VIP ainda não lançado — usar 0 como fallback seguro (nunca deve cobrar)
 export const COST_PER_MINUTE: Record<PlanType, number> = {
   START: 2.00,
-  BASE:  1.70,
-  PRO:   1.60,
-  VIP:   0,    // coming_soon — sem cobrança até lançamento
+  BASE:  1.50,
+  PRO:   1.30,
+  VIP:   0,    // em estruturação — sem cobrança até lançamento
 };
 
 const BUFFER_MS  = 15 * 60 * 1000; // 15 min

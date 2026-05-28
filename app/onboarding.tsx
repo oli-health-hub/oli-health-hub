@@ -12,7 +12,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { colors, spacing, radius } from '../src/theme/designSystem';
 import type {
   SituacaoJuridica, FaturamentoRange, LocalAtuacao,
-  NumLocais, NotasFiscaisRange,
+  NumLocais, NotasFiscaisRange, TipoAtendimento, Tratamento,
 } from '../src/models/types';
 
 // ─── Estados brasileiros ──────────────────────────────────────────────────────
@@ -111,6 +111,9 @@ export default function OnboardingScreen() {
   const progressAnim = useRef(new Animated.Value(1 / TOTAL_STEPS)).current;
 
   // ── Step 1: Situação jurídica ──
+  const [tratamento,       setTratamento]       = useState<Tratamento | null>(null);
+  const [crm,              setCrm]              = useState('');
+  const [tipoAtendimento,  setTipoAtendimento]  = useState<TipoAtendimento | null>(null);
   const [situacaoJuridica, setSituacaoJuridica] = useState<SituacaoJuridica | null>(null);
   const [possuiCLT,        setPossuiCLT]        = useState<boolean | null>(null);
   const [possuiSocios,     setPossuiSocios]     = useState<boolean | null>(null);
@@ -138,7 +141,8 @@ export default function OnboardingScreen() {
   const [previsaoContratacao,setPrevisaoContratacao]= useState<boolean | null>(null);
 
   // ── Validação por step ──
-  const step1Valid = situacaoJuridica !== null && possuiCLT !== null && possuiSocios !== null;
+  const step1Valid = crm.trim().length > 0 && tipoAtendimento !== null &&
+    situacaoJuridica !== null && possuiCLT !== null && possuiSocios !== null;
   const cidadeUF   = cidade.trim() && uf ? `${cidade.trim()} / ${uf}` : '';
   const step2Valid = atividadeExercida.trim().length > 0 && localAtuacao !== null && numLocais !== null && cidade.trim().length > 0 && uf.length > 0;
   const step3Valid = comoConheceu !== null && (comoConheceu !== 'membro_oli' || referidoPorId !== null);
@@ -198,6 +202,9 @@ export default function OnboardingScreen() {
         .from('profiles')
         .update({
           onboarding_complete:   true,
+          tratamento:            tratamento,
+          crm:                   crm.trim(),
+          tipo_atendimento:      tipoAtendimento,
           situacao_juridica:     situacaoJuridica,
           faturamento_range:     faturamentoRange,
           atividade_exercida:    atividadeExercida.trim(),
@@ -219,6 +226,16 @@ export default function OnboardingScreen() {
 
       if (error) throw error;
       if (data) setProfile(data);
+
+      // Aplica benefício de indicação em background (1h para o indicador)
+      if (referidoPorId) {
+        void supabase
+          .rpc('apply_referral_benefit', {
+            p_referrer_id: referidoPorId,
+            p_new_user_id: profile!.id,
+          })
+          .then(() => {}, () => {});
+      }
 
       router.replace('/');
     } catch {
@@ -302,8 +319,60 @@ export default function OnboardingScreen() {
                 subtitle="Essas informações permitem que o OLI personalize as soluções do ecossistema para o seu perfil."
               />
 
+              {/* Tratamento — opcional */}
+              <Text style={styles.question}>Tratamento <Text style={styles.optionalHint}>(opcional)</Text></Text>
+              <View style={styles.boolRow}>
+                <OptionCard
+                  value={'Dr.' as Tratamento}
+                  label="Dr."
+                  icon="male-outline"
+                  selected={tratamento === 'Dr.'}
+                  onPress={setTratamento}
+                />
+                <OptionCard
+                  value={'Dra.' as Tratamento}
+                  label="Dra."
+                  icon="female-outline"
+                  selected={tratamento === 'Dra.'}
+                  onPress={setTratamento}
+                />
+              </View>
+
+              {/* CRM */}
+              <Text style={[styles.question, styles.questionSpacing]}>Número do CRM</Text>
+              <Text style={styles.questionHint}>Ex: CRM-SP 123456</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="CRM-SP 000000"
+                placeholderTextColor={colors.gray}
+                value={crm}
+                onChangeText={setCrm}
+                autoCapitalize="characters"
+                accessibilityLabel="Número do CRM"
+              />
+
+              {/* Tipo de atendimento */}
+              <Text style={[styles.question, styles.questionSpacing]}>
+                Como você atende seus pacientes?
+              </Text>
+              {([
+                { value: 'presencial',   label: 'Presencial',        icon: 'business-outline',     sublabel: 'Atendimentos em consultório / clínica' },
+                { value: 'telemedicina', label: 'Telemedicina',       icon: 'videocam-outline',      sublabel: 'Consultas online' },
+                { value: 'ambos',        label: 'Presencial e online', icon: 'git-merge-outline',    sublabel: 'Ambas as modalidades' },
+              ] as const).map(o => (
+                <OptionCard
+                  key={o.value}
+                  value={o.value}
+                  label={o.label}
+                  sublabel={o.sublabel}
+                  icon={o.icon}
+                  selected={tipoAtendimento === o.value}
+                  onPress={setTipoAtendimento}
+                />
+              ))}
+
               {/* Q1 */}
-              <Text style={styles.question}>
+              <Text style={[styles.question, styles.questionSpacing]}>
                 Como você atua hoje?
               </Text>
               <Text style={styles.questionHint}>Pessoa Física, Jurídica ou ambos?</Text>
@@ -705,6 +774,9 @@ export default function OnboardingScreen() {
               />
 
               <View style={styles.summaryCard}>
+                {tratamento ? <SummaryRow label="Tratamento" value={tratamento} /> : null}
+                <SummaryRow label="CRM"                value={crm.trim()} />
+                <SummaryRow label="Tipo de atendimento" value={LABELS_TIPO_ATENDIMENTO[tipoAtendimento!]} />
                 <SummaryRow label="Situação jurídica"  value={LABELS_SITUACAO[situacaoJuridica!]} />
                 <SummaryRow label="Vínculo CLT"        value={possuiCLT ? 'Sim' : 'Não'} />
                 <SummaryRow label="Sócios"             value={possuiSocios ? 'Com sócios' : 'Sozinho(a)'} />
@@ -787,6 +859,12 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 // ─── Labels de exibição ───────────────────────────────────────────────────────
+
+const LABELS_TIPO_ATENDIMENTO: Record<TipoAtendimento, string> = {
+  presencial:   'Presencial',
+  telemedicina: 'Telemedicina',
+  ambos:        'Presencial e online',
+};
 
 const LABELS_SITUACAO: Record<SituacaoJuridica, string> = {
   pf:    'Pessoa Física',
@@ -882,6 +960,7 @@ const styles = StyleSheet.create({
   },
   questionSpacing: { marginTop: spacing.lg },
   questionHint:    { fontSize: 12, color: colors.gray, marginBottom: spacing.sm },
+  optionalHint:    { fontSize: 12, fontWeight: '400', color: colors.gray },
 
   // ── Option cards ──
   optCard: {

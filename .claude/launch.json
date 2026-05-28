@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "admin-mockup",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "4444", "/Users/guilhermepasquetti/Developer/OLIHealthHub"],
+      "port": 4444
+    }
+  ]
+}

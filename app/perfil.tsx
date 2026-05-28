@@ -31,6 +31,9 @@ export default function PerfilScreen() {
   const [especialidade,setEspecialidade]= useState(profile?.especialidade ?? '');
   const [bio,          setBio]          = useState(profile?.bio ?? '');
   const [duracao,      setDuracao]      = useState(String(profile?.consultation_duration_minutes ?? 60));
+  const [instagram,    setInstagram]    = useState(profile?.instagram ?? '');
+  const [linkedin,     setLinkedin]     = useState(profile?.linkedin ?? '');
+  const [website,      setWebsite]      = useState(profile?.website ?? '');
 
   const {
     biometricAvailable,
@@ -54,6 +57,9 @@ export default function PerfilScreen() {
         especialidade:                especialidade.trim() || null,
         bio:                          bio.trim()   || null,
         consultation_duration_minutes: durationMin,
+        instagram:                    instagram.trim() || null,
+        linkedin:                     linkedin.trim()  || null,
+        website:                      website.trim()   || null,
       };
       await updateProfile(session.user.id, updates);
       setProfile({ ...profile!, ...updates });
@@ -73,6 +79,9 @@ export default function PerfilScreen() {
     setEspecialidade(profile?.especialidade ?? '');
     setBio(profile?.bio ?? '');
     setDuracao(String(profile?.consultation_duration_minutes ?? 60));
+    setInstagram(profile?.instagram ?? '');
+    setLinkedin(profile?.linkedin ?? '');
+    setWebsite(profile?.website ?? '');
     setEditing(false);
   };
 
@@ -299,6 +308,36 @@ export default function PerfilScreen() {
             icon="mail-outline"
             label="E-mail"
             value={session?.user?.email ?? '—'}
+          />
+          <EditableRow
+            icon="logo-instagram"
+            label="Instagram"
+            value={instagram}
+            editing={editing}
+            onChangeText={setInstagram}
+            placeholder="@seu_usuario"
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+          <EditableRow
+            icon="logo-linkedin"
+            label="LinkedIn"
+            value={linkedin}
+            editing={editing}
+            onChangeText={setLinkedin}
+            placeholder="linkedin.com/in/seu-perfil"
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+          <EditableRow
+            icon="globe-outline"
+            label="Website"
+            value={website}
+            editing={editing}
+            onChangeText={setWebsite}
+            placeholder="https://seusite.com.br"
+            autoCapitalize="none"
+            keyboardType="url"
             last
           />
         </View>
@@ -364,6 +403,35 @@ export default function PerfilScreen() {
 
         </View>
 
+        {/* ── Plano e Indicação ── */}
+        <Text style={styles.sectionTitle}>PLANO E BENEFÍCIOS</Text>
+        <View style={[styles.card, shadows.card]}>
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => router.push('/meu-plano')}
+            accessibilityLabel="Ver meu plano e opções de upgrade"
+          >
+            <Ionicons name="star-outline" size={20} color={colors.oliGold} />
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionLabel}>Meu Plano</Text>
+              <Text style={styles.actionDesc}>Comparar planos e fazer upgrade</Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={18} color={colors.gray} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionRow, styles.actionRowLast]}
+            onPress={() => router.push('/indicacao')}
+            accessibilityLabel="Programa de indicação — ganhe 1 hora grátis"
+          >
+            <Ionicons name="gift-outline" size={20} color={colors.oliGold} />
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionLabel}>Programa de Indicação</Text>
+              <Text style={styles.actionDesc}>Indique colegas e ganhe 1h de crédito</Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={18} color={colors.gray} />
+          </TouchableOpacity>
+        </View>
+
         {/* ── Privacidade LGPD ── */}
         <Text style={styles.sectionTitle}>PRIVACIDADE E DADOS (LGPD)</Text>
         <View style={[styles.card, shadows.card]}>
@@ -409,14 +477,15 @@ export default function PerfilScreen() {
 
 function EditableRow({
   icon, label, value, editing, onChangeText,
-  placeholder, keyboardType, autoCapitalize,
+  placeholder, keyboardType, autoCapitalize, last,
 }: {
   icon: string; label: string; value: string; editing: boolean;
   onChangeText: (v: string) => void; placeholder?: string;
-  keyboardType?: 'default' | 'number-pad'; autoCapitalize?: 'none' | 'words';
+  keyboardType?: 'default' | 'number-pad' | 'url'; autoCapitalize?: 'none' | 'words';
+  last?: boolean;
 }) {
   return (
-    <View style={styles.profileRow}>
+    <View style={[styles.profileRow, last && styles.profileRowLast]}>
       <Ionicons name={icon as any} size={18} color={colors.gray} style={styles.rowIcon} />
       <Text style={styles.rowLabel}>{label}</Text>
       {editing ? (

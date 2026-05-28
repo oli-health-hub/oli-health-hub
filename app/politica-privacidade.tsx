@@ -1,4 +1,5 @@
 import { ScrollView, Text, View, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import type { ReactNode } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../src/theme/designSystem';
@@ -66,14 +67,16 @@ export default function PoliticaPrivacidadeScreen() {
           <BulletItem>Rate limiting: máx. 5 tentativas de login por 15 minutos</BulletItem>
         </Section>
 
-        <Section title="8. Seus direitos (LGPD Art. 18)">
-          Você pode exercer os seguintes direitos pelo app (Perfil → Privacidade) ou por e-mail:
-          <BulletItem>✅ Confirmação e acesso — ver todos os dados que temos sobre você</BulletItem>
-          <BulletItem>✅ Portabilidade — exportar seus dados em formato JSON</BulletItem>
-          <BulletItem>✅ Exclusão — apagar sua conta e todos os dados pessoais</BulletItem>
-          <BulletItem>✅ Correção — editar dados incorretos diretamente no app</BulletItem>
-          <BulletItem>✅ Revogação de consentimento — remover consentimento dado a qualquer momento</BulletItem>
-        </Section>
+        <CheckSection title="8. Seus direitos (LGPD Art. 18)">
+          <Text style={styles.sectionBody}>
+            Você pode exercer os seguintes direitos pelo app (Perfil → Privacidade) ou por e-mail:
+          </Text>
+          <CheckItem>Confirmação e acesso — ver todos os dados que temos sobre você</CheckItem>
+          <CheckItem>Portabilidade — exportar seus dados em formato JSON</CheckItem>
+          <CheckItem>Exclusão — apagar sua conta e todos os dados pessoais</CheckItem>
+          <CheckItem>Correção — editar dados incorretos diretamente no app</CheckItem>
+          <CheckItem>Revogação de consentimento — remover consentimento dado a qualquer momento</CheckItem>
+        </CheckSection>
 
         <Section title="9. Retenção de dados">
           Dados pessoais são mantidos enquanto a conta estiver ativa. Após exclusão da conta, os dados são removidos em até 15 dias úteis. Logs de auditoria são mantidos por 5 anos para fins de conformidade regulatória.
@@ -109,7 +112,7 @@ export default function PoliticaPrivacidadeScreen() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -118,8 +121,26 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function BulletItem({ children }: { children: React.ReactNode }) {
+function CheckSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+function BulletItem({ children }: { children: ReactNode }) {
   return <Text style={styles.bullet}>{'\n'}• {children}</Text>;
+}
+
+function CheckItem({ children }: { children: string }) {
+  return (
+    <View style={styles.checkRow}>
+      <Ionicons name="checkmark-circle" size={16} color={colors.oliGreen} style={styles.checkIcon} />
+      <Text style={styles.checkText}>{children}</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -144,6 +165,10 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray, marginBottom: spacing.xs },
   sectionBody:  { fontSize: 14, color: colors.oliLightGray, lineHeight: 22 },
   bullet:       { fontSize: 14, color: colors.oliLightGray, lineHeight: 22 },
+
+  checkRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: spacing.sm },
+  checkIcon: { marginTop: 2, flexShrink: 0 },
+  checkText: { fontSize: 14, color: colors.oliLightGray, lineHeight: 22, flex: 1 },
 
   link: { fontSize: 14, color: colors.oliGreen, fontWeight: '700', textDecorationLine: 'underline' },
 

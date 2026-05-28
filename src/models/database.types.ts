@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          professional_id: string | null
+          read_at: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          professional_id?: string | null
+          read_at?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          professional_id?: string | null
+          read_at?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -75,6 +116,59 @@ export type Database = {
           succeeded?: boolean
         }
         Relationships: []
+      }
+      financial_entries: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          descricao: string
+          id: string
+          observacoes: string | null
+          pago_em: string | null
+          recorrente: boolean
+          status: string
+          supplier_id: string | null
+          tipo: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          observacoes?: string | null
+          pago_em?: string | null
+          recorrente?: boolean
+          status?: string
+          supplier_id?: string | null
+          tipo: string
+          valor: number
+          vencimento: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          observacoes?: string | null
+          pago_em?: string | null
+          recorrente?: boolean
+          status?: string
+          supplier_id?: string | null
+          tipo?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entries_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hour_balance: {
         Row: {
@@ -195,28 +289,43 @@ export type Database = {
       }
       nps_responses: {
         Row: {
+          answered_at: string | null
           comment: string | null
           context: string
           created_at: string | null
+          expires_at: string
           id: string
+          nps_token: string
+          patient_name: string | null
+          patient_phone: string | null
           professional_id: string
-          score: number
+          score: number | null
         }
         Insert: {
+          answered_at?: string | null
           comment?: string | null
           context?: string
           created_at?: string | null
+          expires_at?: string
           id?: string
+          nps_token?: string
+          patient_name?: string | null
+          patient_phone?: string | null
           professional_id: string
-          score: number
+          score?: number | null
         }
         Update: {
+          answered_at?: string | null
           comment?: string | null
           context?: string
           created_at?: string | null
+          expires_at?: string
           id?: string
+          nps_token?: string
+          patient_name?: string | null
+          patient_phone?: string | null
           professional_id?: string
-          score?: number
+          score?: number | null
         }
         Relationships: [
           {
@@ -231,7 +340,10 @@ export type Database = {
       patients: {
         Row: {
           communicare_id: string | null
-          consentimento_timestamp: string
+          consentimento_ip: string | null
+          consentimento_timestamp: string | null
+          consentimento_token: string
+          consentimento_ua: string | null
           convenio_nome: string | null
           convenio_tipo: string
           cpf_hash: string | null
@@ -246,7 +358,10 @@ export type Database = {
         }
         Insert: {
           communicare_id?: string | null
-          consentimento_timestamp: string
+          consentimento_ip?: string | null
+          consentimento_timestamp?: string | null
+          consentimento_token?: string
+          consentimento_ua?: string | null
           convenio_nome?: string | null
           convenio_tipo?: string
           cpf_hash?: string | null
@@ -261,7 +376,10 @@ export type Database = {
         }
         Update: {
           communicare_id?: string | null
-          consentimento_timestamp?: string
+          consentimento_ip?: string | null
+          consentimento_timestamp?: string | null
+          consentimento_token?: string
+          consentimento_ua?: string | null
           convenio_nome?: string | null
           convenio_tipo?: string
           cpf_hash?: string | null
@@ -334,9 +452,13 @@ export type Database = {
           faturamento_range: string | null
           foto_url: string | null
           id: string
+          instagram: string | null
+          is_speaker: boolean
+          linkedin: string | null
           local_atuacao: string | null
           nome: string
           notas_fiscais_range: string | null
+          nps_score: number | null
           num_locais: string | null
           onboarding_complete: boolean
           plan: string
@@ -347,9 +469,15 @@ export type Database = {
           pre_paid_ok: boolean
           previsao_contratacao: boolean | null
           referido_por: string | null
+          referral_code: string | null
           situacao_juridica: string | null
+          tipo_atendimento: string | null
           tipos_atendimento: string[] | null
+          tratamento: string | null
+          trial_activated_at: string | null
+          trial_plan: string | null
           user_type: string
+          website: string | null
         }
         Insert: {
           atividade_exercida?: string | null
@@ -364,9 +492,13 @@ export type Database = {
           faturamento_range?: string | null
           foto_url?: string | null
           id: string
+          instagram?: string | null
+          is_speaker?: boolean
+          linkedin?: string | null
           local_atuacao?: string | null
           nome: string
           notas_fiscais_range?: string | null
+          nps_score?: number | null
           num_locais?: string | null
           onboarding_complete?: boolean
           plan?: string
@@ -377,9 +509,15 @@ export type Database = {
           pre_paid_ok?: boolean
           previsao_contratacao?: boolean | null
           referido_por?: string | null
+          referral_code?: string | null
           situacao_juridica?: string | null
+          tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
+          tratamento?: string | null
+          trial_activated_at?: string | null
+          trial_plan?: string | null
           user_type?: string
+          website?: string | null
         }
         Update: {
           atividade_exercida?: string | null
@@ -394,9 +532,13 @@ export type Database = {
           faturamento_range?: string | null
           foto_url?: string | null
           id?: string
+          instagram?: string | null
+          is_speaker?: boolean
+          linkedin?: string | null
           local_atuacao?: string | null
           nome?: string
           notas_fiscais_range?: string | null
+          nps_score?: number | null
           num_locais?: string | null
           onboarding_complete?: boolean
           plan?: string
@@ -407,9 +549,15 @@ export type Database = {
           pre_paid_ok?: boolean
           previsao_contratacao?: boolean | null
           referido_por?: string | null
+          referral_code?: string | null
           situacao_juridica?: string | null
+          tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
+          tratamento?: string | null
+          trial_activated_at?: string | null
+          trial_plan?: string | null
           user_type?: string
+          website?: string | null
         }
         Relationships: [
           {
@@ -559,6 +707,7 @@ export type Database = {
       subscriptions: {
         Row: {
           asaas_id_enc: string | null
+          asaas_id_hash: string | null
           asaas_id_plain: string | null
           cancelled_at: string | null
           ciclo: string
@@ -573,6 +722,7 @@ export type Database = {
         }
         Insert: {
           asaas_id_enc?: string | null
+          asaas_id_hash?: string | null
           asaas_id_plain?: string | null
           cancelled_at?: string | null
           ciclo: string
@@ -587,6 +737,7 @@ export type Database = {
         }
         Update: {
           asaas_id_enc?: string | null
+          asaas_id_hash?: string | null
           asaas_id_plain?: string | null
           cancelled_at?: string | null
           ciclo?: string
@@ -615,6 +766,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      suppliers: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          cnpj: string | null
+          contato: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          cnpj?: string | null
+          contato?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          cnpj?: string | null
+          contato?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+        }
+        Relationships: []
       }
       usage_charges: {
         Row: {
@@ -686,6 +876,13 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_charges_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions_readable"
             referencedColumns: ["id"]
           },
         ]
@@ -811,6 +1008,10 @@ export type Database = {
       }
     }
     Functions: {
+      apply_referral_benefit: {
+        Args: { p_new_user_id: string; p_referrer_id: string }
+        Returns: undefined
+      }
       check_auth_rate_limit: { Args: { p_identifier: string }; Returns: Json }
       clear_auth_attempts: {
         Args: { p_identifier: string }
@@ -818,6 +1019,7 @@ export type Database = {
       }
       delete_account_data: { Args: { p_user_id: string }; Returns: Json }
       export_my_data: { Args: never; Returns: Json }
+      generate_referral_code: { Args: { p_user_id: string }; Returns: string }
       is_oli_admin: { Args: never; Returns: boolean }
       oli_decrypt: { Args: { cipher: string }; Returns: string }
       oli_encrypt: { Args: { plain: string }; Returns: string }
@@ -827,7 +1029,12 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      notification_type:
+        | "new_signup"
+        | "module_purchased"
+        | "module_activated"
+        | "plan_subscribed"
+        | "plan_activated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -954,6 +1161,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      notification_type: [
+        "new_signup",
+        "module_purchased",
+        "module_activated",
+        "plan_subscribed",
+        "plan_activated",
+      ],
+    },
   },
 } as const

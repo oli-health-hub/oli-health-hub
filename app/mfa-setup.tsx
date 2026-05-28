@@ -25,7 +25,7 @@ export default function MFASetupScreen() {
     const ok = await verifyEnroll(code);
     if (ok) {
       Alert.alert(
-        '✅ MFA Ativado',
+        'MFA Ativado',
         'Verificação em duas etapas ativada com sucesso. Seu acesso está protegido.',
         [{ text: 'OK', onPress: () => router.back() }],
       );
