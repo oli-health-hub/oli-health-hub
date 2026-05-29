@@ -2,6 +2,8 @@ import { createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase-server
 import { changePlan, addHours } from '@/app/actions';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { MedicoManagementCard } from './MedicoManagementCard';
+import { DocumentsCard } from './DocumentsCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,16 +112,19 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
   const supabase      = await createSupabaseServer();
   const supabaseAdmin = await createSupabaseAdmin();
 
-  // Perfil completo
+  // Perfil completo (inclui novos campos de gestão)
   const { data: p } = await supabase
     .from('profiles')
     .select(`
-      id, nome, crm, especialidade, plan, plan_id, bio, foto_url,
+      id, nome, crm, especialidade, plan, plan_id, bio, foto_url, tratamento,
       consultation_duration_minutes, created_at, onboarding_complete, user_type,
       situacao_juridica, faturamento_range, atividade_exercida, possui_clt,
       local_atuacao, num_locais, cidade_uf, notas_fiscais_range,
       possui_funcionarios, previsao_contratacao, possui_socios, pre_paid_ok,
-      tipos_atendimento, convenios, como_conheceu, referido_por
+      tipos_atendimento, convenios, como_conheceu, referido_por,
+      account_status, status_reason, comunidade_banned, comunidade_ban_reason,
+      contract_start_date, contract_end_date, contract_doc_url, admin_notes,
+      deleted_at
     `)
     .eq('id', params.id)
     .single();
@@ -212,6 +217,26 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
   // Receita total (usage_charges)
   const receitaTotal = (sessions ?? []).reduce((s, c) => s + (c.valor_total ?? 0), 0);
 
+  // Documentos do profissional
+  const { data: docs } = await supabase
+    .from('professional_documents' as never)
+    .select('*')
+    .eq('professional_id', params.id)
+    .order('uploaded_at', { ascending: false });
+
+  type ProfileExt = typeof p & {
+    account_status:        'active' | 'paused' | 'suspended' | 'banned' | 'deleted';
+    status_reason:         string | null;
+    comunidade_banned:     boolean;
+    comunidade_ban_reason: string | null;
+    contract_start_date:   string | null;
+    contract_end_date:     string | null;
+    contract_doc_url:      string | null;
+    admin_notes:           string | null;
+    tratamento:            string | null;
+  };
+  const pExt = p as ProfileExt;
+
   return (
     <div className="p-7 space-y-6 max-w-6xl">
 
@@ -278,6 +303,30 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
           </div>
         </div>
       </div>
+
+      {/* ── Gestão da conta + contrato + documentos ── */}
+      <MedicoManagementCard
+        userId={p.id}
+        nome={p.nome}
+        email={email ?? ''}
+        accountStatus={pExt.account_status ?? 'active'}
+        statusReason={pExt.status_reason}
+        comunidadeBanned={pExt.comunidade_banned ?? false}
+        comunidadeBanReason={pExt.comunidade_ban_reason}
+        contractStartDate={pExt.contract_start_date}
+        contractEndDate={pExt.contract_end_date}
+        contractDocUrl={pExt.contract_doc_url}
+        adminNotes={pExt.admin_notes}
+        crm={p.crm}
+        especialidade={p.especialidade}
+        tratamento={pExt.tratamento}
+        cidadeUf={p.cidade_uf}
+      />
+
+      <DocumentsCard
+        userId={p.id}
+        documents={(docs ?? []) as never[]}
+      />
 
       {/* Grid principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

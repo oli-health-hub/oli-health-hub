@@ -177,3 +177,164 @@ export async function cancelEntry(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath('/contas');
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GESTÃO DE MÉDICOS / CONTRATO / ACESSO
+// ─────────────────────────────────────────────────────────────────────────────
+
+type AccountStatus = 'active' | 'paused' | 'suspended' | 'banned' | 'deleted';
+
+/** Altera o status da conta (active/paused/suspended/banned).
+ *  paused = pausa temporária (médico em férias, sem renovação). Pode reativar.
+ *  suspended = suspenso por inadimplência ou problema operacional.
+ *  banned = banido por violação de regras (irreversível administrativamente). */
+export async function changeAccountStatus(formData: FormData) {
+  const userId = formData.get('user_id') as string;
+  const status = formData.get('status') as AccountStatus;
+  const reason = (formData.get('reason') as string | null)?.trim() || null;
+
+  const supabase = await createSupabaseAdmin();
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      account_status:    status,
+      status_reason:     reason,
+      status_changed_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (error) throw new Error(error.message);
+
+  // Se status != active, força logout em todas as sessões
+  if (status !== 'active') {
+    await supabase.auth.admin.signOut(userId, 'global').catch(() => {});
+  }
+
+  revalidatePath(`/medicos/${userId}`);
+  revalidatePath('/medicos');
+}
+
+/** Bloqueia/libera o acesso do médico à área de Comunidade do app */
+export async function toggleComunidadeAccess(formData: FormData) {
+  const userId  = formData.get('user_id')  as string;
+  const banned  = formData.get('banned')   === 'true';
+  const reason  = (formData.get('reason')  as string | null)?.trim() || null;
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      comunidade_banned:    banned,
+      comunidade_ban_reason: banned ? reason : null,
+    })
+    .eq('id', userId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/medicos/${userId}`);
+}
+
+/** Atualiza datas e URL do contrato */
+export async function updateContract(formData: FormData) {
+  const userId    = formData.get('user_id')         as string;
+  const startDate = (formData.get('start_date')     as string | null) || null;
+  const endDate   = (formData.get('end_date')       as string | null) || null;
+  const docUrl    = (formData.get('contract_doc_url') as string | null)?.trim() || null;
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      contract_start_date: startDate,
+      contract_end_date:   endDate,
+      contract_doc_url:    docUrl,
+    })
+    .eq('id', userId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/medicos/${userId}`);
+}
+
+/** Atualiza dados de perfil que o admin pode modificar diretamente */
+export async function updateProfileFields(formData: FormData) {
+  const userId = formData.get('user_id') as string;
+
+  const updates: Record<string, unknown> = {};
+  const setIfPresent = (key: string, formKey: string) => {
+    const v = formData.get(formKey);
+    if (v !== null) updates[key] = (v as string).trim() || null;
+  };
+
+  setIfPresent('nome',          'nome');
+  setIfPresent('crm',           'crm');
+  setIfPresent('especialidade', 'especialidade');
+  setIfPresent('tratamento',    'tratamento');
+  setIfPresent('cidade_uf',     'cidade_uf');
+  setIfPresent('admin_notes',   'admin_notes');
+
+  if (Object.keys(updates).length === 0) return;
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/medicos/${userId}`);
+}
+
+/** Soft delete: marca account_status='deleted', deleted_at=now, força logout.
+ *  Mantém dados históricos (reservas, cobranças, LGPD audit). */
+export async function softDeleteUser(formData: FormData) {
+  const userId = formData.get('user_id') as string;
+  const reason = (formData.get('reason') as string | null)?.trim() || 'Excluído pelo admin';
+
+  const supabase = await createSupabaseAdmin();
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      account_status:    'deleted',
+      status_reason:     reason,
+      status_changed_at: new Date().toISOString(),
+      deleted_at:        new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (error) throw new Error(error.message);
+
+  await supabase.auth.admin.signOut(userId, 'global').catch(() => {});
+
+  revalidatePath('/medicos');
+  revalidatePath(`/medicos/${userId}`);
+}
+
+/** Adiciona documento ao prontuário do médico (URL já no Storage) */
+export async function addProfessionalDocument(formData: FormData) {
+  const userId    = formData.get('user_id')   as string;
+  const type      = formData.get('doc_type')  as string;
+  const name      = (formData.get('name')      as string).trim();
+  const url       = (formData.get('url')       as string).trim();
+  const sizeBytes = parseInt(formData.get('size_bytes') as string, 10) || null;
+  const expiresAt = (formData.get('expires_at') as string | null) || null;
+
+  if (!name || !url) throw new Error('Nome e URL são obrigatórios.');
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('professional_documents').insert({
+    professional_id: userId,
+    type,
+    name,
+    url,
+    size_bytes:      sizeBytes,
+    expires_at:      expiresAt,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/medicos/${userId}`);
+}
+
+/** Remove documento (admin) */
+export async function removeProfessionalDocument(formData: FormData) {
+  const id     = formData.get('id')      as string;
+  const userId = formData.get('user_id') as string;
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('professional_documents').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/medicos/${userId}`);
+}

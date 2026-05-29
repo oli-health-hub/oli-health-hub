@@ -80,10 +80,23 @@ export default function RootLayout() {
       return;
     }
 
-    // Sessão ativa fora do fluxo de auth — garantir gate de onboarding
+    // Sessão ativa fora do fluxo de auth — gates de acesso
     if (session && !inAuthFlow) {
+      // Gate 1: conta bloqueada/excluída pelo admin → tela de bloqueio
+      const accountStatus = (profile as { account_status?: string } | null)?.account_status ?? 'active';
+      const inBlocked = (segments[0] as string) === 'conta-bloqueada';
+      if (accountStatus !== 'active' && !inBlocked) {
+        router.replace('/conta-bloqueada' as never);
+        return;
+      }
+      if (accountStatus === 'active' && inBlocked) {
+        router.replace('/');
+        return;
+      }
+
+      // Gate 2: onboarding pendente
       const onboardingDone = profile?.onboarding_complete ?? false;
-      if (!onboardingDone) { router.replace('/onboarding'); return; }
+      if (!onboardingDone && !inBlocked) { router.replace('/onboarding'); return; }
     }
   }, [session, isLoading, profile, segments]);
 
