@@ -94,8 +94,8 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       });
     }
 
-    const newId            = genUUID();
-    const consentToken     = genUUID(); // token para link de consentimento LGPD
+    const newId             = genUUID();
+    const localConsentToken = genUUID(); // fallback caso insert falhe e não retorne token
 
     const newPatient: Patient = {
       ...data,
@@ -105,6 +105,9 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       dataCadastro:    new Date().toISOString(),
       isSincronizado:  false,
     };
+
+    // Token retornado pelo banco — usado no link de consentimento LGPD
+    let consentToken = localConsentToken;
 
     // Salva no Supabase — persiste o HASH, nunca o CPF em texto
     if (professionalId) {
@@ -117,13 +120,14 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
         data_nascimento:         toBRDateToISO(newPatient.dataNascimento ?? ''), // YYYY-MM-DD ou null
         convenio_tipo:           newPatient.convenioTipo,
         convenio_nome:           newPatient.convenioNome ?? null,
-        consentimento_timestamp: new Date().toISOString(), // timestamp do cadastro = consentimento obtido
+        // consentimento_timestamp NÃO é setado — fica null até paciente clicar no link
         is_sincronizado:         false,
-      }).select('id').single();
+      }).select('id, consentimento_token').single();
 
       if (error) throw new Error(error.message);
-      // Usa ID retornado pelo banco (token gerado localmente é suficiente)
       if (inserted?.id) newPatient.id = inserted.id;
+      // CRÍTICO: usa o token gerado pelo DB (defaut gen_random_uuid) — bate com edge function
+      if (inserted?.consentimento_token) consentToken = inserted.consentimento_token as string;
     }
 
     // Persiste localmente sem o CPF em texto — substitui pelo hash
