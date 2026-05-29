@@ -36,24 +36,27 @@ export function useAppLock(): AppLockState {
   }, []);
 
   // ── Listener de AppState — bloqueia após 5 min em background ──
+  // IMPORTANTE: a transição correta para "volta do background" é
+  // background → active. O LocalAuthentication coloca o app em 'inactive'
+  // durante o prompt biométrico; se considerássemos inactive→active como
+  // "voltou do background" o app re-bloqueava em loop logo após desbloquear.
   useEffect(() => {
     const sub = AppState.addEventListener('change', async (nextState) => {
       const prev = appStateRef.current;
       appStateRef.current = nextState;
 
       if (prev === 'active' && nextState === 'background') {
-        // Registra quando foi para background
         await SecureStore.setItemAsync(SECURE_KEY_BG_TIME, Date.now().toString());
       }
 
-      if (nextState === 'active' && prev !== 'active') {
-        // Voltou ao foreground — verifica tempo em background
+      // SÓ considera como retorno real quando vem DE background → active
+      if (prev === 'background' && nextState === 'active') {
         const bgTimeStr = await SecureStore.getItemAsync(SECURE_KEY_BG_TIME);
         const bgTime    = bgTimeStr ? parseInt(bgTimeStr, 10) : 0;
         const elapsed   = Date.now() - bgTime;
         const enabled   = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
 
-        if (enabled === 'true' && elapsed >= LOCK_AFTER_MS) {
+        if (enabled === 'true' && bgTime > 0 && elapsed >= LOCK_AFTER_MS) {
           setIsLocked(true);
         }
       }
@@ -90,7 +93,10 @@ export function useAppLock(): AppLockState {
     });
     if (result.success) {
       await SecureStore.setItemAsync(SECURE_KEY_ENABLED, 'true');
+      // Limpa qualquer bgTime anterior — evita lock imediato ao mudar de tela
+      await SecureStore.deleteItemAsync(SECURE_KEY_BG_TIME);
       setBiometricEnabled(true);
+      setIsLocked(false);
     }
     return result.success;
   }, []);

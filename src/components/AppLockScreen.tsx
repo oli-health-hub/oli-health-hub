@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme/designSystem';
 
@@ -10,8 +9,13 @@ interface Props {
 }
 
 export function AppLockScreen({ onUnlock }: Props) {
-  // Tenta autenticar automaticamente ao exibir a tela
+  // Tenta UMA VEZ ao montar. Se falhar/cancelar, espera o usuário tocar
+  // o botão "Desbloquear" — evita loop infinito de prompts.
+  const triedRef = useRef(false);
+
   useEffect(() => {
+    if (triedRef.current) return;
+    triedRef.current = true;
     const timer = setTimeout(() => { onUnlock(); }, 400);
     return () => clearTimeout(timer);
   }, []);
