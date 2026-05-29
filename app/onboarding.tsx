@@ -160,12 +160,13 @@ export default function OnboardingScreen() {
 
   const searchMembers = async (q: string) => {
     if (q.trim().length < 2) { setMemberResults([]); return; }
+    if (!profile?.id) { setMemberResults([]); return; }
     setMemberSearching(true);
     const { data } = await supabase
       .from('profiles')
       .select('id, nome, especialidade')
       .ilike('nome', `%${q.trim()}%`)
-      .neq('id', profile!.id)
+      .neq('id', profile.id)
       .limit(8);
     setMemberResults((data ?? []) as { id: string; nome: string; especialidade: string | null }[]);
     setMemberSearching(false);
@@ -196,6 +197,11 @@ export default function OnboardingScreen() {
   };
 
   const handleFinish = async () => {
+    if (!profile?.id) {
+      Alert.alert('Erro', 'Sessão expirada. Faça login novamente.');
+      router.replace('/login');
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -220,7 +226,7 @@ export default function OnboardingScreen() {
           como_conheceu:         comoConheceu,
           referido_por:          referidoPorId,
         })
-        .eq('id', profile!.id)
+        .eq('id', profile.id)
         .select()
         .single();
 
@@ -232,7 +238,7 @@ export default function OnboardingScreen() {
         void supabase
           .rpc('apply_referral_benefit', {
             p_referrer_id: referidoPorId,
-            p_new_user_id: profile!.id,
+            p_new_user_id: profile.id,
           })
           .then(() => {}, () => {});
       }
