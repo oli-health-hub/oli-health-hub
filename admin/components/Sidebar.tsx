@@ -135,6 +135,18 @@ function IconLogOut() {
   );
 }
 
+function IconQR() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3h-3z" />
+      <path d="M20 14v3M14 20h3M17 17h4v4" />
+    </svg>
+  );
+}
+
 // ─── Navegação ────────────────────────────────────────────────────────────────
 
 const NAV = [
@@ -150,6 +162,7 @@ const NAV = [
     items: [
       { href: '/salas',     label: 'Mapa do Dia', Icon: IconBuilding, badge: false },
       { href: '/historico', label: 'Histórico',   Icon: IconCalendar, badge: false },
+      { href: '/totem',     label: 'Totem QR',    Icon: IconQR,       badge: false },
     ],
   },
   {
