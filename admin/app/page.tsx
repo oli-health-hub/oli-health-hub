@@ -2,11 +2,38 @@ import type React from 'react';
 import {
   DollarSign, Calendar, Building2, Stethoscope, Clock,
   TrendingUp, CalendarCheck, Target, UserPlus, Leaf, CalendarX,
-  Repeat,
+  Repeat, Wallet,
 } from 'lucide-react';
 import { createSupabaseServer } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
+
+// ─── Asaas Summary fetch ──────────────────────────────────────────────────────
+interface AsaasSummary {
+  balance:            number;
+  mrr:                number;
+  paymentsMonth:      number;
+  paymentsLastMonth:  number;
+  activeSubsCount:    number;
+}
+
+async function fetchAsaasSummary(): Promise<AsaasSummary | null> {
+  try {
+    const supabase = await createSupabaseServer();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://xwcarrurjvfxisuaihid.supabase.co'}/functions/v1/admin-asaas-summary`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache:   'no-store',
+    });
+    if (!res.ok) return null;
+    return await res.json() as AsaasSummary;
+  } catch {
+    return null;
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -156,7 +183,10 @@ export default async function HomePage() {
     supabase.from('reservations').select('id, room_name, status, start_time, end_time, profiles(nome)').gte('start_time', todayStart.toISOString()).lte('start_time', todayEnd.toISOString()).order('start_time', { ascending: true }).limit(20),
   ]);
 
-  // ── MRR + breakdown por plano ────────────────────────────────────────────────
+  // ── Dados reais do Asaas (saldo + MRR real + recebido mês) ──────────────────
+  const asaasSummary = await fetchAsaasSummary();
+
+  // ── MRR estimado (DB subscriptions) — fallback caso Asaas falhe ──────────
   const { data: activeSubs } = await supabase
     .from('subscriptions')
     .select('ciclo, plans(name, preco_mensal, preco_anual)')
@@ -233,18 +263,68 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* ── MRR Hero Card ── */}
+      {/* ── Hero Financeiro: Asaas Real + MRR breakdown ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+
+        {/* Saldo Asaas */}
+        <div className="bg-white rounded-2xl border border-oli-border p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EFF4F0' }}>
+              <Wallet size={18} color="#5F7D67" />
+            </div>
+            <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Saldo Asaas</p>
+          </div>
+          <p className="text-2xl font-extrabold text-oli-dark leading-none">
+            {asaasSummary ? fmtBRL(asaasSummary.balance) : '—'}
+          </p>
+          <p className="text-[11px] text-oli-lgray mt-1">
+            {asaasSummary ? 'disponível para saque' : 'API indisponível'}
+          </p>
+        </div>
+
+        {/* Recebido este mês */}
+        <div className="bg-white rounded-2xl border border-oli-border p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FFF7ED' }}>
+              <DollarSign size={18} color="#f97316" />
+            </div>
+            <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Recebido no mês</p>
+          </div>
+          <p className="text-2xl font-extrabold text-oli-dark leading-none">
+            {asaasSummary ? fmtBRL(asaasSummary.paymentsMonth) : '—'}
+          </p>
+          {asaasSummary && asaasSummary.paymentsLastMonth > 0 && (
+            <p className={`text-[11px] font-semibold mt-1 ${getDeltaColor(pct(asaasSummary.paymentsMonth, asaasSummary.paymentsLastMonth))}`}>
+              {fmtDelta(pct(asaasSummary.paymentsMonth, asaasSummary.paymentsLastMonth))} vs mês passado
+            </p>
+          )}
+        </div>
+
+        {/* MRR Asaas */}
+        <div className="bg-white rounded-2xl border border-oli-border p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EFF6FF' }}>
+              <Repeat size={18} color="#3b82f6" />
+            </div>
+            <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">MRR Asaas</p>
+          </div>
+          <p className="text-2xl font-extrabold text-oli-dark leading-none">
+            {asaasSummary ? fmtBRL(asaasSummary.mrr) : fmtBRL(mrrTotal)}
+          </p>
+          <p className="text-[11px] text-oli-lgray mt-1">
+            {asaasSummary
+              ? `${asaasSummary.activeSubsCount} assinaturas`
+              : `${(activeSubs ?? []).length} estimado (DB)`}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Breakdown por plano ── */}
       <div className="bg-white rounded-2xl border border-oli-border p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EFF4F0' }}>
-              <Repeat size={22} color="#5F7D67" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-oli-lgray uppercase tracking-wider">MRR · Receita Recorrente Mensal</p>
-              <p className="text-3xl font-extrabold text-oli-dark leading-none mt-1">{mrrTotal > 0 ? fmtBRL(mrrTotal) : 'R$ 0'}</p>
-              <p className="text-[11px] text-oli-lgray mt-1">{(activeSubs ?? []).length} assinatura(s) ativa(s)</p>
-            </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-oli-lgray uppercase tracking-wider">Distribuição por plano</p>
+            <p className="text-sm text-oli-dark mt-1">{(activeSubs ?? []).length} médicos ativos</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             {(['START','BASE','PRO','VIP'] as const).map(name => {

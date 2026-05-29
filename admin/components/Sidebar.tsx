@@ -149,37 +149,29 @@ function IconQR() {
 
 // ─── Navegação ────────────────────────────────────────────────────────────────
 
+// Sidebar enxuto: 9 itens em 4 grupos. Páginas consolidadas em /financeiro e /catalogo.
 const NAV = [
   {
-    section: 'Principal',
+    section: 'Operação',
     items: [
-      { href: '/',     label: 'Dashboard',        Icon: IconDashboard, badge: false },
-      { href: '/fila', label: 'Fila de Trabalho', Icon: IconBell,      badge: true  },
+      { href: '/',          label: 'Dashboard',   Icon: IconDashboard, badge: false },
+      { href: '/salas',     label: 'Mapa do Dia', Icon: IconBuilding,  badge: false },
+      { href: '/fila',      label: 'Fila',        Icon: IconBell,      badge: true  },
+      { href: '/totem',     label: 'Totem QR',    Icon: IconQR,        badge: false },
     ],
   },
   {
-    section: 'Salas',
+    section: 'Clientes',
     items: [
-      { href: '/salas',     label: 'Mapa do Dia', Icon: IconBuilding, badge: false },
-      { href: '/historico', label: 'Histórico',   Icon: IconCalendar, badge: false },
-      { href: '/totem',     label: 'Totem QR',    Icon: IconQR,       badge: false },
-    ],
-  },
-  {
-    section: 'Médicos',
-    items: [
-      { href: '/medicos', label: 'Cadastros', Icon: IconUsers,      badge: false },
-      { href: '/planos',  label: 'Planos',    Icon: IconLayers,     badge: false },
-      { href: '/modulos', label: 'Módulos',   Icon: IconPuzzle,     badge: false },
-      { href: '/horas',   label: 'Horas',     Icon: IconClock,      badge: false },
+      { href: '/medicos',   label: 'Médicos',    Icon: IconUsers,    badge: false },
+      { href: '/historico', label: 'Histórico',  Icon: IconCalendar, badge: false },
     ],
   },
   {
     section: 'Financeiro',
     items: [
-      { href: '/pagamentos',   label: 'Pagamentos',  Icon: IconCreditCard,   badge: false },
-      { href: '/contas',       label: 'Contas',       Icon: IconArrowsUpDown, badge: false },
-      { href: '/fornecedores', label: 'Fornecedores', Icon: IconTruck,        badge: false },
+      { href: '/financeiro', label: 'Financeiro', Icon: IconCreditCard, badge: false },
+      { href: '/catalogo',   label: 'Catálogo',   Icon: IconLayers,     badge: false },
     ],
   },
   {
