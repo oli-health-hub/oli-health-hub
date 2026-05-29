@@ -200,11 +200,13 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
 
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-        <div className="w-9 h-9 rounded-xl bg-oli-green flex items-center justify-center shrink-0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2C8.69 2 6 4.69 6 8c0 2.97 2.03 5.44 4.75 6.2L12 22l1.25-7.8C15.97 13.44 18 10.97 18 8c0-3.31-2.69-6-6-6z" fill="white" opacity="0.9"/>
-            <circle cx="12" cy="8" r="2.5" fill="white" opacity="0.5"/>
-          </svg>
+        <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://xwcarrurjvfxisuaihid.supabase.co/storage/v1/object/public/assets/logo_oli_transparent.png"
+            alt="OLI Health Hub"
+            className="w-7 h-7 object-contain"
+          />
         </div>
         <div>
           <p className="text-white text-sm font-bold leading-tight tracking-tight">OLI Health Hub</p>
