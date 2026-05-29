@@ -125,7 +125,16 @@ export default function HourCheckoutModal({
 
   const startPolling = (chargeId: string) => {
     if (!user?.id) return;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 120;  // ~10min cap
     pollTimer.current = setInterval(async () => {
+      attempts++;
+      if (attempts >= MAX_ATTEMPTS) {
+        clearIntervals();
+        setErrorMsg('Tempo de espera esgotado. Verifique seu pagamento e tente novamente.');
+        setPhase('error');
+        return;
+      }
       const activated = await checkHourPackageActivation(user.id!, chargeId);
       if (activated) {
         clearIntervals();

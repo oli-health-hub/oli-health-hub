@@ -109,7 +109,18 @@ export default function PlanCheckoutModal({
 
   const startPolling = () => {
     if (!user?.id) return;
+    // Cap em ~10 minutos (120 tentativas × 5s) — evita loop infinito
+    // se o webhook do Asaas falhar ou o usuário abandonar o checkout.
+    let attempts = 0;
+    const MAX_ATTEMPTS = 120;
     pollTimer.current = setInterval(async () => {
+      attempts++;
+      if (attempts >= MAX_ATTEMPTS) {
+        clearIntervals();
+        setErrorMsg('Tempo de espera esgotado. Verifique seu pagamento e tente novamente.');
+        setPhase('error');
+        return;
+      }
       const activated = await checkPlanActivation(user.id!);
       if (activated) {
         clearIntervals();

@@ -367,6 +367,18 @@ export default function MeuPlanoScreen() {
           </View>
         </View>
 
+        {/* Hero — coworking físico (frame primário) */}
+        <View style={[styles.heroCard, shadows.card]}>
+          <Ionicons name="business-outline" size={22} color={colors.oliGreen} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroTitle}>Acesso aos consultórios OLI Health Hub</Text>
+            <Text style={styles.heroSub}>
+              Aluguel de salas físicas (clínica, ginecologia, psicologia, telemedicina).
+              Cobrança por minuto de uso real. Benefícios adicionais variam por plano.
+            </Text>
+          </View>
+        </View>
+
         {/* Lista de planos */}
         {PLANS.map((plan) => {
           const isExpanded = expandedPlan === plan.name;
@@ -662,6 +674,19 @@ const styles = StyleSheet.create({
   activePlanName:   { fontSize: 28, fontWeight: '800', color: colors.oliDarkGray, marginTop: 2 },
   activeBadge:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.oliGreen, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 },
   activeBadgeText:  { fontSize: 12, fontWeight: '700', color: colors.white },
+
+  heroCard: {
+    backgroundColor:   '#EFF4F0',
+    borderRadius:      radius.md,
+    padding:           spacing.md,
+    flexDirection:     'row',
+    gap:               spacing.sm,
+    alignItems:        'flex-start',
+    borderLeftWidth:   3,
+    borderLeftColor:   colors.oliGreen,
+  },
+  heroTitle: { fontSize: 13, fontWeight: '800', color: colors.oliDarkGray },
+  heroSub:   { fontSize: 12, color: colors.gray, lineHeight: 17, marginTop: 3 },
 
   planWrapper: {
     backgroundColor: colors.white,

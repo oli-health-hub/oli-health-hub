@@ -130,7 +130,16 @@ export default function CheckoutModal({
 
   const startPolling = () => {
     if (!user?.id) return;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 120;  // ~10min cap
     pollTimer.current = setInterval(async () => {
+      attempts++;
+      if (attempts >= MAX_ATTEMPTS) {
+        clearIntervals();
+        setErrorMsg('Tempo de espera esgotado. Verifique seu pagamento e tente novamente.');
+        setPhase('error');
+        return;
+      }
       const activated = await checkModuleActivation(module.id, user.id!);
       if (activated) {
         clearIntervals();
