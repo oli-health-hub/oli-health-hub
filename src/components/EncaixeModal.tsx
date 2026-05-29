@@ -190,17 +190,23 @@ export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
         { text: 'Só confirmar', onPress: onConfirm },
         {
           text: 'Confirmar + WhatsApp',
-          onPress: async () => {
+          onPress: () => {
+            // 1. Fecha somente EncaixeModal (parent PacienteDetail continua montado).
+            // 2. Após animação de fechar, abre WhatsApp.
+            // Isso evita o bug de iOS de Modal aninhado quando o app é
+            // suspenso/restaurado pelo Linking.openURL.
             onConfirm();
-            await notifyPatientEncaixe(
-              paciente.nome,
-              paciente.telefone,
-              userName,
-              dateStr,
-              timeStr,
-              durLabel,
-              coveringForSelected?.roomName,
-            );
+            setTimeout(() => {
+              notifyPatientEncaixe(
+                paciente.nome,
+                paciente.telefone,
+                userName,
+                dateStr,
+                timeStr,
+                durLabel,
+                coveringForSelected?.roomName,
+              ).catch(() => { /* WhatsApp pode estar indisponível */ });
+            }, 300);
           },
         },
       ],

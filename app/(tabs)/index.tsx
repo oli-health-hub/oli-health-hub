@@ -197,9 +197,15 @@ export default function DashboardScreen() {
 
   // Auto-inicia o timer quando o horário da primeira reserva chega
   useEffect(() => {
-    if (sessionStartTime || todayReservations.length === 0) return;
+    if (sessionStartTime) return;
 
-    const firstRes  = todayReservations[0];
+    // Ignora reservas já encerradas — evita reiniciar timer após checkout
+    const pending = todayReservations.filter(
+      r => r.status !== 'concluido' && r.status !== 'cancelado',
+    );
+    if (pending.length === 0) return;
+
+    const firstRes  = pending[0];
     const startTime = new Date(firstRes.startTime);
     const endTime   = new Date(firstRes.endTime);
     const msUntil   = startTime.getTime() - Date.now();
@@ -283,7 +289,16 @@ export default function DashboardScreen() {
 
   const handleCheckout = useCallback(() => {
     setShowQR(false);
+
+    // Marca a reserva ativa como concluída ANTES de limpar a sessão,
+    // para que o useEffect de auto-start não a releia e reinicie o timer.
+    const activeRes =
+      todayReservations.find(r => r.status === 'em_uso') ??
+      todayReservations.find(r => r.status !== 'concluido' && r.status !== 'cancelado');
+    if (activeRes) endRoomUse(activeRes.id);
+
     checkout();
+
     // Abre picker NPS se houver pacientes cadastrados; caso contrário alert padrão
     setTimeout(() => {
       if (patients.length > 0) {
@@ -292,7 +307,7 @@ export default function DashboardScreen() {
         setAlertKey('checkoutSuccess');
       }
     }, 300);
-  }, [checkout, patients.length]);
+  }, [checkout, endRoomUse, todayReservations, patients.length]);
 
   const handleNPSSelect = useCallback(async (patient: Patient) => {
     const professionalId = session?.user?.id;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,9 @@ import { colors, spacing, radius } from '../theme/designSystem';
 
 // QR codes emitidos pelo totem OLI começam com este prefixo.
 // Fase 3: validar também o token assinado pelo Communicare.
-const OLI_QR_PREFIX = 'OLI-CHECKOUT';
+const OLI_QR_PREFIX     = 'OLI-CHECKOUT';
+// Código digitável tem prefixo curto: OLI-XXXX-YYYY (sala-token)
+const MANUAL_CODE_REGEX = /^OLI-[A-Z0-9]{1,4}-\d{4}$/i;
 
 interface Props {
   onCheckout: () => void;
@@ -18,6 +20,8 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error,   setError]   = useState('');
+  const [manualMode, setManualMode] = useState(false);
+  const [manualCode, setManualCode] = useState('');
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -41,6 +45,16 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
     setError('');
   };
 
+  const handleManualSubmit = () => {
+    const code = manualCode.trim().toUpperCase();
+    if (!MANUAL_CODE_REGEX.test(code)) {
+      setError('Código inválido. Formato esperado: OLI-XXXX-1234');
+      return;
+    }
+    setError('');
+    onCheckout();
+  };
+
   // ── Sem permissão ─────────────────────────────────────────────────────────
   if (!permission) {
     return <PermissionScreen loading onClose={onClose} onRequest={requestPermission} />;
@@ -54,6 +68,65 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
         onClose={onClose}
         onRequest={requestPermission}
       />
+    );
+  }
+
+  // ── Modo manual (sem câmera) ──────────────────────────────────────────────
+  if (manualMode) {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.manualContainer}
+      >
+        <View style={[styles.manualHeader, { paddingTop: insets.top + spacing.sm }]}>
+          <TouchableOpacity
+            onPress={() => { setManualMode(false); setError(''); }}
+            accessibilityLabel="Voltar ao scanner"
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.oliDarkGray} />
+          </TouchableOpacity>
+          <Text style={styles.manualTitle}>Digite o código</Text>
+          <TouchableOpacity onPress={onClose} accessibilityLabel="Cancelar checkout">
+            <Ionicons name="close" size={24} color={colors.oliDarkGray} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.manualBody}>
+          <Ionicons name="keypad-outline" size={48} color={colors.oliGreen} />
+          <Text style={styles.manualLabel}>Código exibido no totem</Text>
+          <Text style={styles.manualHint}>
+            Digite a sequência mostrada na tela da recepção (ex.: OLI-S1-7892)
+          </Text>
+
+          <TextInput
+            style={styles.manualInput}
+            value={manualCode}
+            onChangeText={t => { setManualCode(t.toUpperCase()); setError(''); }}
+            placeholder="OLI-XXXX-1234"
+            placeholderTextColor={colors.oliLightGray}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={13}
+            accessibilityLabel="Código de checkout"
+          />
+
+          {error ? (
+            <View style={styles.manualErrorBox}>
+              <Ionicons name="alert-circle-outline" size={18} color={colors.oliRed} />
+              <Text style={styles.manualErrorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          <TouchableOpacity
+            style={[styles.manualBtn, !manualCode && styles.manualBtnDisabled]}
+            disabled={!manualCode}
+            onPress={handleManualSubmit}
+            accessibilityLabel="Confirmar checkout"
+          >
+            <Text style={styles.manualBtnText}>Confirmar checkout</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -102,6 +175,16 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
                 Aponte para o QR Code no totem da recepção ou da copa
               </Text>
             )}
+
+            {/* Fallback: digitar código manualmente */}
+            <TouchableOpacity
+              style={styles.manualLink}
+              onPress={() => { setManualMode(true); setError(''); setManualCode(''); }}
+              accessibilityLabel="Digitar código manualmente"
+            >
+              <Ionicons name="keypad-outline" size={16} color={colors.white} />
+              <Text style={styles.manualLinkText}>Digitar código manualmente</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -204,6 +287,78 @@ const styles = StyleSheet.create({
   errorText: { color: colors.white, fontSize: 14, textAlign: 'center', lineHeight: 20 },
   retryBtn:  { marginTop: spacing.xs, backgroundColor: colors.oliGreen, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   retryText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+
+  // Link "Digitar código manualmente" no scanner
+  manualLink: {
+    marginTop:       spacing.lg,
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             6,
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.sm,
+    borderRadius:    radius.md,
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.3)',
+  },
+  manualLinkText: { color: colors.white, fontSize: 13, fontWeight: '600' },
+
+  // Tela modo manual
+  manualContainer: { flex: 1, backgroundColor: colors.oliBackground },
+  manualHeader: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+    backgroundColor:   colors.white,
+  },
+  manualTitle: { fontSize: 17, fontWeight: '700', color: colors.oliDarkGray },
+  manualBody: {
+    flex:           1,
+    alignItems:     'center',
+    paddingTop:     spacing.xl,
+    paddingHorizontal: spacing.xl,
+    gap:            spacing.md,
+  },
+  manualLabel: { fontSize: 16, fontWeight: '700', color: colors.oliDarkGray, marginTop: spacing.sm },
+  manualHint:  { fontSize: 13, color: colors.gray, textAlign: 'center', lineHeight: 18 },
+  manualInput: {
+    width:           '100%',
+    backgroundColor: colors.white,
+    borderRadius:    radius.md,
+    borderWidth:     1.5,
+    borderColor:     colors.oliGreen,
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.md,
+    fontSize:        22,
+    fontWeight:      '700',
+    color:           colors.oliDarkGray,
+    textAlign:       'center',
+    letterSpacing:   3,
+    marginTop:       spacing.md,
+  },
+  manualErrorBox: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             6,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.sm,
+    borderRadius:    radius.md,
+  },
+  manualErrorText: { color: colors.oliRed, fontSize: 13, flex: 1 },
+  manualBtn: {
+    width:           '100%',
+    backgroundColor: colors.oliGreen,
+    paddingVertical: spacing.md,
+    borderRadius:    radius.md,
+    alignItems:      'center',
+    marginTop:       spacing.lg,
+  },
+  manualBtnDisabled: { opacity: 0.4 },
+  manualBtnText:     { color: colors.white, fontSize: 15, fontWeight: '700' },
 
   // Permissão
   permContainer: { flex: 1, backgroundColor: colors.oliBackground, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, gap: spacing.md },

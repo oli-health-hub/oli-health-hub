@@ -8,14 +8,15 @@ import {
 } from '../services/notificationService';
 import { reportError, reportEvent } from '../services/sentryService';
 import { useAuthStore } from './authStore';
+import { PLANS } from '../models/oli-plans';
 
-// ─── Custo por minuto por plano (fonte: src/models/oli-plans.ts) ─────────────
-// VIP ainda não lançado — usar 0 como fallback seguro (nunca deve cobrar)
+// ─── Custo por minuto por plano (DERIVADO de oli-plans.ts) ───────────────────
+// Fonte única de verdade. VIP ainda não lançado → ratePerMinute null → 0.
 export const COST_PER_MINUTE: Record<PlanType, number> = {
-  START: 2.00,
-  BASE:  1.50,
-  PRO:   1.30,
-  VIP:   0,    // em estruturação — sem cobrança até lançamento
+  START: PLANS.plan_start.ratePerMinute ?? 0,
+  BASE:  PLANS.plan_base.ratePerMinute  ?? 0,
+  PRO:   PLANS.plan_pro.ratePerMinute   ?? 0,
+  VIP:   PLANS.plan_vip.ratePerMinute   ?? 0,
 };
 
 const BUFFER_MS  = 15 * 60 * 1000; // 15 min
@@ -145,9 +146,30 @@ export const useAppStore = create<AppStore>((set, get) => {
     startSession: (startTime, endTime) => {
       set({ sessionStartTime: startTime, sessionEndTime: endTime, isInBuffer: false, isOvertime: false });
       get()._syncNextReservation();
-      // Agenda notificações locais — funcionam mesmo com app minimizado/morto
+
+      // Marca a primeira reserva pendente como em_uso e registra consultationStartedAt
+      // para que endRoomUse possa calcular e cobrar o tempo consumido corretamente
       const { hasNextReservation, rooms, todayReservations } = get();
-      const roomName = todayReservations[0]?.roomName ?? 'Sala';
+      const firstPending = todayReservations.find(
+        r => r.status !== 'concluido' && r.status !== 'cancelado',
+      );
+      if (firstPending && !firstPending.consultationStartedAt) {
+        const now = new Date().toISOString();
+        set({
+          todayReservations: get().todayReservations.map(r =>
+            r.id === firstPending.id
+              ? { ...r, status: 'em_uso' as const, consultationStartedAt: now }
+              : r,
+          ),
+        });
+        updateReservation(firstPending.id, {
+          status:                    'em_uso',
+          consultation_started_at:   now,
+        }).catch(() => {});
+      }
+
+      // Agenda notificações locais — funcionam mesmo com app minimizado/morto
+      const roomName = firstPending?.roomName ?? todayReservations[0]?.roomName ?? 'Sala';
       scheduleSessionNotifications({
         sessionEndTime:    endTime,
         roomName,
@@ -233,15 +255,28 @@ export const useAppStore = create<AppStore>((set, get) => {
         activeConsultationId: null,
       });
 
+      // Persiste status concluído no Supabase — impede que fetchTodayReservations
+      // sobrescreva o estado local e reinicie o timer ao reabrir o app
+      updateReservation(id, {
+        status:                'concluido',
+        consultation_ended_at: target?.consultationEndedAt ?? now,
+      }).catch((err: unknown) => {
+        reportError(err instanceof Error ? err : new Error(String(err)), {
+          context: 'endRoomUse.updateStatus',
+        });
+      });
+
       // Registra cobrança por minutagem no Supabase em background
-      if (target?.consultationStartedAt) {
+      // Fallback: usa startTime da reserva caso consultationStartedAt não esteja setado
+      const startedAt = target?.consultationStartedAt ?? target?.startTime;
+      if (startedAt && target) {
         const professionalId = useAuthStore.getState().session?.user?.id;
         if (professionalId) {
           logUsageCharge({
             professionalId,
             reservationId:     target.id,
             plan:              userPlan,
-            startedAt:         target.consultationStartedAt,
+            startedAt,
             endedAt:           target.consultationEndedAt ?? now,
             scheduledEndTime:  target.endTime,   // excedente cobrado em blocos de 30 min
           })

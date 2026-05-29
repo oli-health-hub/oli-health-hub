@@ -2,92 +2,360 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OLI Health Hub — Totem de Checkout</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>OLI Health Hub — Checkout</title>
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
       background: #F4EFEA;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding: 24px 16px;
     }
+
     .card {
-      background: white;
+      background: #ffffff;
       border-radius: 24px;
-      padding: 48px 40px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+      max-width: 400px;
+      width: 100%;
       text-align: center;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-      max-width: 420px;
-      width: 90%;
     }
-    .logo {
-      font-size: 22px;
-      font-weight: 800;
+
+    /* Green top bar */
+    .card-top {
+      background: #5F7D67;
+      height: 6px;
+    }
+
+    .card-body {
+      padding: 36px 36px 32px;
+    }
+
+    /* Logo */
+    .logo-wrap {
+      margin-bottom: 20px;
+    }
+    .logo-wrap img {
+      height: 44px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Room badge */
+    .room-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #EFF4F0;
       color: #5F7D67;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 24px;
     }
-    .subtitle {
-      font-size: 13px;
-      color: #6B6B6B;
-      margin-bottom: 32px;
-    }
+
+    /* QR container */
     #qrcode {
       display: flex;
       justify-content: center;
       margin-bottom: 24px;
     }
+    #qrcode canvas,
     #qrcode img {
-      border-radius: 12px;
+      border-radius: 14px;
       display: block;
     }
-    .instruction {
-      font-size: 15px;
-      color: #2F2F2F;
-      font-weight: 600;
-      margin-bottom: 8px;
+
+    /* Pulse ring animation */
+    .qr-wrap {
+      position: relative;
+      display: inline-block;
     }
+    .qr-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 20px;
+      border: 2px solid #5F7D6740;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(1.03); }
+    }
+
+    .instruction {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2F2F2F;
+      margin-bottom: 6px;
+    }
+
     .hint {
       font-size: 13px;
       color: #6B6B6B;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* Divisor "OU DIGITE O CÓDIGO" */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0 12px;
+    }
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: #E5DDD2;
+    }
+    .divider-text {
+      font-size: 10px;
+      font-weight: 700;
+      color: #9B9B9B;
+      letter-spacing: 1.2px;
+    }
+
+    /* Caixa do código digitável */
+    .code-box {
+      background: #F4EFEA;
+      border: 1.5px dashed #5F7D67;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .code-value {
+      font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+      font-size: 26px;
+      font-weight: 800;
+      color: #2F2F2F;
+      letter-spacing: 4px;
+      text-align: center;
+      margin: 0;
+    }
+    .code-hint {
+      font-size: 11px;
+      color: #9B9B9B;
+      text-align: center;
+      margin: 0 0 18px;
       line-height: 1.5;
     }
-    .badge {
-      display: inline-block;
-      margin-top: 24px;
-      background: #5F7D6720;
+
+    /* Clock / refresh timer */
+    .timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #9B9B9B;
+    }
+    .timer-row svg { flex-shrink: 0; }
+
+    /* Footer */
+    .footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #9B9B9B;
+      text-align: center;
+      line-height: 1.8;
+    }
+    .footer a {
       color: #5F7D67;
+      text-decoration: none;
+    }
+
+    /* Dev badge (only when ?dev=1) */
+    .dev-badge {
+      display: none;
+      margin-top: 16px;
+      background: #FFF3CD;
+      color: #856404;
       font-size: 11px;
       font-weight: 700;
-      padding: 4px 12px;
+      padding: 4px 14px;
       border-radius: 100px;
       letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
+    body.dev-mode .dev-badge { display: inline-block; }
   </style>
 </head>
 <body>
+
   <div class="card">
-    <div class="logo">OLI Health Hub</div>
-    <div class="subtitle">Totem de Checkout — Recepção</div>
-    <div id="qrcode"></div>
-    <div class="instruction">Aponte a câmera do app para o código</div>
-    <div class="hint">Após a leitura, seu checkout será registrado automaticamente.</div>
-    <div class="badge">AMBIENTE DE TESTES</div>
+    <div class="card-top"></div>
+    <div class="card-body">
+
+      <!-- Logo -->
+      <div class="logo-wrap">
+        <img
+          src="https://xwcarrurjvfxisuaihid.supabase.co/storage/v1/object/public/assets/logo_oli_transparent.png"
+          alt="OLI Health Hub"
+        />
+      </div>
+
+      <!-- Room badge -->
+      <div class="room-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="#5F7D67" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span id="room-label">Recepção</span>
+      </div>
+
+      <!-- QR Code -->
+      <div id="qrcode">
+        <div class="qr-wrap" id="qr-wrap"></div>
+      </div>
+
+      <div class="instruction">Aponte a câmera do app</div>
+      <div class="hint">Seu checkout será registrado automaticamente após a leitura.</div>
+
+      <!-- Divisor "OU" -->
+      <div class="divider">
+        <span class="divider-line"></span>
+        <span class="divider-text">OU DIGITE O CÓDIGO</span>
+        <span class="divider-line"></span>
+      </div>
+
+      <!-- Código digitável -->
+      <div class="code-box">
+        <p class="code-value" id="manual-code">— — — —</p>
+      </div>
+      <p class="code-hint">No app, toque em &ldquo;Digitar código manualmente&rdquo; e insira a sequência acima.</p>
+
+      <!-- Refresh timer -->
+      <div class="timer-row">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="#9B9B9B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span id="refresh-label">Atualiza em <strong id="countdown">5:00</strong></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Dev badge (outside card so it floats) -->
+  <div class="dev-badge">Ambiente de testes</div>
+
+  <!-- Footer -->
+  <div class="footer">
+    OLI Health Hub ·
+    <a href="https://olihealthhub.com.br/politica-de-privacidade">Política de Privacidade</a>
+    · LGPD Lei 13.709/2018
   </div>
 
   <script>
-    new QRCode(document.getElementById('qrcode'), {
-      text:        'OLI-CHECKOUT:reception-totem-001',
-      width:        280,
-      height:       280,
-      colorDark:   '#5F7D67',
-      colorLight:  '#FFFFFF',
-      correctLevel: QRCode.CorrectLevel.H,
-    });
+    // ── Config ────────────────────────────────────────────────────────────────
+    const REFRESH_SECONDS = 300; // 5 min — rotate QR token
+
+    // ── URL params ────────────────────────────────────────────────────────────
+    const params   = new URLSearchParams(window.location.search);
+    const salaId   = params.get('sala')   || 'reception-001';
+    const salaName = params.get('nome')   || formatRoomName(salaId);
+    const isDev    = params.get('dev')    === '1';
+
+    if (isDev) document.body.classList.add('dev-mode');
+    document.getElementById('room-label').textContent = salaName;
+
+    // ── QR generation ─────────────────────────────────────────────────────────
+    let qrInstance = null;
+
+    function currentWindow() {
+      return Math.floor(Date.now() / 1000 / REFRESH_SECONDS);
+    }
+
+    function buildToken() {
+      // Token completo encodado no QR. Scanner verifica prefix 'OLI-CHECKOUT'.
+      return `OLI-CHECKOUT:${salaId}:${currentWindow()}`;
+    }
+
+    function buildManualCode() {
+      // Código digitável curto, sincronizado com o QR.
+      // Formato: OLI-XXXX-YYYY
+      //   XXXX = abreviação da sala (até 4 chars, A-Z e 0-9)
+      //   YYYY = últimos 4 dígitos da janela de 5min (rotaciona junto com QR)
+      const win = currentWindow();
+      const winStr = String(win % 10000).padStart(4, '0');
+
+      // Abreviação da sala: pega só letras/números, máx 4
+      let salaCode = salaId.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      if (!salaCode) salaCode = 'OLI';
+
+      return `OLI-${salaCode}-${winStr}`;
+    }
+
+    function renderQR() {
+      const wrap = document.getElementById('qr-wrap');
+      wrap.innerHTML = '';
+
+      qrInstance = new QRCode(wrap, {
+        text:         buildToken(),
+        width:        240,
+        height:       240,
+        colorDark:    '#2F2F2F',
+        colorLight:   '#FFFFFF',
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+
+      document.getElementById('manual-code').textContent = buildManualCode();
+    }
+
+    // ── Countdown & auto-refresh ───────────────────────────────────────────────
+    let secsLeft;
+
+    function syncCountdown() {
+      // Stay in sync with the 5-min wall-clock window
+      const nowSec   = Math.floor(Date.now() / 1000);
+      secsLeft = REFRESH_SECONDS - (nowSec % REFRESH_SECONDS);
+    }
+
+    function updateCountdown() {
+      syncCountdown();
+      const m  = Math.floor(secsLeft / 60);
+      const s  = secsLeft % 60;
+      document.getElementById('countdown').textContent =
+        `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function tick() {
+      secsLeft--;
+      if (secsLeft <= 0) {
+        renderQR();
+        syncCountdown();
+      }
+      const m = Math.floor(secsLeft / 60);
+      const s = secsLeft % 60;
+      document.getElementById('countdown').textContent =
+        `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function formatRoomName(id) {
+      // 'sala-1' → 'Sala 1', 'copa' → 'Copa', 'reception-001' → 'Recepção'
+      if (id === 'reception-001' || id === 'recepcao') return 'Recepção';
+      return id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    renderQR();
+    syncCountdown();
+    setInterval(tick, 1000);
   </script>
 </body>
 </html>

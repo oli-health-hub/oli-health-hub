@@ -110,8 +110,8 @@ export const PLANS: Record<PlanId, Plan> = {
     name: 'BASE',
     status: 'active',
     monthlyPrice: 299.00,
-    ratePerMinute: 1.70,
-    minuteDiscount: 0.15, // −15% vs START
+    ratePerMinute: 1.50,
+    minuteDiscount: 0.25, // −25% vs START
     supportLevel: 'essencial',
     highlighted: false,
     badge: null,
@@ -140,8 +140,8 @@ export const PLANS: Record<PlanId, Plan> = {
     name: 'PRO',
     status: 'active',
     monthlyPrice: 599.00,
-    ratePerMinute: 1.60,
-    minuteDiscount: 0.20, // −20% vs START
+    ratePerMinute: 1.30,
+    minuteDiscount: 0.35, // −35% vs START
     supportLevel: 'profissional',
     highlighted: true,
     badge: 'Mais popular',

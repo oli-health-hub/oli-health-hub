@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
+import { ReservationBlock } from '@/components/ReservationBlock';
 
 export const dynamic = 'force-dynamic';
 
@@ -223,23 +224,28 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                       const profile = (r.profiles as unknown) as { nome: string; plan: string } | null;
 
                       return (
-                        <Link
+                        <ReservationBlock
                           key={r.id}
-                          href={`/medicos/${r.professional_id}`}
-                          title={`${profile?.nome ?? '?'} | ${fmtTime(rStart)}–${fmtTime(rEnd)} | ${STATUS_LABEL[r.status] ?? r.status}`}
-                          className={`absolute top-1 bottom-1 rounded-md border px-1.5 flex items-center overflow-hidden cursor-pointer hover:opacity-90 hover:shadow-sm transition-all z-10 ${
-                            inSess
-                              ? 'bg-green-200 border-green-400'
-                              : done
-                              ? 'bg-gray-200 border-gray-300'
-                              : `${theme.occ} ${theme.border}`
-                          }`}
-                          style={{ left, width, minWidth: 4 }}
-                        >
-                          <span className={`text-[10px] font-bold truncate ${done ? 'text-gray-600' : theme.text}`}>
-                            {profile?.nome?.split(' ')[0]}
-                          </span>
-                        </Link>
+                          id={r.id}
+                          professionalId={r.professional_id}
+                          professionalName={profile?.nome ?? null}
+                          plan={profile?.plan ?? null}
+                          roomName={r.room_name}
+                          startTime={r.start_time}
+                          endTime={r.end_time}
+                          status={r.status}
+                          statusLabel={STATUS_LABEL[r.status] ?? r.status}
+                          arrivedAt={r.arrived_at ?? null}
+                          consultationStartedAt={r.consultation_started_at ?? null}
+                          consultationEndedAt={r.consultation_ended_at ?? null}
+                          left={left}
+                          width={width}
+                          inSess={!!inSess}
+                          done={done}
+                          occClass={theme.occ}
+                          borderClass={theme.border}
+                          textClass={theme.text}
+                        />
                       );
                     })}
                   </div>

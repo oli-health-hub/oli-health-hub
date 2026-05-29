@@ -208,8 +208,10 @@ export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendi
           paciente={paciente}
           onClose={() => setShowEncaixe(false)}
           onConfirm={() => {
+            // Fecha SOMENTE o modal de encaixe. PacienteDetail permanece aberto
+            // para evitar bug de Modal aninhado no iOS após retorno do WhatsApp
+            // (tela preta / conteúdo vazio). Usuário fecha manualmente.
             setShowEncaixe(false);
-            onClose();
           }}
         />
       </Modal>

@@ -6,10 +6,10 @@
  */
 
 import { Linking } from 'react-native';
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL } from './supabase';
 import type { Patient } from '../models/types';
 
-const EDGE_URL = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/nps`;
+const EDGE_URL = `${SUPABASE_URL}/functions/v1/nps`;
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import type React from 'react';
 import {
   DollarSign, Calendar, Building2, Stethoscope, Clock,
   TrendingUp, CalendarCheck, Target, UserPlus, Leaf, CalendarX,
+  Repeat,
 } from 'lucide-react';
 import { createSupabaseServer } from '@/lib/supabase-server';
 
@@ -155,6 +156,26 @@ export default async function HomePage() {
     supabase.from('reservations').select('id, room_name, status, start_time, end_time, profiles(nome)').gte('start_time', todayStart.toISOString()).lte('start_time', todayEnd.toISOString()).order('start_time', { ascending: true }).limit(20),
   ]);
 
+  // ── MRR + breakdown por plano ────────────────────────────────────────────────
+  const { data: activeSubs } = await supabase
+    .from('subscriptions')
+    .select('ciclo, plans(name, preco_mensal, preco_anual)')
+    .eq('status', 'active');
+
+  type SubRow = { ciclo: string; plans: { name: string; preco_mensal: number; preco_anual: number } | { name: string; preco_mensal: number; preco_anual: number }[] | null };
+
+  let mrrTotal = 0;
+  const planCounts: Record<string, number> = { START: 0, BASE: 0, PRO: 0, VIP: 0 };
+  (activeSubs as SubRow[] ?? []).forEach(s => {
+    const planRaw = s.plans;
+    const plan = Array.isArray(planRaw) ? planRaw[0] : planRaw;
+    if (!plan) return;
+    planCounts[plan.name] = (planCounts[plan.name] ?? 0) + 1;
+    // MRR: mensal contribui preco_mensal, anual contribui preco_anual/12
+    if (s.ciclo === 'mensal') mrrTotal += Number(plan.preco_mensal ?? 0);
+    else if (s.ciclo === 'anual') mrrTotal += Number(plan.preco_anual ?? 0) / 12;
+  });
+
   // ── Cálculos ─────────────────────────────────────────────────────────────────
 
   const salaEmUso     = activeNow?.length ?? 0;
@@ -208,6 +229,38 @@ export default async function HomePage() {
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Tempo real
+          </div>
+        </div>
+      </div>
+
+      {/* ── MRR Hero Card ── */}
+      <div className="bg-white rounded-2xl border border-oli-border p-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#EFF4F0' }}>
+              <Repeat size={22} color="#5F7D67" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-oli-lgray uppercase tracking-wider">MRR · Receita Recorrente Mensal</p>
+              <p className="text-3xl font-extrabold text-oli-dark leading-none mt-1">{mrrTotal > 0 ? fmtBRL(mrrTotal) : 'R$ 0'}</p>
+              <p className="text-[11px] text-oli-lgray mt-1">{(activeSubs ?? []).length} assinatura(s) ativa(s)</p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {(['START','BASE','PRO','VIP'] as const).map(name => {
+              const colorMap: Record<string,string> = {
+                START: 'bg-stone-100 text-stone-700',
+                BASE:  'bg-emerald-50 text-emerald-700',
+                PRO:   'bg-amber-50 text-amber-700',
+                VIP:   'bg-violet-50 text-violet-700',
+              };
+              return (
+                <div key={name} className={`rounded-xl px-3 py-2 ${colorMap[name]}`}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">{name}</p>
+                  <p className="text-lg font-extrabold leading-none mt-0.5">{planCounts[name] ?? 0}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

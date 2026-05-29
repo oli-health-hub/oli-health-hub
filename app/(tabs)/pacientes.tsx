@@ -18,7 +18,7 @@ import { getNPSStats, type NPSStats } from '../../src/services/npsService';
 
 export default function PacientesScreen() {
   const { patients, isLoaded, loadPatients } = usePatientStore();
-  const { todayReservations } = useAppStore();
+  const { todayReservations, startRoomUse, setActiveConsultationId } = useAppStore();
   const { profile } = useAuthStore();
   const timer = useTimer();
 
@@ -137,7 +137,21 @@ export default function PacientesScreen() {
             paciente={selectedPatient}
             onClose={() => setSelectedPatient(null)}
             currentRoom={currentRoom}
-            onIniciarAtendimento={undefined}
+            onIniciarAtendimento={
+              timer.isRunning && activeReservation
+                ? () => {
+                    // Marca a reserva atual como em_uso (se ainda não estiver)
+                    // e registra esta consulta como ativa para a aba Dashboard
+                    startRoomUse(activeReservation.id);
+                    setActiveConsultationId(activeReservation.id);
+                    setSelectedPatient(null);
+                    Alert.alert(
+                      'Atendimento iniciado',
+                      `Consulta com ${selectedPatient.nome} iniciada na ${activeReservation.roomName}.`,
+                    );
+                  }
+                : undefined
+            }
           />
         )}
       </Modal>
