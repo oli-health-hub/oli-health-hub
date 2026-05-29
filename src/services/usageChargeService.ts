@@ -65,23 +65,89 @@ export function calcUsageCharge(params: UsageChargeParams): UsageChargeSummary {
 
 /**
  * Persiste o log de minutagem no Supabase.
- * Lança erro se o insert falhar (o chamador deve tratar silenciosamente).
+ *
+ * Regra de cobrança:
+ *   1. Busca pacote de horas ativo (hour_balance) com saldo restante e não expirado.
+ *   2. Se existir, desconta os minutos do pacote (até esgotá-lo).
+ *   3. Excedente (se houver) cobra como subscription, no valor da taxa do plano.
+ *   4. Sem pacote ativo → tudo cobrado como subscription.
+ *
+ * Lança erro se algum insert falhar (chamador trata silenciosamente).
  */
 export async function logUsageCharge(params: UsageChargeParams): Promise<UsageChargeSummary> {
   const summary = calcUsageCharge(params);
 
-  const { error } = await supabase.from('usage_charges').insert({
-    professional_id: params.professionalId,
-    reservation_id:  params.reservationId,
-    iniciado_em:     params.startedAt,
-    encerrado_em:    params.endedAt,
-    minutos:         summary.minutos,
-    taxa_min:        summary.taxaMin,
-    valor_total:     summary.valorTotal,
-    tipo_cobranca:   'subscription',   // padrão; atualizado na Fase 1 para hour_package quando aplicável
-  });
+  // 1. Busca pacote de horas com saldo
+  const { data: balance } = await supabase
+    .from('hour_balance')
+    .select('id, minutos_total, minutos_usados')
+    .eq('professional_id', params.professionalId)
+    .gt('expira_em', new Date().toISOString())
+    .order('expira_em', { ascending: true })  // FIFO: gasta o que expira primeiro
+    .limit(1)
+    .maybeSingle();
 
-  if (error) throw error;
+  type Balance = { id: string; minutos_total: number; minutos_usados: number };
+  const b = balance as Balance | null;
+  const remaining = b ? Math.max(0, b.minutos_total - b.minutos_usados) : 0;
+
+  // 2. Sem pacote ativo → tudo subscription
+  if (!b || remaining === 0) {
+    const { error } = await supabase.from('usage_charges').insert({
+      professional_id: params.professionalId,
+      reservation_id:  params.reservationId,
+      iniciado_em:     params.startedAt,
+      encerrado_em:    params.endedAt,
+      minutos:         summary.minutos,
+      taxa_min:        summary.taxaMin,
+      valor_total:     summary.valorTotal,
+      tipo_cobranca:   'subscription',
+    });
+    if (error) throw error;
+    return summary;
+  }
+
+  // 3. Com pacote: deduz até esgotar
+  const fromPackage = Math.min(summary.minutos, remaining);
+  const fromSub     = summary.minutos - fromPackage;
+
+  // 3a. Cobrança do pacote (custo zero — já foi pago no momento da compra)
+  const { error: errPkg } = await supabase.from('usage_charges').insert({
+    professional_id:  params.professionalId,
+    reservation_id:   params.reservationId,
+    hour_balance_id:  b.id,
+    iniciado_em:      params.startedAt,
+    encerrado_em:     params.endedAt,
+    minutos:          fromPackage,
+    taxa_min:         0,
+    valor_total:      0,
+    tipo_cobranca:    'hour_package',
+  });
+  if (errPkg) throw errPkg;
+
+  // 3b. Decrementa o saldo do pacote
+  const { error: errBal } = await supabase
+    .from('hour_balance')
+    .update({ minutos_usados: b.minutos_usados + fromPackage })
+    .eq('id', b.id);
+  if (errBal) throw errBal;
+
+  // 3c. Excedente cobrado como subscription (se houver)
+  if (fromSub > 0) {
+    const valor = parseFloat((fromSub * summary.taxaMin).toFixed(2));
+    const { error: errSub } = await supabase.from('usage_charges').insert({
+      professional_id: params.professionalId,
+      reservation_id:  params.reservationId,
+      iniciado_em:     params.startedAt,
+      encerrado_em:    params.endedAt,
+      minutos:         fromSub,
+      taxa_min:        summary.taxaMin,
+      valor_total:     valor,
+      tipo_cobranca:   'subscription',
+    });
+    if (errSub) throw errSub;
+  }
+
   return summary;
 }
 
