@@ -270,23 +270,6 @@ export default function DashboardScreen() {
     }
   }, [alertKey, todayReservations, occupyCurrentRoom, userName]);
 
-  const handleEncerrarUsoSala = useCallback((reservationId: string) => {
-    Alert.alert(
-      'Encerrar Uso da Sala',
-      'Marcar o uso desta sala como concluído?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Concluir',
-          onPress: () => {
-            endRoomUse(reservationId);
-            setSelectedReservation(null);
-          },
-        },
-      ],
-    );
-  }, [endRoomUse]);
-
   const handleCheckout = useCallback(() => {
     setShowQR(false);
 
@@ -626,11 +609,8 @@ export default function DashboardScreen() {
         {selectedReservation && (
           <ReservationOptionsModal
             reservation={selectedReservation}
-            onConcluir={
-              selectedReservation.status !== 'concluido' && selectedReservation.status !== 'cancelado'
-                ? () => handleEncerrarUsoSala(selectedReservation.id)
-                : undefined
-            }
+            // Checkout só via QR/código no totem — não há encerramento manual aqui
+            onConcluir={undefined}
             onReagendar={() => {
               setSelectedReservation(null);
               router.push('/(tabs)/agenda');

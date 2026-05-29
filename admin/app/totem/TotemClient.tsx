@@ -9,19 +9,19 @@ const REFRESH_SECONDS = 300; // 5 min
 interface RoomOption {
   id:    string;       // sala-1, copa, reception-001
   label: string;       // "Sala 1", "Copa", "Recepção"
-  code:  string;       // abbreviated 1-4 chars: "S1", "COPA"
+  num:   number;       // 0-9 — usado para gerar código curto único por sala
 }
 
 const DEFAULT_ROOMS: RoomOption[] = [
-  { id: 'reception-001', label: 'Recepção', code: 'RECE' },
-  { id: 'sala-1',        label: 'Sala 1',   code: 'S1'   },
-  { id: 'sala-2',        label: 'Sala 2',   code: 'S2'   },
-  { id: 'sala-3',        label: 'Sala 3',   code: 'S3'   },
-  { id: 'sala-4',        label: 'Sala 4',   code: 'S4'   },
-  { id: 'sala-5',        label: 'Sala 5',   code: 'S5'   },
-  { id: 'sala-6',        label: 'Sala 6',   code: 'S6'   },
-  { id: 'sala-digital',  label: 'Sala Digital', code: 'SDIG' },
-  { id: 'copa',          label: 'Copa',     code: 'COPA' },
+  { id: 'reception-001', label: 'Recepção',     num: 0 },
+  { id: 'sala-1',        label: 'Sala 1',       num: 1 },
+  { id: 'sala-2',        label: 'Sala 2',       num: 2 },
+  { id: 'sala-3',        label: 'Sala 3',       num: 3 },
+  { id: 'sala-4',        label: 'Sala 4',       num: 4 },
+  { id: 'sala-5',        label: 'Sala 5',       num: 5 },
+  { id: 'sala-6',        label: 'Sala 6',       num: 6 },
+  { id: 'sala-digital',  label: 'Sala Digital', num: 7 },
+  { id: 'copa',          label: 'Copa',         num: 8 },
 ];
 
 function currentWindow() {
@@ -32,9 +32,11 @@ function buildToken(salaId: string, win: number) {
   return `OLI-CHECKOUT:${salaId}:${win}`;
 }
 
-function buildManualCode(salaCode: string, win: number) {
-  const winStr = String(win % 10000).padStart(4, '0');
-  return `OLI-${salaCode}-${winStr}`;
+function buildManualCode(salaNum: number, win: number) {
+  // 6 dígitos: primeiro dígito = sala (0-8), demais 5 = janela truncada.
+  // Determinístico → app valida com mesmo cálculo.
+  const winPart = String(win % 100000).padStart(5, '0');
+  return `${salaNum}${winPart}`;
 }
 
 function fmtCountdown(secs: number) {
@@ -63,8 +65,8 @@ export function TotemClient() {
     return () => clearInterval(id);
   }, []);
 
-  const token       = useMemo(() => buildToken(room.id, win),         [room.id, win]);
-  const manualCode  = useMemo(() => buildManualCode(room.code, win),  [room.code, win]);
+  const token       = useMemo(() => buildToken(room.id, win),       [room.id, win]);
+  const manualCode  = useMemo(() => buildManualCode(room.num, win), [room.num, win]);
 
   return (
     <div className={fullscreen ? 'fixed inset-0 z-50 bg-oli-bg overflow-auto' : ''}>
@@ -152,14 +154,14 @@ export function TotemClient() {
               <span className="flex-1 h-px bg-oli-border" />
             </div>
 
-            {/* Código digitável */}
-            <div className="w-full bg-oli-bg border-2 border-dashed border-oli-green rounded-xl px-5 py-3.5 mb-3">
-              <p className="font-mono text-2xl font-extrabold text-oli-dark tracking-[4px]">
+            {/* Código digitável — 6 dígitos */}
+            <div className="w-full bg-oli-bg border-2 border-dashed border-oli-green rounded-xl px-5 py-4 mb-3">
+              <p className="font-mono text-4xl font-extrabold text-oli-dark tracking-[8px]">
                 {manualCode}
               </p>
             </div>
             <p className="text-[11px] text-oli-lgray leading-relaxed mb-5">
-              No app, toque em &ldquo;Digitar código manualmente&rdquo; e insira a sequência acima.
+              No app, toque em &ldquo;Digitar código&rdquo; e insira os 6 dígitos acima.
             </p>
 
             {/* Refresh countdown */}

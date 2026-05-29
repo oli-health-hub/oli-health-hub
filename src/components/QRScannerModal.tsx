@@ -8,8 +8,8 @@ import { colors, spacing, radius } from '../theme/designSystem';
 // QR codes emitidos pelo totem OLI começam com este prefixo.
 // Fase 3: validar também o token assinado pelo Communicare.
 const OLI_QR_PREFIX     = 'OLI-CHECKOUT';
-// Código digitável tem prefixo curto: OLI-XXXX-YYYY (sala-token)
-const MANUAL_CODE_REGEX = /^OLI-[A-Z0-9]{1,4}-\d{4}$/i;
+// Código digitável: exatamente 6 dígitos numéricos
+const MANUAL_CODE_REGEX = /^\d{6}$/;
 
 interface Props {
   onCheckout: () => void;
@@ -46,9 +46,9 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
   };
 
   const handleManualSubmit = () => {
-    const code = manualCode.trim().toUpperCase();
+    const code = manualCode.replace(/\D/g, '');
     if (!MANUAL_CODE_REGEX.test(code)) {
-      setError('Código inválido. Formato esperado: OLI-XXXX-1234');
+      setError('Código inválido. Digite os 6 dígitos exibidos no totem.');
       return;
     }
     setError('');
@@ -101,13 +101,13 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
           <TextInput
             style={styles.manualInput}
             value={manualCode}
-            onChangeText={t => { setManualCode(t.toUpperCase()); setError(''); }}
-            placeholder="OLI-XXXX-1234"
+            onChangeText={t => { setManualCode(t.replace(/\D/g, '').slice(0, 6)); setError(''); }}
+            placeholder="000000"
             placeholderTextColor={colors.oliLightGray}
-            autoCapitalize="characters"
+            keyboardType="number-pad"
             autoCorrect={false}
-            maxLength={13}
-            accessibilityLabel="Código de checkout"
+            maxLength={6}
+            accessibilityLabel="Código de checkout de 6 dígitos"
           />
 
           {error ? (
@@ -135,9 +135,19 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <Text style={styles.title}>Checkout — QR Code</Text>
-        <TouchableOpacity onPress={onClose} accessibilityLabel="Cancelar checkout">
-          <Ionicons name="close" size={24} color={colors.white} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <TouchableOpacity
+            onPress={() => { setManualMode(true); setError(''); setManualCode(''); }}
+            accessibilityLabel="Digitar código manualmente"
+            style={styles.headerManualBtn}
+          >
+            <Ionicons name="keypad-outline" size={16} color={colors.white} />
+            <Text style={styles.headerManualBtnText}>Digitar código</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onClose} accessibilityLabel="Cancelar checkout">
+            <Ionicons name="close" size={24} color={colors.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.cameraWrapper}>
@@ -287,6 +297,20 @@ const styles = StyleSheet.create({
   errorText: { color: colors.white, fontSize: 14, textAlign: 'center', lineHeight: 20 },
   retryBtn:  { marginTop: spacing.xs, backgroundColor: colors.oliGreen, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   retryText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+
+  // Botão "Digitar código" no header
+  headerManualBtn: {
+    flexDirection:    'row',
+    alignItems:       'center',
+    gap:              5,
+    backgroundColor:  'rgba(255,255,255,0.15)',
+    borderWidth:      1,
+    borderColor:      'rgba(255,255,255,0.35)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical:   6,
+    borderRadius:      radius.md,
+  },
+  headerManualBtnText: { color: colors.white, fontSize: 12, fontWeight: '700' },
 
   // Link "Digitar código manualmente" no scanner
   manualLink: {

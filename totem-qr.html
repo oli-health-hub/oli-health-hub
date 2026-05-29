@@ -287,18 +287,23 @@
     }
 
     function buildManualCode() {
-      // Código digitável curto, sincronizado com o QR.
-      // Formato: OLI-XXXX-YYYY
-      //   XXXX = abreviação da sala (até 4 chars, A-Z e 0-9)
-      //   YYYY = últimos 4 dígitos da janela de 5min (rotaciona junto com QR)
+      // Código digitável curto de 6 dígitos, sincronizado com o QR.
+      // Formato: NXXXXX
+      //   N      = índice da sala (0-8): recepção=0, sala-1=1, ..., copa=8
+      //   XXXXX  = últimos 5 dígitos da janela de 5min (rotaciona junto)
       const win = currentWindow();
-      const winStr = String(win % 10000).padStart(4, '0');
+      const winStr = String(win % 100000).padStart(5, '0');
 
-      // Abreviação da sala: pega só letras/números, máx 4
-      let salaCode = salaId.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
-      if (!salaCode) salaCode = 'OLI';
+      // Mapa sala → dígito. Default 9 (desconhecido).
+      const SALA_NUM = {
+        'reception-001': 0, 'recepcao': 0,
+        'sala-1': 1, 'sala-2': 2, 'sala-3': 3,
+        'sala-4': 4, 'sala-5': 5, 'sala-6': 6,
+        'sala-digital': 7, 'copa': 8,
+      };
+      const num = SALA_NUM[salaId] ?? 9;
 
-      return `OLI-${salaCode}-${winStr}`;
+      return `${num}${winStr}`;
     }
 
     function renderQR() {
