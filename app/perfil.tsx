@@ -14,6 +14,8 @@ import { exportMyData, deleteAccountData } from '../src/services/accountService'
 import { updateProfileAvatar, removeProfileAvatar } from '../src/services/avatarService';
 import { useAppLock } from '../src/hooks/useAppLock';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
+import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -467,7 +469,17 @@ export default function PerfilScreen() {
           <Text style={styles.logoutText}>Sair</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>OLI Health Hub v1.0.0</Text>
+        {/* Rodapé com versão + ID da OTA ativa */}
+        <View style={styles.versionBlock}>
+          <Text style={styles.version}>
+            OLI Health Hub v{Constants.expoConfig?.version ?? '1.0.0'}
+            {Constants.expoConfig?.ios?.buildNumber ? ` (build ${Constants.expoConfig.ios.buildNumber})` : ''}
+          </Text>
+          <Text style={styles.versionSub}>
+            {Updates.channel ? `Canal: ${Updates.channel}` : ''}
+            {Updates.updateId ? `  ·  OTA ${Updates.updateId.slice(0, 8)}` : '  ·  embutida'}
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -651,5 +663,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.oliRed}0D`,
   },
   logoutText: { fontSize: 16, fontWeight: '700', color: colors.oliRed },
-  version:    { textAlign: 'center', fontSize: 12, color: colors.gray, marginTop: spacing.lg },
+  version:    { textAlign: 'center', fontSize: 12, color: colors.gray },
+  versionBlock: { alignItems: 'center', marginTop: spacing.lg, gap: 2, paddingBottom: spacing.md },
+  versionSub: { fontSize: 10, color: colors.gray, fontFamily: 'Courier' },
 });
