@@ -3,7 +3,9 @@ import { AppState, type AppStateStatus } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 
-const LOCK_AFTER_MS      = 5 * 60 * 1000; // 5 minutos em background
+// 0 = bloqueia imediatamente ao retornar do background (Face ID sempre).
+// Mantido como const para fácil ajuste futuro caso queira tolerância.
+const LOCK_AFTER_MS      = 0;
 const SECURE_KEY_ENABLED = 'oli_biometric_enabled';
 const SECURE_KEY_BG_TIME = 'oli_background_time';
 
@@ -23,7 +25,7 @@ export function useAppLock(): AppLockState {
 
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  // ── Verifica suporte a biometria no dispositivo ──
+  // ── Verifica suporte a biometria + bloqueia imediatamente em cold start ──
   useEffect(() => {
     (async () => {
       const compatible = await LocalAuthentication.hasHardwareAsync();
@@ -31,7 +33,12 @@ export function useAppLock(): AppLockState {
       setBiometricAvailable(compatible && enrolled);
 
       const stored = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
-      setBiometricEnabled(stored === 'true');
+      const enabled = stored === 'true';
+      setBiometricEnabled(enabled);
+
+      // COLD START: se biometria estiver habilitada, app abre BLOQUEADO
+      // Usuário precisa autenticar antes de acessar conteúdo logado.
+      if (enabled) setIsLocked(true);
     })();
   }, []);
 
@@ -49,14 +56,12 @@ export function useAppLock(): AppLockState {
         await SecureStore.setItemAsync(SECURE_KEY_BG_TIME, Date.now().toString());
       }
 
-      // SÓ considera como retorno real quando vem DE background → active
+      // SÓ considera como retorno real quando vem DE background → active.
+      // Bloqueia IMEDIATAMENTE se biometria estiver habilitada
+      // (LOCK_AFTER_MS = 0 → qualquer saída e retorno exige Face ID).
       if (prev === 'background' && nextState === 'active') {
-        const bgTimeStr = await SecureStore.getItemAsync(SECURE_KEY_BG_TIME);
-        const bgTime    = bgTimeStr ? parseInt(bgTimeStr, 10) : 0;
-        const elapsed   = Date.now() - bgTime;
-        const enabled   = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
-
-        if (enabled === 'true' && bgTime > 0 && elapsed >= LOCK_AFTER_MS) {
+        const enabled = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
+        if (enabled === 'true') {
           setIsLocked(true);
         }
       }
