@@ -428,7 +428,8 @@ export const COMMUNICARE_PRO_PLAN = {
   /** Módulos opcionais — não incluídos no PRO, contratar à parte se necessário. */
   optionalModules: [
     { name: 'Teleconsulta', pricePerProfessional: 97 },
-    { name: 'Scribe IA', pricePerProfessional: 97 },
+    { name: 'Scribe IA', pricePerProfessional: 149 },
+    { name: 'Communicare Connect', pricePerProfessional: 239 },
     {
       name: 'Chat Omnichannel Digisac',
       basePrice: 197,        // até 2 atendentes/mês

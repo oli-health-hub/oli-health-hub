@@ -24,6 +24,11 @@ export function useAppLock(): AppLockState {
   const [biometricEnabled,   setBiometricEnabled]   = useState(false);
 
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  // true = device só tem reconhecimento facial (sem leitor de digital).
+  // Nesses, não oferecemos device fallback p/ evitar 2º popup de digital.
+  const facialOnlyRef = useRef(false);
+  // Guard anti-prompt-duplicado: impede duas chamadas simultâneas de authenticateAsync.
+  const authInFlightRef = useRef(false);
 
   // ── Verifica suporte a biometria + bloqueia imediatamente em cold start ──
   useEffect(() => {
@@ -31,6 +36,12 @@ export function useAppLock(): AppLockState {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       const enrolled   = await LocalAuthentication.isEnrolledAsync();
       setBiometricAvailable(compatible && enrolled);
+
+      // Detecta tipos suportados: facial-only → sem fallback de digital
+      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const hasFacial      = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+      const hasFingerprint = types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+      facialOnlyRef.current = hasFacial && !hasFingerprint;
 
       const stored = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
       const enabled = stored === 'true';
@@ -72,12 +83,18 @@ export function useAppLock(): AppLockState {
 
   // ── Autenticação biométrica ──
   const unlock = useCallback(async (): Promise<boolean> => {
+    // Evita 2 prompts simultâneos (cold start + retorno de background).
+    if (authInFlightRef.current) return false;
+    authInFlightRef.current = true;
     try {
+      // Device só facial → desabilita device fallback p/ não abrir 2º popup
+      // (leitor de digital / senha). Device com digital → mantém fallback.
+      const facialOnly = facialOnlyRef.current;
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage:   'Acesse o OLI Health Hub',
-        cancelLabel:     'Cancelar',
-        fallbackLabel:   'Usar senha do dispositivo',
-        disableDeviceFallback: false,
+        promptMessage:         'Acesse o OLI Health Hub',
+        cancelLabel:           'Cancelar',
+        fallbackLabel:         facialOnly ? '' : 'Usar senha do dispositivo',
+        disableDeviceFallback: facialOnly,
       });
 
       if (result.success) {
@@ -87,6 +104,8 @@ export function useAppLock(): AppLockState {
       return result.success;
     } catch {
       return false;
+    } finally {
+      authInFlightRef.current = false;
     }
   }, []);
 
