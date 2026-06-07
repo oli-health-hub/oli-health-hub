@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { colors, spacing, radius } from '../theme/designSystem';
 
 interface Props {
@@ -10,39 +9,24 @@ interface Props {
 }
 
 export function AppLockScreen({ onUnlock }: Props) {
-  // Tenta UMA VEZ ao montar. Se falhar/cancelar, espera o usuário tocar
-  // o botão "Desbloquear" — evita loop infinito de prompts.
+  // Tenta UMA VEZ ao montar (Face ID nativo). Só mostra o botão verde de
+  // "Desbloquear" SE o Face ID falhar/cancelar — caso normal de sucesso
+  // exibe apenas a animação nativa, sem quadro verde no rodapé.
   const triedRef = useRef(false);
+  const [showRetry, setShowRetry] = useState(false);
 
-  // Iconografia/textos adaptados ao biométrico real do device:
-  // - só facial (Face ID) → ícone de rosto, sem menção a digital
-  // - com digital → ícone de digital
-  const [hasFingerprint, setHasFingerprint] = useState(false);
-  const [hasFacial,      setHasFacial]      = useState(false);
-
-  useEffect(() => {
-    LocalAuthentication.supportedAuthenticationTypesAsync()
-      .then((types) => {
-        setHasFingerprint(types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT));
-        setHasFacial(types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION));
-      })
-      .catch(() => {});
-  }, []);
+  const attempt = async () => {
+    setShowRetry(false);
+    const ok = await onUnlock();
+    if (!ok) setShowRetry(true);   // falhou/cancelou → oferece retry manual
+  };
 
   useEffect(() => {
     if (triedRef.current) return;
     triedRef.current = true;
-    const timer = setTimeout(() => { onUnlock(); }, 400);
+    const timer = setTimeout(() => { void attempt(); }, 400);
     return () => clearTimeout(timer);
   }, []);
-
-  // Device só facial → tudo Face ID; com digital → digital.
-  const facialOnly  = hasFacial && !hasFingerprint;
-  const btnIcon     = facialOnly ? 'scan-outline' : 'finger-print-outline';
-  const hintText    = facialOnly
-    ? 'Use o Face ID para desbloquear'
-    : (hasFacial ? 'Use a biometria do aparelho para desbloquear'
-                 : 'Use a impressão digital para desbloquear');
 
   return (
     <SafeAreaProvider>
@@ -56,16 +40,20 @@ export function AppLockScreen({ onUnlock }: Props) {
           <Text style={styles.subtitle}>Sessão bloqueada</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.unlockBtn}
-          onPress={onUnlock}
-          accessibilityLabel="Desbloquear com biometria"
-        >
-          <Ionicons name={btnIcon} size={28} color={colors.white} />
-          <Text style={styles.unlockText}>Desbloquear</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.hint}>{hintText}</Text>
+        {/* Botão de retry só aparece após Face ID falhar/cancelar */}
+        {showRetry && (
+          <>
+            <TouchableOpacity
+              style={styles.unlockBtn}
+              onPress={() => void attempt()}
+              accessibilityLabel="Tentar desbloquear novamente"
+            >
+              <Ionicons name="lock-open-outline" size={26} color={colors.white} />
+              <Text style={styles.unlockText}>Desbloquear</Text>
+            </TouchableOpacity>
+            <Text style={styles.hint}>Toque para tentar novamente</Text>
+          </>
+        )}
 
       </SafeAreaView>
     </SafeAreaProvider>
