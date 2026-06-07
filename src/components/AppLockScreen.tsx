@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { colors, spacing, radius } from '../theme/designSystem';
 
 interface Props {
@@ -13,12 +14,35 @@ export function AppLockScreen({ onUnlock }: Props) {
   // o botão "Desbloquear" — evita loop infinito de prompts.
   const triedRef = useRef(false);
 
+  // Iconografia/textos adaptados ao biométrico real do device:
+  // - só facial (Face ID) → ícone de rosto, sem menção a digital
+  // - com digital → ícone de digital
+  const [hasFingerprint, setHasFingerprint] = useState(false);
+  const [hasFacial,      setHasFacial]      = useState(false);
+
+  useEffect(() => {
+    LocalAuthentication.supportedAuthenticationTypesAsync()
+      .then((types) => {
+        setHasFingerprint(types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT));
+        setHasFacial(types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION));
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (triedRef.current) return;
     triedRef.current = true;
     const timer = setTimeout(() => { onUnlock(); }, 400);
     return () => clearTimeout(timer);
   }, []);
+
+  // Device só facial → tudo Face ID; com digital → digital.
+  const facialOnly  = hasFacial && !hasFingerprint;
+  const btnIcon     = facialOnly ? 'scan-outline' : 'finger-print-outline';
+  const hintText    = facialOnly
+    ? 'Use o Face ID para desbloquear'
+    : (hasFacial ? 'Use a biometria do aparelho para desbloquear'
+                 : 'Use a impressão digital para desbloquear');
 
   return (
     <SafeAreaProvider>
@@ -29,7 +53,7 @@ export function AppLockScreen({ onUnlock }: Props) {
             <Ionicons name="lock-closed" size={32} color={colors.white} />
           </View>
           <Text style={styles.title}>OLI Health Hub</Text>
-          <Text style={styles.subtitle}>Sessão bloqueada por inatividade</Text>
+          <Text style={styles.subtitle}>Sessão bloqueada</Text>
         </View>
 
         <TouchableOpacity
@@ -37,13 +61,11 @@ export function AppLockScreen({ onUnlock }: Props) {
           onPress={onUnlock}
           accessibilityLabel="Desbloquear com biometria"
         >
-          <Ionicons name="finger-print-outline" size={28} color={colors.white} />
+          <Ionicons name={btnIcon} size={28} color={colors.white} />
           <Text style={styles.unlockText}>Desbloquear</Text>
         </TouchableOpacity>
 
-        <Text style={styles.hint}>
-          Use Face ID, Touch ID ou a senha do dispositivo
-        </Text>
+        <Text style={styles.hint}>{hintText}</Text>
 
       </SafeAreaView>
     </SafeAreaProvider>
