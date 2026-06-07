@@ -24,9 +24,6 @@ export function useAppLock(): AppLockState {
   const [biometricEnabled,   setBiometricEnabled]   = useState(false);
 
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  // true = device só tem reconhecimento facial (sem leitor de digital).
-  // Nesses, não oferecemos device fallback p/ evitar 2º popup de digital.
-  const facialOnlyRef = useRef(false);
   // Guard anti-prompt-duplicado: impede duas chamadas simultâneas de authenticateAsync.
   const authInFlightRef = useRef(false);
 
@@ -36,12 +33,6 @@ export function useAppLock(): AppLockState {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       const enrolled   = await LocalAuthentication.isEnrolledAsync();
       setBiometricAvailable(compatible && enrolled);
-
-      // Detecta tipos suportados: facial-only → sem fallback de digital
-      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-      const hasFacial      = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
-      const hasFingerprint = types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
-      facialOnlyRef.current = hasFacial && !hasFingerprint;
 
       const stored = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
       const enabled = stored === 'true';
@@ -87,14 +78,14 @@ export function useAppLock(): AppLockState {
     if (authInFlightRef.current) return false;
     authInFlightRef.current = true;
     try {
-      // Device só facial → desabilita device fallback p/ não abrir 2º popup
-      // (leitor de digital / senha). Device com digital → mantém fallback.
-      const facialOnly = facialOnlyRef.current;
+      // Biometria PURA: disableDeviceFallback=true evita o 2º popup
+      // (senha/leitor secundário do dispositivo). O biométrico primário do
+      // device é mantido — Face ID em iPhones, digital na tela em quem tem.
+      // Fallback final do usuário = sair e logar com e-mail/senha.
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage:         'Acesse o OLI Health Hub',
         cancelLabel:           'Cancelar',
-        fallbackLabel:         facialOnly ? '' : 'Usar senha do dispositivo',
-        disableDeviceFallback: facialOnly,
+        disableDeviceFallback: true,
       });
 
       if (result.success) {
