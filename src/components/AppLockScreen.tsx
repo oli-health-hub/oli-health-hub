@@ -57,7 +57,7 @@ export function AppLockScreen({ onUnlock }: Props) {
               onPress={() => void attempt(true)}
               accessibilityLabel="Usar código do dispositivo"
             >
-              <Ionicons name="keypad-outline" size={20} color={colors.white} />
+              <Ionicons name="keypad-outline" size={20} color={colors.oliDarkGray} />
               <Text style={styles.passcodeText}>Usar código do dispositivo</Text>
             </TouchableOpacity>
 
@@ -75,7 +75,10 @@ export function AppLockScreen({ onUnlock }: Props) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.oliDarkGray,
+    // Vidro fosco claro (identidade OLI) — translúcido mas opaco o bastante
+    // para não vazar dados sensíveis atrás (LGPD). Blur real virá com expo-blur
+    // no próximo build nativo.
+    backgroundColor: 'rgba(244,239,234,0.96)',
     zIndex:          9999,
     justifyContent:  'center',
     alignItems:      'center',
@@ -86,14 +89,12 @@ const styles = StyleSheet.create({
     width:           80,
     height:          80,
     borderRadius:    40,
-    backgroundColor: `${colors.oliGreen}33`,
-    borderWidth:     2,
-    borderColor:     colors.oliGreen,
+    backgroundColor: colors.oliGreen,
     justifyContent:  'center',
     alignItems:      'center',
   },
-  title:    { fontSize: 22, fontWeight: '700', color: colors.white },
-  subtitle: { fontSize: 14, color: `${colors.white}80`, textAlign: 'center' },
+  title:    { fontSize: 22, fontWeight: '700', color: colors.oliDarkGray },
+  subtitle: { fontSize: 14, color: colors.oliLightGray, textAlign: 'center' },
 
   unlockBtn: {
     flexDirection:   'row',
@@ -111,12 +112,12 @@ const styles = StyleSheet.create({
     alignItems:      'center',
     gap:             spacing.sm,
     borderWidth:     1,
-    borderColor:     `${colors.white}40`,
+    borderColor:     `${colors.oliDarkGray}33`,
     borderRadius:    radius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     marginTop:       spacing.md,
   },
-  passcodeText: { color: colors.white, fontSize: 14, fontWeight: '600' },
-  hint:       { fontSize: 12, color: `${colors.white}50`, textAlign: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.sm },
+  passcodeText: { color: colors.oliDarkGray, fontSize: 14, fontWeight: '600' },
+  hint:       { fontSize: 12, color: colors.oliLightGray, textAlign: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.sm },
 });
