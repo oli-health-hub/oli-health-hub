@@ -26,6 +26,10 @@ export function useAppLock(): AppLockState {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   // Guard anti-prompt-duplicado: impede duas chamadas simultâneas de authenticateAsync.
   const authInFlightRef = useRef(false);
+  // Após desbloqueio, ignora re-lock por um curto período. Em alguns devices o
+  // prompt biométrico manda o app para 'background'; ao voltar 'active' o
+  // listener re-bloqueava → AppLockScreen remontava → SEGUNDO popup.
+  const suppressRelockUntilRef = useRef(0);
 
   // ── Verifica suporte a biometria + bloqueia imediatamente em cold start ──
   useEffect(() => {
@@ -62,6 +66,12 @@ export function useAppLock(): AppLockState {
       // Bloqueia IMEDIATAMENTE se biometria estiver habilitada
       // (LOCK_AFTER_MS = 0 → qualquer saída e retorno exige Face ID).
       if (prev === 'background' && nextState === 'active') {
+        // Não re-bloqueia se o "background" foi causado pelo próprio prompt
+        // biométrico (em voo) ou se acabamos de desbloquear. Sem isso, abre
+        // um segundo popup ao retornar do prompt.
+        if (authInFlightRef.current || Date.now() < suppressRelockUntilRef.current) {
+          return;
+        }
         const enabled = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
         if (enabled === 'true') {
           setIsLocked(true);
@@ -96,6 +106,9 @@ export function useAppLock(): AppLockState {
     } catch {
       return false;
     } finally {
+      // Janela de supressão: cobre a transição background→active disparada
+      // pelo fechamento do próprio prompt biométrico.
+      suppressRelockUntilRef.current = Date.now() + 2000;
       authInFlightRef.current = false;
     }
   }, []);
