@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, KeyboardAvoidingView, Platform,
@@ -10,6 +10,8 @@ import { notifyPatientCadastro, notifyOLINewPatient, notifyPatientLGPDConsent } 
 import { useAuthStore } from '../store/authStore';
 import { colors, spacing, radius } from '../theme/designSystem';
 import type { ConvenioTipo } from '../models/types';
+import { getHealthPlans } from '../services/healthPlans';
+import type { CCHealthPlan } from '../services/communicareApi';
 
 interface Props {
   onClose: () => void;
@@ -63,7 +65,17 @@ export function AddPacienteModal({ onClose }: Props) {
   const [dateError,    setDateError]    = useState('');
   const [convenioTipo, setConvenioTipo] = useState<ConvenioTipo>('particular');
   const [convenioNome, setConvenioNome] = useState('');
+  const [email,        setEmail]        = useState('');
   const [loading,      setLoading]      = useState(false);
+  const [healthPlans,  setHealthPlans]  = useState<CCHealthPlan[]>([]);
+  const [planId,       setPlanId]       = useState<string | undefined>(undefined);
+
+  // Carrega convênios do Communicare (cacheado). Vazio = mantém texto livre.
+  useEffect(() => {
+    let active = true;
+    getHealthPlans().then(plans => { if (active) setHealthPlans(plans); });
+    return () => { active = false; };
+  }, []);
 
   const convenioValido = convenioTipo === 'particular' || convenioNome.trim().length > 0;
   const isValid = nome.trim() && telefone.trim() && cpf.replace(/\D/g, '').length === 11
@@ -99,6 +111,8 @@ export function AddPacienteModal({ onClose }: Props) {
         convenioTipo,
         convenioNome:           convenioTipo === 'convenio' ? convenioNome.trim() : undefined,
         consentimentoTimestamp: new Date().toISOString(), // timestamp do cadastro
+        email:                  email.trim() || undefined,
+        healthPlanId:           convenioTipo === 'convenio' ? planId : undefined,
       }, profile?.id); // ← ID do profissional obrigatório para persistir no Supabase
       const doctorName = profile?.nome ?? 'seu médico';
       // Envia link de consentimento LGPD ao paciente (token único)
@@ -185,6 +199,20 @@ export function AddPacienteModal({ onClose }: Props) {
           />
         </Field>
 
+        {/* Email opcional — mesmo campo do Communicare para evitar duplicidade */}
+        <Field label="Email (opcional)">
+          <TextInput
+            style={styles.input}
+            placeholder="paciente@email.com"
+            placeholderTextColor={colors.gray}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            accessibilityLabel="Email do paciente"
+          />
+        </Field>
+
         {/* ── Convênio ── */}
         <SectionLabel text="CONVÊNIO / FORMA DE PAGAMENTO" />
 
@@ -223,17 +251,42 @@ export function AddPacienteModal({ onClose }: Props) {
         </View>
 
         {convenioTipo === 'convenio' && (
-          <Field label="Nome do Convênio *">
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Unimed, Bradesco Saúde, Amil..."
-              placeholderTextColor={colors.gray}
-              value={convenioNome}
-              onChangeText={setConvenioNome}
-              autoCapitalize="words"
-              accessibilityLabel="Nome do convênio do paciente"
-            />
-          </Field>
+          healthPlans.length > 0 ? (
+            <Field label="Convênio *">
+              <View style={styles.planList}>
+                {healthPlans
+                  .filter(p => p.name.toLowerCase() !== 'particular')
+                  .map(p => {
+                    const selected = planId === p.id;
+                    return (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={[styles.planChip, selected && styles.planChipActive]}
+                        onPress={() => { setPlanId(p.id); setConvenioNome(p.name); }}
+                        accessibilityLabel={`Convênio ${p.name}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.planChipText, selected && styles.planChipTextActive]}>
+                          {p.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+              </View>
+            </Field>
+          ) : (
+            <Field label="Nome do Convênio *">
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: Unimed, Bradesco Saúde, Amil..."
+                placeholderTextColor={colors.gray}
+                value={convenioNome}
+                onChangeText={setConvenioNome}
+                autoCapitalize="words"
+                accessibilityLabel="Nome do convênio do paciente"
+              />
+            </Field>
+          )
         )}
 
         {/* ── Communicare ── */}
@@ -371,6 +424,18 @@ const styles = StyleSheet.create({
   },
   segmentText:       { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
   segmentTextActive: { color: colors.white },
+
+  planList: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  planChip: {
+    borderWidth:       1,
+    borderColor:       `${colors.oliDarkGray}33`,
+    borderRadius:      radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical:   spacing.sm,
+  },
+  planChipActive:     { backgroundColor: colors.oliGreen, borderColor: colors.oliGreen },
+  planChipText:       { fontSize: 13, fontWeight: '600', color: colors.oliDarkGray },
+  planChipTextActive: { color: colors.white },
 
   syncNote: {
     flexDirection:  'row',

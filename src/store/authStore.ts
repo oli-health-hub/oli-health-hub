@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import type { Profile } from '../services/auth';
+import { ensureCommunicareSSO } from '../services/communicareSSO';
 
 interface AuthStore {
   session:     Session | null;
@@ -36,6 +37,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         .eq('id', session.user.id)
         .single();
       set({ profile });
+      // SSO Communicare paralelo silencioso (não bloqueia UI)
+      const cpfFromProfile = (profile as unknown as { cpf?: string })?.cpf;
+      if (cpfFromProfile) void ensureCommunicareSSO(profile!.id, cpfFromProfile);
     }
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -48,6 +52,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           .eq('id', session.user.id)
           .single();
         set({ profile });
+        const cpfFromProfile = (profile as unknown as { cpf?: string })?.cpf;
+      if (cpfFromProfile) void ensureCommunicareSSO(profile!.id, cpfFromProfile);
       } else {
         set({ profile: null });
       }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { openPatientChat } from '../utils/whatsapp';
 import { EncaixeModal } from './EncaixeModal';
 import { sendNPS } from '../services/npsService';
 import { useAuthStore } from '../store/authStore';
+import { ccGetPatientHistory, ccIsConfigured, type CCHistoryEntry } from '../services/communicareApi';
 
 interface Props {
   paciente:              Patient;
@@ -37,6 +38,20 @@ export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendi
   const [showEncaixe, setShowEncaixe] = useState(false);
   const [sendingNPS,  setSendingNPS]  = useState(false);
   const [npsSent,     setNpsSent]     = useState(false);
+  const [history,        setHistory]        = useState<CCHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Histórico de atendimentos do Communicare (read-only)
+  useEffect(() => {
+    if (!ccIsConfigured() || !paciente.communicareId) return;
+    let active = true;
+    setHistoryLoading(true);
+    ccGetPatientHistory(paciente.communicareId)
+      .then(h => { if (active) setHistory(h); })
+      .catch(() => { /* silencioso */ })
+      .finally(() => { if (active) setHistoryLoading(false); });
+    return () => { active = false; };
+  }, [paciente.communicareId]);
   const { profile } = useAuthStore();
 
   const handleSendNPS = async () => {
@@ -112,10 +127,22 @@ export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendi
           <Text style={styles.nome}>{paciente.nome}</Text>
 
           <View style={styles.syncBadge}>
-            <View style={[styles.syncDot, { backgroundColor: paciente.isSincronizado ? colors.oliGreen : colors.oliGold }]} />
-            <Text style={[styles.syncText, { color: paciente.isSincronizado ? colors.oliGreen : colors.oliGold }]}>
-              {paciente.isSincronizado ? 'Sincronizado com Communicare' : 'Aguardando sincronização'}
-            </Text>
+            {ccIsConfigured() && (() => {
+              const isSynced = paciente.syncStatus === 'synced' || paciente.isSincronizado;
+              const pct = paciente.syncProgress ?? 0;
+              const color = isSynced ? colors.oliGreen : colors.oliGold;
+              const label = isSynced
+                ? (paciente.syncedAt
+                    ? `Sincronizado · ${new Date(paciente.syncedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`
+                    : 'Sincronizado com Communicare')
+                : `Sincronizando ${pct}%`;
+              return (
+                <>
+                  <View style={[styles.syncDot, { backgroundColor: color }]} />
+                  <Text style={[styles.syncText, { color }]}>{label}</Text>
+                </>
+              );
+            })()}
           </View>
         </View>
 
@@ -146,6 +173,33 @@ export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendi
           <DetailRow label="NPS estimado"            value="—" />
           <DetailRow label="Status"                  value="Ativo" />
         </View>
+
+        {/* Histórico de atendimentos (Communicare) */}
+        {ccIsConfigured() && paciente.communicareId && (
+          <View style={[styles.card, shadows.card]}>
+            <Text style={styles.sectionTitle}>HISTÓRICO DE ATENDIMENTOS</Text>
+            {historyLoading ? (
+              <ActivityIndicator size="small" color={colors.oliGreen} style={styles.histLoader} />
+            ) : history.length === 0 ? (
+              <Text style={styles.histEmpty}>Nenhum atendimento registrado.</Text>
+            ) : (
+              history.map((h, idx) => (
+                <View key={h.scheduleId ?? idx} style={styles.histRow}>
+                  <View style={styles.histDot} />
+                  <View style={styles.histInfo}>
+                    <Text style={styles.histProc}>{h.procedure ?? 'Atendimento'}</Text>
+                    <Text style={styles.histMeta}>
+                      {h.professionalName}{h.status ? ` · ${h.status}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.histDate}>
+                    {h.date ? formatDate(h.date) : ''}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
 
         {/* Ações */}
         <View style={styles.actionsRow}>
@@ -246,6 +300,15 @@ const styles = StyleSheet.create({
   sessionBannerLeft:  { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   sessionBannerTitle: { fontSize: 15, fontWeight: '700', color: colors.white },
   sessionBannerSub:   { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+
+  histLoader: { marginVertical: spacing.sm },
+  histEmpty:  { fontSize: 13, color: colors.gray, paddingVertical: spacing.xs },
+  histRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 6 },
+  histDot:    { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.oliGreen },
+  histInfo:   { flex: 1 },
+  histProc:   { fontSize: 14, fontWeight: '500', color: colors.oliDarkGray },
+  histMeta:   { fontSize: 12, color: colors.gray, marginTop: 1 },
+  histDate:   { fontSize: 12, fontWeight: '600', color: colors.oliLightGray },
 
   avatarWrap: { alignItems: 'center' },
   avatar: {

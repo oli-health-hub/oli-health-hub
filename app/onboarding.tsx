@@ -7,6 +7,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Calendar from 'expo-calendar';
 import { supabase } from '../src/services/supabase';
 import { useAuthStore } from '../src/store/authStore';
 import { colors, spacing, radius } from '../src/theme/designSystem';
@@ -108,7 +109,16 @@ export default function OnboardingScreen() {
   const { profile, setProfile } = useAuthStore();
   const [step,      setStep]    = useState(1);
   const [loading,   setLoading] = useState(false);
+  const [calendarGranted, setCalendarGranted] = useState(false);
   const progressAnim = useRef(new Animated.Value(1 / TOTAL_STEPS)).current;
+
+  const connectCalendar = async () => {
+    if (calendarGranted) return;
+    try {
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      if (status === 'granted') setCalendarGranted(true);
+    } catch { /* permissão negada — segue sem bloquear */ }
+  };
 
   // ── Step 1: Situação jurídica ──
   const [tratamento,       setTratamento]       = useState<Tratamento | null>(null);
@@ -807,6 +817,30 @@ export default function OnboardingScreen() {
                   as soluções do ecossistema ao seu perfil, conforme a Política de Privacidade.
                 </Text>
               </View>
+
+              {/* Conectar agenda do dispositivo (opcional) */}
+              <TouchableOpacity
+                style={[styles.calConnectCard, calendarGranted && styles.calConnectCardDone]}
+                onPress={connectCalendar}
+                disabled={calendarGranted}
+                accessibilityLabel="Conectar agenda do dispositivo"
+              >
+                <Ionicons
+                  name={calendarGranted ? 'checkmark-circle' : 'calendar'}
+                  size={22}
+                  color={calendarGranted ? colors.oliGreen : colors.white}
+                />
+                <View style={styles.calConnectText}>
+                  <Text style={[styles.calConnectTitle, calendarGranted && styles.calConnectTitleDone]}>
+                    {calendarGranted ? 'Agenda conectada' : 'Conectar sua agenda'}
+                  </Text>
+                  <Text style={[styles.calConnectSub, calendarGranted && styles.calConnectSubDone]}>
+                    {calendarGranted
+                      ? 'Suas reservas vão aparecer no calendário do celular.'
+                      : 'Opcional — veja suas reservas direto no calendário do celular.'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </>
           )}
 
@@ -1101,6 +1135,26 @@ const styles = StyleSheet.create({
     marginTop:       spacing.sm,
   },
   finishNoteText: { flex: 1, fontSize: 12, color: colors.oliGreen, lineHeight: 18 },
+
+  calConnectCard: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing.md,
+    backgroundColor: colors.oliGreen,
+    borderRadius:    radius.md,
+    padding:         spacing.md,
+    marginTop:       spacing.md,
+  },
+  calConnectCardDone: {
+    backgroundColor: `${colors.oliGreen}14`,
+    borderWidth:     1,
+    borderColor:     colors.oliGreen,
+  },
+  calConnectText:    { flex: 1 },
+  calConnectTitle:   { fontSize: 15, fontWeight: '700', color: colors.white },
+  calConnectTitleDone: { color: colors.oliGreen },
+  calConnectSub:     { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  calConnectSubDone: { color: colors.oliLightGray },
 
   // ── Rodapé de navegação ──
   footer: {

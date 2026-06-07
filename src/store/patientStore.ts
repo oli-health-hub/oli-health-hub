@@ -4,6 +4,7 @@ import type { Patient } from '../models/types';
 import { supabase } from '../services/supabase';
 import { hashCPF } from '../utils/cpfHash';
 import { auditLog } from '../services/auditLog';
+import { syncPatientToCC, deletePatientCC, retryPendingSyncs } from '../services/communicareSync';
 
 const STORAGE_KEY = '@oli:patients_v1';
 
@@ -12,7 +13,7 @@ interface PatientStore {
   isLoaded:  boolean;
   setPatients:   (patients: Patient[]) => void;
   loadPatients:  (professionalId?: string) => Promise<void>;
-  addPatient:    (data: Omit<Patient, 'id' | 'dataCadastro' | 'isSincronizado' | 'consentimentoTimestamp'> & { consentimentoTimestamp: string }, professionalId?: string) => Promise<{ consentToken: string }>;
+  addPatient:    (data: Omit<Patient, 'id' | 'dataCadastro' | 'isSincronizado' | 'consentimentoTimestamp'> & { consentimentoTimestamp: string; email?: string; healthPlanId?: string }, professionalId?: string) => Promise<{ consentToken: string }>;
   deletePatient: (id: string, professionalId?: string) => Promise<void>;
   markSynced:    (id: string) => Promise<void>;
   exportData:    () => string;
@@ -45,7 +46,9 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
           .order('nome', { ascending: true });
 
         if (!error && data) {
-          const remote: Patient[] = data.map(row => ({
+          const remote: Patient[] = data.map((rowRaw) => {
+            const row = rowRaw as unknown as Record<string, unknown> & typeof rowRaw;
+            return ({
             id:                     row.id,
             nome:                   row.nome,
             telefone:               row.telefone,
@@ -57,10 +60,17 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
             consentimentoTimestamp: row.consentimento_timestamp ?? new Date().toISOString(),
             isSincronizado:         row.is_sincronizado ?? false,
             communicareId:          row.communicare_id ?? undefined,
-          }));
+            syncStatus:             (row.sync_status as 'synced' | 'pending' | undefined) ?? 'pending',
+            syncProgress:           (row.sync_progress as number | undefined) ?? 0,
+            syncedAt:               (row.synced_at as string | undefined) ?? undefined,
+          });
+          });
           // Supabase sobrescreve cache local
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
           set({ patients: remote, isLoaded: true });
+
+          // Reprocessa pacientes com sync pendente (silencioso)
+          void retryPendingSyncs(professionalId);
         }
       } else {
         set({ isLoaded: true });
@@ -147,10 +157,37 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       });
     }
 
+    // Sync Communicare em background — UI mostra badge "Sincronizando %"
+    // CPF cleartext (cpfDigits) usado só nesta chamada via HTTPS, não persiste.
+    if (professionalId && cpfDigits.length === 11) {
+      void syncPatientToCC({
+        patientId:      newPatient.id,
+        nome:           newPatient.nome,
+        cpfClear:       cpfDigits,
+        telefone:       newPatient.telefone,
+        dataNascimento: toBRDateToISO(newPatient.dataNascimento ?? '') ?? '',
+        email:          data.email,
+        healthPlanId:   data.healthPlanId,
+      }).then(async (res) => {
+        if (res.ok && res.ccId) {
+          // Atualiza store local com badge synced
+          const updated = get().patients.map(p =>
+            p.id === newPatient.id
+              ? { ...p, syncStatus: 'synced' as const, syncProgress: 100, syncedAt: new Date().toISOString(), communicareId: res.ccId, isSincronizado: true }
+              : p,
+          );
+          await persist(updated);
+          set({ patients: updated });
+        }
+      });
+    }
+
     return { consentToken };
   },
 
   deletePatient: async (id, professionalId?: string) => {
+    // Captura communicare_id antes de remover — para propagar delete ao CC
+    const ccId = get().patients.find(p => p.id === id)?.communicareId;
     // Audit log antes de remover
     if (professionalId) {
       await auditLog(professionalId, {
@@ -161,6 +198,8 @@ export const usePatientStore = create<PatientStore>((set, get) => ({
       // Remove do Supabase (RLS garante que só o dono pode deletar)
       await supabase.from('patients').delete().eq('id', id);
     }
+    // Propaga delete ao Communicare (silencioso)
+    if (ccId) void deletePatientCC(ccId);
     const updated = get().patients.filter(p => p.id !== id);
     await persist(updated);
     set({ patients: updated });

@@ -13,11 +13,18 @@ export async function signIn(email: string, password: string) {
   return data;
 }
 
+// Destino após o usuário confirmar o e-mail (página de sucesso + deep link).
+const EMAIL_CONFIRM_REDIRECT =
+  'https://xwcarrurjvfxisuaihid.supabase.co/functions/v1/auth-confirm';
+
 export async function signUp(email: string, password: string, nome: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { nome } },
+    options: {
+      data: { nome },
+      emailRedirectTo: EMAIL_CONFIRM_REDIRECT,
+    },
   });
   if (error) throw error;
   return data;

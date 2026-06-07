@@ -100,6 +100,10 @@ export interface Patient {
   dataCadastro: string;           // ISO 8601
   /** Fase 3: ID do paciente no Communicare após sincronização */
   communicareId?: string;
+  /** Sync Communicare — apenas 'synced' ou 'pending' (erros viram retry interno) */
+  syncStatus?:    'synced' | 'pending';
+  syncProgress?:  number;   // 0-100
+  syncedAt?:      string;   // ISO 8601
 }
 
 export interface UserProfile {

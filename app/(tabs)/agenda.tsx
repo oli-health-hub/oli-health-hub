@@ -262,6 +262,25 @@ export default function AgendaScreen() {
 
         {/* ── Calendário Mensal ── */}
         <View style={[styles.calendarCard, shadows.card]}>
+          {/* Chip de sincronização: botão p/ conectar OU badge "Sincronizado" */}
+          <View style={styles.syncChipRow}>
+            {calendarGranted ? (
+              <View style={[styles.syncChip, styles.syncChipDone]}>
+                <Ionicons name="checkmark-circle" size={14} color={colors.oliGreen} />
+                <Text style={styles.syncChipDoneText}>Agenda sincronizada</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.syncChip}
+                onPress={requestCalendar}
+                accessibilityLabel="Sincronizar com a agenda do celular"
+              >
+                <Ionicons name="sync-outline" size={14} color={colors.white} />
+                <Text style={styles.syncChipText}>Sincronizar agenda</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           <MonthCalendar
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
@@ -426,31 +445,6 @@ export default function AgendaScreen() {
           })}
         </View>
 
-        {/* ── Integrações ── */}
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Integrações</Text>
-        </View>
-        <View style={styles.integrationsRow}>
-          <TouchableOpacity
-            style={[styles.integrationBtn, calendarGranted && styles.integrationBtnActive]}
-            onPress={requestCalendar}
-            accessibilityLabel={calendarGranted ? 'Agenda conectada' : 'Conectar agenda'}
-          >
-            <Ionicons name="calendar-outline" size={18} color={calendarGranted ? colors.white : colors.oliDarkGray} />
-            <Text style={[styles.integrationText, calendarGranted && styles.integrationTextActive]}>
-              {calendarGranted ? 'Agenda Conectada' : 'Conectar Agenda'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.integrationBtn}
-            onPress={() => Alert.alert('Communicare', 'Integração disponível na Fase 3 do roadmap.')}
-            accessibilityLabel="Communicare — em breve"
-          >
-            <Ionicons name="link-outline" size={18} color={colors.oliDarkGray} />
-            <Text style={styles.integrationText}>Communicare</Text>
-          </TouchableOpacity>
-        </View>
 
       </ScrollView>
 
@@ -538,6 +532,20 @@ const styles = StyleSheet.create({
   header:      { paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
   headerTitle: { fontSize: 24, fontWeight: '700', color: colors.oliDarkGray },
 
+  syncChipRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.sm },
+  syncChip: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             5,
+    backgroundColor: colors.oliGreen,
+    borderRadius:    radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  syncChipText:     { fontSize: 12, fontWeight: '700', color: colors.white },
+  syncChipDone:     { backgroundColor: `${colors.oliGreen}14` },
+  syncChipDoneText: { fontSize: 12, fontWeight: '700', color: colors.oliGreen },
+
   calendarCard: { backgroundColor: colors.white, borderRadius: radius.lg, margin: spacing.md, padding: spacing.md },
 
   selectedDateRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
@@ -611,20 +619,4 @@ const styles = StyleSheet.create({
   resPolicyRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   resPolicyText: { fontSize: 11, fontWeight: '500' },
   resMenuBtn:    { paddingHorizontal: spacing.md, paddingVertical: spacing.md, justifyContent: 'center', alignItems: 'center' },
-
-  integrationsRow: { flexDirection: 'row', paddingHorizontal: spacing.md, gap: spacing.md, marginTop: spacing.sm },
-  integrationBtn: {
-    flex:            1,
-    flexDirection:   'row',
-    alignItems:      'center',
-    justifyContent:  'center',
-    gap:             6,
-    paddingVertical: 12,
-    borderRadius:    radius.md,
-    backgroundColor: colors.white,
-    ...shadows.small,
-  },
-  integrationBtnActive:  { backgroundColor: colors.oliGreen },
-  integrationText:       { fontSize: 13, fontWeight: '500', color: colors.oliDarkGray },
-  integrationTextActive: { color: colors.white },
 });

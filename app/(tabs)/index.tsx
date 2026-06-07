@@ -17,6 +17,7 @@ import {
 } from '../../src/utils/formatters';
 import type { Reservation, ReservationStatus, Patient } from '../../src/models/types';
 import { QRScannerModal } from '../../src/components/QRScannerModal';
+import { CommunicareAgendaCard } from '../../src/components/CommunicareAgendaCard';
 import { fetchHourBalance } from '../../src/services/financeiroService';
 import type { HourBalance } from '../../src/services/financeiroService';
 import { sendNPS } from '../../src/services/npsService';
@@ -500,7 +501,13 @@ export default function DashboardScreen() {
           />
         )}
 
-        {/* ── Agendamentos de hoje ── */}
+        {/* ── Agenda de pacientes (Communicare) ── */}
+        {/* Só renderiza se CC configurado. Fonte de verdade da agenda de pacientes. */}
+        <View style={styles.agendaWrap}>
+          <CommunicareAgendaCard professionalId={profile?.id} />
+        </View>
+
+        {/* ── Reservas de sala de hoje (OLI) ── */}
         <Text style={styles.sectionTitle}>Agendamentos de Hoje</Text>
 
         {todayReservations.length === 0 ? (
@@ -957,6 +964,7 @@ const styles = StyleSheet.create({
   idleHint:  { fontSize: 12, fontWeight: '500', color: colors.oliGold, marginTop: 4 },
 
   sectionTitle:   { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray, paddingHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.sm },
+  agendaWrap:     { paddingHorizontal: spacing.md },
   emptyText:      { fontSize: 14, color: colors.gray, paddingHorizontal: spacing.md },
   reservationRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.white, borderRadius: radius.md, marginHorizontal: spacing.md, marginBottom: spacing.sm, padding: spacing.md },
   resLeft:         { flex: 1 },

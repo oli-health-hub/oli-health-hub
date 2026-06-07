@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Patient } from '../models/types';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
+import { ccIsConfigured } from '../services/communicareApi';
 
 interface Props {
   paciente:        Patient;
@@ -42,14 +43,33 @@ export function PacienteRow({ paciente, showSessionHint = false }: Props) {
       {showSessionHint ? (
         <Ionicons name="medkit-outline" size={18} color={colors.oliGreen} />
       ) : (
-        <View
-          style={[
-            styles.syncDot,
-            { backgroundColor: paciente.isSincronizado ? colors.oliGreen : colors.oliGold },
-          ]}
-          accessibilityLabel={paciente.isSincronizado ? 'Sincronizado' : 'Aguardando sincronização'}
-        />
+        <SyncBadge paciente={paciente} />
       )}
+    </View>
+  );
+}
+
+// ─── Badge de sincronização Communicare ──────────────────────────────────────
+// Estados visíveis: Sincronizado ✓  /  Sincronizando XX%
+// Erro nunca aparece — vira retry interno.
+function SyncBadge({ paciente }: { paciente: Patient }) {
+  // CC desligado → não mostra estado de sync (evita "Sincronizando" falso)
+  if (!ccIsConfigured()) return null;
+
+  const isSynced  = paciente.syncStatus === 'synced' || paciente.isSincronizado;
+  const progress  = paciente.syncProgress ?? 0;
+
+  if (isSynced) {
+    return (
+      <View style={styles.syncWrap} accessibilityLabel="Sincronizado com Communicare">
+        <Ionicons name="checkmark-circle" size={16} color={colors.oliGreen} />
+      </View>
+    );
+  }
+  return (
+    <View style={styles.syncWrap} accessibilityLabel={`Sincronizando ${progress}%`}>
+      <Ionicons name="sync" size={14} color={colors.oliGold} />
+      <Text style={styles.syncPct}>{progress}%</Text>
     </View>
   );
 }
@@ -101,5 +121,16 @@ const styles = StyleSheet.create({
     height:       10,
     borderRadius: 5,
     marginLeft:   spacing.sm,
+  },
+  syncWrap: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           4,
+    marginLeft:    spacing.sm,
+  },
+  syncPct: {
+    fontSize:   10,
+    fontWeight: '700',
+    color:      colors.oliGold,
   },
 });

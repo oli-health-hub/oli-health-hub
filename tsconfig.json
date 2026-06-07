@@ -8,5 +8,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules", "admin", "supabase"]
+  "exclude": ["node_modules", "admin", "supabase", "scripts"]
 }

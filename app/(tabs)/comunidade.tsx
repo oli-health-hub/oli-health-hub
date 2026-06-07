@@ -427,6 +427,10 @@ export default function ComunidadeScreen() {
     const { data } = await supabase
       .from('profiles')
       .select('*')
+      // Não exibe quem foi excluído/banido/suspenso (null = legado, mantém visível)
+      .not('account_status', 'in', '("deleted","banned","suspended")')
+      // Não exibe quem foi banido especificamente da comunidade
+      .or('comunidade_banned.is.null,comunidade_banned.eq.false')
       .order('nome');
     if (data) setProfiles(data as Profile[]);
     setLoading(false);

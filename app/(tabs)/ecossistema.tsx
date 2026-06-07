@@ -187,7 +187,8 @@ export default function EcossistemaScreen() {
           Especialistas OLI
         </Text>
         <Text style={[styles.sectionDesc, { paddingHorizontal: spacing.md }]}>
-          Tire suas dúvidas com nossa IA especializada ou agende uma consulta diretamente com o especialista.
+          Nossos especialistas de IA estão chegando. Em breve você poderá tirar dúvidas
+          especializadas diretamente por aqui.
         </Text>
 
         <View style={[styles.card, shadows.card]}>
@@ -199,6 +200,7 @@ export default function EcossistemaScreen() {
             role="Direito Médico"
             subtitle="CFM, LGPD, contratos e ética médica"
             onPress={() => router.push('/chatbot?persona=ana')}
+            comingSoon
           />
           <View style={styles.agentDivider} />
           <AgentCard
@@ -209,6 +211,7 @@ export default function EcossistemaScreen() {
             role="Contabilidade Médica"
             subtitle="Impostos, PJ médica, nota fiscal e pró-labore"
             onPress={() => router.push('/chatbot?persona=isabella')}
+            comingSoon
           />
           <View style={styles.agentDivider} />
           <AgentCard
@@ -218,6 +221,7 @@ export default function EcossistemaScreen() {
             role="OLI Convênios"
             subtitle="Credenciamento, faturamento TISS e glosas"
             onPress={() => router.push('/chatbot?persona=convenios')}
+            comingSoon
           />
           <View style={styles.agentDivider} />
           <AgentCard
@@ -227,6 +231,7 @@ export default function EcossistemaScreen() {
             role="OLI Carreira"
             subtitle="Posicionamento, captação e gestão de no-show"
             onPress={() => router.push('/chatbot?persona=carreira')}
+            comingSoon
           />
           <View style={styles.agentDivider} />
           <AgentCard
@@ -236,6 +241,7 @@ export default function EcossistemaScreen() {
             role="OLI Health Hub"
             subtitle="Salas, planos, reservas e eventos"
             onPress={() => router.push('/chatbot?persona=olivia')}
+            comingSoon
           />
         </View>
 
@@ -391,7 +397,7 @@ const moduleStyles = StyleSheet.create({
 // ── AgentCard ─────────────────────────────────────────────────────────────────
 
 function AgentCard({
-  avatar, photo, color, title, role, subtitle, onPress,
+  avatar, photo, color, title, role, subtitle, onPress, comingSoon,
 }: {
   avatar:   string;
   photo?:   ReturnType<typeof require>;
@@ -400,13 +406,15 @@ function AgentCard({
   role:     string;
   subtitle: string;
   onPress:  () => void;
+  comingSoon?: boolean;
 }) {
   return (
     <TouchableOpacity
-      style={agentStyles.row}
-      onPress={onPress}
-      activeOpacity={0.75}
-      accessibilityLabel={`Consultar ${title} — ${role}`}
+      style={[agentStyles.row, comingSoon && agentStyles.rowDisabled]}
+      onPress={comingSoon ? undefined : onPress}
+      disabled={comingSoon}
+      activeOpacity={comingSoon ? 1 : 0.75}
+      accessibilityLabel={comingSoon ? `${title} — ${role} — em breve` : `Consultar ${title} — ${role}`}
     >
       <View style={[agentStyles.avatar, { backgroundColor: color }]}>
         {photo ? (
@@ -424,9 +432,16 @@ function AgentCard({
         </View>
         <Text style={agentStyles.subtitle} numberOfLines={1}>{subtitle}</Text>
       </View>
-      <View style={[agentStyles.chatBtn, { backgroundColor: `${color}15` }]}>
-        <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
-      </View>
+      {comingSoon ? (
+        <View style={agentStyles.soonBadge}>
+          <Ionicons name="time-outline" size={12} color={colors.oliGold} />
+          <Text style={agentStyles.soonText}>Em breve</Text>
+        </View>
+      ) : (
+        <View style={[agentStyles.chatBtn, { backgroundColor: `${color}15` }]}>
+          <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -443,6 +458,9 @@ const agentStyles = StyleSheet.create({
   roleText:   { fontSize: 11, fontWeight: '700' },
   subtitle:   { fontSize: 12, color: colors.gray },
   chatBtn:    { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  rowDisabled:{ opacity: 0.55 },
+  soonBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.oliGold}18`, borderRadius: radius.full, paddingHorizontal: 9, paddingVertical: 4, flexShrink: 0 },
+  soonText:   { fontSize: 11, fontWeight: '700', color: colors.oliGold },
 });
 
 // ── Serviços Inclusos Styles ──────────────────────────────────────────────────

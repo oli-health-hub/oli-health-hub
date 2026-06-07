@@ -378,10 +378,13 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
           </Section>
 
           {/* Adicionar horas */}
-          <Section title="Adicionar horas">
+          <Section title="Adicionar horas (cortesia / sem custo)">
             <p className="text-xs text-oli-lgray mb-3">
               Saldo: <span className="font-semibold text-oli-dark">{fmt(restante)}</span>
               {' · '}Total comprado: <span className="font-semibold text-oli-dark">{fmt(totalMin)}</span>
+            </p>
+            <p className="text-[11px] text-oli-green mb-3 font-medium">
+              Crédito manual de horas pelo admin — não gera cobrança no Asaas. Use para cortesia, bônus ou ajuste.
             </p>
             <form action={addHours} className="space-y-3">
               <input type="hidden" name="professional_id" value={p.id} />
