@@ -326,6 +326,10 @@ automaticamente para todos os pacientes existentes (status = pending).
    retornando array com `{ scheduleId, patientId, patientName, startTime,
    procedure, status }`. **Sem isso não há "Em espera / Em atendimento /
    Atendidos".**
+   - **Regra do card (fila do dia):** é uma fila de TEMPO REAL que **morre
+     todos os dias**. O endpoint deve devolver APENAS o `data` informado
+     (sem arrastar dias anteriores). O histórico do dia fica no Communicare;
+     o card só mostra o dia corrente e zera na virada de meia-noite.
 2. **GET de fila** (`/v1/queue` só tem POST no Swagger). Como o App lê os
    pacientes aguardando?
 3. **Valores reais do campo `status`** em `AttendanceHistoricalItemDto`
