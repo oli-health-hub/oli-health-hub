@@ -57,7 +57,7 @@ function page(opts: { ok: boolean; title: string; body: string }): string {
       ${showBtn ? `<a class="btn" href="${APP_SCHEME}">Abrir o app</a>` : ''}
     </div>
   </div>
-  <p class="footer">OLI Health Hub · <a href="https://xwcarrurjvfxisuaihid.supabase.co/functions/v1/privacy">Política de Privacidade</a> · LGPD</p>
+  <p class="footer">OLI Health Hub · <a href="https://olihealthhub.com.br/privacidade">Política de Privacidade</a> · LGPD</p>
   ${opts.ok ? `<script>
     // Tenta abrir o app automaticamente (best-effort; ignora se não instalado)
     setTimeout(function(){ try { window.location.href = '${APP_SCHEME}'; } catch(e){} }, 800);
