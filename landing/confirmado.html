@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>E-mail confirmado — OLI Health Hub</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4EFEA;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px}
+  .logo{font-size:24px;font-weight:800;color:#5F7D67;letter-spacing:-.5px;margin-bottom:4px}
+  .logo-sub{font-size:11px;color:#6B6B6B;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:24px}
+  .card{background:#fff;border-radius:16px;max-width:440px;width:100%;box-shadow:0 2px 20px rgba(0,0,0,.08);overflow:hidden}
+  .bar{height:6px}
+  .body{padding:36px 28px;text-align:center}
+  .icon{font-size:56px;line-height:1;margin-bottom:16px}
+  h1{font-size:22px;font-weight:800;color:#2F2F2F;margin-bottom:10px}
+  p{font-size:14px;color:#6B6B6B;line-height:1.7;margin-bottom:24px}
+  .btn{display:inline-block;width:100%;background:#5F7D67;color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:16px;border-radius:12px}
+  .footer{margin-top:20px;font-size:11px;color:#9B9B9B;text-align:center;line-height:1.8}
+  .footer a{color:#5F7D67;text-decoration:none}
+</style>
+</head>
+<body>
+  <div class="logo">OLI Health Hub</div>
+  <div class="logo-sub">Plataforma Médica</div>
+  <div class="card">
+    <div class="bar" id="bar"></div>
+    <div class="body">
+      <div class="icon" id="icon">✅</div>
+      <h1 id="title">E-mail confirmado!</h1>
+      <p id="msg">Sua conta foi ativada com sucesso. Toque no botão abaixo para voltar ao app e fazer login.</p>
+      <a class="btn" id="appBtn" href="olihealthhub://login">Voltar ao app</a>
+    </div>
+  </div>
+  <p class="footer">OLI Health Hub · <a href="/privacidade">Política de Privacidade</a> · LGPD</p>
+
+  <script>
+    // Detecta erro de confirmação (link expirado) via query/hash do Supabase
+    var qs = new URLSearchParams(location.search);
+    var hs = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    var err = qs.get('error') || qs.get('error_code') || hs.get('error') || hs.get('error_code');
+    if (err) {
+      document.getElementById('bar').style.background = '#D9534F';
+      document.getElementById('icon').textContent = '⚠️';
+      document.getElementById('title').textContent = 'Link inválido ou expirado';
+      document.getElementById('msg').textContent = 'Este link de confirmação não é mais válido. Abra o app e solicite um novo e-mail de confirmação.';
+      document.getElementById('appBtn').textContent = 'Abrir o app';
+    } else {
+      document.getElementById('bar').style.background = '#5F7D67';
+      // Tenta abrir o app automaticamente (best-effort)
+      setTimeout(function(){ try { location.href = 'olihealthhub://login'; } catch(e){} }, 900);
+    }
+  </script>
+</body>
+</html>
