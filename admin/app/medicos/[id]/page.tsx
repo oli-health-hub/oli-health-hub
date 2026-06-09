@@ -7,7 +7,7 @@ import { DocumentsCard } from './DocumentsCard';
 
 export const dynamic = 'force-dynamic';
 
-// ── Label maps ──────────────────────────────��───────────────────────────────
+// ── Label maps ──
 
 const SITUACAO_JURIDICA: Record<string, string> = {
   pf:    'Pessoa Física (autônomo)',
@@ -86,7 +86,7 @@ function label<T extends string>(map: Record<string, string>, val: T | null | un
   return map[val] ?? val;
 }
 
-// ── Small layout helpers ───────���────────────────────��─────────────────────────
+// ── Small layout helpers ──
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -106,7 +106,7 @@ function Field({ label: l, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-// ── Page ─────────────────��────────────────────��───────────────────────────────
+// ── Page ──
 
 export default async function MedicoDetailPage({ params }: { params: { id: string } }) {
   const supabase      = await createSupabaseServer();
@@ -430,7 +430,7 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
 
           {/* Ficha cadastral — onboarding fiscal */}
           <Section title="Ficha cadastral (fiscal)">
-            <Field label="Situação jur��dica"     value={label(SITUACAO_JURIDICA, p.situacao_juridica)} />
+            <Field label="Situação jurídica"     value={label(SITUACAO_JURIDICA, p.situacao_juridica)} />
             <Field label="Possui CLT?"            value={yn(p.possui_clt)} />
             <Field label="Possui sócios?"         value={yn(p.possui_socios)} />
             <Field label="Atividade exercida"     value={p.atividade_exercida} />
