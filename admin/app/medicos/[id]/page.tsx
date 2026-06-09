@@ -100,8 +100,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label: l, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2 py-2 border-b border-oli-border/60 last:border-0">
-      <span className="text-xs text-oli-lgray w-44 shrink-0 pt-0.5">{l}</span>
-      <span className="text-sm text-oli-dark flex-1">{value ?? '—'}</span>
+      <span className="text-xs text-oli-lgray w-36 sm:w-44 shrink-0 pt-0.5">{l}</span>
+      <span className="text-sm text-oli-dark flex-1 min-w-0 break-words">{value ?? '—'}</span>
     </div>
   );
 }
@@ -249,20 +249,20 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
 
       {/* Header */}
       <div className="bg-white rounded-2xl border border-oli-border p-6">
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div className="flex items-center gap-4 min-w-0">
             <div className="w-16 h-16 rounded-full bg-oli-green flex items-center justify-center text-white font-bold text-2xl shrink-0">
               {p.nome?.[0]?.toUpperCase() ?? '?'}
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-oli-dark">{p.nome}</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-oli-dark break-words">{p.nome}</h1>
               <p className="text-sm text-oli-gray mt-0.5">
                 {[p.especialidade, p.crm ? `CRM ${p.crm}` : null].filter(Boolean).join(' · ')}
               </p>
               {email && (
-                <p className="text-sm text-oli-lgray mt-0.5">{email}</p>
+                <p className="text-sm text-oli-lgray mt-0.5 break-all">{email}</p>
               )}
-              <div className="flex items-center gap-3 mt-2">
+              <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${PLAN_COLOR[p.plan] ?? 'bg-gray-100 text-gray-600'}`}>
                   {p.plan}
                 </span>
@@ -279,7 +279,7 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
           </div>
 
           {/* KPIs rápidos */}
-          <div className="flex gap-6 text-center shrink-0">
+          <div className="flex flex-wrap gap-x-6 gap-y-3 text-center">
             <div>
               <p className="text-2xl font-bold text-oli-dark">{fmt(restante)}</p>
               <p className="text-xs text-oli-lgray mt-0.5">Saldo de horas</p>

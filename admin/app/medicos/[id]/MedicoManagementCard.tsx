@@ -387,7 +387,7 @@ function ContractForm({
 
   return (
     <div className="px-5 py-4 border-t border-oli-border bg-stone-50/50 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Início">
           <input type="date" value={start} onChange={e => setStart(e.target.value)}
             className="w-full border border-oli-border rounded-lg px-3 py-2 text-sm" />
@@ -450,7 +450,7 @@ function ProfileForm({
 
   return (
     <div className="px-5 py-4 border-t border-oli-border bg-stone-50/50 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Tratamento">
           <select value={t} onChange={e => setT(e.target.value)}
             className="w-full border border-oli-border rounded-lg px-3 py-2 text-sm">
