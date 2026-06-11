@@ -4,6 +4,7 @@ import {
   StyleSheet, Modal, Alert, Image, FlatList, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppStore, COST_PER_MINUTE } from '../../src/store/appStore';
@@ -17,6 +18,7 @@ import {
 } from '../../src/utils/formatters';
 import type { Reservation, ReservationStatus, Patient } from '../../src/models/types';
 import { QRScannerModal } from '../../src/components/QRScannerModal';
+import { ReferralPromoModal } from '../../src/components/ReferralPromoModal';
 import { fetchHourBalance } from '../../src/services/financeiroService';
 import type { HourBalance } from '../../src/services/financeiroService';
 import { sendNPS } from '../../src/services/npsService';
@@ -178,6 +180,27 @@ export default function DashboardScreen() {
   const [hourBalance,         setHourBalance]         = useState<HourBalance | null>(null);
   const [showNPSPicker,       setShowNPSPicker]       = useState(false);
   const [npsSendingId,        setNpsSendingId]        = useState<string | null>(null);
+  const [showReferralPromo,   setShowReferralPromo]   = useState(false);
+
+  // Popup de indicação — aparece UMA vez (foco no primeiro acesso ao dashboard).
+  useEffect(() => {
+    (async () => {
+      try {
+        const seen = await AsyncStorage.getItem('@oli:referral_promo_seen');
+        if (!seen) setShowReferralPromo(true);
+      } catch { /* silencioso */ }
+    })();
+  }, []);
+
+  const dismissReferralPromo = useCallback(async () => {
+    setShowReferralPromo(false);
+    try { await AsyncStorage.setItem('@oli:referral_promo_seen', '1'); } catch { /* nada */ }
+  }, []);
+
+  const goToReferral = useCallback(async () => {
+    await dismissReferralPromo();
+    router.push('/indicacao');
+  }, [dismissReferralPromo, router]);
   const prevPhaseRef = useRef<typeof timer.phase>('normal');
 
   const { patients } = usePatientStore();
@@ -550,6 +573,13 @@ export default function DashboardScreen() {
           />
         )}
       </Modal>
+
+      {/* ── Popup: Programa de Indicação (1º acesso) ── */}
+      <ReferralPromoModal
+        visible={showReferralPromo}
+        onIndicar={goToReferral}
+        onClose={dismissReferralPromo}
+      />
 
       {/* ── Modal: QR Code Checkout ── */}
       <Modal visible={showQR} animationType="slide" presentationStyle="fullScreen">
