@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { Text, TextInput } from 'react-native';
+import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { captureReferralFromUrl } from '../src/utils/referral';
 import { colors } from '../src/theme/designSystem';
 import { useAuthStore } from '../src/store/authStore';
 import { useAppLock } from '../src/hooks/useAppLock';
@@ -43,6 +45,16 @@ export default function RootLayout() {
   // Pede permissão de notificação uma vez na inicialização
   useEffect(() => {
     requestNotificationPermission().catch(() => {});
+  }, []);
+
+  // Captura código de indicação (?ref=) de deep link / universal link.
+  // Cold start (app aberto pelo link) + warm (link tocado com app rodando).
+  useEffect(() => {
+    Linking.getInitialURL().then(captureReferralFromUrl).catch(() => {});
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      captureReferralFromUrl(url).catch(() => {});
+    });
+    return () => sub.remove();
   }, []);
 
   // Navega para a tela certa ao tocar em uma notificação

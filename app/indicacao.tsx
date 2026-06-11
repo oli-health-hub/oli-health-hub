@@ -84,12 +84,14 @@ export default function IndicacaoScreen() {
   const handleShare = async () => {
     if (!code) return;
     const nome = profile?.nome ?? 'um colega';
+    const link = `https://olihealthhub.com.br/baixar?ref=${code}`;
     await Share.share({
       message:
         `Estou usando o OLI Health Hub — coworking médico premium em São Paulo.\n\n` +
-        `Me cadastrei e está sendo incrível! Ao se cadastrar, mencione meu nome "${nome}" ` +
-        `(ou use o código ${code}) na etapa de indicação e ganhamos créditos juntos.\n\n` +
-        `Acesse: https://olihealthhub.com`,
+        `Baixe o app por este link e seu código de indicação (${code}) já vem preenchido. ` +
+        `Quando você ativar a conta, nós dois ganhamos crédito de horas nas salas:\n\n` +
+        `${link}\n\n` +
+        `— ${nome}`,
       title: 'OLI Health Hub — Indicação',
     });
   };

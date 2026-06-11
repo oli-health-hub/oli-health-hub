@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, KeyboardAvoidingView, Platform, Animated,
@@ -11,6 +11,7 @@ import * as Calendar from 'expo-calendar';
 import { supabase } from '../src/services/supabase';
 import { useAuthStore } from '../src/store/authStore';
 import { colors, spacing, radius } from '../src/theme/designSystem';
+import { getPendingReferralCode, clearPendingReferralCode } from '../src/utils/referral';
 import type {
   SituacaoJuridica, FaturamentoRange, LocalAtuacao,
   NumLocais, NotasFiscaisRange, TipoAtendimento, Tratamento,
@@ -143,6 +144,9 @@ export default function OnboardingScreen() {
   const [memberSearch,       setMemberSearch]       = useState('');
   const [memberResults,      setMemberResults]      = useState<{ id: string; nome: string; especialidade: string | null }[]>([]);
   const [memberSearching,    setMemberSearching]    = useState(false);
+  const [codeInput,          setCodeInput]          = useState('');
+  const [codeResolving,      setCodeResolving]      = useState(false);
+  const [codeError,          setCodeError]          = useState(false);
 
   // ── Step 4: Financeiro ──
   const [faturamentoRange,   setFaturamentoRange]   = useState<FaturamentoRange | null>(null);
@@ -181,6 +185,48 @@ export default function OnboardingScreen() {
     setMemberResults((data ?? []) as { id: string; nome: string; especialidade: string | null }[]);
     setMemberSearching(false);
   };
+
+  // Resolve um código de indicação → perfil do indicador (RPC server-side).
+  const resolveCode = async (raw: string): Promise<boolean> => {
+    const code = raw.trim().toUpperCase();
+    if (code.length < 4) { setCodeError(true); return false; }
+    setCodeResolving(true);
+    setCodeError(false);
+    try {
+      const { data } = await supabase.rpc('resolve_referral_code', { p_code: code });
+      const match = (data as { id: string; nome: string }[] | null)?.[0];
+      // Não pode indicar a si mesmo
+      if (match && match.id !== profile?.id) {
+        setReferidoPorId(match.id);
+        setReferidoPorNome(match.nome);
+        setMemberSearch('');
+        setMemberResults([]);
+        return true;
+      }
+      setCodeError(true);
+      return false;
+    } catch {
+      setCodeError(true);
+      return false;
+    } finally {
+      setCodeResolving(false);
+    }
+  };
+
+  // Pré-preenche a indicação se o indicado chegou via link/código (?ref=).
+  // Roda uma vez na montagem; consome e limpa o código pendente.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const pending = await getPendingReferralCode();
+      if (!pending || !alive) return;
+      setComoConheceu('membro_oli');
+      const ok = await resolveCode(pending);
+      if (ok) { setCodeInput(pending); await clearPendingReferralCode(); }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   const animateProgress = (nextStep: number) => {
     Animated.timing(progressAnim, {
@@ -597,7 +643,39 @@ export default function OnboardingScreen() {
               {/* Busca de membro — só aparece quando "membro_oli" está selecionado */}
               {comoConheceu === 'membro_oli' && (
                 <View style={styles.memberSearchWrap}>
-                  <Text style={styles.question}>Qual é o nome desse profissional?</Text>
+                  {/* Código de indicação (chega via link/compartilhamento) */}
+                  <Text style={styles.question}>Tem um código de indicação?</Text>
+                  <View style={styles.memberInputRow}>
+                    <Ionicons name="pricetag-outline" size={18} color={colors.gray} />
+                    <TextInput
+                      style={[styles.memberInput, styles.codeInputText]}
+                      placeholder="Ex.: A1B2C3"
+                      placeholderTextColor={colors.gray}
+                      value={codeInput}
+                      onChangeText={(v) => { setCodeInput(v.toUpperCase()); setCodeError(false); }}
+                      onEndEditing={() => { if (codeInput.trim() && !referidoPorId) void resolveCode(codeInput); }}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      maxLength={8}
+                      editable={!referidoPorId}
+                      accessibilityLabel="Código de indicação"
+                    />
+                    {codeResolving ? (
+                      <Ionicons name="hourglass-outline" size={16} color={colors.gray} />
+                    ) : codeInput.trim() && !referidoPorId ? (
+                      <TouchableOpacity
+                        onPress={() => void resolveCode(codeInput)}
+                        accessibilityLabel="Validar código"
+                      >
+                        <Text style={styles.codeApplyText}>Aplicar</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  {codeError && (
+                    <Text style={styles.memberNoResult}>Código não encontrado. Confira ou busque pelo nome abaixo.</Text>
+                  )}
+
+                  <Text style={[styles.question, styles.orLabel]}>Ou busque pelo nome</Text>
                   <View style={styles.memberInputRow}>
                     <Ionicons name="search-outline" size={18} color={colors.gray} />
                     <TextInput
@@ -620,7 +698,7 @@ export default function OnboardingScreen() {
                       <Ionicons name="checkmark-circle" size={18} color={colors.oliGreen} />
                       <Text style={styles.memberSelectedText}>{referidoPorNome}</Text>
                       <TouchableOpacity
-                        onPress={() => { setReferidoPorId(null); setReferidoPorNome(''); setMemberSearch(''); setMemberResults([]); }}
+                        onPress={() => { setReferidoPorId(null); setReferidoPorNome(''); setMemberSearch(''); setMemberResults([]); setCodeInput(''); setCodeError(false); }}
                         accessibilityLabel="Remover seleção"
                       >
                         <Ionicons name="close-circle" size={18} color={colors.gray} />
@@ -1236,6 +1314,9 @@ const styles = StyleSheet.create({
   memberItemName: { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
   memberItemSpec: { fontSize: 12, color: colors.gray, marginTop: 2 },
   memberNoResult: { fontSize: 13, color: colors.oliLightGray, textAlign: 'center', paddingVertical: spacing.sm },
+  codeInputText:  { letterSpacing: 2, fontWeight: '700' },
+  codeApplyText:  { fontSize: 13, fontWeight: '700', color: colors.oliGreen },
+  orLabel:        { marginTop: spacing.md },
 });
 
 // ── Estilos do seletor de estados ─────────────────────────────────────────────

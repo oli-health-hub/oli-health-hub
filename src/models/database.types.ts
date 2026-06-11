@@ -438,16 +438,75 @@ export type Database = {
         }
         Relationships: []
       }
+      professional_documents: {
+        Row: {
+          expires_at: string | null
+          id: string
+          name: string
+          professional_id: string
+          size_bytes: number | null
+          type: string
+          uploaded_at: string
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          expires_at?: string | null
+          id?: string
+          name: string
+          professional_id: string
+          size_bytes?: number | null
+          type: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          expires_at?: string | null
+          id?: string
+          name?: string
+          professional_id?: string
+          size_bytes?: number | null
+          type?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_documents_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          account_status: string
+          admin_notes: string | null
           atividade_exercida: string | null
           bio: string | null
           cidade_uf: string | null
           como_conheceu: string | null
+          comunidade_ban_reason: string | null
+          comunidade_banned: boolean
           consultation_duration_minutes: number
+          contract_doc_url: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
           convenios: string[] | null
           created_at: string
           crm: string | null
+          deleted_at: string | null
           especialidade: string | null
           faturamento_range: string | null
           foto_url: string | null
@@ -471,6 +530,9 @@ export type Database = {
           referido_por: string | null
           referral_code: string | null
           situacao_juridica: string | null
+          status_changed_at: string | null
+          status_changed_by: string | null
+          status_reason: string | null
           tipo_atendimento: string | null
           tipos_atendimento: string[] | null
           tratamento: string | null
@@ -480,14 +542,22 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          account_status?: string
+          admin_notes?: string | null
           atividade_exercida?: string | null
           bio?: string | null
           cidade_uf?: string | null
           como_conheceu?: string | null
+          comunidade_ban_reason?: string | null
+          comunidade_banned?: boolean
           consultation_duration_minutes?: number
+          contract_doc_url?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
           convenios?: string[] | null
           created_at?: string
           crm?: string | null
+          deleted_at?: string | null
           especialidade?: string | null
           faturamento_range?: string | null
           foto_url?: string | null
@@ -511,6 +581,9 @@ export type Database = {
           referido_por?: string | null
           referral_code?: string | null
           situacao_juridica?: string | null
+          status_changed_at?: string | null
+          status_changed_by?: string | null
+          status_reason?: string | null
           tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
           tratamento?: string | null
@@ -520,14 +593,22 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          account_status?: string
+          admin_notes?: string | null
           atividade_exercida?: string | null
           bio?: string | null
           cidade_uf?: string | null
           como_conheceu?: string | null
+          comunidade_ban_reason?: string | null
+          comunidade_banned?: boolean
           consultation_duration_minutes?: number
+          contract_doc_url?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
           convenios?: string[] | null
           created_at?: string
           crm?: string | null
+          deleted_at?: string | null
           especialidade?: string | null
           faturamento_range?: string | null
           foto_url?: string | null
@@ -551,6 +632,9 @@ export type Database = {
           referido_por?: string | null
           referral_code?: string | null
           situacao_juridica?: string | null
+          status_changed_at?: string | null
+          status_changed_by?: string | null
+          status_reason?: string | null
           tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
           tratamento?: string | null
@@ -1026,6 +1110,13 @@ export type Database = {
       record_auth_attempt: {
         Args: { p_identifier: string; p_ip?: string; p_succeeded: boolean }
         Returns: undefined
+      }
+      resolve_referral_code: {
+        Args: { p_code: string }
+        Returns: {
+          id: string
+          nome: string
+        }[]
       }
     }
     Enums: {

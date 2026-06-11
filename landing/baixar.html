@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Baixe o OLI Health Hub</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4EFEA;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px}
+  .logo{font-size:24px;font-weight:800;color:#5F7D67;letter-spacing:-.5px;margin-bottom:4px}
+  .logo-sub{font-size:11px;color:#6B6B6B;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:24px}
+  .card{background:#fff;border-radius:16px;max-width:440px;width:100%;box-shadow:0 2px 20px rgba(0,0,0,.08);overflow:hidden}
+  .bar{height:6px;background:#B8893C}
+  .body{padding:36px 28px;text-align:center}
+  .icon{font-size:52px;line-height:1;margin-bottom:14px}
+  h1{font-size:22px;font-weight:800;color:#2F2F2F;margin-bottom:10px}
+  p{font-size:14px;color:#6B6B6B;line-height:1.7;margin-bottom:22px}
+  .code-wrap{display:none;background:#5F7D6712;border:2px solid #5F7D6740;border-radius:12px;padding:16px;margin-bottom:22px}
+  .code-label{font-size:11px;font-weight:700;color:#5F7D67;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .code{font-size:30px;font-weight:800;color:#5F7D67;letter-spacing:4px}
+  .copy{margin-top:8px;font-size:12px;font-weight:700;color:#5F7D67;background:none;border:none;cursor:pointer}
+  .stores{display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;font-size:15px;font-weight:700;text-decoration:none;padding:15px;border-radius:12px}
+  .btn-dark{background:#2F2F2F;color:#fff}
+  .btn-green{background:#5F7D67;color:#fff}
+  .btn-ghost{background:#fff;color:#5F7D67;border:1.5px solid #5F7D67}
+  .hint{font-size:12px;color:#9B9B9B;margin-top:10px;line-height:1.6}
+  .footer{margin-top:20px;font-size:11px;color:#9B9B9B;text-align:center;line-height:1.8}
+  .footer a{color:#5F7D67;text-decoration:none}
+</style>
+</head>
+<body>
+  <div class="logo">OLI Health Hub</div>
+  <div class="logo-sub">Coworking Médico Premium</div>
+  <div class="card">
+    <div class="bar"></div>
+    <div class="body">
+      <div class="icon">🎁</div>
+      <h1>Você foi indicado!</h1>
+      <p>Baixe o OLI Health Hub e cadastre-se. Ao ativar sua conta, você e quem te indicou ganham crédito de horas nas salas.</p>
+
+      <div class="code-wrap" id="codeWrap">
+        <div class="code-label">Seu código de indicação</div>
+        <div class="code" id="code">—</div>
+        <button class="copy" id="copyBtn" type="button">Copiar código</button>
+      </div>
+
+      <div class="stores">
+        <a class="btn btn-dark" id="iosBtn" href="#"> Baixar na App Store</a>
+        <a class="btn btn-dark" id="androidBtn" href="#">▶ Baixar no Google Play</a>
+      </div>
+
+      <a class="btn btn-ghost" id="openAppBtn" href="#" style="display:none">Já tenho o app — abrir</a>
+
+      <p class="hint" id="hint">No cadastro, informe seu código na etapa “Como você nos conheceu?”.</p>
+    </div>
+  </div>
+  <p class="footer">OLI Health Hub · <a href="/privacidade">Política de Privacidade</a> · LGPD</p>
+
+  <script>
+    // URLs das lojas — preencher o ID da App Store quando publicado.
+    var APP_STORE_URL  = 'https://apps.apple.com/br/app/oli-health-hub/id0000000000';
+    var PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.oli.healthhub';
+
+    var qs   = new URLSearchParams(location.search);
+    var code = (qs.get('ref') || '').trim().toUpperCase();
+
+    // Exibe o código, se houver
+    if (code) {
+      document.getElementById('code').textContent = code;
+      document.getElementById('codeWrap').style.display = 'block';
+      var open = document.getElementById('openAppBtn');
+      open.href = 'olihealthhub://onboarding?ref=' + encodeURIComponent(code);
+      open.style.display = 'flex';
+    }
+
+    document.getElementById('iosBtn').href     = APP_STORE_URL;
+    document.getElementById('androidBtn').href = PLAY_STORE_URL;
+
+    // Destaca a loja do dispositivo atual
+    var ua = navigator.userAgent || '';
+    if (/android/i.test(ua)) {
+      document.getElementById('iosBtn').style.display = 'none';
+      document.getElementById('androidBtn').className = 'btn btn-green';
+    } else if (/iphone|ipad|ipod/i.test(ua)) {
+      document.getElementById('androidBtn').style.display = 'none';
+      document.getElementById('iosBtn').className = 'btn btn-green';
+    }
+
+    // Copiar código
+    var copyBtn = document.getElementById('copyBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        try {
+          navigator.clipboard.writeText(code);
+          copyBtn.textContent = 'Copiado!';
+          setTimeout(function () { copyBtn.textContent = 'Copiar código'; }, 2000);
+        } catch (e) {}
+      });
+    }
+  </script>
+</body>
+</html>
