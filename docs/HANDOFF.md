@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: Junho 2026.
+> Última atualização: 12/Junho/2026.
 
 ---
 
@@ -116,11 +116,22 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 **Como ligar quando token chegar:** setar `EXPO_PUBLIC_COMMUNICARE_PROXY_URL` + secrets CC no Supabase, deploy das 4 functions, aplicar migration, OTA, e remontar `<CommunicareAgendaCard />` no `app/(tabs)/index.tsx`.
 
-## 7. Programa de Indicação (referral)
+## 7. Programa de Indicação (referral) — FLUXO COMPLETO
 
-- Backend versionado: `supabase/migrations/20260607_referral_program.sql` (colunas `referral_code`/`referido_por`, tabela `referrals`, RPCs `generate_referral_code` + `apply_referral_benefit`).
-- **Automação server-side:** trigger `trg_referral_on_onboarding` → ao completar onboarding com indicador, credita **+60 min / 90 dias** ao indicador, idempotente, sem auto-indicação. (Antes dependia de chamada client-side frágil.)
-- UI: `app/indicacao.tsx` + banner em `app/meu-plano.tsx`.
+**Backend:**
+- `supabase/migrations/20260607_referral_program.sql` — colunas `referral_code`/`referido_por`, tabela `referrals`, RPCs `generate_referral_code` + `apply_referral_benefit`.
+- **Automação server-side:** trigger `trg_referral_on_onboarding` → ao completar onboarding com indicador, credita **+60 min / 90 dias** ao indicador, idempotente, sem auto-indicação.
+- `supabase/migrations/20260611_resolve_referral_code.sql` — RPC `resolve_referral_code(p_code)` → retorna `{id, nome}` do indicador a partir do código. **Aplicada em produção.** `database.types.ts` regenerado.
+
+**Fluxo fim a fim (commit `3c452aa`, OTA prod `6c8662f4-0788-4314-a2b3-e32c61f5aed3` + preview `e409f618-c388-49a3-ac0a-e3b0c9d2ad39`):**
+1. **Compartilhar** — `app/indicacao.tsx` envia link `https://olihealthhub.com.br/baixar?ref=CODIGO`.
+2. **Página de download** — `landing/baixar.html`: mostra código grande, botão copiar, botões App Store + Google Play (destaca loja do device por UA), e "Já tenho o app" → deep link `olihealthhub://onboarding?ref=CODIGO`.
+3. **Captura no app** — `app/_layout.tsx` lê `?ref=` de deep/universal link (cold + warm start via `Linking.getInitialURL` + listener) → `src/utils/referral.ts` persiste em AsyncStorage (`@oli:pending_referral_code`).
+4. **Cadastro do indicado** — `app/onboarding.tsx` step 3: pré-preenche o indicador automaticamente (lê código pendente → `resolveCode` via RPC → seta `referido_por`, limpa flag). Campo manual "Tem um código?" como alternativa à busca por nome.
+5. **Benefício** — trigger server-side credita 1h ao indicador quando o indicado completa onboarding.
+- UI extra: banner em `app/meu-plano.tsx`; `ReferralPromoModal` no Início (1º acesso).
+
+**⚠️ Limitação conhecida:** sem SDK de attribution (Branch etc.), instalações novas NÃO fazem deferred deep link — o indicado **digita o código manualmente** (mostrado/copiável na landing). Deep link `?ref=` só pré-preenche se o app já estiver instalado.
 
 ## 8. Autenticação / App Lock (biometria) — estado final
 
@@ -150,7 +161,8 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 ## 11. PENDÊNCIAS / próximos passos
 
-1. **Netlify não publicou** `confirmado.html`/`privacidade.html` (404). Site serve `landing/` antigo mas não pegou o último push. Verificar no painel Netlify: Repository = `guipasquetti/oli-health-hub`? Branch `main`? Publish dir `landing`? Auto-deploy ON? → dar "Trigger deploy". (Arquivos antigos como `/consentimento.html` e `/logo_oli_transparent.png` servem 200; os novos 404.)
+1. **Netlify não publicou** `confirmado.html`/`privacidade.html`/**`baixar.html`** (404). Site serve `landing/` antigo mas não pegou os últimos pushes. Verificar no painel Netlify: Repository = `guipasquetti/oli-health-hub`? Branch `main`? Publish dir `landing`? Auto-deploy ON? → dar "Trigger deploy". (Arquivos antigos como `/consentimento.html` e `/logo_oli_transparent.png` servem 200; os novos 404.)
+   - **`baixar.html`**: após publicar, preencher `APP_STORE_URL` (hoje placeholder `id0000000000`) quando o app sair da revisão. Google Play já com link correto (`com.oli.healthhub`).
 2. **Config Supabase dashboard** (depois das páginas no ar):
    - Auth → URL Configuration → **Site URL**: `https://olihealthhub.com.br/confirmado`
    - **Redirect URLs** (allowlist): `https://olihealthhub.com.br/confirmado` + `olihealthhub://*`
@@ -162,6 +174,11 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 6. **expo-blur** (opcional): blur real no lock screen — exige novo build nativo.
 7. **VIP**: definir preço quando for a hora.
 8. **Cron** auto-desativar START após 30 dias sem reserva (mencionado, não implementado).
+9. **🔴 Asaas sandbox → produção** (ativa cobranças REAIS — ação do fundador, credencial financeira):
+   - Lógica em `supabase/functions/_shared/asaas.ts` (`ASAAS_ENV` chaveia sandbox vs `https://www.asaas.com/api/v3`).
+   - Trocar secrets das Edge Functions: `ASAAS_ENV=production` + `ASAAS_API_KEY=<chave de produção>`.
+     `supabase secrets set ASAAS_ENV=production ASAAS_API_KEY=<chave>`
+   - Antes de virar: webhook de produção → `https://xwcarrurjvfxisuaihid.supabase.co/functions/v1/asaas-webhook`; token bate com secret `ASAAS_WEBHOOK_TOKEN`; perfis com CPF (`cpfCnpj` exigido em prod p/ PIX/boleto — `findOrCreateCustomer` já manda quando disponível).
 
 ## 12. Convenções (do CLAUDE.md)
 
@@ -191,4 +208,4 @@ node --experimental-strip-types scripts/test-communicare.ts
 
 ---
 
-**Resumo de 1 linha:** App + admin + site OLI em produção via OTA; integração Communicare 100% codada e gated (aguarda token + endpoint de agenda); break-even ~24 médicos a R$50k fixo; pendências principais = publicar páginas no Netlify + configurar dashboard Supabase do email + finalizar reset de senha.
+**Resumo de 1 linha:** App + admin + site OLI em produção via OTA; fluxo de indicação completo (share→download→cadastro) no ar; integração Communicare 100% codada e gated (aguarda token + endpoint de agenda); break-even ~24 médicos a R$50k fixo; pendências principais = publicar páginas no Netlify (incl. `baixar.html`) + configurar dashboard Supabase do email + finalizar reset de senha + virar Asaas p/ produção.
