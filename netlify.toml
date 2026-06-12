@@ -1,0 +1,5 @@
+# Site institucional OLI — estático, servido direto de landing/.
+# Sem build step (sobrepoe qualquer "expo export" configurado na UI).
+[build]
+  publish = "landing"
+  command = ""
