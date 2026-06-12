@@ -27,3 +27,6 @@ android/
 *.log
 # Local Netlify folder
 .netlify
+
+# Plugin caveman (repo git aninhado — nao versionar como submodulo)
+caveman
