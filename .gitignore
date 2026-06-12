@@ -30,3 +30,6 @@ android/
 
 # Plugin caveman (repo git aninhado — nao versionar como submodulo)
 caveman
+
+# Google Play service account (NUNCA commitar)
+google-services.json

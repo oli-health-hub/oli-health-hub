@@ -33,14 +33,9 @@
       },
       "package": "com.oli.healthhub",
       "permissions": [
-        "CAMERA",
-        "READ_CALENDAR",
-        "WRITE_CALENDAR",
         "android.permission.CAMERA",
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.POST_NOTIFICATIONS"
