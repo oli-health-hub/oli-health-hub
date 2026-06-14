@@ -136,18 +136,23 @@ export function parseICS(raw: string): LumaEvent[] {
   for (const line of lines) {
     if (line === 'BEGIN:VEVENT') { cur = {}; continue; }
     if (line === 'END:VEVENT') {
-      if (cur) {
+      if (cur && (cur.STATUS ?? '').toUpperCase() !== 'CANCELLED') {
         const startISO = cur.DTSTART ? icsDateToISO(cur.DTSTART) : null;
         if (startISO) {
           const endISO = cur.DTEND ? icsDateToISO(cur.DTEND) : null;
+          const rawDesc = cur.DESCRIPTION ? unescapeICS(cur.DESCRIPTION) : '';
+          // Luma não emite campo URL: o link do evento fica na descrição.
+          const urlMatch = rawDesc.match(/https?:\/\/(?:luma\.com|lu\.ma)\/[A-Za-z0-9]+/);
+          // Remove o boilerplate "Get up-to-date information at: ... Hosted by ..."
+          const cleanDesc = rawDesc.split(/\n*Get up-to-date information at:/i)[0].trim();
           events.push({
             id:          cur.UID ?? startISO,
             title:       cur.SUMMARY ? unescapeICS(cur.SUMMARY) : 'Evento',
-            description: cur.DESCRIPTION ? unescapeICS(cur.DESCRIPTION) : '',
+            description: cleanDesc,
             startAt:     startISO,
             endAt:       endISO ?? startISO,
             coverUrl:    cur.ATTACH || undefined,
-            eventUrl:    cur.URL || 'https://lu.ma',
+            eventUrl:    cur.URL || urlMatch?.[0] || 'https://lu.ma',
             location:    cur.LOCATION ? unescapeICS(cur.LOCATION) : 'OLI Health Hub',
             isFree:      true,
             guestCount:  0,
