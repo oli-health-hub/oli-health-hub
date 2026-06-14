@@ -4,7 +4,7 @@ import { formatDate, formatHour } from './formatters';
 // Lido do ambiente de build — definido em .env (nunca hardcoded)
 // EXPO_PUBLIC_* são injetadas pelo Metro no bundle do cliente
 const OLI_RECEPTION_PHONE =
-  process.env.EXPO_PUBLIC_OLI_RECEPTION_PHONE ?? '5511997639711';
+  process.env.EXPO_PUBLIC_OLI_RECEPTION_PHONE ?? '5511919980777';
 
 function cleanPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');

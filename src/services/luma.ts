@@ -61,43 +61,145 @@ const MOCK_EVENTS: LumaEvent[] = [
   },
 ];
 
+// ── Config ────────────────────────────────────────────────────────────────────
+
+// Feed iCal público do calendário OLI no Luma (sem API key / sem plano Plus).
+// Atualiza sozinho a cada evento criado no Luma (REFRESH-INTERVAL PT12H).
+const LUMA_CALENDAR_ID = process.env.EXPO_PUBLIC_LUMA_CALENDAR_ID ?? 'cal-BHFzthdc75sAu98';
+const LUMA_ICS_URL =
+  process.env.EXPO_PUBLIC_EVENTS_ICS_URL ??
+  `https://api.lu.ma/ics/get?entity=calendar&id=${LUMA_CALENDAR_ID}`;
+
+/** True quando há um feed de eventos configurado (sempre, via fallback OLI). */
+export function lumaIsConfigured(): boolean {
+  return !!LUMA_ICS_URL;
+}
+
+// ── Parser iCal (RFC 5545, mínimo necessário) ────────────────────────────────
+
+/** Desfaz line-folding: linhas continuadas começam com espaço ou tab. */
+function unfoldICS(raw: string): string[] {
+  const lines = raw.replace(/\r\n/g, '\n').split('\n');
+  const out: string[] = [];
+  for (const line of lines) {
+    if ((line.startsWith(' ') || line.startsWith('\t')) && out.length > 0) {
+      out[out.length - 1] += line.slice(1);
+    } else {
+      out.push(line);
+    }
+  }
+  return out;
+}
+
+/** Desescapa texto iCal: \n \, \; \\ */
+function unescapeICS(v: string): string {
+  return v.replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+}
+
+/** Converte DTSTART/DTEND iCal para ISO 8601. Trata Z, TZID e VALUE=DATE. */
+function icsDateToISO(value: string): string | null {
+  const v = value.trim();
+  // YYYYMMDD (data sem hora)
+  const dateOnly = v.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (dateOnly) {
+    const [, y, m, d] = dateOnly;
+    return new Date(`${y}-${m}-${d}T00:00:00`).toISOString();
+  }
+  // YYYYMMDDTHHMMSS(Z)
+  const dt = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+  if (dt) {
+    const [, y, mo, d, h, mi, s, z] = dt;
+    const iso = `${y}-${mo}-${d}T${h}:${mi}:${s}${z ? 'Z' : ''}`;
+    const parsed = new Date(iso);
+    return isNaN(parsed.getTime()) ? null : (z ? parsed.toISOString() : iso);
+  }
+  const fallback = new Date(v);
+  return isNaN(fallback.getTime()) ? null : fallback.toISOString();
+}
+
+/** Quebra "KEY;PARAM=x:VALUE" em { key, value }. */
+function splitICSLine(line: string): { key: string; value: string } | null {
+  const idx = line.indexOf(':');
+  if (idx === -1) return null;
+  const keyPart = line.slice(0, idx);
+  const value = line.slice(idx + 1);
+  const key = keyPart.split(';')[0].toUpperCase();
+  return { key, value };
+}
+
+/** Parseia um VCALENDAR em LumaEvent[]. Exportado p/ teste. */
+export function parseICS(raw: string): LumaEvent[] {
+  const lines = unfoldICS(raw);
+  const events: LumaEvent[] = [];
+  let cur: Record<string, string> | null = null;
+
+  for (const line of lines) {
+    if (line === 'BEGIN:VEVENT') { cur = {}; continue; }
+    if (line === 'END:VEVENT') {
+      if (cur) {
+        const startISO = cur.DTSTART ? icsDateToISO(cur.DTSTART) : null;
+        if (startISO) {
+          const endISO = cur.DTEND ? icsDateToISO(cur.DTEND) : null;
+          events.push({
+            id:          cur.UID ?? startISO,
+            title:       cur.SUMMARY ? unescapeICS(cur.SUMMARY) : 'Evento',
+            description: cur.DESCRIPTION ? unescapeICS(cur.DESCRIPTION) : '',
+            startAt:     startISO,
+            endAt:       endISO ?? startISO,
+            coverUrl:    cur.ATTACH || undefined,
+            eventUrl:    cur.URL || 'https://lu.ma',
+            location:    cur.LOCATION ? unescapeICS(cur.LOCATION) : 'OLI Health Hub',
+            isFree:      true,
+            guestCount:  0,
+            tags:        cur.CATEGORIES ? cur.CATEGORIES.split(',').map(t => t.trim()).filter(Boolean) : [],
+          });
+        }
+      }
+      cur = null;
+      continue;
+    }
+    if (cur) {
+      const parsed = splitICSLine(line);
+      if (parsed) cur[parsed.key] = parsed.value;
+    }
+  }
+  return events;
+}
+
 // ── Implementação ─────────────────────────────────────────────────────────────
 
+/** Mock para desenvolvimento. Nunca é o default em produção. */
 class LumaMockService implements ILumaService {
   async getUpcomingEvents(): Promise<LumaEvent[]> {
-    // Simula latência de rede
     await new Promise(r => setTimeout(r, 400));
     return MOCK_EVENTS;
   }
 }
 
 /**
- * Fase 3 — substituir por:
- *
- * class LumaApiService implements ILumaService {
- *   private readonly calendarId = process.env.EXPO_PUBLIC_LUMA_CALENDAR_ID!;
- *
- *   async getUpcomingEvents(): Promise<LumaEvent[]> {
- *     const res = await fetch(
- *       `https://api.lu.ma/public/v1/calendar/list-events?calendar_api_id=${this.calendarId}`,
- *       { headers: { 'x-luma-api-key': process.env.EXPO_PUBLIC_LUMA_API_KEY! } },
- *     );
- *     const { entries } = await res.json();
- *     return entries.map((e: any) => ({
- *       id:          e.event.api_id,
- *       title:       e.event.name,
- *       description: e.event.description ?? '',
- *       startAt:     e.event.start_at,
- *       endAt:       e.event.end_at,
- *       coverUrl:    e.event.cover_url ?? undefined,
- *       eventUrl:    `https://lu.ma/${e.event.url}`,
- *       location:    e.event.geo_address_info?.full_address ?? 'OLI Health Hub',
- *       isFree:      e.event.ticket_info?.is_free ?? true,
- *       guestCount:  e.event.guest_count ?? 0,
- *       tags:        e.event.tags?.map((t: any) => t.label) ?? [],
- *     }));
- *   }
- * }
+ * Serviço real: lê o feed iCal público do calendário OLI no Luma.
+ * - Sem API key / sem plano Plus.
+ * - Filtra apenas eventos futuros, ordena por data crescente.
+ * - Erro de rede/parse → [] (nunca quebra a tela; aba mostra "sem eventos").
  */
+class LumaIcsService implements ILumaService {
+  async getUpcomingEvents(): Promise<LumaEvent[]> {
+    try {
+      const res = await fetch(LUMA_ICS_URL, { headers: { accept: 'text/calendar' } });
+      if (!res.ok) return [];
+      const ics = await res.text();
+      const now = Date.now();
+      return parseICS(ics)
+        .filter(e => new Date(e.startAt).getTime() >= now)
+        .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    } catch {
+      return [];
+    }
+  }
+}
 
-export const lumaService: ILumaService = new LumaMockService();
+/** Default = feed iCal real. */
+export const lumaService: ILumaService = new LumaIcsService();
+
+// Mantém o mock acessível p/ dev sem warning de "não usado".
+export const _lumaMock = LumaMockService;
