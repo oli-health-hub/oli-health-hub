@@ -5,6 +5,7 @@ import {
   ScrollView, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
 import { signIn, signUp } from '../src/services/auth';
 import { supabase } from '../src/services/supabase';
@@ -83,7 +84,9 @@ export default function LoginScreen() {
     }
     setResetLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmed);
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: Linking.createURL('nova-senha'),
+      });
       if (error) throw error;
       Alert.alert(
         'E-mail enviado',

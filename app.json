@@ -32,6 +32,7 @@
         "backgroundColor": "#F4EFEA"
       },
       "package": "com.oli.healthhub",
+      "allowBackup": false,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_CALENDAR",

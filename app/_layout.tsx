@@ -4,11 +4,13 @@ import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { captureReferralFromUrl } from '../src/utils/referral';
+import { handleRecoveryDeepLink } from '../src/utils/passwordRecovery';
 import { colors } from '../src/theme/designSystem';
 import { useAuthStore } from '../src/store/authStore';
 import { useAppLock } from '../src/hooks/useAppLock';
 import { useSessionTimeout } from '../src/hooks/useSessionTimeout';
 import { AppLockScreen } from '../src/components/AppLockScreen';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { checkMFARequired } from '../src/hooks/useMFA';
 import {
   requestNotificationPermission,
@@ -50,9 +52,15 @@ export default function RootLayout() {
   // Captura código de indicação (?ref=) de deep link / universal link.
   // Cold start (app aberto pelo link) + warm (link tocado com app rodando).
   useEffect(() => {
-    Linking.getInitialURL().then(captureReferralFromUrl).catch(() => {});
+    const handleUrl = async (url: string | null) => {
+      captureReferralFromUrl(url ?? '').catch(() => {});
+      // Link de recuperação de senha → abre sessão e vai pra tela de nova senha
+      const isRecovery = await handleRecoveryDeepLink(url).catch(() => false);
+      if (isRecovery) router.replace('/nova-senha' as never);
+    };
+    Linking.getInitialURL().then(handleUrl).catch(() => {});
     const sub = Linking.addEventListener('url', ({ url }) => {
-      captureReferralFromUrl(url).catch(() => {});
+      handleUrl(url).catch(() => {});
     });
     return () => sub.remove();
   }, []);
@@ -77,7 +85,11 @@ export default function RootLayout() {
     const inOnboarding = segments[0] === 'onboarding';
     const inMFAVerify  = segments[0] === 'mfa-verify';
     const inMFASetup   = segments[0] === 'mfa-setup';
-    const inAuthFlow   = inLogin || inOnboarding || inMFAVerify || inMFASetup;
+    const inNovaSenha  = (segments[0] as string) === 'nova-senha';
+    const inAuthFlow   = inLogin || inOnboarding || inMFAVerify || inMFASetup || inNovaSenha;
+
+    // Tela de nova senha (recuperação): não redirecionar — fluxo próprio
+    if (inNovaSenha) return;
 
     // Sem sessão → login
     if (!session && !inLogin) { router.replace('/login'); return; }
@@ -113,7 +125,7 @@ export default function RootLayout() {
   }, [session, isLoading, profile, segments]);
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="dark" backgroundColor={colors.white} />
       <Stack
         screenOptions={{
@@ -128,6 +140,7 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding"  options={{ headerShown: false }} />
         <Stack.Screen name="mfa-verify"  options={{ headerShown: false }} />
         <Stack.Screen name="mfa-setup"   options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="nova-senha"  options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)"      options={{ headerShown: false }} />
         <Stack.Screen
           name="chatbot"
@@ -154,8 +167,11 @@ export default function RootLayout() {
         />
       </Stack>
 
-      {/* App Lock — overlay sobre tudo quando sessão está bloqueada */}
-      {isLocked && session && <AppLockScreen onUnlock={unlock} />}
-    </>
+      {/* App Lock — overlay sobre tudo quando sessão está bloqueada.
+          Exceto na tela de nova senha (fluxo de recuperação não pode travar). */}
+      {isLocked && session && (segments[0] as string) !== 'nova-senha' && (
+        <AppLockScreen onUnlock={unlock} />
+      )}
+    </ErrorBoundary>
   );
 }
