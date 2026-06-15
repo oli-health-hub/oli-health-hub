@@ -46,7 +46,7 @@ export function ReferralPromoModal({ visible, onIndicar, onClose }: Props) {
             accessibilityLabel="Ver meu código de indicação"
           >
             <Ionicons name="share-social-outline" size={18} color={colors.white} />
-            <Text style={styles.primaryText}>Pegar meu código</Text>
+            <Text style={styles.primaryText}>Receber meu código</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

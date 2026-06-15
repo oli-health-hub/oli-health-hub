@@ -124,7 +124,14 @@ export default function OnboardingScreen() {
   // ── Step 1: Situação jurídica ──
   const [tratamento,       setTratamento]       = useState<Tratamento | null>(null);
   const [crm,              setCrm]              = useState('');
-  const [tipoAtendimento,  setTipoAtendimento]  = useState<TipoAtendimento | null>(null);
+  // Atendimento é multi-seleção: presencial e/ou online → deriva o tipo.
+  const [atendePresencial, setAtendePresencial] = useState(false);
+  const [atendeOnline,     setAtendeOnline]     = useState(false);
+  const tipoAtendimento: TipoAtendimento | null =
+    atendePresencial && atendeOnline ? 'ambos'
+    : atendePresencial ? 'presencial'
+    : atendeOnline ? 'telemedicina'
+    : null;
   const [situacaoJuridica, setSituacaoJuridica] = useState<SituacaoJuridica | null>(null);
   const [possuiCLT,        setPossuiCLT]        = useState<boolean | null>(null);
   const [possuiSocios,     setPossuiSocios]     = useState<boolean | null>(null);
@@ -155,7 +162,8 @@ export default function OnboardingScreen() {
   const [previsaoContratacao,setPrevisaoContratacao]= useState<boolean | null>(null);
 
   // ── Validação por step ──
-  const step1Valid = crm.trim().length > 0 && tipoAtendimento !== null &&
+  // CRM opcional (atende profissionais de outras áreas: CRP, CRN, etc.)
+  const step1Valid = tipoAtendimento !== null &&
     situacaoJuridica !== null && possuiCLT !== null && possuiSocios !== null;
   const cidadeUF   = cidade.trim() && uf ? `${cidade.trim()} / ${uf}` : '';
   const step2Valid = atividadeExercida.trim().length > 0 && localAtuacao !== null && numLocais !== null && cidade.trim().length > 0 && uf.length > 0;
@@ -265,7 +273,7 @@ export default function OnboardingScreen() {
         .update({
           onboarding_complete:   true,
           tratamento:            tratamento,
-          crm:                   crm.trim(),
+          crm:                   crm.trim() || null,
           tipo_atendimento:      tipoAtendimento,
           situacao_juridica:     situacaoJuridica,
           faturamento_range:     faturamentoRange,
@@ -400,38 +408,40 @@ export default function OnboardingScreen() {
                 />
               </View>
 
-              {/* CRM */}
-              <Text style={[styles.question, styles.questionSpacing]}>Número do CRM</Text>
-              <Text style={styles.questionHint}>Ex: CRM-SP 123456</Text>
+              {/* Registro profissional (opcional) */}
+              <Text style={[styles.question, styles.questionSpacing]}>Registro profissional <Text style={styles.optionalHint}>(opcional)</Text></Text>
+              <Text style={styles.questionHint}>CRM, CRP, CRN… — ex: CRM-SP 123456</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="CRM-SP 000000"
+                placeholder="Ex: CRM-SP 000000"
                 placeholderTextColor={colors.gray}
                 value={crm}
                 onChangeText={setCrm}
                 autoCapitalize="characters"
-                accessibilityLabel="Número do CRM"
+                accessibilityLabel="Número do registro profissional"
               />
 
-              {/* Tipo de atendimento */}
+              {/* Tipo de atendimento — multi-seleção (pode marcar os dois) */}
               <Text style={[styles.question, styles.questionSpacing]}>
                 Como você atende seus pacientes?
               </Text>
-              {([
-                { value: 'presencial',   label: 'Presencial',        icon: 'business-outline',     sublabel: 'Atendimentos em consultório / clínica' },
-                { value: 'telemedicina', label: 'Telemedicina',       icon: 'videocam-outline',      sublabel: 'Consultas online' },
-                { value: 'ambos',        label: 'Presencial e online', icon: 'git-merge-outline',    sublabel: 'Ambas as modalidades' },
-              ] as const).map(o => (
-                <OptionCard
-                  key={o.value}
-                  value={o.value}
-                  label={o.label}
-                  sublabel={o.sublabel}
-                  icon={o.icon}
-                  selected={tipoAtendimento === o.value}
-                  onPress={setTipoAtendimento}
-                />
-              ))}
+              <Text style={styles.questionHint}>Pode marcar mais de uma opção.</Text>
+              <OptionCard
+                value="presencial"
+                label="Presencial"
+                sublabel="Atendimentos em consultório / clínica"
+                icon="business-outline"
+                selected={atendePresencial}
+                onPress={() => setAtendePresencial(p => !p)}
+              />
+              <OptionCard
+                value="telemedicina"
+                label="Telemedicina"
+                sublabel="Consultas online"
+                icon="videocam-outline"
+                selected={atendeOnline}
+                onPress={() => setAtendeOnline(p => !p)}
+              />
 
               {/* Q1 */}
               <Text style={[styles.question, styles.questionSpacing]}>
