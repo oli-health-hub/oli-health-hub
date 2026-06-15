@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 12/Junho/2026.
+> Última atualização: 15/Junho/2026.
 
 ---
 
@@ -140,7 +140,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - **Guards** contra duplo prompt: `authInFlightRef` + supressão de re-lock por 2s após desbloqueio (corrige 2º popup causado por background→active no fechamento do prompt).
 - `AppLockScreen.tsx`: fundo **vidro fosco claro** `rgba(244,239,234,0.96)` (identidade OLI, não preto; blur real via expo-blur fica pro próximo build nativo). Sem quadro verde no fluxo normal — botão "Desbloquear" só aparece se Face ID falhar.
 - **Fallback de código do dispositivo:** após falha, botão "Usar código do dispositivo" (`disableDeviceFallback:false`). Se usado, grava flag `oli_force_password_next` → **próxima sessão exige login e-mail/senha** (cold start consome a flag e faz signOut).
-- Reset de senha: `resetPasswordForEmail` SEM `redirectTo` + **sem tela in-app de nova senha** → ciclo de reset ainda **incompleto** (pendência).
+- Reset de senha: **COMPLETO** (sessão 15/jun) — `resetPasswordForEmail` com `redirectTo=olihealthhub://nova-senha`; `_layout` intercepta o link de recovery (`src/utils/passwordRecovery.ts`) e roteia pra `app/nova-senha.tsx`. **Falta:** add `olihealthhub://nova-senha` nas Redirect URLs do Supabase + teste 1x ponta-a-ponta.
 
 ## 9. Ciclo de confirmação de e-mail — estado
 
@@ -159,26 +159,54 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - Simulador CC **desligado** em produção (mock off). Banco com perfis reais apenas.
 - `RELEASE_CHECKLIST.md` na raiz: **desligar mock CC antes de qualquer release público** + passos de ativação CC.
 
+## 10.1. GOOGLE PLAY — status (sessão 14-15/jun)
+
+**Onde está:** AAB de produção no ar em **Internal Testing**.
+- Package/Application ID: `com.oli.healthhub`. App signing = **Google Play** (upload key do EAS; não trocar).
+- Conta Play Developer = **Individual** (não Organization; sem DUNS). Verificação Google concluída.
+- Build atual com ícone corrigido (adaptive icon com margem): EAS build `c0936887` → `.aab`.
+- Assets prontos em `assets/play-store/`: `feature-graphic.png` (1024×500), `icon-512.png`, `logo-white.png`, `_render.html` (fonte editável).
+- Screenshots: `assets/Print Screen App/selected/` (01..10, nomes por tela; comunidade/perfil com nome/email borrados).
+- Textos + respostas de formulário: **`docs/PLAY_STORE_LISTING.md`** (short/full desc pt-BR, Data Safety exato, Content rating IARC, App access, Target audience).
+
+**Falta pra ir a PRODUÇÃO pública (tudo no Console, fundador):**
+- App content: **Data Safety** + **Content rating** + **App access** + **Target audience (18+)** + Saúde/Financeiro/Gov — respostas prontas no doc. ⚠️ Confirmar enquadramento "Saúde" (dado de paciente) com jurídico.
+- Main store listing: colar desc + subir ícone 512 + feature graphic + screenshots.
+- Conta demo dedicada pro revisor Google (só pra produção; internal testing não precisa).
+- Regra Google p/ conta nova: produção pública exige **14 dias de closed testing com 12+ testers**. Internal testing **não** tem essa regra.
+
 ## 11. PENDÊNCIAS / próximos passos
 
-1. **Netlify não publicou** `confirmado.html`/`privacidade.html`/**`baixar.html`** (404). Site serve `landing/` antigo mas não pegou os últimos pushes. Verificar no painel Netlify: Repository = `guipasquetti/oli-health-hub`? Branch `main`? Publish dir `landing`? Auto-deploy ON? → dar "Trigger deploy". (Arquivos antigos como `/consentimento.html` e `/logo_oli_transparent.png` servem 200; os novos 404.)
-   - **`baixar.html`**: após publicar, preencher `APP_STORE_URL` (hoje placeholder `id0000000000`) quando o app sair da revisão. Google Play já com link correto (`com.oli.healthhub`).
-2. **Config Supabase dashboard** (depois das páginas no ar):
-   - Auth → URL Configuration → **Site URL**: `https://olihealthhub.com.br/confirmado`
-   - **Redirect URLs** (allowlist): `https://olihealthhub.com.br/confirmado` + `olihealthhub://*`
-   - Auth → Email Templates → **Confirm signup**: colar `landing/email-templates/confirm-signup.html`
-   - Auth → Providers → Email → **Confirm email = ON**
-3. **Reset de senha**: criar tela in-app de nova senha + deep link de recovery + `redirectTo`. Ciclo hoje incompleto.
-4. **Communicare**: aguardar token + endpoint LISTA + valores de status + webhook. Depois remontar card da agenda.
-5. **Build nativo TestFlight**: hoje rodando via OTA (runtime 1.0.0). Novo build necessário só p/ mudança nativa (ex.: expo-blur no lock screen, ou bump de versão).
-6. **expo-blur** (opcional): blur real no lock screen — exige novo build nativo.
-7. **VIP**: definir preço quando for a hora.
-8. **Cron** auto-desativar START após 30 dias sem reserva (mencionado, não implementado).
-9. **🔴 Asaas sandbox → produção** (ativa cobranças REAIS — ação do fundador, credencial financeira):
-   - Lógica em `supabase/functions/_shared/asaas.ts` (`ASAAS_ENV` chaveia sandbox vs `https://www.asaas.com/api/v3`).
-   - Trocar secrets das Edge Functions: `ASAAS_ENV=production` + `ASAAS_API_KEY=<chave de produção>`.
-     `supabase secrets set ASAAS_ENV=production ASAAS_API_KEY=<chave>`
-   - Antes de virar: webhook de produção → `https://xwcarrurjvfxisuaihid.supabase.co/functions/v1/asaas-webhook`; token bate com secret `ASAAS_WEBHOOK_TOKEN`; perfis com CPF (`cpfCnpj` exigido em prod p/ PIX/boleto — `findOrCreateCustomer` já manda quando disponível).
+### ✅ Resolvido na sessão 14-15/jun
+- **Netlify**: causa real era **gitlink fantasma `caveman`** (submódulo sem `.gitmodules`) travando o checkout → todo deploy falhava. Removido + `.gitignore`. `netlify.toml` na raiz (`publish=landing`, sem build). `confirmado/privacidade/baixar` agora 200.
+- **Reset de senha COMPLETO**: `app/nova-senha.tsx` + `src/utils/passwordRecovery.ts`; `resetPasswordForEmail` com `redirectTo=olihealthhub://nova-senha`; `_layout` intercepta o link de recovery (setSession via fragmento) e roteia. Gate de auth + AppLock não interferem. **Falta só testar 1x ponta-a-ponta + add `olihealthhub://nova-senha` nas Redirect URLs do Supabase.**
+- **Eventos Luma REAIS**: lê o feed iCal público (`cal-BHFzthdc75sAu98`, sem API key/sem Plus) em `src/services/luma.ts` (parser RFC5545; extrai link do evento da DESCRIPTION; pula CANCELLED). Era mock antes.
+- **Segurança**: `ErrorBoundary` global (Sentry) em `src/components/ErrorBoundary.tsx`; `android.allowBackup=false`.
+- **A11y 100%**: 0 touchables sem rótulo (detector custom).
+- **Telefone recepção** corrigido: `5511919980777` (fallback em `whatsapp.ts`).
+- **Onboarding**: atendimento virou **multi-select** (Presencial e/ou Telemedicina → deriva `ambos`); campo CRM → **"Conselho de classe" opcional** (CRP/CRN/CRO; grava null se vazio); nova pergunta **"assessorias que já possui"** (Contabilidade/Jurídica/Convênios/Marketing) → `profiles.assessorias_atuais text[]`.
+- **Admin**: coluna **Assessorias** em `/medicos` (chips verde=tem / cinza=oferta) pra pipeline de upsell.
+- **Fotos das salas**: salas 1, 2, 6 no card da agenda (banner) + RoomDetailModal; bundle em `assets/room-photos/` via `src/utils/roomPhotos.ts` (mapa estático id→foto, atualizável por OTA).
+
+### 🔴 Em aberto
+1. **Config Supabase dashboard** (em `Authentication`):
+   - `URL Configuration` → Site URL `https://olihealthhub.com.br/confirmado`; **Redirect URLs** += `olihealthhub://nova-senha`, `olihealthhub://*`, `https://olihealthhub.com.br/confirmado`. **(o de nova-senha é 🔴 — reset não volta pro app sem ele)**
+   - `Sign In / Providers` → Email → **Confirm email = ON**; min password length = 8.
+   - `Emails` → Confirm signup: colar `landing/email-templates/confirm-signup.html` (e reset-password.html).
+   - Leaked password protection = só plano Pro (pulado).
+2. **🔴 Asaas sandbox → produção** (cobranças REAIS — fundador): `supabase secrets set ASAAS_ENV=production ASAAS_API_KEY=<chave>`. **Server-side → vale na hora, sem rebuild/OTA.** Pode estar criando 2ª conta Asaas (verificando). Antes: webhook prod → `…/functions/v1/asaas-webhook` + `ASAAS_WEBHOOK_TOKEN`.
+3. **Sentry DSN ausente** → lançamento cego a crashes. Setar `EXPO_PUBLIC_SENTRY_DSN` (build-time → precisa OTA/rebuild).
+4. **Fotos salas faltando**: 3, 4, 5, Digital + destino do `conforto-medico.jpg` (sobrou, não-sala). Quando chegarem: solta em `assets/room-photos/`, registra em `roomPhotos.ts`, `eas update`.
+5. **Play produção**: ver §10.1 (Data Safety/rating/listing + 14d closed testing).
+6. **`oli_encrypt`/`oli_decrypt`** executáveis por qualquer authenticated (advisor) — revisar/restringir.
+7. **Communicare**: aguardar token + endpoint LISTA + status + webhook. Depois remontar card da agenda.
+8. **VIP** preço; **Cron** auto-desativar START 30d sem reserva; **expo-blur** lock screen (rebuild nativo).
+
+### Regra de atualização (importante)
+- **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
+- **Nativo** (`app.json` android/ios, permissões, ícone, SDK, versão) → **rebuild AAB** + submit.
+- **Secret de Edge Function** (Asaas, CC token) → muda no Supabase, vale na hora.
+- **`EXPO_PUBLIC_*`** (Sentry, Luma) → está no bundle → OTA/rebuild.
 
 ## 12. Convenções (do CLAUDE.md)
 
@@ -208,4 +236,4 @@ node --experimental-strip-types scripts/test-communicare.ts
 
 ---
 
-**Resumo de 1 linha:** App + admin + site OLI em produção via OTA; fluxo de indicação completo (share→download→cadastro) no ar; integração Communicare 100% codada e gated (aguarda token + endpoint de agenda); break-even ~24 médicos a R$50k fixo; pendências principais = publicar páginas no Netlify (incl. `baixar.html`) + configurar dashboard Supabase do email + finalizar reset de senha + virar Asaas p/ produção.
+**Resumo de 1 linha (15/jun):** App no ar em **Internal Testing** do Google Play (AAB `c0936887`, ícone corrigido); reset de senha, eventos Luma reais (iCal), ErrorBoundary, a11y 100%, allowBackup=false, onboarding multi-select + assessorias (upsell no admin) e fotos de salas (1/2/6) — tudo OTA. Netlify resolvido. Pendências principais = **config Supabase (Redirect URL nova-senha 🔴)** + **Asaas→produção** + **App content/listing pra Play público** + Sentry DSN + fotos salas 3/4/5/Digital.
