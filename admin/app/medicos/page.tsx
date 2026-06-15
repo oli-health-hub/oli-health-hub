@@ -10,12 +10,20 @@ const PLAN_COLOR: Record<string, string> = {
   VIP:   'bg-yellow-50 text-yellow-700',
 };
 
+// Assessorias OLI — usadas pra identificar gaps de upsell por médico.
+const ASSESSORIAS: { key: string; short: string; full: string }[] = [
+  { key: 'contabilidade', short: 'Cont', full: 'Contabilidade' },
+  { key: 'juridica',      short: 'Jur',  full: 'Jurídica' },
+  { key: 'convenios',     short: 'Conv', full: 'Convênios' },
+  { key: 'marketing',     short: 'Mkt',  full: 'Marketing' },
+];
+
 export default async function MedicosPage() {
   const supabase = await createSupabaseServer();
 
   const { data: medicos } = await supabase
     .from('profiles')
-    .select('id, nome, crm, especialidade, plan, created_at')
+    .select('id, nome, crm, especialidade, plan, created_at, assessorias_atuais')
     .neq('user_type', 'admin')
     .order('created_at', { ascending: false })
     .limit(200);
@@ -47,7 +55,7 @@ export default async function MedicosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-oli-border">
-                {['Nome', 'CRM', 'Especialidade', 'Plano', 'Módulos', 'Cadastro'].map(h => (
+                {['Nome', 'CRM', 'Especialidade', 'Plano', 'Módulos', 'Assessorias', 'Cadastro'].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-oli-lgray uppercase tracking-wider">
                     {h}
                   </th>
@@ -60,6 +68,7 @@ export default async function MedicosPage() {
                 const planColor   = PLAN_COLOR[plan] ?? 'bg-gray-100 text-gray-600';
                 const moduleCount = moduleCountMap[m.id] ?? 0;
                 const date        = new Date(m.created_at).toLocaleDateString('pt-BR');
+                const tem         = new Set(m.assessorias_atuais ?? []);
 
                 return (
                   <tr key={m.id} className="hover:bg-stone-50 transition-colors">
@@ -80,6 +89,26 @@ export default async function MedicosPage() {
                         ? <span className="text-oli-green font-semibold">{moduleCount} ativo{moduleCount !== 1 ? 's' : ''}</span>
                         : <span className="text-oli-lgray">—</span>
                       }
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        {ASSESSORIAS.map(a => {
+                          const has = tem.has(a.key);
+                          return (
+                            <span
+                              key={a.key}
+                              title={has ? `${a.full}: já possui` : `${a.full}: não possui (oferecer)`}
+                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                has
+                                  ? 'bg-green-50 text-oli-green'
+                                  : 'border border-dashed border-oli-border text-oli-lgray'
+                              }`}
+                            >
+                              {a.short}
+                            </span>
+                          );
+                        })}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-oli-gray">{date}</td>
                   </tr>
