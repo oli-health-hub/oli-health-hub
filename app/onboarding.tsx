@@ -408,9 +408,9 @@ export default function OnboardingScreen() {
                 />
               </View>
 
-              {/* Registro profissional (opcional) */}
-              <Text style={[styles.question, styles.questionSpacing]}>Registro profissional <Text style={styles.optionalHint}>(opcional)</Text></Text>
-              <Text style={styles.questionHint}>CRM, CRP, CRN… — ex: CRM-SP 123456</Text>
+              {/* Conselho de classe (opcional) */}
+              <Text style={[styles.question, styles.questionSpacing]}>Conselho de classe <Text style={styles.optionalHint}>(opcional)</Text></Text>
+              <Text style={styles.questionHint}>CRM, CRP, CRN, CRO… — ex: CRM-SP 123456</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="Ex: CRM-SP 000000"
@@ -418,7 +418,7 @@ export default function OnboardingScreen() {
                 value={crm}
                 onChangeText={setCrm}
                 autoCapitalize="characters"
-                accessibilityLabel="Número do registro profissional"
+                accessibilityLabel="Conselho de classe"
               />
 
               {/* Tipo de atendimento — multi-seleção (pode marcar os dois) */}
@@ -879,7 +879,7 @@ export default function OnboardingScreen() {
 
               <View style={styles.summaryCard}>
                 {tratamento ? <SummaryRow label="Tratamento" value={tratamento} /> : null}
-                <SummaryRow label="CRM"                value={crm.trim()} />
+                {crm.trim() ? <SummaryRow label="Conselho de classe" value={crm.trim()} /> : null}
                 <SummaryRow label="Tipo de atendimento" value={LABELS_TIPO_ATENDIMENTO[tipoAtendimento!]} />
                 <SummaryRow label="Situação jurídica"  value={LABELS_SITUACAO[situacaoJuridica!]} />
                 <SummaryRow label="Vínculo CLT"        value={possuiCLT ? 'Sim' : 'Não'} />
