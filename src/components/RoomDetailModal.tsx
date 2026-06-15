@@ -1,7 +1,8 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
+import { getRoomPhotos } from '../utils/roomPhotos';
 import {
   buildDaySegments, buildFreeBlocks, HOUR_MARKS,
   DAY_START_MIN, DAY_TOTAL_MIN,
@@ -29,6 +30,7 @@ export function RoomDetailModal({
   const hasFree    = freeBlocks.length > 0;
 
   const dateLabel = `${selectedDate.getDate()} de ${MONTHS[selectedDate.getMonth()]}`;
+  const photos    = getRoomPhotos(room.id);
 
   return (
     <SafeAreaProvider>
@@ -45,11 +47,26 @@ export function RoomDetailModal({
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
 
-        {/* ── Foto placeholder ── */}
-        <View style={[styles.photoPlaceholder, shadows.small]}>
-          <Ionicons name="camera-outline" size={36} color={colors.oliLightGray} />
-          <Text style={styles.photoPlaceholderText}>Fotos em breve</Text>
-        </View>
+        {/* ── Foto(s) da sala ── */}
+        {photos.length === 0 ? (
+          <View style={[styles.photoPlaceholder, shadows.small]}>
+            <Ionicons name="camera-outline" size={36} color={colors.oliLightGray} />
+            <Text style={styles.photoPlaceholderText}>Fotos em breve</Text>
+          </View>
+        ) : photos.length === 1 ? (
+          <Image source={photos[0]} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
+        ) : (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            style={styles.carousel}
+          >
+            {photos.map((p, i) => (
+              <Image key={i} source={p} style={styles.carouselPhoto} resizeMode="cover" accessibilityIgnoresInvertColors />
+            ))}
+          </ScrollView>
+        )}
 
         {/* ── Especialidades + status ── */}
         <View style={styles.specialtiesRow}>
@@ -230,6 +247,19 @@ const styles = StyleSheet.create({
     gap:             spacing.sm,
   },
   photoPlaceholderText: { fontSize: 13, color: colors.oliLightGray },
+  photo: {
+    height:          200,
+    borderRadius:    radius.lg,
+    backgroundColor: colors.border,
+  },
+  carousel: { borderRadius: radius.lg },
+  carouselPhoto: {
+    width:           Dimensions.get('window').width - spacing.md * 2,
+    height:          200,
+    borderRadius:    radius.lg,
+    backgroundColor: colors.border,
+    marginRight:     spacing.sm,
+  },
 
   specialtiesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   specialtyChip: {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, Modal,
+  StyleSheet, Alert, Modal, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Calendar from 'expo-calendar';
@@ -13,6 +13,7 @@ import { RescheduleModal } from '../../src/components/RescheduleModal';
 import { RoomDetailModal } from '../../src/components/RoomDetailModal';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { formatHour } from '../../src/utils/formatters';
+import { getRoomCover } from '../../src/utils/roomPhotos';
 import {
   buildDaySegments, nextFreeLabel,
   DAY_START_MIN, DAY_TOTAL_MIN, HOUR_MARKS,
@@ -392,6 +393,16 @@ export default function AgendaScreen() {
                 onPress={() => handleRoomPress(room)}
                 accessibilityLabel={`${room.name} — ${room.isAvailable ? 'disponível' : 'ocupada'}, toque para ver detalhes`}
               >
+                {/* Foto da sala (banner) */}
+                {getRoomCover(room.id) && (
+                  <Image
+                    source={getRoomCover(room.id)}
+                    style={styles.roomCover}
+                    resizeMode="cover"
+                    accessibilityIgnoresInvertColors
+                  />
+                )}
+
                 {/* Topo: ícone + dot de status */}
                 <View style={styles.roomCardTop}>
                   <Ionicons
@@ -571,7 +582,15 @@ const styles = StyleSheet.create({
   availableText:  { fontSize: 12, fontWeight: '700', color: colors.oliGreen },
 
   grid:     { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.md, gap: spacing.md },
-  roomCard: { width: '47%', backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md },
+  roomCard: { width: '47%', backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md, overflow: 'hidden' },
+  roomCover: {
+    alignSelf: 'stretch',
+    height: 84,
+    marginTop: -spacing.md,
+    marginHorizontal: -spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.border,
+  },
   roomCardOccupied: { opacity: 0.55 },
   roomCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   statusDot:   { width: 10, height: 10, borderRadius: 5 },
