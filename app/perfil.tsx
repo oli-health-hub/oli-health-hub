@@ -254,10 +254,10 @@ export default function PerfilScreen() {
             </TouchableOpacity>
           ) : (
             <View style={styles.editActions}>
-              <TouchableOpacity onPress={handleCancelEdit} style={styles.cancelBtn}>
+              <TouchableOpacity onPress={handleCancelEdit} style={styles.cancelBtn} accessibilityRole="button" accessibilityLabel="Cancelar edição">
                 <Text style={styles.cancelBtnText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={saving}>
+              <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={saving} accessibilityRole="button" accessibilityLabel="Salvar alterações">
                 {saving
                   ? <ActivityIndicator size="small" color={colors.white} />
                   : <Text style={styles.saveBtnText}>Salvar</Text>}

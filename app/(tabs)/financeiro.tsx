@@ -542,8 +542,8 @@ function HourPackagePickerModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={pickerStyles.overlay} onPress={onClose}>
-        <Pressable style={pickerStyles.sheet} onPress={e => e.stopPropagation()}>
+      <Pressable style={pickerStyles.overlay} onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar">
+        <Pressable style={pickerStyles.sheet} onPress={e => e.stopPropagation()} accessible={false}>
 
           <View style={pickerStyles.handle} />
           <View style={pickerStyles.header}>

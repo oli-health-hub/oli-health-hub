@@ -176,7 +176,7 @@ export function QRScannerModal({ onCheckout, onClose }: Props) {
               <View style={styles.errorBox}>
                 <Ionicons name="alert-circle-outline" size={20} color={colors.oliRed} />
                 <Text style={styles.errorText}>{error}</Text>
-                <TouchableOpacity onPress={resetScan} style={styles.retryBtn}>
+                <TouchableOpacity onPress={resetScan} style={styles.retryBtn} accessibilityRole="button" accessibilityLabel="Tentar escanear novamente">
                   <Text style={styles.retryText}>Tentar novamente</Text>
                 </TouchableOpacity>
               </View>
@@ -231,11 +231,11 @@ function PermissionScreen({
 
       {!loading && (
         denied ? (
-          <TouchableOpacity style={styles.permBtn} onPress={() => Linking.openSettings()}>
+          <TouchableOpacity style={styles.permBtn} onPress={() => Linking.openSettings()} accessibilityRole="button" accessibilityLabel="Abrir Ajustes do dispositivo">
             <Text style={styles.permBtnText}>Abrir Ajustes</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.permBtn} onPress={onRequest}>
+          <TouchableOpacity style={styles.permBtn} onPress={onRequest} accessibilityRole="button" accessibilityLabel="Permitir acesso à câmera">
             <Text style={styles.permBtnText}>Permitir acesso à câmera</Text>
           </TouchableOpacity>
         )

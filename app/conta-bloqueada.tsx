@@ -76,12 +76,12 @@ export default function ContaBloqueadaScreen() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => contactReception('Olá, preciso de ajuda com minha conta no OLI Health Hub.')}>
+        <TouchableOpacity style={styles.primaryBtn} onPress={() => contactReception('Olá, preciso de ajuda com minha conta no OLI Health Hub.')} accessibilityRole="button" accessibilityLabel="Falar com a recepção pelo WhatsApp">
           <Ionicons name="logo-whatsapp" size={18} color={colors.white} />
           <Text style={styles.primaryBtnText}>Falar com a recepção</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryBtn} onPress={handleLogout}>
+        <TouchableOpacity style={styles.secondaryBtn} onPress={handleLogout} accessibilityRole="button" accessibilityLabel="Sair da conta">
           <Ionicons name="log-out-outline" size={16} color={colors.oliDarkGray} />
           <Text style={styles.secondaryBtnText}>Sair</Text>
         </TouchableOpacity>

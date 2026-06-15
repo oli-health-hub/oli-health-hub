@@ -230,8 +230,8 @@ interface TrialDisclaimerModalProps {
 function TrialDisclaimerModal({ visible, plan, onClose, onConfirm, loading }: TrialDisclaimerModalProps) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={trialStyles.overlay} onPress={onClose}>
-        <Pressable style={trialStyles.sheet} onPress={e => e.stopPropagation()}>
+      <Pressable style={trialStyles.overlay} onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar">
+        <Pressable style={trialStyles.sheet} onPress={e => e.stopPropagation()} accessible={false}>
 
           <View style={trialStyles.iconWrap}>
             <Ionicons name="information-circle" size={32} color={colors.oliGold} />
