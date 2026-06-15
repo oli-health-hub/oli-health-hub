@@ -519,6 +519,7 @@ export type Database = {
           notas_fiscais_range: string | null
           nps_score: number | null
           num_locais: string | null
+          assessorias_atuais: string[]
           onboarding_complete: boolean
           plan: string
           plan_id: string | null
@@ -570,6 +571,7 @@ export type Database = {
           notas_fiscais_range?: string | null
           nps_score?: number | null
           num_locais?: string | null
+          assessorias_atuais?: string[]
           onboarding_complete?: boolean
           plan?: string
           plan_id?: string | null
@@ -621,6 +623,7 @@ export type Database = {
           notas_fiscais_range?: string | null
           nps_score?: number | null
           num_locais?: string | null
+          assessorias_atuais?: string[]
           onboarding_complete?: boolean
           plan?: string
           plan_id?: string | null

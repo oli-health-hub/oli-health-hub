@@ -160,6 +160,11 @@ export default function OnboardingScreen() {
   const [notasFiscaisRange,  setNotasFiscaisRange]  = useState<NotasFiscaisRange | null>(null);
   const [possuiFuncionarios, setPossuiFuncionarios] = useState<boolean | null>(null);
   const [previsaoContratacao,setPrevisaoContratacao]= useState<boolean | null>(null);
+  // Assessorias que o profissional já possui hoje (multi, opcional) — upsell.
+  const [assessoriasAtuais,  setAssessoriasAtuais]  = useState<string[]>([]);
+  const toggleAssessoria = (value: string) =>
+    setAssessoriasAtuais(prev =>
+      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
 
   // ── Validação por step ──
   // CRM opcional (atende profissionais de outras áreas: CRP, CRN, etc.)
@@ -287,6 +292,7 @@ export default function OnboardingScreen() {
           possui_funcionarios:   possuiFuncionarios,
           previsao_contratacao:  possuiFuncionarios ? null : previsaoContratacao,
           possui_socios:         possuiSocios,
+          assessorias_atuais:    assessoriasAtuais,
           como_conheceu:         comoConheceu,
           referido_por:          referidoPorId,
         })
@@ -863,6 +869,27 @@ export default function OnboardingScreen() {
                   </View>
                 </>
               )}
+
+              {/* Assessorias que já possui (multi, opcional) */}
+              <Text style={[styles.question, styles.questionSpacing]}>
+                Você já conta com alguma dessas assessorias hoje?
+              </Text>
+              <Text style={styles.questionHint}>Opcional — marque as que já tem. As demais o OLI pode oferecer.</Text>
+              {([
+                { value: 'contabilidade', label: 'Contabilidade',           icon: 'calculator-outline' },
+                { value: 'juridica',      label: 'Jurídica',                icon: 'document-text-outline' },
+                { value: 'convenios',     label: 'Convênios (credenciamento)', icon: 'shield-checkmark-outline' },
+                { value: 'marketing',     label: 'Marketing',               icon: 'megaphone-outline' },
+              ] as const).map(o => (
+                <OptionCard
+                  key={o.value}
+                  value={o.value}
+                  label={o.label}
+                  icon={o.icon}
+                  selected={assessoriasAtuais.includes(o.value)}
+                  onPress={() => toggleAssessoria(o.value)}
+                />
+              ))}
             </>
           )}
 
@@ -895,6 +922,12 @@ export default function OnboardingScreen() {
                 <SummaryRow label="Funcionários"       value={possuiFuncionarios ? 'Sim' : 'Não'} />
                 {possuiFuncionarios === false && (
                   <SummaryRow label="Previsão de contratação" value={previsaoContratacao ? 'Sim' : 'Não'} />
+                )}
+                {assessoriasAtuais.length > 0 && (
+                  <SummaryRow
+                    label="Assessorias atuais"
+                    value={assessoriasAtuais.map(a => LABELS_ASSESSORIA[a] ?? a).join(', ')}
+                  />
                 )}
               </View>
 
@@ -992,6 +1025,13 @@ const LABELS_TIPO_ATENDIMENTO: Record<TipoAtendimento, string> = {
   presencial:   'Presencial',
   telemedicina: 'Telemedicina',
   ambos:        'Presencial e online',
+} as const;
+
+const LABELS_ASSESSORIA: Record<string, string> = {
+  contabilidade: 'Contabilidade',
+  juridica:      'Jurídica',
+  convenios:     'Convênios',
+  marketing:     'Marketing',
 };
 
 const LABELS_SITUACAO: Record<SituacaoJuridica, string> = {
