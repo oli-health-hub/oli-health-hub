@@ -5,10 +5,14 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAppStore } from '../store/appStore';
+import { useAuthStore } from '../store/authStore';
+import { hasReservationCredit } from '../services/financeiroService';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour } from '../utils/formatters';
 import { notifyPatientEncaixe } from '../utils/whatsapp';
+import { useAndroidBack } from '../hooks/useAndroidBack';
 import type { Patient, Reservation, Room } from '../models/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -107,7 +111,9 @@ interface Props {
 }
 
 export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
+  useAndroidBack(onClose);
   const { rooms, todayReservations, addReservation, userName } = useAppStore();
+  const router = useRouter();
 
   const dates = useMemo(() => nextWeekdays(5), []);
 
@@ -155,8 +161,24 @@ export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
     }
   };
 
-  const handleBookRoom = (room: Room) => {
+  const handleBookRoom = async (room: Room) => {
     if (!pendingSlot) return;
+
+    // Regra: só reserva com saldo de horas (pacote pré-pago ou crédito de indicação).
+    const professionalId = useAuthStore.getState().session?.user?.id;
+    const temSaldo = professionalId ? await hasReservationCredit(professionalId) : false;
+    if (!temSaldo) {
+      Alert.alert(
+        'Saldo de horas necessário',
+        'Para reservar uma sala você precisa ter horas no seu saldo — compre um pacote de horas ou use o crédito recebido por indicação de um colega.',
+        [
+          { text: 'Agora não', style: 'cancel' },
+          { text: 'Comprar horas', onPress: () => { onClose(); router.push('/(tabs)/financeiro'); } },
+        ],
+      );
+      return;
+    }
+
     const endTime = new Date(pendingSlot.getTime() + selectedDuration * 60_000);
     const reservation: Reservation = {
       id:        `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,

@@ -7,6 +7,7 @@ import {
   buildDaySegments, buildFreeBlocks, HOUR_MARKS,
   DAY_START_MIN, DAY_TOTAL_MIN,
 } from '../utils/roomTimeline';
+import { useAndroidBack } from '../hooks/useAndroidBack';
 import type { Room, Reservation } from '../models/types';
 
 interface Props {
@@ -25,6 +26,7 @@ const MONTHS = [
 export function RoomDetailModal({
   room, selectedDate, reservations, onClose, onReserve,
 }: Props) {
+  useAndroidBack(onClose);
   const segments   = buildDaySegments(selectedDate, reservations, room.name);
   const freeBlocks = buildFreeBlocks(segments, selectedDate);
   const hasFree    = freeBlocks.length > 0;
@@ -64,6 +66,20 @@ export function RoomDetailModal({
           >
             {photos.map((p, i) => (
               <Image key={i} source={p} style={styles.carouselPhoto} resizeMode="cover" accessibilityIgnoresInvertColors />
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Miniaturas — sinalizam que há mais fotos (arraste a imagem acima) */}
+        {photos.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.thumbRow}
+            contentContainerStyle={styles.thumbRowContent}
+          >
+            {photos.map((p, i) => (
+              <Image key={i} source={p} style={styles.thumb} resizeMode="cover" accessibilityIgnoresInvertColors />
             ))}
           </ScrollView>
         )}
@@ -260,6 +276,14 @@ const styles = StyleSheet.create({
     borderRadius:    radius.lg,
     backgroundColor: colors.border,
     marginRight:     spacing.sm,
+  },
+  thumbRow:        { marginTop: spacing.sm },
+  thumbRowContent: { gap: spacing.xs },
+  thumb: {
+    width:           64,
+    height:          44,
+    borderRadius:    radius.sm,
+    backgroundColor: colors.border,
   },
 
   specialtiesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

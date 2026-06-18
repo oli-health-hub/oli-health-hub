@@ -6,9 +6,13 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Calendar from 'expo-calendar';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAppStore } from '../store/appStore';
+import { useAuthStore } from '../store/authStore';
+import { hasReservationCredit } from '../services/financeiroService';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour, formatDate } from '../utils/formatters';
+import { useAndroidBack } from '../hooks/useAndroidBack';
 import type { Room, Reservation } from '../models/types';
 
 interface Props {
@@ -149,7 +153,9 @@ function DayStrip({
 export function ReservationModal({
   room, selectedDate: initialDate, isCalendarGranted, onReserve, onClose,
 }: Props) {
+  useAndroidBack(onClose);
   const { addReservation, todayReservations } = useAppStore();
+  const router = useRouter();
 
   // O dia é selecionado dentro do modal — começa com o dia sugerido pela agenda
   const [pickedDate,    setPickedDate]    = useState<Date>(() => {
@@ -197,6 +203,22 @@ export function ReservationModal({
     setLoading(true);
 
     try {
+      // Regra: só reserva com saldo de horas (pacote pré-pago ou crédito de indicação).
+      const professionalId = useAuthStore.getState().session?.user?.id;
+      const temSaldo = professionalId ? await hasReservationCredit(professionalId) : false;
+      if (!temSaldo) {
+        setLoading(false);
+        Alert.alert(
+          'Saldo de horas necessário',
+          'Para reservar uma sala você precisa ter horas no seu saldo — compre um pacote de horas ou use o crédito recebido por indicação de um colega.',
+          [
+            { text: 'Agora não', style: 'cancel' },
+            { text: 'Comprar horas', onPress: () => { onClose(); router.push('/(tabs)/financeiro'); } },
+          ],
+        );
+        return;
+      }
+
       const reservation: Reservation = {
         id:        `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
         roomName:  room.name,

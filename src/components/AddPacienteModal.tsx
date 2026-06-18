@@ -12,6 +12,7 @@ import { colors, spacing, radius } from '../theme/designSystem';
 import type { ConvenioTipo } from '../models/types';
 import { getHealthPlans } from '../services/healthPlans';
 import type { CCHealthPlan } from '../services/communicareApi';
+import { useAndroidBack } from '../hooks/useAndroidBack';
 
 interface Props {
   onClose: () => void;
@@ -55,6 +56,7 @@ function isValidDate(value: string): boolean {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export function AddPacienteModal({ onClose }: Props) {
+  useAndroidBack(onClose);
   const addPatient  = usePatientStore(s => s.addPatient);
   const { profile } = useAuthStore();
 

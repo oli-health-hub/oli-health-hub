@@ -13,7 +13,7 @@ import { RescheduleModal } from '../../src/components/RescheduleModal';
 import { RoomDetailModal } from '../../src/components/RoomDetailModal';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { formatHour } from '../../src/utils/formatters';
-import { getRoomCover } from '../../src/utils/roomPhotos';
+import { getRoomCover, getRoomPhotos } from '../../src/utils/roomPhotos';
 import {
   buildDaySegments, nextFreeLabel,
   DAY_START_MIN, DAY_TOTAL_MIN, HOUR_MARKS,
@@ -395,12 +395,20 @@ export default function AgendaScreen() {
               >
                 {/* Foto da sala (banner) */}
                 {getRoomCover(room.id) && (
-                  <Image
-                    source={getRoomCover(room.id)}
-                    style={styles.roomCover}
-                    resizeMode="cover"
-                    accessibilityIgnoresInvertColors
-                  />
+                  <View style={styles.roomCoverWrap}>
+                    <Image
+                      source={getRoomCover(room.id)}
+                      style={styles.roomCover}
+                      resizeMode="cover"
+                      accessibilityIgnoresInvertColors
+                    />
+                    {getRoomPhotos(room.id).length > 1 && (
+                      <View style={styles.photoCountBadge}>
+                        <Ionicons name="images-outline" size={11} color={colors.white} />
+                        <Text style={styles.photoCountText}>{getRoomPhotos(room.id).length}</Text>
+                      </View>
+                    )}
+                  </View>
                 )}
 
                 {/* Topo: ícone + dot de status */}
@@ -583,14 +591,30 @@ const styles = StyleSheet.create({
 
   grid:     { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.md, gap: spacing.md },
   roomCard: { width: '47%', backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md, overflow: 'hidden' },
-  roomCover: {
+  roomCoverWrap: {
     alignSelf: 'stretch',
-    height: 84,
     marginTop: -spacing.md,
     marginHorizontal: -spacing.md,
     marginBottom: spacing.sm,
+  },
+  roomCover: {
+    width: '100%',
+    height: 120,
     backgroundColor: colors.border,
   },
+  photoCountBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  photoCountText: { color: colors.white, fontSize: 11, fontWeight: '600' },
   roomCardOccupied: { opacity: 0.55 },
   roomCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   statusDot:   { width: 10, height: 10, borderRadius: 5 },

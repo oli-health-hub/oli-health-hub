@@ -196,7 +196,7 @@ export default function PlanCheckoutModal({
   const valueLabel = `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={s.root}>
         {/* Header */}
         <View style={s.header}>

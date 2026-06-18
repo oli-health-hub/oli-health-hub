@@ -9,6 +9,7 @@ import { useAuthStore } from '../store/authStore';
 import { communicareService } from '../services/communicare';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour, formatDate } from '../utils/formatters';
+import { useAndroidBack } from '../hooks/useAndroidBack';
 import type { Reservation } from '../models/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -111,6 +112,7 @@ function durationLabel(start: Date, end: Date): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function RescheduleModal({ reservation, onClose, onConfirm }: Props) {
+  useAndroidBack(onClose);
   const {
     rooms,
     todayReservations,

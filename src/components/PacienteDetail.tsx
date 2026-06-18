@@ -10,6 +10,7 @@ import { EncaixeModal } from './EncaixeModal';
 import { sendNPS } from '../services/npsService';
 import { useAuthStore } from '../store/authStore';
 import { ccGetPatientHistory, ccIsConfigured, type CCHistoryEntry } from '../services/communicareApi';
+import { useAndroidBack } from '../hooks/useAndroidBack';
 
 interface Props {
   paciente:              Patient;
@@ -35,6 +36,7 @@ function DetailRow({ label, value }: DetailRowProps) {
 }
 
 export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendimento }: Props) {
+  useAndroidBack(onClose);
   const [showEncaixe, setShowEncaixe] = useState(false);
   const [sendingNPS,  setSendingNPS]  = useState(false);
   const [npsSent,     setNpsSent]     = useState(false);
@@ -257,7 +259,7 @@ export function PacienteDetail({ paciente, onClose, currentRoom, onIniciarAtendi
       </ScrollView>
 
       {/* Modal de encaixe */}
-      <Modal visible={showEncaixe} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={showEncaixe} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowEncaixe(false)}>
         <EncaixeModal
           paciente={paciente}
           onClose={() => setShowEncaixe(false)}

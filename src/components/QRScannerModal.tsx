@@ -4,6 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme/designSystem';
+import { useAndroidBack } from '../hooks/useAndroidBack';
 
 // QR codes emitidos pelo totem OLI começam com este prefixo.
 // Fase 3: validar também o token assinado pelo Communicare.
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function QRScannerModal({ onCheckout, onClose }: Props) {
+  useAndroidBack(onClose);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error,   setError]   = useState('');
