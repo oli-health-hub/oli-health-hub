@@ -248,6 +248,7 @@ const styles = StyleSheet.create({
   },
   photoPlaceholderText: { fontSize: 13, color: colors.oliLightGray },
   photo: {
+    width:           '100%',
     height:          200,
     borderRadius:    radius.lg,
     backgroundColor: colors.border,

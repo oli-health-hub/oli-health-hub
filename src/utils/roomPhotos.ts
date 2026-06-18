@@ -9,9 +9,40 @@ import type { ImageSourcePropType } from 'react-native';
  * aqui e rode `eas update` (não precisa rebuild nativo).
  */
 const ROOM_PHOTOS: Record<number, ImageSourcePropType[]> = {
-  1: [require('../../assets/room-photos/sala-1.jpg')],
+  // Refotografia em andamento (jun/26) — registrar id → foto(s) conforme chegam.
+  // Ordem nova: 1 Vídeo Conf · 2 Psicologia · 3/5/6/7 Clínica · 4 Audio Visual ·
+  // 8 Ginecologia/Estética · 9 Eventos. Cover = 1ª foto (vista da mesa).
+  1: [
+    require('../../assets/room-photos/sala-1.jpg'),
+    require('../../assets/room-photos/sala-1b.jpg'),
+  ],
   2: [require('../../assets/room-photos/sala-2.jpg')],
-  6: [require('../../assets/room-photos/sala-6.jpg')],
+  3: [
+    require('../../assets/room-photos/sala-3.jpg'),
+    require('../../assets/room-photos/sala-3b.jpg'),
+  ],
+  5: [
+    require('../../assets/room-photos/sala-5.jpg'),
+    require('../../assets/room-photos/sala-5b.jpg'),
+  ],
+  6: [
+    require('../../assets/room-photos/sala-6.jpg'),
+    require('../../assets/room-photos/sala-6b.jpg'),
+  ],
+  7: [
+    require('../../assets/room-photos/sala-7.jpg'),
+    require('../../assets/room-photos/sala-7b.jpg'),
+  ],
+  8: [
+    require('../../assets/room-photos/sala-8.jpg'),
+    require('../../assets/room-photos/sala-8b.jpg'),
+    require('../../assets/room-photos/sala-8c.jpg'),
+  ],
+  9: [
+    require('../../assets/room-photos/sala-9.jpg'),
+    require('../../assets/room-photos/sala-9b.jpg'),
+    require('../../assets/room-photos/sala-9c.jpg'),
+  ],
 };
 
 /** Retorna as fotos de uma sala (vazio se não houver). */

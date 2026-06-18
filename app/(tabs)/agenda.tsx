@@ -46,8 +46,8 @@ function cancellationPolicy(startTimeIso: string): {
 }
 
 const SPECIALTIES = [
-  'Todas', 'Ginecologia', 'Estética',
-  'Clínica Geral', 'Psicologia', 'Telemedicina', 'Criação de Conteúdo',
+  'Todas', 'Clínica Geral', 'Psicologia',
+  'Ginecologia', 'Estética', 'Vídeo Conferência', 'Audio Visual', 'Eventos',
 ];
 
 const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];

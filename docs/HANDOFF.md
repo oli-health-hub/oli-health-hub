@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 15/Junho/2026.
+> Última atualização: 18/Junho/2026.
 
 ---
 
@@ -140,7 +140,8 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - **Guards** contra duplo prompt: `authInFlightRef` + supressão de re-lock por 2s após desbloqueio (corrige 2º popup causado por background→active no fechamento do prompt).
 - `AppLockScreen.tsx`: fundo **vidro fosco claro** `rgba(244,239,234,0.96)` (identidade OLI, não preto; blur real via expo-blur fica pro próximo build nativo). Sem quadro verde no fluxo normal — botão "Desbloquear" só aparece se Face ID falhar.
 - **Fallback de código do dispositivo:** após falha, botão "Usar código do dispositivo" (`disableDeviceFallback:false`). Se usado, grava flag `oli_force_password_next` → **próxima sessão exige login e-mail/senha** (cold start consome a flag e faz signOut).
-- Reset de senha: **COMPLETO** (sessão 15/jun) — `resetPasswordForEmail` com `redirectTo=olihealthhub://nova-senha`; `_layout` intercepta o link de recovery (`src/utils/passwordRecovery.ts`) e roteia pra `app/nova-senha.tsx`. **Falta:** add `olihealthhub://nova-senha` nas Redirect URLs do Supabase + teste 1x ponta-a-ponta.
+- Reset de senha: **COMPLETO E TESTADO** (16/jun) — `resetPasswordForEmail` com `redirectTo=olihealthhub://nova-senha`; `_layout` intercepta o link de recovery (`src/utils/passwordRecovery.ts`) e roteia pra `app/nova-senha.tsx`. Redirect URLs adicionadas no Supabase; fluxo ponta-a-ponta validado.
+- **🐛 Fix deadlock auth (16/jun):** `authStore.ts` `onAuthStateChange` era `async` e fazia `await supabase.from('profiles')` DENTRO do lock de auth → `updateUser`/`signOut` nunca resolviam (salvar nova senha travava no spinner pra sempre). Corrigido: callback síncrono, fetch de profile deferido via `setTimeout(0)` fora do lock. Afetava qualquer signOut/login que coincidisse com o lock — fix geral. OTA prod `a7bb9ead-5012-4e81-84fa-ccb07edc40b4` + preview `8de17401-dd7a-40ad-9146-45b3be33beda`.
 
 ## 9. Ciclo de confirmação de e-mail — estado
 
@@ -177,6 +178,23 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 ## 11. PENDÊNCIAS / próximos passos
 
+### ✅ Resolvido na sessão 18/jun (parte 2 — salas/fotos)
+- **🏠 Reestruturação de salas (7 → 9):** tabela `rooms` (fonte de verdade, runtime via `fetchRooms`) reescrita. Nova ordem: **1 Vídeo Conferência · 2 Psicologia · 3 Clínica Geral · 4 Audio Visual · 5/6/7 Clínica Geral · 8 Ginecologia/Estética · 9 Eventos** (nota "por bloco/hora"). `INITIAL_ROOMS` (fallback em `appStore.ts`) e filtro `SPECIALTIES` (`agenda.tsx`) sincronizados. 7 reservas de teste apagadas. `reservations` referencia sala por `room_name` (texto), sem FK — renumerar foi seguro.
+- **📷 Fotos das salas refeitas:** 8/9 salas com foto (faltou só **Sala 4 — Audio Visual**, o fundador não tem ainda). Processadas com `sips -Z 1200 -s formatOptions ~78` (JPEG, ~70–130 KB, 1200px largura). Sala 9 (Eventos) clareada via PIL (brilho 1.32 / contraste 1.05). Registradas em `src/utils/roomPhotos.ts` (map estático id→foto[]; cover = 1ª foto). Conteúdo conferido visualmente sala a sala.
+- **🐛 Fix layout foto única:** `RoomDetailModal` style `photo` tinha `height:200` sem `width` → RN Image com `resizeMode:cover` renderizava largura 0 ("quebrada"). Add `width:'100%'`. (Carrossel e cover do card já tinham largura.) **Era a causa real do "fotos quebradas".**
+- OTA: prod `a063f331-727a-4428-a513-57df6c4c1097` + preview `46dcb504-a6af-4711-b92b-dea0655cef12`.
+- ⚠️ Itens/equipamentos das salas novas (Vídeo Conf, Audio Visual, Eventos) = defaults — revisar com fundador.
+
+### ✅ Resolvido na sessão 18/jun
+- **🐛 Deadlock auth (crítico):** `authStore.ts` `onAuthStateChange` era `async` + `await supabase.from()` dentro do lock → `updateUser`/`signOut` nunca resolviam (salvar nova senha travava no spinner). Callback agora síncrono, fetch de profile deferido via `setTimeout(0)`. OTA prod `a7bb9ead-5012-4e81-84fa-ccb07edc40b4` + preview `8de17401-dd7a-40ad-9146-45b3be33beda`.
+- **Reset de senha:** Redirect URLs adicionadas no Supabase (`olihealthhub://nova-senha`, `olihealthhub://*`, `…/confirmado`) → testado ponta-a-ponta, **funcionando**.
+- **Regra de reserva — exige saldo de horas:** só reserva sala com saldo em `hour_balance` (pacote pré-pago OU crédito de indicação — mesma tabela). Helper `hasReservationCredit()` em `financeiroService.ts` (soma todas as linhas não-expiradas); gates em `ReservationModal.handleConfirm` + `EncaixeModal.handleBookRoom`; sem saldo → Alert "Comprar horas" → aba financeiro. ⚠️ **client-side** (ver hardening §11.9). OTA prod `58d8c979-57ae-434a-bbdd-cc6d27bc1cd3` + preview `e0fcfbd7-d8dc-4ed2-8cef-52fdd014a560`.
+- **Ícones Dr./Dra.:** trocados símbolos ♂/♀ (`male/female-outline`) por `ribbon-outline` (neutro) no onboarding.
+- **Tratamento duplicado:** se `profile.nome` já começa com Dr/Dra (`/^\s*dra?\.?\s/i`), `handleFinish` salva `tratamento=null`; `displayName` em comunidade também guarda (perfis já duplicados). Evita "Dr. Dr. João". OTA prod `52752877-8aa3-4e96-b538-d3bd3be9afbd` + preview `5df4df8c-3ad2-4589-ba3b-e26903ce2715`.
+- **Olivia (chatbot):** persona olivia `role` "OLI Health Hub" → **"Assistente Virtual OLI"**.
+- **📄 Documento base do negócio:** novo `docs/OLI_BASE.md` (quem somos, produtos, soluções, planos, preços, módulos, condições) — âncora do projeto. Atualizar junto com `src/models/oli-plans.ts` ao mudar preço/plano.
+- **Spec de fotos de sala** (pra pendência §11.4): JPEG, **1200×800 px (3:2 horizontal)**, ~80–150 KB; nomes `sala-3.jpg`/`sala-4.jpg`/`sala-5.jpg`/`sala-digital.jpg` em `assets/room-photos/`. Array por sala suportado. `conforto-medico.jpg` (sobrou) ainda sem destino definido.
+
 ### ✅ Resolvido na sessão 14-15/jun
 - **Netlify**: causa real era **gitlink fantasma `caveman`** (submódulo sem `.gitmodules`) travando o checkout → todo deploy falhava. Removido + `.gitignore`. `netlify.toml` na raiz (`publish=landing`, sem build). `confirmado/privacidade/baixar` agora 200.
 - **Reset de senha COMPLETO**: `app/nova-senha.tsx` + `src/utils/passwordRecovery.ts`; `resetPasswordForEmail` com `redirectTo=olihealthhub://nova-senha`; `_layout` intercepta o link de recovery (setSession via fragmento) e roteia. Gate de auth + AppLock não interferem. **Falta só testar 1x ponta-a-ponta + add `olihealthhub://nova-senha` nas Redirect URLs do Supabase.**
@@ -190,17 +208,19 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
-   - `URL Configuration` → Site URL `https://olihealthhub.com.br/confirmado`; **Redirect URLs** += `olihealthhub://nova-senha`, `olihealthhub://*`, `https://olihealthhub.com.br/confirmado`. **(o de nova-senha é 🔴 — reset não volta pro app sem ele)**
+   - ✅ `URL Configuration` → **Redirect URLs** adicionadas (`olihealthhub://nova-senha`, `olihealthhub://*`, `https://olihealthhub.com.br/confirmado`). **Reset de senha testado ponta-a-ponta e FUNCIONANDO (16/jun).**
    - `Sign In / Providers` → Email → **Confirm email = ON**; min password length = 8.
    - `Emails` → Confirm signup: colar `landing/email-templates/confirm-signup.html` (e reset-password.html).
    - Leaked password protection = só plano Pro (pulado).
 2. **🔴 Asaas sandbox → produção** (cobranças REAIS — fundador): `supabase secrets set ASAAS_ENV=production ASAAS_API_KEY=<chave>`. **Server-side → vale na hora, sem rebuild/OTA.** Pode estar criando 2ª conta Asaas (verificando). Antes: webhook prod → `…/functions/v1/asaas-webhook` + `ASAAS_WEBHOOK_TOKEN`.
 3. **Sentry DSN ausente** → lançamento cego a crashes. Setar `EXPO_PUBLIC_SENTRY_DSN` (build-time → precisa OTA/rebuild).
-4. **Fotos salas faltando**: 3, 4, 5, Digital + destino do `conforto-medico.jpg` (sobrou, não-sala). Quando chegarem: solta em `assets/room-photos/`, registra em `roomPhotos.ts`, `eas update`.
+4. **Foto sala faltando**: só **Sala 4 (Audio Visual)** + destino do `conforto-medico.jpg` (sobrou, não-sala). Quando chegar: solta em `assets/room-photos/` como `4a.jpg`/`4b.jpg`, processa com `sips -Z 1200 -s formatOptions 78 4a.jpg --out sala-4.jpg`, registra em `roomPhotos.ts` (key `4`), `eas update`.
 5. **Play produção**: ver §10.1 (Data Safety/rating/listing + 14d closed testing).
 6. **`oli_encrypt`/`oli_decrypt`** executáveis por qualquer authenticated (advisor) — revisar/restringir.
 7. **Communicare**: aguardar token + endpoint LISTA + status + webhook. Depois remontar card da agenda.
 8. **VIP** preço; **Cron** auto-desativar START 30d sem reserva; **expo-blur** lock screen (rebuild nativo).
+9. **🔒 Gate de reserva server-side (hardening):** regra "só reserva com saldo de horas" hoje é **client-side** (`hasReservationCredit` em `financeiroService.ts`, gates em ReservationModal/EncaixeModal). `createReservation` insere direto via RLS → bypass possível. Blindar com trigger/policy no insert de `reservations` checando `hour_balance` não-expirado.
+10. **🆕 Salas de Evento + Conferência (roadmap)** — adicionar 2 tipos de sala com cobrança **por bloco/hora** (NÃO minutagem — evento é planejado, bloco = receita previsível). Benchmark cowork médico SP: conferência 6–12 pax R$ 80–300/h; evento/workshop 20–40 pax R$ 150–500/h (diária 4h R$ 800–1.500). **Proposta:** Conferência **R$ 150/h** (mín 1h); Eventos **R$ 280/h** ou pacote 4h **R$ 960** (mín 2h). Impl: novo `room_type` com `hourly_rate` + `min_duration` em vez de `cost_per_minute`; reserva por bloco (sem timer de minutagem). Validar preço final com fundador.
 
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
@@ -236,4 +256,4 @@ node --experimental-strip-types scripts/test-communicare.ts
 
 ---
 
-**Resumo de 1 linha (15/jun):** App no ar em **Internal Testing** do Google Play (AAB `c0936887`, ícone corrigido); reset de senha, eventos Luma reais (iCal), ErrorBoundary, a11y 100%, allowBackup=false, onboarding multi-select + assessorias (upsell no admin) e fotos de salas (1/2/6) — tudo OTA. Netlify resolvido. Pendências principais = **config Supabase (Redirect URL nova-senha 🔴)** + **Asaas→produção** + **App content/listing pra Play público** + Sentry DSN + fotos salas 3/4/5/Digital.
+**Resumo de 1 linha (18/jun):** App em **Internal Testing** do Google Play (AAB `c0936887`); sessão resolveu **deadlock de auth** (salvar nova senha travava), **reset de senha funcionando** ponta-a-ponta, **regra de reserva exige saldo de horas** (pacote ou indicação), fix ícones Dr./Dra. + tratamento duplicado, Olivia="Assistente Virtual OLI", novo `docs/OLI_BASE.md`, e **reestruturação de salas 7→9 + fotos novas em 8/9 salas + fix layout foto única** (OTA prod `a063f331` / preview `46dcb504`) — tudo OTA. Pendências principais = **Asaas→produção** + **App content/listing pra Play público** + Sentry DSN + **foto Sala 4** + gate de reserva server-side + Confirm email/templates Supabase.

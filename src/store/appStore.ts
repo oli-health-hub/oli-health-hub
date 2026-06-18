@@ -31,35 +31,23 @@ const BASE_CLINICA = [
   'Ar-condicionado',
 ];
 
+const BASE_AV = [
+  'TV / Monitor',
+  'Webcam',
+  'Microfone de lapela',
+  'Iluminação profissional',
+  'Cenário de fundo',
+  'Adaptador HDMI',
+  'Ar-condicionado',
+];
+
 const INITIAL_ROOMS: Room[] = [
   {
-    id: 1, name: 'Sala 1', specialties: ['Ginecologia', 'Estética'], isAvailable: true,
-    items: [
-      'Maca ginecológica / estética',
-      'Mesa e cadeiras (profissional e paciente)',
-      'Ar-condicionado',
-      'Banheiro',
-    ],
+    id: 1, name: 'Sala 1', specialties: ['Vídeo Conferência'], isAvailable: true,
+    items: BASE_AV,
   },
   {
-    id: 2, name: 'Sala 2', specialties: ['Clínica Geral'], isAvailable: true,
-    items: [...BASE_CLINICA, 'Banheiro'],
-  },
-  {
-    id: 3, name: 'Sala 3', specialties: ['Clínica Geral'], isAvailable: false,
-    items: BASE_CLINICA,
-    note: 'Sugerida para Pediatria. Régua infantil e balança pediátrica disponíveis sob solicitação prévia.',
-  },
-  {
-    id: 4, name: 'Sala 4', specialties: ['Clínica Geral'], isAvailable: true,
-    items: BASE_CLINICA,
-  },
-  {
-    id: 5, name: 'Sala 5', specialties: ['Clínica Geral'], isAvailable: true,
-    items: BASE_CLINICA,
-  },
-  {
-    id: 6, name: 'Sala 6', specialties: ['Psicologia'], isAvailable: true,
+    id: 2, name: 'Sala 2', specialties: ['Psicologia'], isAvailable: true,
     items: [
       'Poltrona para o profissional',
       'Sofá para o paciente',
@@ -69,17 +57,44 @@ const INITIAL_ROOMS: Room[] = [
     ],
   },
   {
-    id: 7, name: 'Sala Digital', specialties: ['Telemedicina', 'Criação de Conteúdo'], isAvailable: true,
+    id: 3, name: 'Sala 3', specialties: ['Clínica Geral'], isAvailable: true,
+    items: BASE_CLINICA,
+  },
+  {
+    id: 4, name: 'Sala 4', specialties: ['Audio Visual'], isAvailable: true,
+    items: BASE_AV,
+  },
+  {
+    id: 5, name: 'Sala 5', specialties: ['Clínica Geral'], isAvailable: true,
+    items: BASE_CLINICA,
+  },
+  {
+    id: 6, name: 'Sala 6', specialties: ['Clínica Geral'], isAvailable: true,
+    items: BASE_CLINICA,
+  },
+  {
+    id: 7, name: 'Sala 7', specialties: ['Clínica Geral'], isAvailable: true,
+    items: BASE_CLINICA,
+  },
+  {
+    id: 8, name: 'Sala 8', specialties: ['Ginecologia', 'Estética'], isAvailable: true,
     items: [
-      'Poltrona',
-      'TV',
-      'Webcam',
-      'Microfone de lapela',
-      'Iluminação profissional',
-      'Cenário de fundo',
-      'Adaptador HDMI',
+      'Maca ginecológica / estética',
+      'Mesa e cadeiras (profissional e paciente)',
       'Ar-condicionado',
+      'Banheiro',
     ],
+  },
+  {
+    id: 9, name: 'Sala 9', specialties: ['Eventos'], isAvailable: true,
+    items: [
+      'Mesas e cadeiras para grupo',
+      'Projetor / TV',
+      'Quadro branco',
+      'Ar-condicionado',
+      'Água e copos',
+    ],
+    note: 'Reservada por bloco/hora (não por minutagem).',
   },
 ];
 
