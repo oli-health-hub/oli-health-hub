@@ -25,6 +25,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore }           from '../store/authStore';
+import { CouponField }            from './CouponField';
 import { colors, radius, shadows, spacing } from '../theme/designSystem';
 import {
   BillingType,
@@ -99,6 +100,7 @@ export default function HourCheckoutModal({
   const [errorMsg,    setErrorMsg]    = useState('');
   const [secondsLeft, setSecondsLeft] = useState(PIX_TIMEOUT_S);
   const [copied,      setCopied]      = useState(false);
+  const [couponCode,  setCouponCode]  = useState<string | null>(null);
 
   const pollTimer      = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -160,6 +162,7 @@ export default function HourCheckoutModal({
         pkg.hours,
         billing,
         cpfCnpj.trim() || undefined,
+        couponCode ?? undefined,
       );
       setResult(charge);
 
@@ -335,6 +338,18 @@ export default function HourCheckoutModal({
                   <Text style={styles.cpfHint}>
                     Necessário para PIX e Boleto em produção.
                   </Text>
+                </View>
+              )}
+
+              {/* Cupom de desconto */}
+              {user?.id && (
+                <View style={styles.couponSection}>
+                  <CouponField
+                    targetType="pacote"
+                    baseValue={pkg.price}
+                    professionalId={user.id}
+                    onApplied={(code) => setCouponCode(code)}
+                  />
                 </View>
               )}
 
@@ -661,6 +676,7 @@ const styles = StyleSheet.create({
 
   // ── CPF ──
   cpfSection: { gap: spacing.xs },
+  couponSection: { marginTop: spacing.sm },
   cpfInput: {
     backgroundColor:   colors.white,
     borderRadius:      radius.md,

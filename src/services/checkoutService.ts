@@ -20,10 +20,43 @@ export interface ModuleChargeResult {
   invoiceUrl:    string | null;
   billingType:   string;
   value:         number;
+  valorOriginal?: number;
+  desconto?:     number;
   dueDate:       string;
   bankSlipUrl:   string | null;
   pixQrCode:     string | null;
   pixCopiaECola: string | null;
+}
+
+/** Resultado da pré-validação de um cupom (antes de pagar). */
+export interface CouponPreview {
+  valid:       boolean;
+  error?:      string;
+  desconto:    number;
+  valorFinal:  number;
+}
+
+/** Valida um cupom e calcula o desconto sem criar cobrança (preview no checkout). */
+export async function validateCouponPreview(
+  code:       string,
+  targetType: 'modulo' | 'plano' | 'pacote',
+  baseValue:  number,
+  professionalId: string,
+): Promise<CouponPreview> {
+  const { data, error } = await supabase.rpc('validate_coupon', {
+    p_code:            code.trim(),
+    p_target_type:     targetType,
+    p_base_value:      baseValue,
+    p_professional_id: professionalId,
+  });
+  if (error) return { valid: false, error: 'Erro ao validar cupom', desconto: 0, valorFinal: baseValue };
+  const r = (data ?? {}) as Record<string, unknown>;
+  if (!r.valid) return { valid: false, error: (r.error as string) ?? 'Cupom inválido', desconto: 0, valorFinal: baseValue };
+  return {
+    valid:      true,
+    desconto:   Number(r.desconto),
+    valorFinal: Number(r.valor_final),
+  };
 }
 
 export interface SubscriptionResult {
@@ -32,6 +65,9 @@ export interface SubscriptionResult {
   status:         string;
   ciclo:          string;
   value:          number;
+  valorOriginal?:  number;
+  desconto?:       number;
+  planoRecorrente?: boolean;
   dueDate:        string;
   invoiceUrl:     string | null;
   bankSlipUrl:    string | null;
@@ -48,9 +84,10 @@ export async function createModuleCharge(
   moduleSlug:  string,
   billingType: BillingType = 'CREDIT_CARD',
   cpfCnpj?:   string,
+  couponCode?: string,
 ): Promise<ModuleChargeResult> {
   const { data, error } = await supabase.functions.invoke('create-charge', {
-    body: { moduleSlug, billingType, cpfCnpj },
+    body: { moduleSlug, billingType, cpfCnpj, couponCode },
   });
   if (error) throw new Error(error.message ?? 'Erro ao criar cobrança');
   if (data?.error) throw new Error(data.error as string);
@@ -63,9 +100,10 @@ export async function createPlanSubscription(
   ciclo:       'MONTHLY' | 'YEARLY' = 'MONTHLY',
   billingType: BillingType = 'CREDIT_CARD',
   cpfCnpj?:   string,
+  couponCode?: string,
 ): Promise<SubscriptionResult> {
   const { data, error } = await supabase.functions.invoke('create-subscription', {
-    body: { planId, ciclo, billingType, cpfCnpj },
+    body: { planId, ciclo, billingType, cpfCnpj, couponCode },
   });
   if (error) throw new Error(error.message ?? 'Erro ao criar assinatura');
   if (data?.error) throw new Error(data.error as string);
@@ -96,9 +134,10 @@ export async function createHourPackageCharge(
   hours:       number,
   billingType: BillingType = 'CREDIT_CARD',
   cpfCnpj?:   string,
+  couponCode?: string,
 ): Promise<ModuleChargeResult> {
   const { data, error } = await supabase.functions.invoke('create-hour-package', {
-    body: { hours, billingType, cpfCnpj },
+    body: { hours, billingType, cpfCnpj, couponCode },
   });
   if (error) throw new Error(error.message ?? 'Erro ao criar cobrança');
   if (data?.error) throw new Error(data.error as string);
