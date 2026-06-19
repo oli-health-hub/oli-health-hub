@@ -338,3 +338,47 @@ export async function removeProfessionalDocument(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath(`/medicos/${userId}`);
 }
+
+// ─── Cupons de desconto ───────────────────────────────────────────────────────
+
+/** Cria um cupom de desconto */
+export async function createCoupon(formData: FormData) {
+  const code             = (formData.get('code') as string ?? '').trim().toUpperCase();
+  const tipo             = formData.get('tipo') as string;            // 'percentual' | 'fixo'
+  const valor            = parseFloat(formData.get('valor') as string);
+  const aplicavel_a      = (formData.get('aplicavel_a') as string) || 'todos';
+  const validadeRaw      = (formData.get('validade') as string) || '';
+  const limiteRaw        = (formData.get('limite_uso') as string) || '';
+  const plano_recorrente = formData.get('plano_recorrente') === 'on';
+  const descricao        = (formData.get('descricao') as string) || null;
+
+  if (!code) throw new Error('Código obrigatório');
+  if (!['percentual', 'fixo'].includes(tipo)) throw new Error('Tipo inválido');
+  if (isNaN(valor) || valor <= 0) throw new Error('Valor deve ser maior que zero');
+  if (tipo === 'percentual' && valor > 100) throw new Error('Percentual não pode passar de 100');
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('coupons').insert({
+    code,
+    tipo,
+    valor,
+    aplicavel_a,
+    plano_recorrente,
+    validade:   validadeRaw ? new Date(`${validadeRaw}T23:59:59`).toISOString() : null,
+    limite_uso: limiteRaw ? parseInt(limiteRaw, 10) : null,
+    descricao,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath('/cupons');
+}
+
+/** Ativa/desativa um cupom (recebe o estado atual e inverte) */
+export async function toggleCoupon(formData: FormData) {
+  const id        = formData.get('id') as string;
+  const ativoAtual = formData.get('ativo') === 'true';
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('coupons').update({ ativo: !ativoAtual }).eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/cupons');
+}
