@@ -27,7 +27,7 @@ initSentry();
 (TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, allowFontScaling: false };
 
 export default function RootLayout() {
-  const { session, isLoading, profile, initialize } = useAuthStore();
+  const { session, isLoading, profile, profileLoaded, initialize } = useAuthStore();
   const router   = useRouter();
   const segments = useSegments();
   const { isLocked, unlock } = useAppLock();
@@ -94,6 +94,10 @@ export default function RootLayout() {
     // Sem sessão → login
     if (!session && !inLogin) { router.replace('/login'); return; }
 
+    // Com sessão mas profile ainda carregando → aguarda (evita mandar pro
+    // onboarding com profile=null no login por e-mail/senha).
+    if (session && !profileLoaded) return;
+
     if (session && inLogin) {
       // Verifica MFA pendente antes de entrar no app
       checkMFARequired().then(mfaRequired => {
@@ -122,7 +126,7 @@ export default function RootLayout() {
       const onboardingDone = profile?.onboarding_complete ?? false;
       if (!onboardingDone && !inBlocked) { router.replace('/onboarding'); return; }
     }
-  }, [session, isLoading, profile, segments]);
+  }, [session, isLoading, profile, profileLoaded, segments]);
 
   return (
     <ErrorBoundary>

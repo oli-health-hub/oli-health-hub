@@ -4,7 +4,7 @@
  * Ciclos: START sem assinatura | BASE mensal ou anual | PRO anual | VIP em breve
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, Modal, Pressable,
   ScrollView, StyleSheet, Text,
@@ -18,6 +18,8 @@ import { useAuthStore } from '../src/store/authStore';
 import { supabase } from '../src/services/supabase';
 import { colors, radius, shadows, spacing } from '../src/theme/designSystem';
 import PlanCheckoutModal from '../src/components/PlanCheckoutModal';
+import { useModuleStore } from '../src/store/moduleStore';
+import { MODULE_CATALOG } from '../src/models/modules';
 import type { PlanType } from '../src/models/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -297,6 +299,71 @@ function TrialDisclaimerModal({ visible, plan, onClose, onConfirm, loading }: Tr
 // SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SEUS SERVIÇOS — inclusos no plano + contratados à parte
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SeusServicos() {
+  const { userPlan } = useAppStore();
+  const { profile } = useAuthStore();
+  const { activeModules, loadModules, isLoaded } = useModuleStore();
+
+  useEffect(() => {
+    if (profile?.id) loadModules(profile.id, userPlan);
+  }, [profile?.id, userPlan, loadModules]);
+
+  const incluidos   = activeModules.filter(m => m.moduleDbId === ''  && m.status === 'active');
+  const contratados = activeModules.filter(m => m.moduleDbId !== '' && m.status === 'active');
+
+  if (!isLoaded || (incluidos.length === 0 && contratados.length === 0)) return null;
+
+  return (
+    <View style={[styles.servicesCard, shadows.card]}>
+      <Text style={styles.servicesTitle}>Seus serviços</Text>
+
+      {incluidos.length > 0 && (
+        <View style={styles.servicesGroup}>
+          <Text style={styles.servicesGroupLabel}>Incluído no seu plano</Text>
+          {incluidos.map(m => (
+            <ServiceRow key={m.id} moduleId={m.moduleId} included />
+          ))}
+        </View>
+      )}
+
+      {contratados.length > 0 && (
+        <View style={styles.servicesGroup}>
+          <Text style={styles.servicesGroupLabel}>Contratado à parte</Text>
+          {contratados.map(m => (
+            <ServiceRow key={m.id} moduleId={m.moduleId} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ServiceRow({ moduleId, included = false }: { moduleId: keyof typeof MODULE_CATALOG; included?: boolean }) {
+  const meta = MODULE_CATALOG[moduleId];
+  if (!meta) return null;
+
+  return (
+    <View style={styles.serviceRow}>
+      <Ionicons
+        name={included ? 'checkmark-circle' : 'cube-outline'}
+        size={18}
+        color={included ? colors.oliGreen : colors.oliGold}
+      />
+      <View style={styles.serviceInfo}>
+        <Text style={styles.serviceName}>{meta.name}</Text>
+        <Text style={styles.serviceProvider}>{meta.provider}</Text>
+      </View>
+      <Text style={[styles.servicePrice, included && styles.servicePriceIncluded]}>
+        {included ? 'Incluído' : meta.pricing.displayLabel}
+      </Text>
+    </View>
+  );
+}
+
 export default function MeuPlanoScreen() {
   const { userPlan } = useAppStore();
   const { profile, setProfile } = useAuthStore();
@@ -366,6 +433,9 @@ export default function MeuPlanoScreen() {
             <Text style={styles.activeBadgeText}>Ativo</Text>
           </View>
         </View>
+
+        {/* Seus serviços — inclusos no plano + contratados à parte */}
+        <SeusServicos />
 
         {/* Hero — coworking físico (frame primário) */}
         <View style={[styles.heroCard, shadows.card]}>
@@ -674,6 +744,27 @@ const styles = StyleSheet.create({
   activePlanName:   { fontSize: 28, fontWeight: '800', color: colors.oliDarkGray, marginTop: 2 },
   activeBadge:      { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.oliGreen, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 },
   activeBadgeText:  { fontSize: 12, fontWeight: '700', color: colors.white },
+
+  servicesCard: {
+    backgroundColor: colors.white,
+    borderRadius:    radius.lg,
+    padding:         spacing.md,
+    marginBottom:    spacing.md,
+  },
+  servicesTitle:      { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray, marginBottom: spacing.sm },
+  servicesGroup:      { marginTop: spacing.xs },
+  servicesGroupLabel: { fontSize: 12, fontWeight: '600', color: colors.oliLightGray, marginBottom: spacing.xs, marginTop: spacing.xs },
+  serviceRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  serviceInfo:        { flex: 1 },
+  serviceName:        { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
+  serviceProvider:    { fontSize: 12, color: colors.oliLightGray },
+  servicePrice:       { fontSize: 13, fontWeight: '600', color: colors.oliGold },
+  servicePriceIncluded: { color: colors.oliGreen },
 
   heroCard: {
     backgroundColor:   '#EFF4F0',
