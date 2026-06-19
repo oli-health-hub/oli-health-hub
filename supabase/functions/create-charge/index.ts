@@ -14,6 +14,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { findOrCreateCustomer, asaasBase, asaasHeaders, getPixQrCode } from '../_shared/asaas.ts';
+import { validateCoupon, recordRedemption, type CouponResult } from '../_shared/coupon.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -54,10 +55,12 @@ Deno.serve(async (req: Request) => {
       moduleSlug,
       billingType = 'CREDIT_CARD',
       cpfCnpj,
+      couponCode,
     } = await req.json() as {
       moduleSlug:   string;
       billingType?: 'CREDIT_CARD' | 'PIX' | 'BOLETO_BANCARIO';
       cpfCnpj?:     string;
+      couponCode?:  string;
     };
 
     if (!moduleSlug) return json({ error: 'moduleSlug obrigatório' }, 400);
@@ -70,6 +73,16 @@ Deno.serve(async (req: Request) => {
 
     if (!profile) return json({ error: 'Perfil não encontrado' },  404);
     if (!module)  return json({ error: 'Módulo não encontrado' },   404);
+
+    // ── 3b. Cupom (opcional) ─────────────────────────────────────────────────
+    const baseValue = Number(module.valor);
+    let chargeValue = baseValue;
+    let coupon: CouponResult | null = null;
+    if (couponCode) {
+      coupon = await validateCoupon(supabaseAdmin, couponCode, 'modulo', baseValue, user.id);
+      if (!coupon.valid) return json({ error: coupon.error }, 400);
+      chargeValue = coupon.valorFinal!;
+    }
 
     // ── 4. Cliente Asaas (cria se não existe) ────────────────────────────────
     const customerId = await findOrCreateCustomer(user.id, profile.nome, user.email!, cpfCnpj);
@@ -85,7 +98,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         customer:          customerId,
         billingType,
-        value:             module.valor,
+        value:             chargeValue,
         dueDate:           dueDateStr,
         description:       `OLI Health Hub — ${module.nome}`,
         externalReference: `module::${user.id}::${module.id}`,
@@ -93,6 +106,20 @@ Deno.serve(async (req: Request) => {
     });
     const charge = await chargeRes.json();
     if (!charge.id) throw new Error(`Asaas: falha na cobrança — ${JSON.stringify(charge)}`);
+
+    // Registra resgate do cupom (confirmado no webhook ao pagamento)
+    if (coupon?.valid) {
+      await recordRedemption(supabaseAdmin, {
+        couponId:       coupon.couponId!,
+        professionalId: user.id,
+        targetType:     'modulo',
+        targetRef:      moduleSlug,
+        baseValue,
+        desconto:       coupon.desconto!,
+        valorFinal:     chargeValue,
+        asaasId:        charge.id as string,
+      });
+    }
 
     // ── 6. Registra user_modules com status pending_payment ──────────────────
     // Upsert: se já existe (tentativa anterior), atualiza o asaas_id
@@ -136,6 +163,8 @@ Deno.serve(async (req: Request) => {
       invoiceUrl:    charge.invoiceUrl,
       billingType:   charge.billingType,
       value:         charge.value,
+      valorOriginal: baseValue,
+      desconto:      coupon?.desconto ?? 0,
       dueDate:       charge.dueDate,
       bankSlipUrl:   charge.bankSlipUrl  ?? null,
       pixQrCode:     pix?.pixQrCode      ?? null,

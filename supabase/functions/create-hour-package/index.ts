@@ -13,6 +13,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { findOrCreateCustomer, asaasBase, asaasHeaders, getPixQrCode } from '../_shared/asaas.ts';
+import { validateCoupon, recordRedemption, type CouponResult } from '../_shared/coupon.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -53,10 +54,12 @@ Deno.serve(async (req: Request) => {
       hours,
       billingType = 'CREDIT_CARD',
       cpfCnpj,
+      couponCode,
     } = await req.json() as {
       hours:        number;
       billingType?: 'CREDIT_CARD' | 'PIX' | 'BOLETO_BANCARIO';
       cpfCnpj?:     string;
+      couponCode?:  string;
     };
 
     if (!hours || hours < 1) return json({ error: 'hours deve ser >= 1' }, 400);
@@ -75,6 +78,16 @@ Deno.serve(async (req: Request) => {
     if (!profile) return json({ error: 'Perfil não encontrado' }, 404);
     if (!pkg)     return json({ error: `Pacote de ${hours}h não encontrado` }, 404);
 
+    // ── 3b. Cupom (opcional) ─────────────────────────────────────────────────
+    const baseValue = Number(pkg.valor);
+    let chargeValue = baseValue;
+    let coupon: CouponResult | null = null;
+    if (couponCode) {
+      coupon = await validateCoupon(supabaseAdmin, couponCode, 'pacote', baseValue, user.id);
+      if (!coupon.valid) return json({ error: coupon.error }, 400);
+      chargeValue = coupon.valorFinal!;
+    }
+
     // ── 4. Cliente Asaas (cria se não existe) ────────────────────────────────
     const customerId = await findOrCreateCustomer(user.id, profile.nome, user.email!, cpfCnpj);
 
@@ -89,7 +102,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         customer:          customerId,
         billingType,
-        value:             pkg.valor,
+        value:             chargeValue,
         dueDate:           dueDateStr,
         description:       `OLI Health Hub — Pacote ${pkg.horas}h`,
         externalReference: `hour_package::${user.id}::${pkg.id}`,
@@ -97,6 +110,20 @@ Deno.serve(async (req: Request) => {
     });
     const charge = await chargeRes.json();
     if (!charge.id) throw new Error(`Asaas: falha na cobrança — ${JSON.stringify(charge)}`);
+
+    // Registra resgate do cupom (confirmado no webhook ao pagamento)
+    if (coupon?.valid) {
+      await recordRedemption(supabaseAdmin, {
+        couponId:       coupon.couponId!,
+        professionalId: user.id,
+        targetType:     'pacote',
+        targetRef:      String(hours),
+        baseValue,
+        desconto:       coupon.desconto!,
+        valorFinal:     chargeValue,
+        asaasId:        charge.id as string,
+      });
+    }
 
     // ── 6. Notificação admin (fire-and-forget) ───────────────────────────────
     supabaseAdmin.from('admin_notifications').insert({

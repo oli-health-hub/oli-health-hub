@@ -117,6 +117,119 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_redemptions: {
+        Row: {
+          asaas_id: string | null
+          base_value: number
+          coupon_id: string
+          created_at: string
+          desconto: number
+          id: string
+          professional_id: string
+          status: string
+          target_ref: string | null
+          target_type: string
+          valor_final: number
+        }
+        Insert: {
+          asaas_id?: string | null
+          base_value: number
+          coupon_id: string
+          created_at?: string
+          desconto: number
+          id?: string
+          professional_id: string
+          status?: string
+          target_ref?: string | null
+          target_type: string
+          valor_final: number
+        }
+        Update: {
+          asaas_id?: string | null
+          base_value?: number
+          coupon_id?: string
+          created_at?: string
+          desconto?: number
+          id?: string
+          professional_id?: string
+          status?: string
+          target_ref?: string | null
+          target_type?: string
+          valor_final?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          aplicavel_a: string
+          ativo: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          limite_uso: number | null
+          plano_recorrente: boolean
+          tipo: string
+          usos: number
+          validade: string | null
+          valor: number
+        }
+        Insert: {
+          aplicavel_a?: string
+          ativo?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          limite_uso?: number | null
+          plano_recorrente?: boolean
+          tipo: string
+          usos?: number
+          validade?: string | null
+          valor: number
+        }
+        Update: {
+          aplicavel_a?: string
+          ativo?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          limite_uso?: number | null
+          plano_recorrente?: boolean
+          tipo?: string
+          usos?: number
+          validade?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_entries: {
         Row: {
           categoria: string | null
@@ -1120,6 +1233,15 @@ export type Database = {
           id: string
           nome: string
         }[]
+      }
+      validate_coupon: {
+        Args: {
+          p_base_value: number
+          p_code: string
+          p_professional_id?: string
+          p_target_type: string
+        }
+        Returns: Json
       }
     }
     Enums: {

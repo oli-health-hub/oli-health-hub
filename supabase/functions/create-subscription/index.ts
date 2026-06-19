@@ -13,6 +13,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { findOrCreateCustomer, asaasBase, asaasHeaders, getPixQrCode } from '../_shared/asaas.ts';
+import { validateCoupon, recordRedemption, type CouponResult } from '../_shared/coupon.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -54,11 +55,13 @@ Deno.serve(async (req: Request) => {
       ciclo       = 'MONTHLY',
       billingType = 'CREDIT_CARD',
       cpfCnpj,
+      couponCode,
     } = await req.json() as {
       planId:       string;
       ciclo?:       'MONTHLY' | 'YEARLY';
       billingType?: 'CREDIT_CARD' | 'PIX' | 'BOLETO_BANCARIO';
       cpfCnpj?:     string;
+      couponCode?:  string;
     };
 
     if (!planId) return json({ error: 'planId obrigatório' }, 400);
@@ -74,6 +77,17 @@ Deno.serve(async (req: Request) => {
 
     const value = ciclo === 'YEARLY' ? plan.preco_anual : plan.preco_mensal;
 
+    // ── 3b. Cupom (opcional) ─────────────────────────────────────────────────
+    // planoRecorrente: desconto em todas as faturas (subscription.value menor).
+    // Caso contrário: desconto só na 1ª fatura (ajusta o primeiro payment).
+    let coupon: CouponResult | null = null;
+    let subValue = value;            // valor da assinatura (recorrente)
+    if (couponCode) {
+      coupon = await validateCoupon(supabaseAdmin, couponCode, 'plano', value, user.id);
+      if (!coupon.valid) return json({ error: coupon.error }, 400);
+      if (coupon.planoRecorrente) subValue = coupon.valorFinal!;
+    }
+
     // ── 4. Cliente Asaas ─────────────────────────────────────────────────────
     const customerId = await findOrCreateCustomer(user.id, profile.nome, user.email!, cpfCnpj);
 
@@ -88,7 +102,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         customer:          customerId,
         billingType,
-        value,
+        value:             subValue,
         nextDueDate:       nextDueDateStr,
         cycle:             ciclo,           // 'MONTHLY' | 'YEARLY' — Asaas aceita direto
         description:       `OLI Health Hub — Plano ${plan.name} (${ciclo === 'YEARLY' ? 'Anual' : 'Mensal'})`,
@@ -139,6 +153,31 @@ Deno.serve(async (req: Request) => {
     const paymentsData = await paymentsRes.json();
     const firstPayment = paymentsData.data?.[0] as Record<string, unknown> | undefined;
 
+    // Cupom não-recorrente: aplica o desconto só na 1ª fatura.
+    if (coupon?.valid && !coupon.planoRecorrente && firstPayment?.id) {
+      await fetch(`${asaasBase()}/payments/${firstPayment.id}`, {
+        method: 'PUT',
+        headers: asaasHeaders(),
+        body: JSON.stringify({ value: coupon.valorFinal }),
+      });
+      firstPayment.value = coupon.valorFinal;
+    }
+
+    // Registra resgate do cupom (confirmado no webhook ao pagamento)
+    if (coupon?.valid) {
+      await recordRedemption(supabaseAdmin, {
+        couponId:       coupon.couponId!,
+        professionalId: user.id,
+        targetType:     'plano',
+        targetRef:      planId,
+        baseValue:      value,
+        desconto:       coupon.desconto!,
+        valorFinal:     coupon.valorFinal!,
+        asaasId:        subscription.id as string,
+      });
+    }
+
+    // QR Code só depois de eventual ajuste de valor (o QR codifica o valor).
     const pix = (billingType === 'PIX' && firstPayment?.id)
       ? await getPixQrCode(firstPayment.id as string)
       : null;
@@ -148,7 +187,10 @@ Deno.serve(async (req: Request) => {
       supabaseSubId:  newSub?.id  ?? null,
       status:         'pending_payment',
       ciclo,
-      value,
+      value:          subValue,
+      valorOriginal:  value,
+      desconto:       coupon?.desconto ?? 0,
+      planoRecorrente: coupon?.planoRecorrente ?? false,
       dueDate:        firstPayment?.dueDate    ?? nextDueDateStr,
       invoiceUrl:     firstPayment?.invoiceUrl ?? null,
       bankSlipUrl:    firstPayment?.bankSlipUrl ?? null,

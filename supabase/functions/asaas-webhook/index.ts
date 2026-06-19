@@ -62,6 +62,26 @@ Deno.serve(async (req: Request) => {
   const paymentId      = payment.id           as string;
   const subscriptionId = payment.subscription as string | undefined;
 
+  // ── 2b. Confirma resgate de cupom + incrementa uso ───────────────────────
+  // O resgate é gravado como 'pending' na criação da cobrança/assinatura,
+  // referenciado por asaas_id (paymentId p/ módulo/pacote, subscriptionId p/ plano).
+  {
+    const refs = [paymentId, subscriptionId].filter(Boolean) as string[];
+    const { data: redemption } = await supabase
+      .from('coupon_redemptions')
+      .select('id, coupon_id')
+      .in('asaas_id', refs)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (redemption) {
+      await supabase.from('coupon_redemptions').update({ status: 'confirmed' }).eq('id', redemption.id);
+      const { data: c } = await supabase.from('coupons').select('usos').eq('id', redemption.coupon_id).single();
+      await supabase.from('coupons').update({ usos: (c?.usos ?? 0) + 1 }).eq('id', redemption.coupon_id);
+      console.log(`[webhook] cupom resgate ${redemption.id} confirmado`);
+    }
+  }
+
   // ── 3. Assinatura de plano ────────────────────────────────────────────────
   if (subscriptionId) {
     const hashKey = await sha256hex(subscriptionId);
