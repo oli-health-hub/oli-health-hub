@@ -13,6 +13,7 @@ import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { useAuthStore } from '../../src/store/authStore';
 import { useModuleStore } from '../../src/store/moduleStore';
 import { MODULE_CATALOG, isModuleIncludedInPlan, type ModuleId, type OLIModule } from '../../src/models/modules';
+import { fetchModulePricing, type ModulePriceOverride } from '../../src/services/moduleService';
 import type { PlanType } from '../../src/models/types';
 import CheckoutModal from '../../src/components/CheckoutModal';
 import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
@@ -38,6 +39,14 @@ const INCLUDED_SERVICES: ServiceItem[] = [
 
 const totalMarketValue = INCLUDED_SERVICES.reduce((acc, s) => acc + s.marketPrice, 0);
 
+function buildModuleLabel(valor: number, tipo: string): string {
+  if (valor === 0 || tipo === 'incluido') return 'Incluso no plano';
+  const fmt = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  if (tipo === 'mensal') return `${fmt}/mês`;
+  if (tipo === 'unico')  return `${fmt} único`;
+  return fmt;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function EcossistemaScreen() {
@@ -45,6 +54,7 @@ export default function EcossistemaScreen() {
   const router = useRouter();
   const [checkoutModule, setCheckoutModule] = useState<OLIModule | null>(null);
   const [showScrollHint, setShowScrollHint] = useState(true);
+  const [modulePriceMap, setModulePriceMap] = useState<Map<ModuleId, ModulePriceOverride>>(new Map());
 
   const user = useAuthStore((s) => s.user);
   const { loadModules, isModuleActive, isLoaded: modulesLoaded } = useModuleStore();
@@ -52,6 +62,16 @@ export default function EcossistemaScreen() {
   useEffect(() => {
     if (user?.id) loadModules(user.id, userPlan);
   }, [user?.id, userPlan]);
+
+  useEffect(() => {
+    fetchModulePricing()
+      .then(overrides => {
+        const map = new Map<ModuleId, ModulePriceOverride>();
+        overrides.forEach(o => map.set(o.slug, o));
+        setModulePriceMap(map);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -167,7 +187,18 @@ export default function EcossistemaScreen() {
             <ActivityIndicator color={colors.oliGreen} />
           </View>
         ) : (Object.keys(MODULE_CATALOG) as ModuleId[]).map((moduleId) => {
-          const mod      = MODULE_CATALOG[moduleId];
+          const base     = MODULE_CATALOG[moduleId];
+          const override = modulePriceMap.get(moduleId);
+          const mod: OLIModule = override
+            ? {
+                ...base,
+                pricing: {
+                  ...base.pricing,
+                  amount:       override.valor > 0 ? override.valor : undefined,
+                  displayLabel: buildModuleLabel(override.valor, override.tipo),
+                },
+              }
+            : base;
           const included = isModuleIncludedInPlan(moduleId, userPlan);
           const active   = isModuleActive(moduleId, userPlan);
           return (

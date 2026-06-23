@@ -126,6 +126,33 @@ export async function fetchHourBalance(
   };
 }
 
+/**
+ * Regra de negócio: só é possível reservar sala com saldo de horas no banco.
+ * O saldo vem de pacote pré-comprado OU de crédito de indicação — ambos gravados
+ * em `hour_balance`. Soma todas as linhas não-expiradas (podem coexistir) e
+ * retorna true se houver ao menos 1 minuto livre.
+ */
+export async function hasReservationCredit(
+  professionalId: string,
+): Promise<boolean> {
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('hour_balance')
+    .select('minutos_total, minutos_usados')
+    .eq('professional_id', professionalId)
+    .gt('expira_em', now);
+
+  if (error) throw error;
+  if (!data || data.length === 0) return false;
+
+  const minutosLivres = data.reduce(
+    (sum, r) => sum + (r.minutos_total - r.minutos_usados),
+    0,
+  );
+  return minutosLivres > 0;
+}
+
 // ─── Plano atual ─────────────────────────────────────────────────────────────
 
 export interface SubscriptionInfo {
@@ -189,6 +216,24 @@ export async function fetchMonthlyUsageHistory(
   }
 
   return results;
+}
+
+// ─── Pacotes de horas (fonte: DB — gerenciado pelo Admin) ────────────────────
+
+import type { HourPackage } from '../models/types';
+
+export async function fetchHourPackages(): Promise<HourPackage[]> {
+  const { data, error } = await supabase
+    .from('hour_packages')
+    .select('horas, valor, bonus_horas')
+    .eq('ativo', true)
+    .order('horas');
+  if (error) throw error;
+  return ((data ?? []) as unknown as { horas: number; valor: number; bonus_horas: number }[]).map(r => ({
+    hours:      Number(r.horas),
+    price:      Number(r.valor),
+    bonusHours: Number(r.bonus_horas ?? 0),
+  }));
 }
 
 export async function fetchActiveSubscription(

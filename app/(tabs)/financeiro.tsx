@@ -15,6 +15,7 @@ import {
   fetchUsageSummary,
   fetchMonthlyUsageHistory,
   fetchHourBalance,
+  fetchHourPackages,
 } from '../../src/services/financeiroService';
 import type { UsageSummary, MonthlyUsageSummary, HourBalance } from '../../src/services/financeiroService';
 import type { HourPackage } from '../../src/models/types';
@@ -36,15 +37,6 @@ const INCLUDED_SERVICES = [
 // Valor de mercado dos serviços inclusos no plano (calculado em ecossistema.tsx)
 const TOTAL_MARKET_VALUE = 3_620.00;
 
-// Preço fixo: R$140/h. A cada 10h compradas → 1h bônus grátis.
-const PRICE_PER_HOUR = 140.00;
-
-const HOUR_PACKAGES: HourPackage[] = [
-  { hours:  1, price: PRICE_PER_HOUR *  1, bonusHours: 0 },
-  { hours: 10, price: PRICE_PER_HOUR * 10, bonusHours: 1 },
-  { hours: 20, price: PRICE_PER_HOUR * 20, bonusHours: 2 },
-  { hours: 40, price: PRICE_PER_HOUR * 40, bonusHours: 4 },
-];
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +54,7 @@ export default function FinanceiroScreen() {
   const [loadingHistory,   setLoadingHistory]   = useState(true);
   const [selectedPackage,  setSelectedPackage]  = useState<HourPackage | null>(null);
   const [showPackagePicker, setShowPackagePicker] = useState(false);
+  const [hourPackages,      setHourPackages]      = useState<HourPackage[]>([]);
   const [hourBalance,       setHourBalance]       = useState<HourBalance | null>(null);
   const [showScrollHint,    setShowScrollHint]    = useState(true);
 
@@ -109,6 +102,11 @@ export default function FinanceiroScreen() {
     if (!userId) return;
     fetchHourBalance(userId).then(setHourBalance).catch(() => {});
   }, [session?.user?.id]);
+
+  // ── Pacotes de horas (fonte: DB gerenciado pelo Admin) ──
+  useEffect(() => {
+    fetchHourPackages().then(setHourPackages).catch(() => {});
+  }, []);
 
   // ── Valores derivados (todos reais) ──
   const oliCost      = usageSummary?.totalValor   ?? 0;
@@ -413,6 +411,7 @@ export default function FinanceiroScreen() {
 
       {/* Package picker modal */}
       <HourPackagePickerModal
+        packages={hourPackages}
         visible={showPackagePicker}
         onClose={() => setShowPackagePicker(false)}
         onSelect={(pkg) => {
@@ -531,14 +530,17 @@ const pacoteStyles = StyleSheet.create({
 // ── HourPackagePickerModal ────────────────────────────────────────────────────
 
 function HourPackagePickerModal({
-  visible, onClose, onSelect,
-}: { visible: boolean; onClose: () => void; onSelect: (pkg: HourPackage) => void }) {
+  packages, visible, onClose, onSelect,
+}: { packages: HourPackage[]; visible: boolean; onClose: () => void; onSelect: (pkg: HourPackage) => void }) {
   const [selected, setSelected] = useState<number | null>(null);
 
   const handleContinue = () => {
-    const pkg = HOUR_PACKAGES.find(p => p.hours === selected);
+    const pkg = packages.find(p => p.hours === selected);
     if (pkg) onSelect(pkg);
   };
+
+  const pricePerHour = packages.length > 0 ? packages[0].price / packages[0].hours : 140;
+  const hasBonus     = packages.some(p => p.bonusHours > 0);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -549,21 +551,23 @@ function HourPackagePickerModal({
           <View style={pickerStyles.header}>
             <View>
               <Text style={pickerStyles.title}>Escolha um pacote</Text>
-              <Text style={pickerStyles.subtitle}>R$140/h · a cada 10h compradas = 1h bônus</Text>
+              <Text style={pickerStyles.subtitle}>
+                {formatCurrency(pricePerHour)}/h{hasBonus ? ' · pacotes maiores ganham horas bônus' : ''}
+              </Text>
             </View>
             <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar">
               <Ionicons name="close" size={22} color={colors.oliDarkGray} />
             </TouchableOpacity>
           </View>
 
-          {HOUR_PACKAGES.map((pkg, i) => {
+          {packages.map((pkg, i) => {
             const isSelected = selected === pkg.hours;
             return (
               <TouchableOpacity
                 key={pkg.hours}
                 style={[
                   pickerStyles.row,
-                  i < HOUR_PACKAGES.length - 1 && pickerStyles.rowBorder,
+                  i < packages.length - 1 && pickerStyles.rowBorder,
                   isSelected && pickerStyles.rowSelected,
                 ]}
                 onPress={() => setSelected(pkg.hours)}
