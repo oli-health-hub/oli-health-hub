@@ -214,3 +214,90 @@ Práticas de segurança:
 - [ ] Service account JSON salvo como `./google-services.json`.
 - [ ] AAB produção buildado via `eas build -p android --profile production`.
 - [ ] `eas submit -p android --latest` com track `internal`.
+
+---
+
+# Data Safety — respostas exatas (Play Console → App content → Data safety)
+
+## Visão geral (3 perguntas iniciais)
+- Seu app coleta ou compartilha algum dos tipos de dados exigidos? **Sim**
+- Todos os dados do usuário são criptografados em trânsito? **Sim**
+- Você fornece forma de o usuário solicitar exclusão dos dados? **Sim**
+  (in-app: Perfil → Excluir conta; RPC delete_account_data)
+
+## Tipos de dados coletados
+Para CADA item: Coletado=Sim · Compartilhado=Não · Processado efêmero=Não ·
+Obrigatório=Sim (salvo indicado) · Finalidade=Funcionalidade do app + Gerenciamento de conta.
+
+### Informações pessoais
+- Nome — Sim
+- Endereço de e-mail — Sim
+- Número de telefone — Sim
+- IDs do usuário — Sim (UUID)
+- Outras informações pessoais — Sim (CPF armazenado como hash; CRM profissional)
+
+### Informações financeiras
+- Histórico de compras — Sim (faturas/minutagem/pacotes)
+- Info de pagamento (cartão) — **NÃO coletado** (processado pelo Asaas, externo;
+  o app não armazena número de cartão)
+
+### Saúde e fitness
+- Informações de saúde — Sim, Obrigatório=Não, Finalidade=Funcionalidade do app
+  (dados de pacientes inseridos pelo médico: nome, contato, convênio)
+  ⚠️ Confirmar com jurídico/DPO o enquadramento (dado de terceiro/paciente).
+
+### Fotos e vídeos
+- Fotos — Sim, Obrigatório=Não (foto de perfil opcional)
+
+### Diagnóstico do app
+- Registros de falhas — Sim (Sentry, sem PII) — só quando SENTRY_DSN setado
+- Diagnóstico/Performance — Sim (Sentry)
+
+### NÃO coletados (deixar desmarcado)
+Localização, contatos, mensagens, histórico de navegação, áudio, arquivos,
+calendário (é permissão de device, não coleta), info de cartão.
+
+## Práticas de segurança
+- Criptografado em trânsito: **Sim** (HTTPS/TLS — Supabase + Edge Functions)
+- Usuário pode pedir exclusão: **Sim**
+- Dados podem ser excluídos: **Sim** (in-app)
+- Segue Política de Famílias: **N/A** (app 18+, não para crianças)
+- Revisão de segurança independente: Não (opcional)
+
+---
+
+# Content Rating — questionário IARC (App content → Content rating)
+
+- Categoria do app: **Utilitário, Produtividade, Comunicação ou Outro**
+  (NÃO selecionar "Jogo")
+- E-mail de contato: contato@olihealthhub.com.br
+
+Respostas (todas **Não**, exceto onde indicado):
+- Violência (real/fantasia): Não
+- Conteúdo sexual / nudez: Não
+- Linguagem imprópria / palavrões: Não
+- Substâncias controladas (drogas/álcool/tabaco): Não
+- Jogos de azar / apostas: Não
+- Medo / horror: Não
+- Discriminação / discurso de ódio: Não
+- O app compartilha a localização do usuário: Não
+- O app permite interação/comunicação entre usuários: Não
+  (chatbot é IA do app; não há chat usuário↔usuário)
+- O app permite compra de bens digitais: Não (cobrança via Asaas, fora do Play)
+- Conteúdo gerado por usuário compartilhado publicamente: Não
+
+Resultado esperado: **Livre / Classificação Livre (L) / Everyone**.
+
+---
+
+# App access (App content → App access)
+- "Todas ou algumas funcionalidades são restritas" → Sim (exige login)
+- Fornecer credenciais de teste ao revisor Google:
+  - Tipo: e-mail + senha
+  - Instruções: "Abra o app → 'Já tenho conta' → use as credenciais →
+    pule o questionário fiscal (botão Pular) → explore as abas."
+  - ⚠️ Criar conta demo dedicada antes de submeter pra produção.
+
+# Target audience (App content → Target audience and content)
+- Faixa etária: **18 e mais**
+- App direcionado a crianças? **Não**

@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 18/Junho/2026.
+> Última atualização: 23/Junho/2026.
 
 ---
 
@@ -213,6 +213,45 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - **Admin**: coluna **Assessorias** em `/medicos` (chips verde=tem / cinza=oferta) pra pipeline de upsell.
 - **Fotos das salas**: salas 1, 2, 6 no card da agenda (banner) + RoomDetailModal; bundle em `assets/room-photos/` via `src/utils/roomPhotos.ts` (mapa estático id→foto, atualizável por OTA).
 
+### ✅ Resolvido na sessão 23/jun (publicação nas lojas)
+
+- **🎟️ Sistema de cupom de desconto — COMPLETO:**
+  - Schema: tabelas `coupons` + `coupon_redemptions` (migration `20260619_coupons.sql`); RPC `validate_coupon` enforça mínimo R$5 Asaas.
+  - Edge function compartilhada `supabase/functions/_shared/coupon.ts` (`validateCoupon` + `recordRedemption`).
+  - Componente `src/components/CouponField.tsx` (input + apply + remove, callback `onApplied`).
+  - `checkoutService.ts`: `validateCouponPreview`, `createModuleCharge`, `createPlanSubscription`, `createHourPackageCharge` — todos aceitam `couponCode`.
+  - Admin: `admin/app/cupons/page.tsx` (criar/listar/ativar) + actions `createCoupon`/`toggleCoupon` + sidebar "Cupons".
+  - OTA prod + preview (autorizado pelo fundador, testado com sucesso).
+
+- **📋 Seção "Seus serviços" em meu-plano.tsx** — componente `SeusServicos` com `ServiceRow` mostrando módulos ativos, plano e pacotes de horas.
+
+- **🐛 Fix onboarding loop no login e-mail/senha:**
+  - Race condition: `onAuthStateChange` deferria fetch de profile via `setTimeout(0)`, mas o gate de routing em `_layout.tsx` rodava antes do profile chegar → redirecionava pro onboarding.
+  - Fix: flag `profileLoaded: boolean` no `authStore`. Gate só roteia quando `profileLoaded=true`. OTA autorizado pelo fundador.
+
+- **🤖 Conta demo para revisor Google Play criada:**
+  - `revisor.google@olihealthhub.com.br` / `RevisorOLI@2026`
+  - Plano BASE, onboarding completo, 1 paciente demo, 1 reserva (Sala 5, agendado).
+  - UUID: `9f29d91d-7243-4449-93f0-8387fe46d6e6`
+
+- **📱 Google Play — progresso (23/jun):**
+  - Data Safety: preenchido (nome, e-mail, IDs, financeiro, saúde, fotos, diagnóstico, device ID).
+  - App content: ID publicidade (não usa), Apps de saúde (declarado).
+  - App access: credenciais revisor adicionadas.
+  - Categoria: Negócios.
+  - Main store listing: textos colados (descrição curta/longa, política de privacidade).
+  - Assets: `icon-512.png` (512×512), `feature-graphic.png` (1024×500), 10 screenshots Android (720×1600) em `assets/Print Screen App/selected/`.
+  - **Build versionCode 2** em fila (`f4e9242b`) — versionCode 1 conflitava com release anterior. `app.json` android adicionou `"versionCode": 2`, `eas.json` mudou `appVersionSource: local`.
+  - ⚠️ Quando build terminar: baixar AAB, subir no Play Console (teste fechado), adicionar 12+ testadores.
+
+- **🍎 App Store Connect — progresso (23/jun):**
+  - Build iOS `2ea6728b` (1.0.0 build 1) já no TestFlight.
+  - Screenshots iOS capturadas (12 prints 1290×2796 iPhone Pro Max) em `assets/Print Screen App iOS/selected/`.
+  - ⚠️ Pendente: upload screenshots + preencher Description/Keywords/Support URL + App Privacy + Submit for review.
+  - ⚠️ App Store Connect instável na sessão (sessão caindo/erro ao carregar apps) — retomar quando estável.
+
+- **🔑 Sentry DSN configurado:** `EXPO_PUBLIC_SENTRY_DSN` setado em `.env`.
+
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
    - ✅ `URL Configuration` → **Redirect URLs** adicionadas (`olihealthhub://nova-senha`, `olihealthhub://*`, `https://olihealthhub.com.br/confirmado`). **Reset de senha testado ponta-a-ponta e FUNCIONANDO (16/jun).**
@@ -263,4 +302,4 @@ node --experimental-strip-types scripts/test-communicare.ts
 
 ---
 
-**Resumo de 1 linha (18/jun):** App em **Internal Testing** do Google Play (AAB `c0936887`); sessão resolveu **deadlock de auth** (salvar nova senha travava), **reset de senha funcionando** ponta-a-ponta, **regra de reserva exige saldo de horas** (pacote ou indicação), fix ícones Dr./Dra. + tratamento duplicado, Olivia="Assistente Virtual OLI", novo `docs/OLI_BASE.md`, **reestruturação de salas 7→9 + fotos novas em 8/9 salas + fix layout foto única** (OTA `a063f331`/`46dcb504`), **botão voltar Android nos modais + capa/miniaturas de fotos** (OTA `66c333c2`/`b24299c1`), e **Asaas em produção VALIDADO ponta-a-ponta** (cobrança real → webhook → ativação). Pendências principais = **App content/listing pra Play público** + Sentry DSN + **foto Sala 4** + gate de reserva server-side + Confirm email/templates Supabase + cupom de desconto (tarefa).
+**Resumo de 1 linha (23/jun):** Sessão focada em **publicação nas lojas**. Implementados: **sistema de cupom de desconto** (schema+edge+UI+admin, testado), **"Seus serviços"** em meu-plano, **fix onboarding loop** (flag `profileLoaded`), **conta demo revisor Google** (`revisor.google@olihealthhub.com.br`/`RevisorOLI@2026`). Play Console: Data Safety+App content+listing preenchidos; **build versionCode 2 em fila** (`f4e9242b`) — quando terminar, subir AAB + adicionar 12 testadores. App Store Connect instável na sessão; screenshots iOS prontas em `assets/Print Screen App iOS/selected/`; pendente upload+metadata+submit. Pendências principais: **AAB versionCode 2 → Play Console** + **App Store Connect listing+submit** + Confirm email/templates Supabase + foto Sala 4 + gate reserva server-side.
