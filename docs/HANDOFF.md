@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 23/Junho/2026.
+> Última atualização: 23/Junho/2026 (sessão 2).
 
 ---
 
@@ -160,21 +160,19 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - Simulador CC **desligado** em produção (mock off). Banco com perfis reais apenas.
 - `RELEASE_CHECKLIST.md` na raiz: **desligar mock CC antes de qualquer release público** + passos de ativação CC.
 
-## 10.1. GOOGLE PLAY — status (sessão 14-15/jun)
+## 10.1. GOOGLE PLAY — status (atualizado 23/jun sessão 2)
 
-**Onde está:** AAB de produção no ar em **Internal Testing**.
+**Onde está:** `versionCode 2` (1.0.0) em **Closed Testing (Alpha) — Google APROVOU a revisão (23/jun)**.
+- 12 testers adicionados e conectados. Testers precisam instalar o app via link de opt-in para iniciar o contador de 14 dias.
 - Package/Application ID: `com.oli.healthhub`. App signing = **Google Play** (upload key do EAS; não trocar).
-- Conta Play Developer = **Individual** (não Organization; sem DUNS). Verificação Google concluída.
-- Build atual com ícone corrigido (adaptive icon com margem): EAS build `c0936887` → `.aab`.
-- Assets prontos em `assets/play-store/`: `feature-graphic.png` (1024×500), `icon-512.png`, `logo-white.png`, `_render.html` (fonte editável).
-- Screenshots: `assets/Print Screen App/selected/` (01..10, nomes por tela; comunidade/perfil com nome/email borrados).
-- Textos + respostas de formulário: **`docs/PLAY_STORE_LISTING.md`** (short/full desc pt-BR, Data Safety exato, Content rating IARC, App access, Target audience).
+- Build: EAS `f4e9242b` → AAB entregue no Play Console.
+- Assets: `feature-graphic.png` (1024×500), `icon-512.png`, screenshots (10 prints 720×1600) em `assets/Print Screen App/selected/`.
+- Textos: `docs/PLAY_STORE_LISTING.md` (short/full desc, Data Safety, Content rating IARC, App access, target audience).
+- Conta demo revisor: `revisor.google@olihealthhub.com.br` / `RevisorOLI@2026` (plano BASE, onboarding completo).
 
-**Falta pra ir a PRODUÇÃO pública (tudo no Console, fundador):**
-- App content: **Data Safety** + **Content rating** + **App access** + **Target audience (18+)** + Saúde/Financeiro/Gov — respostas prontas no doc. ⚠️ Confirmar enquadramento "Saúde" (dado de paciente) com jurídico.
-- Main store listing: colar desc + subir ícone 512 + feature graphic + screenshots.
-- Conta demo dedicada pro revisor Google (só pra produção; internal testing não precisa).
-- Regra Google p/ conta nova: produção pública exige **14 dias de closed testing com 12+ testers**. Internal testing **não** tem essa regra.
+**Próximo passo (fundador):**
+1. Enviar link de opt-in do closed testing para os 12 testers → contador de 14 dias começa com o primeiro opt-in.
+2. Após 14 dias → Play Console → Teste fechado → Promover para Produção.
 
 ## 11. PENDÊNCIAS / próximos passos
 
@@ -212,6 +210,38 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - **Onboarding**: atendimento virou **multi-select** (Presencial e/ou Telemedicina → deriva `ambos`); campo CRM → **"Conselho de classe" opcional** (CRP/CRN/CRO; grava null se vazio); nova pergunta **"assessorias que já possui"** (Contabilidade/Jurídica/Convênios/Marketing) → `profiles.assessorias_atuais text[]`.
 - **Admin**: coluna **Assessorias** em `/medicos` (chips verde=tem / cinza=oferta) pra pipeline de upsell.
 - **Fotos das salas**: salas 1, 2, 6 no card da agenda (banner) + RoomDetailModal; bundle em `assets/room-photos/` via `src/utils/roomPhotos.ts` (mapa estático id→foto, atualizável por OTA).
+
+### ✅ Resolvido na sessão 23/jun (sessão 2 — admin, DB, fonte única de verdade)
+
+- **🔒 Gate de reserva server-side — RESOLVIDO** (fecha §11.9): trigger PostgreSQL `trg_check_reservation_credit` BEFORE INSERT em `reservations`. Checa `hour_balance` não-expirado (minutosLivres > 0). Bypass liberado para `service_role` (admin pode criar reservas de cortesia). Migration `20260623_reservation_credit_gate` aplicada e verificada.
+
+- **🔒 oli_encrypt/oli_decrypt restrito — RESOLVIDO** (fecha §11.6): EXECUTE revogado de `authenticated` via migration `20260623_restrict_oli_crypto_functions`. Funções agora só acessíveis por `postgres` e `service_role`. App nunca chamava client-side — apenas `database.types.ts` as listava como tipos.
+
+- **🗑️ Limpeza de dados de teste no DB:**
+  - `usage_charges`: 12 registros de teste do fundador (sessão Asaas 12/jun, R$156 cada) → **deletados** (0 restantes).
+  - `profiles` de teste: `thhibk`, `Test User` (×2) → **deletados de `auth.users`** com cascade completo (profiles, subscriptions, reservations, audit_logs, etc.).
+  - `hour_balance`: 2 entradas legítimas preservadas (Guilherme com charge Asaas real, Nathalia com crédito cortesia).
+
+- **💣 Hard delete no admin:** `hardDeleteUser()` em `admin/app/actions.ts` — limpa FKs sem CASCADE (`coupon_redemptions`, `coupons.created_by`, `profiles.referido_por`), depois `auth.admin.deleteUser()` que cascata tudo. Zona de perigo vermelha adicionada no `MedicoManagementCard` com modal de confirmação explícita. Diferente de `softDeleteUser` (status='deleted', dados preservados).
+
+- **🏢 Admin salas dinâmicas:** `admin/app/salas/page.tsx` — array de 7 salas hardcoded substituído por fetch da tabela `rooms`. Paleta de cores por posição (PALETTE[idx]). Todas as 9 salas agora aparecem corretamente.
+
+- **🏷️ Admin labels financeiro corrigidos:** tab "Pagamentos" → "Recebimentos", tab "Contas" → "Faturas", H2 atualizado, `/pagamentos` heading → "Minutagem por Sessão".
+
+- **💰 Pacotes de horas — fonte única DB:**
+  - DB corrigido: `hour_packages` tinha preços com desconto por volume (R$1.100, R$2.000, R$3.600) diferentes do app (R$140/h fixo). Corrigido para R$140, R$1.400, R$2.800, R$5.600.
+  - Coluna `bonus_horas` adicionada (`0, 1, 2, 4` por pacote).
+  - Admin: coluna "Bônus" adicionada na tabela do catálogo (`admin/app/catalogo/`).
+  - App: `fetchHourPackages()` em `financeiroService.ts` busca do DB em runtime. `HOUR_PACKAGES` hardcoded removido de `financeiro.tsx`. `HourPackagePickerModal` recebe `packages` como prop.
+
+- **🧩 Módulos — preços do DB:**
+  - Coluna `slug` adicionada em `modules` (`communicare`, `contabil_mello`, `ar_credenciamento`, `ar_gestao_mensal`, `ar_operadora_adicional`, `scribe_ia`).
+  - `src/services/moduleService.ts` criado: `fetchModulePricing()` busca por slug.
+  - `ecossistema.tsx`: `MODULE_CATALOG` mantém metadados (ativação, features, logos); preços sobrescritos em runtime com dados do DB via `modulePriceMap`. `buildModuleLabel()` formata valor/tipo para displayLabel.
+
+- **Regra arquitetural estabelecida:** Admin é a **única fonte de verdade** para preços de pacotes de horas e módulos. Alteração no painel → DB atualiza → app reflete na próxima abertura. Zero código.
+
+- **Commits desta sessão:** `681db32`, `de5e8de`, `76ba201` (branch `main`, deployados na Vercel).
 
 ### ✅ Resolvido na sessão 23/jun (publicação nas lojas)
 
@@ -254,19 +284,21 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
-   - ✅ `URL Configuration` → **Redirect URLs** adicionadas (`olihealthhub://nova-senha`, `olihealthhub://*`, `https://olihealthhub.com.br/confirmado`). **Reset de senha testado ponta-a-ponta e FUNCIONANDO (16/jun).**
-   - `Sign In / Providers` → Email → **Confirm email = ON**; min password length = 8.
-   - `Emails` → Confirm signup: colar `landing/email-templates/confirm-signup.html` (e reset-password.html).
-   - Leaked password protection = só plano Pro (pulado).
-2. ~~**🔴 Asaas sandbox → produção**~~ ✅ **RESOLVIDO 18/jun** (ver §11 resolvidos). Cobranças reais funcionando ponta-a-ponta.
-3. **Sentry DSN ausente** → lançamento cego a crashes. Setar `EXPO_PUBLIC_SENTRY_DSN` (build-time → precisa OTA/rebuild).
-4. **Foto sala faltando**: só **Sala 4 (Audio Visual)** + destino do `conforto-medico.jpg` (sobrou, não-sala). Quando chegar: solta em `assets/room-photos/` como `4a.jpg`/`4b.jpg`, processa com `sips -Z 1200 -s formatOptions 78 4a.jpg --out sala-4.jpg`, registra em `roomPhotos.ts` (key `4`), `eas update`.
-5. **Play produção**: ver §10.1 (Data Safety/rating/listing + 14d closed testing).
-6. **`oli_encrypt`/`oli_decrypt`** executáveis por qualquer authenticated (advisor) — revisar/restringir.
+   - ✅ `URL Configuration` → Redirect URLs adicionadas. Reset de senha FUNCIONANDO.
+   - ✅ `Sign In / Providers` → Email → Confirm email = ON; min password 8.
+   - ✅ `Emails` → Templates `confirm-signup.html` + `reset-password.html` configurados (OLI-branded, verde/dourado).
+2. ~~**🔴 Asaas sandbox → produção**~~ ✅ **RESOLVIDO 18/jun**.
+3. ~~**Sentry DSN ausente**~~ ✅ **RESOLVIDO** — `EXPO_PUBLIC_SENTRY_DSN` setado em `.env`.
+4. **Foto sala faltando**: só **Sala 4 (Audio Visual)**. Quando chegar: `assets/room-photos/4a.jpg`, processa com `sips -Z 1200 -s formatOptions 78 4a.jpg --out sala-4.jpg`, registra em `roomPhotos.ts` (key `4`), `eas update`.
+5. **Play Store produção**: Google aprovou closed testing. **Enviar link de opt-in aos 12 testers** → aguardar 14 dias → promover para produção. Ver §10.1.
+6. ~~**`oli_encrypt`/`oli_decrypt`**~~ ✅ **RESOLVIDO 23/jun** — EXECUTE revogado de `authenticated`.
 7. **Communicare**: aguardar token + endpoint LISTA + status + webhook. Depois remontar card da agenda.
 8. **VIP** preço; **Cron** auto-desativar START 30d sem reserva; **expo-blur** lock screen (rebuild nativo).
-9. **🔒 Gate de reserva server-side (hardening):** regra "só reserva com saldo de horas" hoje é **client-side** (`hasReservationCredit` em `financeiroService.ts`, gates em ReservationModal/EncaixeModal). `createReservation` insere direto via RLS → bypass possível. Blindar com trigger/policy no insert de `reservations` checando `hour_balance` não-expirado.
-10. **🆕 Salas de Evento + Conferência (roadmap)** — adicionar 2 tipos de sala com cobrança **por bloco/hora** (NÃO minutagem — evento é planejado, bloco = receita previsível). Benchmark cowork médico SP: conferência 6–12 pax R$ 80–300/h; evento/workshop 20–40 pax R$ 150–500/h (diária 4h R$ 800–1.500). **Proposta:** Conferência **R$ 150/h** (mín 1h); Eventos **R$ 280/h** ou pacote 4h **R$ 960** (mín 2h). Impl: novo `room_type` com `hourly_rate` + `min_duration` em vez de `cost_per_minute`; reserva por bloco (sem timer de minutagem). Validar preço final com fundador.
+9. ~~**🔒 Gate de reserva server-side**~~ ✅ **RESOLVIDO 23/jun** — trigger `trg_check_reservation_credit` BEFORE INSERT.
+10. **🆕 Salas de Evento + Conferência (roadmap)** — cobrança por bloco/hora (NÃO minutagem). Conferência R$150/h (mín 1h); Eventos R$280/h ou 4h R$960. Impl: `room_type` + `hourly_rate` + `min_duration`. Validar preço com fundador.
+11. **🍎 App Store Connect** — pendente: upload screenshots iOS (`assets/Print Screen App iOS/selected/`), preencher Description/Keywords/Support URL, App Privacy, submit for review. Estava instável na sessão anterior.
+12. **OTA pendente** — mudanças desta sessão (preços DB, hard delete, salas dinâmicas) ainda não chegaram via OTA ao app em produção. Rodar: `eas update --channel production --message "Preços e módulos do DB; admin melhorias"` + mesmo para preview.
+13. **Login social (Google + Apple)** — deferido para após aprovação da produção. Requer rebuild nativo (versionCode 3). Ver memory `project-roadmap`.
 
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
@@ -302,4 +334,6 @@ node --experimental-strip-types scripts/test-communicare.ts
 
 ---
 
-**Resumo de 1 linha (23/jun):** Sessão focada em **publicação nas lojas**. Implementados: **sistema de cupom de desconto** (schema+edge+UI+admin, testado), **"Seus serviços"** em meu-plano, **fix onboarding loop** (flag `profileLoaded`), **conta demo revisor Google** (`revisor.google@olihealthhub.com.br`/`RevisorOLI@2026`). Play Console: Data Safety+App content+listing preenchidos; **build versionCode 2 em fila** (`f4e9242b`) — quando terminar, subir AAB + adicionar 12 testadores. App Store Connect instável na sessão; screenshots iOS prontas em `assets/Print Screen App iOS/selected/`; pendente upload+metadata+submit. Pendências principais: **AAB versionCode 2 → Play Console** + **App Store Connect listing+submit** + Confirm email/templates Supabase + foto Sala 4 + gate reserva server-side.
+**Resumo de 1 linha (23/jun sessão 1):** Sessão focada em **publicação nas lojas**. Implementados: **sistema de cupom de desconto** (schema+edge+UI+admin, testado), **"Seus serviços"** em meu-plano, **fix onboarding loop** (flag `profileLoaded`), **conta demo revisor Google**. Play Console: Data Safety+listing preenchidos; build versionCode 2 (`f4e9242b`) entregue + 12 testers adicionados. App Store Connect instável; screenshots iOS prontas.
+
+**Resumo de 1 linha (23/jun sessão 2):** Sessão focada em **segurança, qualidade de dados e fonte única de verdade**. Resolvidos: **gate de reserva server-side** (trigger BEFORE INSERT), **oli_encrypt restrito** (EXECUTE revogado de authenticated), **limpeza de dados de teste** (12 usage_charges + 3 contas de teste deletados), **hard delete no admin** (zona de perigo + `hardDeleteUser` com cascade), **salas dinâmicas no admin** (busca do DB), **labels financeiro** corrigidos, **pacotes de horas + módulos agora lidos do DB em runtime** (Admin = única fonte de verdade para preços). **Play Store: Google aprovou closed testing** — próximo passo: enviar link de opt-in aos 12 testers e aguardar 14 dias. Pendências principais: **OTA production** com as mudanças desta sessão + **App Store Connect** listing+submit + **foto Sala 4** + enviar link testers Play Store.
