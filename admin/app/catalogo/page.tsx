@@ -9,7 +9,7 @@ export default async function CatalogoPage() {
   const [plansRes, modulesRes, hoursRes] = await Promise.all([
     supabase.from('plans').select('id, name, preco_mensal, preco_anual, taxa_min, ativo').order('preco_mensal'),
     supabase.from('modules').select('id, nome, descricao, valor, tipo, categoria, ativo').order('nome'),
-    supabase.from('hour_packages').select('id, nome, horas, valor, validade_dias, ativo').order('horas'),
+    supabase.from('hour_packages').select('id, nome, horas, valor, bonus_horas, validade_dias, ativo').order('horas'),
   ]);
 
   return (

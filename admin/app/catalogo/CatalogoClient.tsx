@@ -8,7 +8,7 @@ type Tab = 'planos' | 'modulos' | 'horas';
 
 interface Plan { id: string; name: string; preco_mensal: number; preco_anual: number; taxa_min: number; ativo: boolean }
 interface ModuleRow { id: string; nome: string; descricao: string | null; valor: number; tipo: string; categoria: string; ativo: boolean }
-interface HourPkg { id: string; nome: string; horas: number; valor: number; validade_dias: number; ativo: boolean }
+interface HourPkg { id: string; nome: string; horas: number; valor: number; bonus_horas: number; validade_dias: number; ativo: boolean }
 
 interface Props {
   plans:   Plan[];
@@ -168,7 +168,7 @@ export function CatalogoClient({ plans, modules, hours }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-oli-border">
-                  {['Pacote', 'Horas', 'Valor', 'R$/h', 'Validade', 'Status'].map(h => (
+                  {['Pacote', 'Horas', 'Bônus', 'Valor', 'R$/h', 'Validade', 'Status'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-oli-lgray uppercase tracking-wider">
                       {h}
                     </th>
@@ -178,12 +178,18 @@ export function CatalogoClient({ plans, modules, hours }: Props) {
               <tbody className="divide-y divide-oli-border">
                 {hours.map(p => {
                   const horas = Number(p.horas);
+                  const bonus = Number(p.bonus_horas ?? 0);
                   const valor = Number(p.valor);
                   const rate = horas > 0 ? valor / horas : 0;
                   return (
                     <tr key={p.id} className="hover:bg-stone-50 transition-colors">
                       <td className="px-4 py-3 font-bold text-oli-dark">{p.nome}</td>
                       <td className="px-4 py-3 text-oli-gray">{horas}h</td>
+                      <td className="px-4 py-3 text-[12px]">
+                        {bonus > 0
+                          ? <span className="bg-amber-50 text-amber-700 font-bold px-2 py-0.5 rounded-full">+{bonus}h grátis</span>
+                          : <span className="text-oli-lgray">—</span>}
+                      </td>
                       <td className="px-4 py-3 font-semibold text-oli-dark">{fmtBRL(valor)}</td>
                       <td className="px-4 py-3 text-oli-gray">{fmtBRL(rate)}</td>
                       <td className="px-4 py-3 text-oli-gray text-[12px]">{p.validade_dias} dias</td>
