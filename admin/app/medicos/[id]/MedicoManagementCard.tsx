@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
   changeAccountStatus, toggleComunidadeAccess, updateContract,
-  softDeleteUser, updateProfileFields,
+  softDeleteUser, hardDeleteUser, updateProfileFields,
 } from '@/app/actions';
 
 interface Props {
@@ -38,7 +38,7 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; de
 
 export function MedicoManagementCard(props: Props) {
   const [pending, startTransition] = useTransition();
-  const [openConfirm, setOpenConfirm] = useState<null | 'pause' | 'suspend' | 'ban' | 'delete' | 'activate'>(null);
+  const [openConfirm, setOpenConfirm] = useState<null | 'pause' | 'suspend' | 'ban' | 'delete' | 'activate' | 'hard-delete'>(null);
   const [reasonInput, setReasonInput] = useState('');
   const [openComunidade, setOpenComunidade] = useState(false);
   const [openContract, setOpenContract] = useState(false);
@@ -74,6 +74,20 @@ export function MedicoManagementCard(props: Props) {
         window.location.href = '/medicos';
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Erro ao excluir.');
+      }
+    });
+  };
+
+  const handleHardDelete = () => {
+    const fd = new FormData();
+    fd.append('user_id', props.userId);
+    startTransition(async () => {
+      try {
+        await hardDeleteUser(fd);
+        setOpenConfirm(null);
+        window.location.href = '/medicos';
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Erro ao apagar.');
       }
     });
   };
@@ -248,6 +262,23 @@ export function MedicoManagementCard(props: Props) {
         )}
       </div>
 
+      {/* ── Zona de Perigo: hard delete ── */}
+      <div className="bg-red-50 rounded-2xl border border-red-200 p-5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Zona de perigo</p>
+        <p className="text-sm font-bold text-red-800 mb-1">Apagar permanentemente</p>
+        <p className="text-[12px] text-red-700 mb-4 leading-relaxed">
+          Remove conta do banco de dados inteiro — auth, perfil, reservas, pacientes, saldo, logs.
+          Irreversível. Use apenas para contas de teste.
+        </p>
+        <ActionBtn
+          icon={<Trash2 size={14} />}
+          label="Apagar da base permanentemente"
+          variant="danger"
+          onClick={() => setOpenConfirm('hard-delete')}
+          disabled={pending}
+        />
+      </div>
+
       {/* ── Modal de confirmação ── */}
       {openConfirm && (
         <ConfirmModal
@@ -257,10 +288,11 @@ export function MedicoManagementCard(props: Props) {
           onReasonChange={setReasonInput}
           onCancel={() => { setOpenConfirm(null); setReasonInput(''); }}
           onConfirm={() => {
-            if (openConfirm === 'pause')      handleStatusChange('paused',    reasonInput);
-            else if (openConfirm === 'suspend') handleStatusChange('suspended', reasonInput);
-            else if (openConfirm === 'ban')     handleStatusChange('banned',    reasonInput);
-            else if (openConfirm === 'delete')  handleDelete(reasonInput);
+            if (openConfirm === 'pause')           handleStatusChange('paused',    reasonInput);
+            else if (openConfirm === 'suspend')    handleStatusChange('suspended', reasonInput);
+            else if (openConfirm === 'ban')        handleStatusChange('banned',    reasonInput);
+            else if (openConfirm === 'delete')     handleDelete(reasonInput);
+            else if (openConfirm === 'hard-delete') handleHardDelete();
           }}
           pending={pending}
         />
@@ -498,7 +530,7 @@ function ProfileForm({
 function ConfirmModal({
   type, nome, reason, onReasonChange, onCancel, onConfirm, pending,
 }: {
-  type:           'pause' | 'suspend' | 'ban' | 'delete' | 'activate';
+  type:           'pause' | 'suspend' | 'ban' | 'delete' | 'activate' | 'hard-delete';
   nome:           string;
   reason:         string;
   onReasonChange: (v: string) => void;
@@ -507,11 +539,12 @@ function ConfirmModal({
   pending:        boolean;
 }) {
   const meta: Record<string, { title: string; description: string; cta: string; danger: boolean }> = {
-    pause:    { title: 'Pausar conta',   description: 'Médico não acessará o app até reativação. Sem cobrança recorrente nesse período.', cta: 'Pausar',  danger: false },
-    suspend:  { title: 'Suspender conta', description: 'Médico bloqueado por inadimplência ou problema operacional. Pode reativar depois.', cta: 'Suspender', danger: true },
-    ban:      { title: 'Banir conta',    description: 'Bloqueio severo por violação de regras. Use apenas em casos graves.', cta: 'Banir', danger: true },
-    delete:   { title: 'Excluir conta',  description: 'Médico perde acesso permanente. Histórico de reservas e cobranças preservado.', cta: 'Excluir definitivamente', danger: true },
-    activate: { title: 'Reativar',       description: 'Médico volta a acessar normalmente.', cta: 'Reativar', danger: false },
+    pause:       { title: 'Pausar conta',    description: 'Médico não acessará o app até reativação. Sem cobrança recorrente nesse período.', cta: 'Pausar',  danger: false },
+    suspend:     { title: 'Suspender conta', description: 'Médico bloqueado por inadimplência ou problema operacional. Pode reativar depois.', cta: 'Suspender', danger: true },
+    ban:         { title: 'Banir conta',     description: 'Bloqueio severo por violação de regras. Use apenas em casos graves.', cta: 'Banir', danger: true },
+    delete:      { title: 'Excluir conta',   description: 'Médico perde acesso permanente. Histórico de reservas e cobranças preservado.', cta: 'Excluir definitivamente', danger: true },
+    activate:    { title: 'Reativar',        description: 'Médico volta a acessar normalmente.', cta: 'Reativar', danger: false },
+    'hard-delete': { title: 'APAGAR PERMANENTEMENTE', description: 'Isso apaga TUDO do banco: autenticação, perfil, reservas, pacientes, saldo de horas, logs. Não há como desfazer. Use apenas para contas de teste.', cta: 'Apagar tudo permanentemente', danger: true },
   };
   const m = meta[type];
 

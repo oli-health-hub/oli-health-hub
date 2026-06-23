@@ -4,17 +4,17 @@ import { ReservationBlock } from '@/components/ReservationBlock';
 
 export const dynamic = 'force-dynamic';
 
-const ROOMS = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala Digital'];
-
-const ROOM_THEME: Record<string, { free: string; occ: string; border: string; dot: string; text: string }> = {
-  'Sala 1':      { free: 'bg-emerald-50',  occ: 'bg-emerald-200',  border: 'border-emerald-300',  dot: 'bg-emerald-500',  text: 'text-emerald-900' },
-  'Sala 2':      { free: 'bg-blue-50',     occ: 'bg-blue-200',     border: 'border-blue-300',     dot: 'bg-blue-500',     text: 'text-blue-900' },
-  'Sala 3':      { free: 'bg-violet-50',   occ: 'bg-violet-200',   border: 'border-violet-300',   dot: 'bg-violet-500',   text: 'text-violet-900' },
-  'Sala 4':      { free: 'bg-amber-50',    occ: 'bg-amber-200',    border: 'border-amber-300',    dot: 'bg-amber-500',    text: 'text-amber-900' },
-  'Sala 5':      { free: 'bg-rose-50',     occ: 'bg-rose-200',     border: 'border-rose-300',     dot: 'bg-rose-500',     text: 'text-rose-900' },
-  'Sala 6':      { free: 'bg-teal-50',     occ: 'bg-teal-200',     border: 'border-teal-300',     dot: 'bg-teal-500',     text: 'text-teal-900' },
-  'Sala Digital':{ free: 'bg-indigo-50',   occ: 'bg-indigo-200',   border: 'border-indigo-300',   dot: 'bg-indigo-500',   text: 'text-indigo-900' },
-};
+const PALETTE = [
+  { free: 'bg-emerald-50', occ: 'bg-emerald-200', border: 'border-emerald-300', dot: 'bg-emerald-500', text: 'text-emerald-900' },
+  { free: 'bg-blue-50',    occ: 'bg-blue-200',    border: 'border-blue-300',    dot: 'bg-blue-500',    text: 'text-blue-900'    },
+  { free: 'bg-violet-50',  occ: 'bg-violet-200',  border: 'border-violet-300',  dot: 'bg-violet-500',  text: 'text-violet-900'  },
+  { free: 'bg-amber-50',   occ: 'bg-amber-200',   border: 'border-amber-300',   dot: 'bg-amber-500',   text: 'text-amber-900'   },
+  { free: 'bg-rose-50',    occ: 'bg-rose-200',    border: 'border-rose-300',    dot: 'bg-rose-500',    text: 'text-rose-900'    },
+  { free: 'bg-teal-50',    occ: 'bg-teal-200',    border: 'border-teal-300',    dot: 'bg-teal-500',    text: 'text-teal-900'    },
+  { free: 'bg-indigo-50',  occ: 'bg-indigo-200',  border: 'border-indigo-300',  dot: 'bg-indigo-500',  text: 'text-indigo-900'  },
+  { free: 'bg-orange-50',  occ: 'bg-orange-200',  border: 'border-orange-300',  dot: 'bg-orange-500',  text: 'text-orange-900'  },
+  { free: 'bg-cyan-50',    occ: 'bg-cyan-200',    border: 'border-cyan-300',    dot: 'bg-cyan-500',    text: 'text-cyan-900'    },
+];
 
 const STATUS_LABEL: Record<string, string> = {
   agendado:  'Agendado',
@@ -53,15 +53,19 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
   const utcStart = new Date(dayStart.getTime() + 3 * 3600000).toISOString();
   const utcEnd   = new Date(dayEnd.getTime()   + 3 * 3600000).toISOString();
 
-  const { data: reservations } = await supabase
-    .from('reservations')
-    .select('id, room_name, start_time, end_time, status, arrived_at, consultation_started_at, consultation_ended_at, professional_id, profiles(nome, plan)')
-    .gte('start_time', utcStart)
-    .lte('start_time', utcEnd)
-    .not('status', 'in', '("cancelled")')
-    .order('start_time', { ascending: true });
+  const [{ data: roomRows }, { data: reservations }] = await Promise.all([
+    supabase.from('rooms').select('id, name').order('id'),
+    supabase
+      .from('reservations')
+      .select('id, room_name, start_time, end_time, status, arrived_at, consultation_started_at, consultation_ended_at, professional_id, profiles(nome, plan)')
+      .gte('start_time', utcStart)
+      .lte('start_time', utcEnd)
+      .not('status', 'in', '("cancelled")')
+      .order('start_time', { ascending: true }),
+  ]);
 
-  const recs = reservations ?? [];
+  const rooms = (roomRows ?? []) as { id: number; name: string }[];
+  const recs  = reservations ?? [];
 
   const isToday = selDate === nowSP.toISOString().split('T')[0];
   const nowHour = nowSP.getHours() + nowSP.getMinutes() / 60;
@@ -80,7 +84,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
     const diff = new Date(r.end_time).getTime() - new Date(r.start_time).getTime();
     return s + diff / 60000;
   }, 0);
-  const maxMin = ROOMS.length * GRID_HOURS * 60;
+  const maxMin = rooms.length * GRID_HOURS * 60;
   const utilPct = Math.round((totalScheduledMin / maxMin) * 100);
 
   const dateLabel = new Date(`${selDate}T12:00:00`).toLocaleDateString('pt-BR', {
@@ -174,17 +178,17 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
 
           {/* Room rows */}
           <div className="space-y-2" style={{ minWidth: 620 }}>
-            {ROOMS.map(room => {
-              const theme = ROOM_THEME[room] ?? ROOM_THEME['Sala 1'];
-              const roomRecs = recs.filter(r => r.room_name === room);
+            {rooms.map((room, idx) => {
+              const theme    = PALETTE[idx % PALETTE.length];
+              const roomRecs = recs.filter(r => r.room_name === room.name);
               const hasActive = roomRecs.some(r => r.consultation_started_at && !r.consultation_ended_at);
 
               return (
-                <div key={room} className="flex items-center gap-3">
+                <div key={room.id} className="flex items-center gap-3">
                   {/* Room label */}
                   <div className="w-20 shrink-0 flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full shrink-0 ${hasActive ? `${theme.dot} animate-pulse` : theme.dot} opacity-70`} />
-                    <span className="text-xs font-bold text-oli-dark">{room}</span>
+                    <span className="text-xs font-bold text-oli-dark">{room.name}</span>
                   </div>
 
                   {/* Timeline strip */}

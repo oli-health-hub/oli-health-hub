@@ -304,6 +304,25 @@ export async function softDeleteUser(formData: FormData) {
   revalidatePath(`/medicos/${userId}`);
 }
 
+/** Hard delete: apaga completamente do auth + todos os dados relacionados (irreversível). */
+export async function hardDeleteUser(formData: FormData) {
+  const userId = formData.get('user_id') as string;
+  if (!userId) throw new Error('user_id obrigatório');
+
+  const supabase = await createSupabaseAdmin();
+
+  // Limpar FKs sem CASCADE antes do delete principal
+  await supabase.from('coupon_redemptions').delete().eq('professional_id', userId);
+  await supabase.from('coupons').update({ created_by: null }).eq('created_by', userId);
+  await supabase.from('profiles').update({ referido_por: null }).eq('referido_por', userId);
+
+  // Deletar do auth.users — cascata para profiles e todas as tabelas com CASCADE
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/medicos');
+}
+
 /** Adiciona documento ao prontuário do médico (URL já no Storage) */
 export async function addProfessionalDocument(formData: FormData) {
   const userId    = formData.get('user_id')   as string;

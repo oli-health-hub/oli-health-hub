@@ -69,8 +69,8 @@ export function FinanceiroClient({ asaas, asaasError, receitaMinMes, reservasMes
       <div className="border-b border-oli-border flex gap-1 overflow-x-auto">
         {([
           { id: 'overview',     label: 'Visão Geral',  icon: TrendingUp },
-          { id: 'pagamentos',   label: 'Pagamentos',   icon: Receipt    },
-          { id: 'contas',       label: 'Contas',       icon: FileText   },
+          { id: 'pagamentos',   label: 'Recebimentos',  icon: Receipt    },
+          { id: 'contas',       label: 'Faturas',       icon: FileText   },
           { id: 'fornecedores', label: 'Fornecedores', icon: Truck      },
         ] as const).map(({ id, label, icon: Icon }) => {
           const active = tab === id;
@@ -162,7 +162,7 @@ export function FinanceiroClient({ asaas, asaasError, receitaMinMes, reservasMes
       {tab === 'pagamentos' && (
         <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
           <div className="px-5 py-3 border-b border-oli-border flex items-center justify-between">
-            <h2 className="text-sm font-bold text-oli-dark">Últimos pagamentos (Asaas)</h2>
+            <h2 className="text-sm font-bold text-oli-dark">Recebimentos confirmados (Asaas)</h2>
             <span className="text-[10px] text-oli-lgray">
               {asaas?.lastPayments.length ?? 0} pagamentos
             </span>
@@ -214,8 +214,8 @@ export function FinanceiroClient({ asaas, asaasError, receitaMinMes, reservasMes
       {/* ── CONTAS ── */}
       {tab === 'contas' && (
         <ExternalRedirect
-          title="Contas a pagar e a receber"
-          description="Cobrança de assinaturas, recebimentos manuais, despesas operacionais."
+          title="Faturas / Contas a Receber"
+          description="Cobranças por vencimento: assinaturas, avulsos, despesas operacionais."
           href="/contas"
         />
       )}

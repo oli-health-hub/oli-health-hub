@@ -192,7 +192,7 @@ export default async function PagamentosPage({
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-oli-dark">Pagamentos</h1>
+        <h1 className="text-xl font-bold text-oli-dark">Minutagem por Sessão</h1>
         <p className="text-sm text-oli-lgray">
           Período: {new Date(from + 'T12:00:00').toLocaleDateString('pt-BR')} – {new Date(to + 'T12:00:00').toLocaleDateString('pt-BR')}
         </p>
