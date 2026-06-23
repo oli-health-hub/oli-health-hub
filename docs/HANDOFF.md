@@ -274,11 +274,13 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
   - **Build versionCode 2** em fila (`f4e9242b`) — versionCode 1 conflitava com release anterior. `app.json` android adicionou `"versionCode": 2`, `eas.json` mudou `appVersionSource: local`.
   - ⚠️ Quando build terminar: baixar AAB, subir no Play Console (teste fechado), adicionar 12+ testadores.
 
-- **🍎 App Store Connect — progresso (23/jun):**
-  - Build iOS `2ea6728b` (1.0.0 build 1) já no TestFlight.
-  - Screenshots iOS capturadas (12 prints 1290×2796 iPhone Pro Max) em `assets/Print Screen App iOS/selected/`.
-  - ⚠️ Pendente: upload screenshots + preencher Description/Keywords/Support URL + App Privacy + Submit for review.
-  - ⚠️ App Store Connect instável na sessão (sessão caindo/erro ao carregar apps) — retomar quando estável.
+- **🍎 App Store Connect — progresso (23/jun sessão 2):**
+  - Build iOS `2ea6728b-27bc-4aac-b447-37c91fb6ad3e` (1.0.0) já no TestFlight.
+  - Bundle ID `com.oli.healthhub` confirmado registrado na Apple.
+  - Screenshots iOS prontas: 12 prints 1290×2796 iPhone Pro Max em `assets/Print Screen App iOS/selected/`.
+  - `eas submit --platform ios --id 2ea6728b-27bc-4aac-b447-37c91fb6ad3e` — **falhou com Internal Server Error 500 da Apple** (servidores ASC instáveis). Retentativas esgotadas.
+  - ⚠️ **Pendente: re-rodar o mesmo comando quando ASC estabilizar.** Não precisa rebuild — o build está no EAS, o comando é direto.
+  - ⚠️ Após submission aceita: preencher na versão do ASC → Description, Keywords, Support URL, Screenshots, App Privacy → Submit for Review.
 
 - **🔑 Sentry DSN configurado:** `EXPO_PUBLIC_SENTRY_DSN` setado em `.env`.
 
@@ -296,7 +298,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 8. **VIP** preço; **Cron** auto-desativar START 30d sem reserva; **expo-blur** lock screen (rebuild nativo).
 9. ~~**🔒 Gate de reserva server-side**~~ ✅ **RESOLVIDO 23/jun** — trigger `trg_check_reservation_credit` BEFORE INSERT.
 10. **🆕 Salas de Evento + Conferência (roadmap)** — cobrança por bloco/hora (NÃO minutagem). Conferência R$150/h (mín 1h); Eventos R$280/h ou 4h R$960. Impl: `room_type` + `hourly_rate` + `min_duration`. Validar preço com fundador.
-11. **🍎 App Store Connect** — pendente: upload screenshots iOS (`assets/Print Screen App iOS/selected/`), preencher Description/Keywords/Support URL, App Privacy, submit for review. Estava instável na sessão anterior.
+11. **🍎 App Store Connect** — ASC retornou 500 na sessão (servidores Apple instáveis). Quando estabilizar: `eas submit --platform ios --id 2ea6728b-27bc-4aac-b447-37c91fb6ad3e`. Depois preencher no ASC: screenshots (`assets/Print Screen App iOS/selected/`), Description, Keywords, Support URL, App Privacy → Submit for Review.
 12. **OTA pendente** — mudanças desta sessão (preços DB, hard delete, salas dinâmicas) ainda não chegaram via OTA ao app em produção. Rodar: `eas update --channel production --message "Preços e módulos do DB; admin melhorias"` + mesmo para preview.
 13. **Login social (Google + Apple)** — deferido para após aprovação da produção. Requer rebuild nativo (versionCode 3). Ver memory `project-roadmap`.
 
@@ -336,4 +338,4 @@ node --experimental-strip-types scripts/test-communicare.ts
 
 **Resumo de 1 linha (23/jun sessão 1):** Sessão focada em **publicação nas lojas**. Implementados: **sistema de cupom de desconto** (schema+edge+UI+admin, testado), **"Seus serviços"** em meu-plano, **fix onboarding loop** (flag `profileLoaded`), **conta demo revisor Google**. Play Console: Data Safety+listing preenchidos; build versionCode 2 (`f4e9242b`) entregue + 12 testers adicionados. App Store Connect instável; screenshots iOS prontas.
 
-**Resumo de 1 linha (23/jun sessão 2):** Sessão focada em **segurança, qualidade de dados e fonte única de verdade**. Resolvidos: **gate de reserva server-side** (trigger BEFORE INSERT), **oli_encrypt restrito** (EXECUTE revogado de authenticated), **limpeza de dados de teste** (12 usage_charges + 3 contas de teste deletados), **hard delete no admin** (zona de perigo + `hardDeleteUser` com cascade), **salas dinâmicas no admin** (busca do DB), **labels financeiro** corrigidos, **pacotes de horas + módulos agora lidos do DB em runtime** (Admin = única fonte de verdade para preços). **Play Store: Google aprovou closed testing** — próximo passo: enviar link de opt-in aos 12 testers e aguardar 14 dias. Pendências principais: **OTA production** com as mudanças desta sessão + **App Store Connect** listing+submit + **foto Sala 4** + enviar link testers Play Store.
+**Resumo de 1 linha (23/jun sessão 2):** Sessão focada em **segurança, qualidade de dados e fonte única de verdade**. Resolvidos: gate de reserva server-side, oli_encrypt restrito, limpeza de teste (12 usage_charges + 3 contas), hard delete admin, salas dinâmicas admin, labels financeiro, pacotes de horas + módulos lidos do DB em runtime. **Play Store: Google aprovou closed testing** — enviar link de opt-in aos 12 testers → aguardar 14 dias. **App Store Connect: `eas submit` falhou com 500 da Apple** — re-rodar `eas submit --platform ios --id 2ea6728b-27bc-4aac-b447-37c91fb6ad3e` quando ASC estabilizar, depois preencher metadata + submit for review. Pendências: OTA production + ASC metadata+submit + foto Sala 4.
