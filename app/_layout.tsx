@@ -81,24 +81,25 @@ export default function RootLayout() {
   useEffect(() => {
     if (isLoading) return;
 
+    const inWelcome    = (segments[0] as string) === 'welcome';
     const inLogin      = segments[0] === 'login';
     const inOnboarding = segments[0] === 'onboarding';
     const inMFAVerify  = segments[0] === 'mfa-verify';
     const inMFASetup   = segments[0] === 'mfa-setup';
     const inNovaSenha  = (segments[0] as string) === 'nova-senha';
-    const inAuthFlow   = inLogin || inOnboarding || inMFAVerify || inMFASetup || inNovaSenha;
+    const inAuthFlow   = inWelcome || inLogin || inOnboarding || inMFAVerify || inMFASetup || inNovaSenha;
 
     // Tela de nova senha (recuperação): não redirecionar — fluxo próprio
     if (inNovaSenha) return;
 
-    // Sem sessão → login
-    if (!session && !inLogin) { router.replace('/login'); return; }
+    // Sem sessão → welcome
+    if (!session && !inLogin && !inWelcome) { router.replace('/welcome' as never); return; }
 
     // Com sessão mas profile ainda carregando → aguarda (evita mandar pro
     // onboarding com profile=null no login por e-mail/senha).
     if (session && !profileLoaded) return;
 
-    if (session && inLogin) {
+    if (session && (inLogin || inWelcome)) {
       // Verifica MFA pendente antes de entrar no app
       checkMFARequired().then(mfaRequired => {
         if (mfaRequired) { router.replace('/mfa-verify'); return; }
@@ -140,6 +141,7 @@ export default function RootLayout() {
           animation:        'slide_from_right',
         }}
       >
+        <Stack.Screen name="welcome"     options={{ headerShown: false }} />
         <Stack.Screen name="login"       options={{ headerShown: false }} />
         <Stack.Screen name="onboarding"  options={{ headerShown: false }} />
         <Stack.Screen name="mfa-verify"  options={{ headerShown: false }} />

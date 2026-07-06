@@ -100,12 +100,18 @@ oliRed:       '#D9534F'   // Alertas e urgência
 ```
 
 ## Planos e Preços
-```typescript
-type PlanType = 'BASE' | 'PRO' | 'VIP';  // STARTER foi renomeado para BASE
+> Fonte de negócio (preços, escopo): `docs/OLI_BASE.md`. Fonte de código: `src/models/oli-plans.ts`. Ao alterar, atualizar os dois.
 
-COST_PER_MINUTE = { BASE: 2.00, PRO: 1.60, VIP: 1.20 }  // R$/min
+```typescript
+type PlanType = 'START' | 'BASE' | 'PRO' | 'VIP';
+
+// R$/min (ratePerMinute) — ver src/models/oli-plans.ts
+RATE_PER_MINUTE = { START: 2.00, BASE: 1.50, PRO: 1.30 }  // VIP em standby (não lançado)
+MONTHLY_PRICE   = { START: 0, BASE: 299.00, PRO: 599.00 } // VIP: null
 ```
-O catálogo completo de benefícios por plano está em `app/(tabs)/ecossistema.tsx` — componente `PLAN_BENEFITS`.
+
+- **START**: gratuito, default no signup. **BASE/PRO**: recorrentes. **VIP**: em desenvolvimento — não comercializar nem implementar lógica.
+- O catálogo completo de benefícios por plano está em `app/(tabs)/ecossistema.tsx` — componente `PLAN_BENEFITS`.
 
 ## Especialistas IA (Chatbot)
 5 personas ativas em `app/chatbot.tsx`, roteadas via `?persona=`:

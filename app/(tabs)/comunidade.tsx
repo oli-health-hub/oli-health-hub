@@ -25,7 +25,9 @@ function getInitials(nome: string): string {
 
 function displayName(profile: Profile): string {
   const t = profile.tratamento;
-  return t ? `${t} ${profile.nome}` : profile.nome;
+  // Não duplicar tratamento se o nome já começa com "Dr"/"Dra".
+  const nomeJaTemTratamento = /^\s*dra?\.?\s/i.test(profile.nome ?? '');
+  return t && !nomeJaTemTratamento ? `${t} ${profile.nome}` : profile.nome;
 }
 
 const AVATAR_COLORS = [

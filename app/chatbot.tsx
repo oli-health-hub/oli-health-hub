@@ -106,7 +106,7 @@ const PERSONAS: Record<Persona, PersonaConfig> = {
 
   olivia: {
     name:        'Olivia',
-    role:        'OLI Health Hub',
+    role:        'Assistente Virtual OLI',
     avatar:      'O',
     color:       '#7B9E82',
     subtitle:    'Salas, planos, reservas e eventos',

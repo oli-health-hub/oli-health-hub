@@ -4,7 +4,7 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform,
   ScrollView, Alert, ActivityIndicator, Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
 import { signIn, signUp } from '../src/services/auth';
@@ -16,8 +16,9 @@ type Mode = 'login' | 'cadastro';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>();
 
-  const [mode,          setMode]         = useState<Mode>('login');
+  const [mode,          setMode]         = useState<Mode>(modeParam === 'cadastro' ? 'cadastro' : 'login');
   const [nome,          setNome]         = useState('');
   const [email,         setEmail]        = useState('');
   const [password,      setPassword]     = useState('');

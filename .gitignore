@@ -28,7 +28,7 @@ android/
 # Local Netlify folder
 .netlify
 
-# Plugin caveman (repo git aninhado — nao versionar como submodulo)
+# Plugin caveman (repo git aninhado — nao versionar como submodulo). Arquivado em OLD/caveman.
 caveman
 
 # Google Play service account (NUNCA commitar)

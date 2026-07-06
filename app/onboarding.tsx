@@ -54,7 +54,7 @@ const ESTADOS = [
 const TOTAL_STEPS = 5;
 
 function OptionCard<T extends string | boolean>({
-  label, sublabel, value, selected, onPress, icon,
+  label, sublabel, value, selected, onPress, icon, flex,
 }: {
   label: string;
   sublabel?: string;
@@ -62,10 +62,11 @@ function OptionCard<T extends string | boolean>({
   selected: boolean;
   onPress: (v: T) => void;
   icon?: string;
+  flex?: boolean;
 }) {
   return (
     <TouchableOpacity
-      style={[styles.optCard, selected && styles.optCardActive]}
+      style={[styles.optCard, selected && styles.optCardActive, flex && styles.optCardFlex]}
       onPress={() => onPress(value)}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
@@ -273,11 +274,16 @@ export default function OnboardingScreen() {
     }
     setLoading(true);
     try {
+      // Se o profissional já cadastrou o nome com "Dr"/"Dra", não duplicar o
+      // tratamento (evita "Dr. Dr. João"). Senão, usa o tratamento selecionado.
+      const nomeJaTemTratamento = /^\s*dra?\.?\s/i.test(profile.nome ?? '');
+      const tratamentoFinal = nomeJaTemTratamento ? null : tratamento;
+
       const { data, error } = await supabase
         .from('profiles')
         .update({
           onboarding_complete:   true,
-          tratamento:            tratamento,
+          tratamento:            tratamentoFinal,
           crm:                   crm.trim() || null,
           tipo_atendimento:      tipoAtendimento,
           situacao_juridica:     situacaoJuridica,
@@ -401,16 +407,18 @@ export default function OnboardingScreen() {
                 <OptionCard
                   value={'Dr.' as Tratamento}
                   label="Dr."
-                  icon="male-outline"
+                  icon="ribbon-outline"
                   selected={tratamento === 'Dr.'}
                   onPress={setTratamento}
+                  flex
                 />
                 <OptionCard
                   value={'Dra.' as Tratamento}
                   label="Dra."
-                  icon="female-outline"
+                  icon="ribbon-outline"
                   selected={tratamento === 'Dra.'}
                   onPress={setTratamento}
+                  flex
                 />
               </View>
 
@@ -1145,6 +1153,9 @@ const styles = StyleSheet.create({
   optCardActive: {
     backgroundColor: colors.oliGreen,
     borderColor:     colors.oliGreen,
+  },
+  optCardFlex: {
+    flex: 1,
   },
   // Wrapper com dimensões explícitas garante centralização correta no Android
   optIconWrap: {
