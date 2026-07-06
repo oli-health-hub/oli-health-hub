@@ -190,9 +190,12 @@ interface Props {
   userEmail:   string;
 }
 
+const FOUNDER_EMAIL = 'guilherme.pasquetti@gmail.com';
+
 export default function Sidebar({ unreadCount, userEmail }: Props) {
   const pathname = usePathname();
   const router   = useRouter();
+  const isFounder = userEmail === FOUNDER_EMAIL;
 
   async function handleLogout() {
     await getSupabaseBrowser().auth.signOut();
@@ -252,6 +255,26 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
             })}
           </div>
         ))}
+
+        {isFounder && (
+          <div>
+            <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest px-3 pt-4 pb-1.5">
+              Pessoal
+            </p>
+            <Link
+              href="/meu-recebimento"
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                ${pathname === '/meu-recebimento'
+                  ? 'bg-oli-green text-white shadow-sm'
+                  : 'text-white/50 hover:bg-white/6 hover:text-white/80'}`}
+            >
+              <span className={`shrink-0 ${pathname === '/meu-recebimento' ? 'text-white' : 'text-white/40'}`}>
+                <IconCreditCard />
+              </span>
+              <span className="flex-1 truncate">Meu Recebimento</span>
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Footer — usuário + logout */}

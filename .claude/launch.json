@@ -6,6 +6,13 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-p", "4444", "/Users/guilhermepasquetti/Developer/OLIHealthHub"],
       "port": 4444
+    },
+    {
+      "name": "admin-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/guilhermepasquetti/Developer/OLIHealthHub/admin",
+      "port": 3001
     }
   ]
 }
