@@ -42,3 +42,16 @@ export function formatRemainingTime(totalSeconds: number): string {
 function pad(n: number): string {
   return n.toString().padStart(2, '0');
 }
+
+/** "agora" / "há 5min" / "há 3h" / "há 2d" / "07/05" — tempo relativo curto pro feed */
+export function timeAgo(value: Date | string): string {
+  const diffMs = Date.now() - toDate(value).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'agora';
+  if (diffMin < 60) return `há ${diffMin}min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `há ${diffH}h`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `há ${diffD}d`;
+  return formatDate(value);
+}

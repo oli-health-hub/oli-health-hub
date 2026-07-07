@@ -14,6 +14,7 @@ import { exportMyData, deleteAccountData } from '../src/services/accountService'
 import { updateProfileAvatar, removeProfileAvatar } from '../src/services/avatarService';
 import { useAppLock } from '../src/hooks/useAppLock';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
+import { TagInput } from '../src/components/TagInput';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 
@@ -36,6 +37,8 @@ export default function PerfilScreen() {
   const [instagram,    setInstagram]    = useState(profile?.instagram ?? '');
   const [linkedin,     setLinkedin]     = useState(profile?.linkedin ?? '');
   const [website,      setWebsite]      = useState(profile?.website ?? '');
+  const [whatsapp,     setWhatsapp]     = useState(profile?.whatsapp ?? '');
+  const [subespecialidades, setSubespecialidades] = useState<string[]>(profile?.subespecialidades ?? []);
 
   const {
     biometricAvailable,
@@ -62,6 +65,8 @@ export default function PerfilScreen() {
         instagram:                    instagram.trim() || null,
         linkedin:                     linkedin.trim()  || null,
         website:                      website.trim()   || null,
+        whatsapp:                     whatsapp.trim()  || null,
+        subespecialidades:            subespecialidades.length > 0 ? subespecialidades : null,
       };
       await updateProfile(session.user.id, updates);
       setProfile({ ...profile!, ...updates });
@@ -84,6 +89,8 @@ export default function PerfilScreen() {
     setInstagram(profile?.instagram ?? '');
     setLinkedin(profile?.linkedin ?? '');
     setWebsite(profile?.website ?? '');
+    setWhatsapp(profile?.whatsapp ?? '');
+    setSubespecialidades(profile?.subespecialidades ?? []);
     setEditing(false);
   };
 
@@ -312,6 +319,15 @@ export default function PerfilScreen() {
             value={session?.user?.email ?? '—'}
           />
           <EditableRow
+            icon="logo-whatsapp"
+            label="WhatsApp"
+            value={whatsapp}
+            editing={editing}
+            onChangeText={setWhatsapp}
+            placeholder="11999998888"
+            keyboardType="number-pad"
+          />
+          <EditableRow
             icon="logo-instagram"
             label="Instagram"
             value={instagram}
@@ -342,6 +358,28 @@ export default function PerfilScreen() {
             keyboardType="url"
             last
           />
+        </View>
+
+        {/* ── Subespecialidades ── */}
+        <Text style={styles.sectionTitle}>SUBESPECIALIDADES</Text>
+        <View style={[styles.card, shadows.card, { padding: spacing.md }]}>
+          {editing ? (
+            <TagInput
+              tags={subespecialidades}
+              onChange={setSubespecialidades}
+              placeholder="Ex: cirurgia bariátrica"
+            />
+          ) : subespecialidades.length > 0 ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {subespecialidades.map(s => (
+                <View key={s} style={styles.subChip}>
+                  <Text style={styles.subChipText}>{s}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.bioValue}>Nenhuma subespecialidade adicionada.</Text>
+          )}
         </View>
 
         {/* ── Notificações ── */}
@@ -634,6 +672,8 @@ const styles = StyleSheet.create({
   rowInput:  { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray, textAlign: 'right', flex: 1 },
   bioInput:  { fontSize: 13, color: colors.oliDarkGray, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, minHeight: 60, textAlignVertical: 'top' },
   bioValue:  { fontSize: 13, color: colors.gray, lineHeight: 18 },
+  subChip:      { backgroundColor: `${colors.oliGreen}12`, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 5 },
+  subChipText:  { fontSize: 12, fontWeight: '600', color: colors.oliGreen },
 
   notifRow: {
     flexDirection: 'row', alignItems: 'center',

@@ -12,6 +12,7 @@ import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import type { Profile } from '../../src/services/auth';
 import { lumaService, type LumaEvent } from '../../src/services/luma';
 import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
+import { PostFeed } from '../../src/components/community/PostFeed';
 
 const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
 
@@ -170,6 +171,8 @@ function ProfessionalDetailModal({
   const instagram   = (profile as Profile & { instagram?: string | null }).instagram;
   const linkedin    = (profile as Profile & { linkedin?: string | null }).linkedin;
   const website     = (profile as Profile & { website?: string | null }).website;
+  const whatsapp    = profile.whatsapp;
+  const subespecialidades = profile.subespecialidades ?? [];
   const tiposAtend  = (profile as Profile & { tipos_atendimento?: string[] }).tipos_atendimento ?? [];
   const convenios   = (profile as Profile & { convenios?: string[] }).convenios ?? [];
 
@@ -178,7 +181,7 @@ function ProfessionalDetailModal({
     return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   })();
 
-  const hasSocialLinks = !!(instagram || linkedin || website);
+  const hasSocialLinks = !!(instagram || linkedin || website || whatsapp);
 
   const openUrl = (url: string) => {
     Linking.openURL(url).catch(() => null);
@@ -314,6 +317,23 @@ function ProfessionalDetailModal({
             )}
           </View>
 
+          {/* ── Subespecialidades ── */}
+          {subespecialidades.length > 0 && (
+            <View style={[detailStyles.card, shadows.small]}>
+              <View style={detailStyles.cardHeader}>
+                <Text style={detailStyles.sectionLabel}>SUBESPECIALIDADES</Text>
+                <Ionicons name="ribbon-outline" size={16} color={colors.oliGreen} />
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {subespecialidades.map(s => (
+                  <View key={s} style={detailStyles.infoChip}>
+                    <Text style={detailStyles.infoChipText}>{s}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
           {/* ── Redes Sociais ── (só exibe se houver ao menos uma) */}
           {hasSocialLinks && (
             <View style={[detailStyles.card, shadows.small]}>
@@ -322,9 +342,26 @@ function ProfessionalDetailModal({
                 <Ionicons name="share-social-outline" size={16} color={colors.oliGreen} />
               </View>
 
-              {instagram && (
+              {whatsapp && (
                 <TouchableOpacity
                   style={detailStyles.socialRow}
+                  onPress={() => openUrl(`https://wa.me/${whatsapp.replace(/\D/g, '')}`)}
+                  accessibilityLabel={`Conversar no WhatsApp com ${profile.nome}`}
+                >
+                  <View style={[detailStyles.socialIcon, { backgroundColor: '#25D36615' }]}>
+                    <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={detailStyles.socialLabel}>WhatsApp</Text>
+                    <Text style={detailStyles.socialValue}>{whatsapp}</Text>
+                  </View>
+                  <Ionicons name="open-outline" size={14} color={colors.gray} />
+                </TouchableOpacity>
+              )}
+
+              {instagram && (
+                <TouchableOpacity
+                  style={[detailStyles.socialRow, (whatsapp || false) && detailStyles.socialRowBorder]}
                   onPress={() => openUrl(`https://instagram.com/${instagram}`)}
                   accessibilityLabel={`Ver Instagram de ${profile.nome}`}
                 >
@@ -341,7 +378,7 @@ function ProfessionalDetailModal({
 
               {linkedin && (
                 <TouchableOpacity
-                  style={[detailStyles.socialRow, (instagram || false) && detailStyles.socialRowBorder]}
+                  style={[detailStyles.socialRow, (whatsapp || instagram || false) && detailStyles.socialRowBorder]}
                   onPress={() => openUrl(linkedin.startsWith('http') ? linkedin : `https://${linkedin}`)}
                   accessibilityLabel={`Ver LinkedIn de ${profile.nome}`}
                 >
@@ -358,7 +395,7 @@ function ProfessionalDetailModal({
 
               {website && (
                 <TouchableOpacity
-                  style={[detailStyles.socialRow, (instagram || linkedin || false) && detailStyles.socialRowBorder]}
+                  style={[detailStyles.socialRow, (whatsapp || instagram || linkedin || false) && detailStyles.socialRowBorder]}
                   onPress={() => openUrl(website.startsWith('http') ? website : `https://${website}`)}
                   accessibilityLabel={`Ver site de ${profile.nome}`}
                 >
@@ -424,6 +461,7 @@ export default function ComunidadeScreen() {
   const [loadingEvts,     setLoadingEvts]     = useState(true);
   const [showPastEvts,    setShowPastEvts]    = useState(false);
   const [showScrollHint,  setShowScrollHint]  = useState(true);
+  const [activeTab,       setActiveTab]       = useState<'diretorio' | 'feed'>('diretorio');
 
   const load = async () => {
     const { data } = await supabase
@@ -501,25 +539,53 @@ export default function ComunidadeScreen() {
         </View>
       </View>
 
-      {/* Busca */}
-      <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={18} color={colors.gray} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Buscar por nome, especialidade ou tipo…"
-          placeholderTextColor={colors.oliLightGray}
-          autoCapitalize="none"
-          returnKeyType="search"
-          accessibilityLabel="Buscar profissionais"
-        />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel="Limpar busca">
-            <Ionicons name="close-circle" size={18} color={colors.gray} />
-          </TouchableOpacity>
-        )}
+      {/* Feed / Diretório */}
+      <View style={styles.tabSwitcher}>
+        <TouchableOpacity
+          style={[styles.tabPill, activeTab === 'feed' && styles.tabPillActive]}
+          onPress={() => setActiveTab('feed')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'feed' }}
+          accessibilityLabel="Ver feed da comunidade"
+        >
+          <Text style={[styles.tabPillText, activeTab === 'feed' && styles.tabPillTextActive]}>Feed</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabPill, activeTab === 'diretorio' && styles.tabPillActive]}
+          onPress={() => setActiveTab('diretorio')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'diretorio' }}
+          accessibilityLabel="Ver diretório de profissionais"
+        >
+          <Text style={[styles.tabPillText, activeTab === 'diretorio' && styles.tabPillTextActive]}>Diretório</Text>
+        </TouchableOpacity>
       </View>
+
+      {activeTab === 'feed' ? (
+        <ScrollView contentContainerStyle={styles.feedScroll}>
+          <PostFeed />
+        </ScrollView>
+      ) : (
+        <>
+          {/* Busca */}
+          <View style={styles.searchWrap}>
+            <Ionicons name="search-outline" size={18} color={colors.gray} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Buscar por nome, especialidade ou tipo…"
+              placeholderTextColor={colors.oliLightGray}
+              autoCapitalize="none"
+              returnKeyType="search"
+              accessibilityLabel="Buscar profissionais"
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel="Limpar busca">
+                <Ionicons name="close-circle" size={18} color={colors.gray} />
+              </TouchableOpacity>
+            )}
+          </View>
 
       <ScrollView
         contentContainerStyle={styles.grid}
@@ -628,9 +694,11 @@ export default function ComunidadeScreen() {
             </>
           );
         })()}
-      </ScrollView>
+          </ScrollView>
+        </>
+      )}
 
-      <ScrollMoreIndicator visible={showScrollHint} />
+      {activeTab === 'diretorio' && <ScrollMoreIndicator visible={showScrollHint} />}
     </SafeAreaView>
   );
 }
@@ -769,6 +837,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical:   spacing.sm,
     ...shadows.small,
+  },
+
+  tabSwitcher: {
+    flexDirection:     'row',
+    backgroundColor:   colors.white,
+    borderRadius:      radius.full,
+    marginHorizontal:  spacing.md,
+    marginBottom:      spacing.md,
+    padding:           4,
+    ...shadows.small,
+  },
+  tabPill: {
+    flex:            1,
+    paddingVertical: spacing.sm,
+    borderRadius:    radius.full,
+    alignItems:      'center',
+  },
+  tabPillActive:     { backgroundColor: colors.oliGreen },
+  tabPillText:       { fontSize: 13, fontWeight: '700', color: colors.oliLightGray },
+  tabPillTextActive: { color: colors.white },
+  feedScroll: {
+    paddingHorizontal: spacing.md,
+    paddingBottom:     spacing.xl,
   },
   searchIcon:  { marginRight: spacing.sm },
   searchInput: { flex: 1, fontSize: 14, color: colors.oliDarkGray },

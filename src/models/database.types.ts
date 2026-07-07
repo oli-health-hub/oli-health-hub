@@ -117,6 +117,110 @@ export type Database = {
         }
         Relationships: []
       }
+      community_post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          professional_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          professional_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_post_comments_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          professional_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          professional_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_post_likes_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          professional_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          professional_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_redemptions: {
         Row: {
           asaas_id: string | null
@@ -334,6 +438,7 @@ export type Database = {
       hour_packages: {
         Row: {
           ativo: boolean
+          bonus_horas: number | null
           created_at: string
           horas: number
           id: string
@@ -343,6 +448,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          bonus_horas?: number | null
           created_at?: string
           horas: number
           id?: string
@@ -352,6 +458,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          bonus_horas?: number | null
           created_at?: string
           horas?: number
           id?: string
@@ -606,6 +713,7 @@ export type Database = {
         Row: {
           account_status: string
           admin_notes: string | null
+          assessorias_atuais: string[]
           atividade_exercida: string | null
           bio: string | null
           cidade_uf: string | null
@@ -632,7 +740,6 @@ export type Database = {
           notas_fiscais_range: string | null
           nps_score: number | null
           num_locais: string | null
-          assessorias_atuais: string[]
           onboarding_complete: boolean
           plan: string
           plan_id: string | null
@@ -647,6 +754,7 @@ export type Database = {
           status_changed_at: string | null
           status_changed_by: string | null
           status_reason: string | null
+          subespecialidades: string[] | null
           tipo_atendimento: string | null
           tipos_atendimento: string[] | null
           tratamento: string | null
@@ -654,10 +762,12 @@ export type Database = {
           trial_plan: string | null
           user_type: string
           website: string | null
+          whatsapp: string | null
         }
         Insert: {
           account_status?: string
           admin_notes?: string | null
+          assessorias_atuais?: string[]
           atividade_exercida?: string | null
           bio?: string | null
           cidade_uf?: string | null
@@ -684,7 +794,6 @@ export type Database = {
           notas_fiscais_range?: string | null
           nps_score?: number | null
           num_locais?: string | null
-          assessorias_atuais?: string[]
           onboarding_complete?: boolean
           plan?: string
           plan_id?: string | null
@@ -699,6 +808,7 @@ export type Database = {
           status_changed_at?: string | null
           status_changed_by?: string | null
           status_reason?: string | null
+          subespecialidades?: string[] | null
           tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
           tratamento?: string | null
@@ -706,10 +816,12 @@ export type Database = {
           trial_plan?: string | null
           user_type?: string
           website?: string | null
+          whatsapp?: string | null
         }
         Update: {
           account_status?: string
           admin_notes?: string | null
+          assessorias_atuais?: string[]
           atividade_exercida?: string | null
           bio?: string | null
           cidade_uf?: string | null
@@ -736,7 +848,6 @@ export type Database = {
           notas_fiscais_range?: string | null
           nps_score?: number | null
           num_locais?: string | null
-          assessorias_atuais?: string[]
           onboarding_complete?: boolean
           plan?: string
           plan_id?: string | null
@@ -751,6 +862,7 @@ export type Database = {
           status_changed_at?: string | null
           status_changed_by?: string | null
           status_reason?: string | null
+          subespecialidades?: string[] | null
           tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
           tratamento?: string | null
@@ -758,6 +870,7 @@ export type Database = {
           trial_plan?: string | null
           user_type?: string
           website?: string | null
+          whatsapp?: string | null
         }
         Relationships: [
           {

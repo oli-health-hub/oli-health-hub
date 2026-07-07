@@ -401,3 +401,13 @@ export async function toggleCoupon(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath('/cupons');
 }
+
+/** Apaga um post da comunidade (moderação) */
+export async function deletePost(formData: FormData) {
+  const postId = formData.get('post_id') as string;
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('community_posts').delete().eq('id', postId);
+  if (error) throw new Error(error.message);
+  revalidatePath('/comunidade');
+}
