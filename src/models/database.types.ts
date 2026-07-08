@@ -557,6 +557,38 @@ export type Database = {
           },
         ]
       }
+      olicoins_ledger: {
+        Row: {
+          created_at: string
+          evento: string
+          id: string
+          pontos: number
+          professional_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento: string
+          id?: string
+          pontos: number
+          professional_id: string
+        }
+        Update: {
+          created_at?: string
+          evento?: string
+          id?: string
+          pontos?: number
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "olicoins_ledger_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           communicare_id: string | null
@@ -761,6 +793,7 @@ export type Database = {
           trial_activated_at: string | null
           trial_plan: string | null
           user_type: string
+          visita_solicitada_em: string | null
           website: string | null
           whatsapp: string | null
         }
@@ -815,6 +848,7 @@ export type Database = {
           trial_activated_at?: string | null
           trial_plan?: string | null
           user_type?: string
+          visita_solicitada_em?: string | null
           website?: string | null
           whatsapp?: string | null
         }
@@ -869,6 +903,7 @@ export type Database = {
           trial_activated_at?: string | null
           trial_plan?: string | null
           user_type?: string
+          visita_solicitada_em?: string | null
           website?: string | null
           whatsapp?: string | null
         }

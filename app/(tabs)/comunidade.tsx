@@ -13,6 +13,7 @@ import type { Profile } from '../../src/services/auth';
 import { lumaService, type LumaEvent } from '../../src/services/luma';
 import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
 import { PostFeed } from '../../src/components/community/PostFeed';
+import { isProfileFullyComplete } from '../../src/utils/profileSections';
 
 const EVENT_COVER_COLORS = ['#4A7C59', '#B8893C', '#5B7FA6', '#7B6EA8'];
 
@@ -107,6 +108,14 @@ function ProfessionalCard({
           <View style={styles.topRatedBadge}>
             <Ionicons name="star" size={10} color="#FFA500" />
             <Text style={styles.topRatedBadgeText}>Top</Text>
+          </View>
+        )}
+
+        {/* Perfil 100% completo (Olicoins) */}
+        {isProfileFullyComplete(profile) && (
+          <View style={styles.completeBadge}>
+            <Ionicons name="ribbon" size={10} color={colors.oliGreen} />
+            <Text style={styles.completeBadgeText}>Perfil completo</Text>
           </View>
         )}
       </View>
@@ -965,6 +974,19 @@ const styles = StyleSheet.create({
     borderColor:       '#FFA50040',
   },
   topRatedBadgeText: { fontSize: 9, fontWeight: '700', color: '#FFA500' },
+
+  completeBadge: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               2,
+    backgroundColor:   `${colors.oliGreen}18`,
+    borderRadius:      radius.full,
+    paddingHorizontal: 6,
+    paddingVertical:   2,
+    borderWidth:       1,
+    borderColor:       `${colors.oliGreen}40`,
+  },
+  completeBadgeText: { fontSize: 9, fontWeight: '700', color: colors.oliGreen },
 
   avatarWrap: { position: 'relative', marginTop: 4 },
   meBadge: {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, Alert, Switch, ActivityIndicator, Image,
+  StyleSheet, Alert, Switch, ActivityIndicator, Image, Modal, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,8 +15,70 @@ import { updateProfileAvatar, removeProfileAvatar } from '../src/services/avatar
 import { useAppLock } from '../src/hooks/useAppLock';
 import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 import { TagInput } from '../src/components/TagInput';
+import { ProfileCompletionCard } from '../src/components/ProfileCompletionCard';
+import { OlicoinsBadge } from '../src/components/OlicoinsBadge';
+import { OlicoinsToast } from '../src/components/OlicoinsToast';
+import { creditOlicoins } from '../src/services/olicoinsService';
+import { PROFILE_SECTIONS } from '../src/utils/profileSections';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
+import type {
+  SituacaoJuridica, FaturamentoRange, LocalAtuacao,
+  NumLocais, NotasFiscaisRange,
+} from '../src/models/types';
+
+const ESTADOS = [
+  { uf: 'AC', nome: 'Acre' }, { uf: 'AL', nome: 'Alagoas' }, { uf: 'AP', nome: 'Amapá' },
+  { uf: 'AM', nome: 'Amazonas' }, { uf: 'BA', nome: 'Bahia' }, { uf: 'CE', nome: 'Ceará' },
+  { uf: 'DF', nome: 'Distrito Federal' }, { uf: 'ES', nome: 'Espírito Santo' }, { uf: 'GO', nome: 'Goiás' },
+  { uf: 'MA', nome: 'Maranhão' }, { uf: 'MT', nome: 'Mato Grosso' }, { uf: 'MS', nome: 'Mato Grosso do Sul' },
+  { uf: 'MG', nome: 'Minas Gerais' }, { uf: 'PA', nome: 'Pará' }, { uf: 'PB', nome: 'Paraíba' },
+  { uf: 'PR', nome: 'Paraná' }, { uf: 'PE', nome: 'Pernambuco' }, { uf: 'PI', nome: 'Piauí' },
+  { uf: 'RJ', nome: 'Rio de Janeiro' }, { uf: 'RN', nome: 'Rio Grande do Norte' }, { uf: 'RS', nome: 'Rio Grande do Sul' },
+  { uf: 'RO', nome: 'Rondônia' }, { uf: 'RR', nome: 'Roraima' }, { uf: 'SC', nome: 'Santa Catarina' },
+  { uf: 'SP', nome: 'São Paulo' }, { uf: 'SE', nome: 'Sergipe' }, { uf: 'TO', nome: 'Tocantins' },
+];
+
+const SITUACAO_OPTIONS: { value: SituacaoJuridica; label: string }[] = [
+  { value: 'pf', label: 'Pessoa Física' },
+  { value: 'pj', label: 'Pessoa Jurídica' },
+  { value: 'ambos', label: 'Pessoa Física e Jurídica' },
+];
+const LOCAL_OPTIONS: { value: LocalAtuacao; label: string }[] = [
+  { value: 'proprio', label: 'Estabelecimento próprio' },
+  { value: 'terceiros', label: 'Estabelecimento de terceiros' },
+  { value: 'ambos', label: 'Ambos' },
+];
+const NUM_LOCAIS_OPTIONS: { value: NumLocais; label: string }[] = [
+  { value: '1', label: '1 local' }, { value: '2_3', label: '2 a 3 locais' },
+  { value: '4_6', label: '4 a 6 locais' }, { value: 'mais_6', label: 'Mais de 6 locais' },
+];
+const FATURAMENTO_OPTIONS: { value: FaturamentoRange; label: string }[] = [
+  { value: 'ate_10k', label: 'Até R$ 10.000' },
+  { value: '10k_30k', label: 'R$ 10.001 – R$ 30.000' },
+  { value: '30k_80k', label: 'R$ 30.001 – R$ 80.000' },
+  { value: '80k_160k', label: 'R$ 80.001 – R$ 160.000' },
+  { value: 'acima_160k', label: 'Acima de R$ 160.000' },
+];
+const NOTAS_OPTIONS: { value: NotasFiscaisRange; label: string }[] = [
+  { value: 'nao_emite', label: 'Não emite' }, { value: 'ate_5', label: 'Até 5 por mês' },
+  { value: '6_20', label: '6 a 20 por mês' }, { value: '21_50', label: '21 a 50 por mês' },
+  { value: 'acima_50', label: 'Mais de 50 por mês' },
+];
+const COMO_CONHECEU_OPTIONS = [
+  { value: 'membro_oli', label: 'Indicação de membro OLI' },
+  { value: 'amigo', label: 'Indicação de amigo/colega' },
+  { value: 'redes', label: 'Redes sociais' },
+  { value: 'evento', label: 'Evento OLI' },
+  { value: 'google', label: 'Google / Internet' },
+  { value: 'outro', label: 'Outro' },
+];
+const ASSESSORIA_OPTIONS = [
+  { value: 'contabilidade', label: 'Contabilidade' },
+  { value: 'juridica', label: 'Jurídica' },
+  { value: 'convenios', label: 'Convênios' },
+  { value: 'marketing', label: 'Marketing' },
+];
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -40,6 +102,27 @@ export default function PerfilScreen() {
   const [whatsapp,     setWhatsapp]     = useState(profile?.whatsapp ?? '');
   const [subespecialidades, setSubespecialidades] = useState<string[]>(profile?.subespecialidades ?? []);
 
+  // ── Objetivos do perfil (movidos do onboarding) ──
+  const [atendePresencial, setAtendePresencial] = useState(!!profile?.tipo_atendimento && profile.tipo_atendimento !== 'telemedicina');
+  const [atendeOnline,     setAtendeOnline]     = useState(profile?.tipo_atendimento === 'telemedicina' || profile?.tipo_atendimento === 'ambos');
+  const [situacaoJuridica, setSituacaoJuridica] = useState<SituacaoJuridica | null>((profile?.situacao_juridica as SituacaoJuridica) ?? null);
+  const [possuiCLT,        setPossuiCLT]        = useState<boolean | null>(profile?.possui_clt ?? null);
+  const [possuiSocios,     setPossuiSocios]     = useState<boolean | null>(profile?.possui_socios ?? null);
+  const [localAtuacao,     setLocalAtuacao]     = useState<LocalAtuacao | null>((profile?.local_atuacao as LocalAtuacao) ?? null);
+  const [numLocais,        setNumLocais]        = useState<NumLocais | null>((profile?.num_locais as NumLocais) ?? null);
+  const [cidade,           setCidade]           = useState(profile?.cidade_uf?.split(' / ')[0] ?? '');
+  const [uf,               setUf]               = useState(profile?.cidade_uf?.split(' / ')[1] ?? '');
+  const [faturamentoRange, setFaturamentoRange] = useState<FaturamentoRange | null>((profile?.faturamento_range as FaturamentoRange) ?? null);
+  const [notasFiscaisRange,setNotasFiscaisRange] = useState<NotasFiscaisRange | null>((profile?.notas_fiscais_range as NotasFiscaisRange) ?? null);
+  const [possuiFuncionarios, setPossuiFuncionarios] = useState<boolean | null>(profile?.possui_funcionarios ?? null);
+  const [previsaoContratacao, setPrevisaoContratacao] = useState<boolean | null>(profile?.previsao_contratacao ?? null);
+  const [assessoriasAtuais, setAssessoriasAtuais] = useState<string[]>(profile?.assessorias_atuais ?? []);
+  const [comoConheceu,     setComoConheceu]     = useState<string | null>(profile?.como_conheceu ?? null);
+  const [olicoinsToast,    setOlicoinsToast]    = useState<{ amount: number } | null>(null);
+
+  const toggleAssessoria = (value: string) =>
+    setAssessoriasAtuais(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+
   const {
     biometricAvailable,
     biometricEnabled,
@@ -52,14 +135,23 @@ export default function PerfilScreen() {
   const [notifFinanceiro, setNotifFinanceiro] = useState(false);
 
   const handleSave = async () => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id || !profile) return;
     setSaving(true);
     try {
       const durationMin = parseInt(duracao) || 60;
+      const tipoAtendimento =
+        atendePresencial && atendeOnline ? 'ambos'
+        : atendePresencial ? 'presencial'
+        : atendeOnline ? 'telemedicina'
+        : null;
+      const cidadeUf = cidade.trim() && uf ? `${cidade.trim()} / ${uf}` : null;
+      const especialidadeTrim = especialidade.trim() || null;
+
       const updates = {
-        nome:                         nome.trim() || profile!.nome,
+        nome:                         nome.trim() || profile.nome,
         crm:                          crm.trim()  || null,
-        especialidade:                especialidade.trim() || null,
+        especialidade:                especialidadeTrim,
+        atividade_exercida:           especialidadeTrim,
         bio:                          bio.trim()   || null,
         consultation_duration_minutes: durationMin,
         instagram:                    instagram.trim().replace(/^@/, '') || null,
@@ -67,11 +159,35 @@ export default function PerfilScreen() {
         website:                      website.trim()   || null,
         whatsapp:                     whatsapp.trim()  || null,
         subespecialidades:            subespecialidades.length > 0 ? subespecialidades : null,
+        tipo_atendimento:             tipoAtendimento,
+        situacao_juridica:            situacaoJuridica,
+        possui_clt:                   possuiCLT,
+        possui_socios:                possuiSocios,
+        local_atuacao:                localAtuacao,
+        num_locais:                   numLocais,
+        cidade_uf:                    cidadeUf,
+        faturamento_range:            faturamentoRange,
+        notas_fiscais_range:          notasFiscaisRange,
+        possui_funcionarios:          possuiFuncionarios,
+        previsao_contratacao:         possuiFuncionarios ? null : previsaoContratacao,
+        assessorias_atuais:           assessoriasAtuais,
+        como_conheceu:                comoConheceu,
       };
       await updateProfile(session.user.id, updates);
-      setProfile({ ...profile!, ...updates });
+      const updatedProfile = { ...profile, ...updates };
+      setProfile(updatedProfile);
       useAppStore.getState().setUserName(updates.nome);
       useAppStore.getState().setConsultationDuration(durationMin);
+
+      // Seções que acabaram de ficar completas creditam Olicoins (idempotente).
+      const newlyDone = PROFILE_SECTIONS.filter(s => !s.isComplete(profile) && s.isComplete(updatedProfile));
+      if (newlyDone.length > 0) {
+        const amount = newlyDone.reduce((sum, s) => sum + s.pontos, 0);
+        await Promise.all(newlyDone.map(s => creditOlicoins(profile.id, s.evento, s.pontos)));
+        setOlicoinsToast({ amount });
+        setTimeout(() => setOlicoinsToast(null), 2000);
+      }
+
       setEditing(false);
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar as alterações. Tente novamente.');
@@ -91,6 +207,21 @@ export default function PerfilScreen() {
     setWebsite(profile?.website ?? '');
     setWhatsapp(profile?.whatsapp ?? '');
     setSubespecialidades(profile?.subespecialidades ?? []);
+    setAtendePresencial(!!profile?.tipo_atendimento && profile.tipo_atendimento !== 'telemedicina');
+    setAtendeOnline(profile?.tipo_atendimento === 'telemedicina' || profile?.tipo_atendimento === 'ambos');
+    setSituacaoJuridica((profile?.situacao_juridica as SituacaoJuridica) ?? null);
+    setPossuiCLT(profile?.possui_clt ?? null);
+    setPossuiSocios(profile?.possui_socios ?? null);
+    setLocalAtuacao((profile?.local_atuacao as LocalAtuacao) ?? null);
+    setNumLocais((profile?.num_locais as NumLocais) ?? null);
+    setCidade(profile?.cidade_uf?.split(' / ')[0] ?? '');
+    setUf(profile?.cidade_uf?.split(' / ')[1] ?? '');
+    setFaturamentoRange((profile?.faturamento_range as FaturamentoRange) ?? null);
+    setNotasFiscaisRange((profile?.notas_fiscais_range as NotasFiscaisRange) ?? null);
+    setPossuiFuncionarios(profile?.possui_funcionarios ?? null);
+    setPrevisaoContratacao(profile?.previsao_contratacao ?? null);
+    setAssessoriasAtuais(profile?.assessorias_atuais ?? []);
+    setComoConheceu(profile?.como_conheceu ?? null);
     setEditing(false);
   };
 
@@ -250,7 +381,11 @@ export default function PerfilScreen() {
           <View style={styles.planBadge}>
             <Text style={styles.planBadgeText}>Plano {userPlan}</Text>
           </View>
+          {session?.user?.id && <OlicoinsBadge professionalId={session.user.id} />}
         </View>
+
+        {/* ── Progresso do perfil (Olicoins) ── */}
+        {profile && <ProfileCompletionCard profile={profile} />}
 
         {/* ── Dados Pessoais ── */}
         <View style={styles.sectionHeader}>
@@ -379,6 +514,70 @@ export default function PerfilScreen() {
             </View>
           ) : (
             <Text style={styles.bioValue}>Nenhuma subespecialidade adicionada.</Text>
+          )}
+        </View>
+
+        {/* ── Objetivos do perfil (movidos do onboarding — rendem Olicoins) ── */}
+        <Text style={styles.sectionTitle}>SEUS OBJETIVOS</Text>
+        <View style={[styles.card, shadows.card]}>
+          <ToggleRow icon="business-outline" label="Atende presencial" value={atendePresencial} editing={editing} onChange={setAtendePresencial} />
+          <ToggleRow icon="videocam-outline" label="Atende por telemedicina" value={atendeOnline} editing={editing} onChange={setAtendeOnline} />
+          <SelectRow
+            icon="briefcase-outline" label="Situação jurídica" value={situacaoJuridica} editing={editing}
+            displayValue={SITUACAO_OPTIONS.find(o => o.value === situacaoJuridica)?.label ?? ''}
+            options={SITUACAO_OPTIONS} onSelect={setSituacaoJuridica}
+          />
+          <ToggleRow icon="checkmark-done-outline" label="Possui vínculo CLT" value={possuiCLT} editing={editing} onChange={setPossuiCLT} />
+          <ToggleRow icon="people-outline" label="Possui sócios" value={possuiSocios} editing={editing} onChange={setPossuiSocios} />
+          <SelectRow
+            icon="home-outline" label="Local de atuação" value={localAtuacao} editing={editing}
+            displayValue={LOCAL_OPTIONS.find(o => o.value === localAtuacao)?.label ?? ''}
+            options={LOCAL_OPTIONS} onSelect={setLocalAtuacao}
+          />
+          <SelectRow
+            icon="git-branch-outline" label="Nº de locais" value={numLocais} editing={editing}
+            displayValue={NUM_LOCAIS_OPTIONS.find(o => o.value === numLocais)?.label ?? ''}
+            options={NUM_LOCAIS_OPTIONS} onSelect={setNumLocais}
+          />
+          <EditableRow icon="location-outline" label="Cidade" value={cidade} editing={editing} onChangeText={setCidade} placeholder="Ex: São Paulo" autoCapitalize="words" />
+          <SelectRow
+            icon="map-outline" label="Estado" value={uf} editing={editing}
+            displayValue={ESTADOS.find(e => e.uf === uf)?.nome ?? ''}
+            options={ESTADOS.map(e => ({ value: e.uf, label: e.nome }))} onSelect={setUf}
+          />
+          <SelectRow
+            icon="cash-outline" label="Faturamento mensal" value={faturamentoRange} editing={editing}
+            displayValue={FATURAMENTO_OPTIONS.find(o => o.value === faturamentoRange)?.label ?? ''}
+            options={FATURAMENTO_OPTIONS} onSelect={setFaturamentoRange}
+          />
+          <SelectRow
+            icon="receipt-outline" label="Notas fiscais/mês" value={notasFiscaisRange} editing={editing}
+            displayValue={NOTAS_OPTIONS.find(o => o.value === notasFiscaisRange)?.label ?? ''}
+            options={NOTAS_OPTIONS} onSelect={setNotasFiscaisRange}
+          />
+          <ToggleRow icon="people-circle-outline" label="Possui funcionários" value={possuiFuncionarios} editing={editing} onChange={(v) => { setPossuiFuncionarios(v); setPrevisaoContratacao(null); }} />
+          {possuiFuncionarios === false && (
+            <ToggleRow icon="calendar-outline" label="Previsão de contratação" value={previsaoContratacao} editing={editing} onChange={setPrevisaoContratacao} />
+          )}
+          <SelectRow
+            icon="megaphone-outline" label="Como nos conheceu" value={comoConheceu} editing={editing}
+            displayValue={COMO_CONHECEU_OPTIONS.find(o => o.value === comoConheceu)?.label ?? ''}
+            options={COMO_CONHECEU_OPTIONS} onSelect={setComoConheceu} last={!editing}
+          />
+          {editing && (
+            <View>
+              <Text style={[styles.rowLabel, styles.assessoriasLabel]}>Assessorias que já possui</Text>
+              <View style={styles.chipRow}>
+                {ASSESSORIA_OPTIONS.map(o => {
+                  const active = assessoriasAtuais.includes(o.value);
+                  return (
+                    <TouchableOpacity key={o.value} style={[styles.chip, active && styles.chipActive]} onPress={() => toggleAssessoria(o.value)} accessibilityLabel={o.label}>
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{o.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
           )}
         </View>
 
@@ -519,6 +718,8 @@ export default function PerfilScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <OlicoinsToast visible={!!olicoinsToast} amount={olicoinsToast?.amount ?? 0} />
     </SafeAreaView>
   );
 }
@@ -614,6 +815,79 @@ function NotifRow({ label, description, value, onChange, last = false }: {
   );
 }
 
+function ToggleRow({ icon, label, value, editing, onChange, last = false }: {
+  icon: string; label: string; value: boolean | null; editing: boolean;
+  onChange: (v: boolean) => void; last?: boolean;
+}) {
+  return (
+    <View style={[styles.profileRow, last && styles.profileRowLast]}>
+      <Ionicons name={icon as any} size={18} color={colors.gray} style={styles.rowIcon} />
+      <Text style={styles.rowLabel}>{label}</Text>
+      {editing ? (
+        <Switch
+          value={value === true}
+          onValueChange={onChange}
+          trackColor={{ false: colors.border, true: `${colors.oliGreen}80` }}
+          thumbColor={value ? colors.oliGreen : colors.gray}
+          accessibilityLabel={`${label}: ${value ? 'sim' : 'não'}`}
+        />
+      ) : (
+        <Text style={styles.rowValue}>{value === null ? '—' : value ? 'Sim' : 'Não'}</Text>
+      )}
+    </View>
+  );
+}
+
+function SelectRow<T extends string>({
+  icon, label, value, displayValue, editing, options, onSelect, last = false,
+}: {
+  icon: string; label: string; value: T | null; displayValue: string; editing: boolean;
+  options: { value: T; label: string }[]; onSelect: (v: T) => void; last?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <TouchableOpacity
+        style={[styles.profileRow, last && styles.profileRowLast]}
+        onPress={() => editing && setOpen(true)}
+        disabled={!editing}
+        accessibilityLabel={label}
+      >
+        <Ionicons name={icon as any} size={18} color={colors.gray} style={styles.rowIcon} />
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowValue} numberOfLines={1}>{displayValue || '—'}</Text>
+        {editing && <Ionicons name="chevron-forward" size={16} color={colors.oliLightGray} />}
+      </TouchableOpacity>
+      <Modal visible={open} animationType="slide" transparent>
+        <View style={pickerStyles.overlay}>
+          <View style={pickerStyles.sheet}>
+            <View style={pickerStyles.header}>
+              <Text style={pickerStyles.title}>{label}</Text>
+              <TouchableOpacity onPress={() => setOpen(false)} accessibilityLabel="Fechar">
+                <Ionicons name="close" size={24} color={colors.oliDarkGray} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={options}
+              keyExtractor={o => o.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={pickerStyles.item}
+                  onPress={() => { onSelect(item.value); setOpen(false); }}
+                  accessibilityLabel={item.label}
+                >
+                  <Text style={pickerStyles.itemText}>{item.label}</Text>
+                  {value === item.value && <Ionicons name="checkmark-circle" size={20} color={colors.oliGreen} />}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
@@ -706,4 +980,23 @@ const styles = StyleSheet.create({
   version:    { textAlign: 'center', fontSize: 12, color: colors.gray },
   versionBlock: { alignItems: 'center', marginTop: spacing.lg, gap: 2, paddingBottom: spacing.md },
   versionSub: { fontSize: 10, color: colors.gray, fontFamily: 'Courier' },
+
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, padding: spacing.md },
+  assessoriasLabel: { padding: spacing.md, paddingBottom: 0 },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white,
+  },
+  chipActive: { backgroundColor: colors.oliGreen, borderColor: colors.oliGreen },
+  chipText: { fontSize: 13, color: colors.oliDarkGray },
+  chipTextActive: { color: colors.white, fontWeight: '600' },
+});
+
+const pickerStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: colors.white, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, maxHeight: '70%' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  title: { fontSize: 16, fontWeight: '700', color: colors.oliDarkGray },
+  item: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md },
+  itemText: { fontSize: 14, color: colors.oliDarkGray },
 });

@@ -19,9 +19,16 @@ import {
 import type { Reservation, ReservationStatus, Patient } from '../../src/models/types';
 import { QRScannerModal } from '../../src/components/QRScannerModal';
 import { ReferralPromoModal } from '../../src/components/ReferralPromoModal';
+import { CalendlyVisitBadge } from '../../src/components/CalendlyVisitBadge';
+import { OlicoinsBadge } from '../../src/components/OlicoinsBadge';
+import { ProfileCompletionCard } from '../../src/components/ProfileCompletionCard';
+import { OlicoinsToast } from '../../src/components/OlicoinsToast';
+import { reconcileActionObjectives } from '../../src/services/olicoinsService';
+import { reconcileAchievements } from '../../src/services/achievementsService';
 import { fetchHourBalance } from '../../src/services/financeiroService';
 import type { HourBalance } from '../../src/services/financeiroService';
 import { sendNPS } from '../../src/services/npsService';
+import { supabase } from '../../src/services/supabase';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -171,7 +178,7 @@ export default function DashboardScreen() {
     endRoomUse, startSession,
   } = useAppStore();
 
-  const { session, profile } = useAuthStore();
+  const { session, profile, setProfile } = useAuthStore();
   const timer = useTimer();
 
   const [showQR,              setShowQR]              = useState(false);
@@ -181,6 +188,26 @@ export default function DashboardScreen() {
   const [showNPSPicker,       setShowNPSPicker]       = useState(false);
   const [npsSendingId,        setNpsSendingId]        = useState<string | null>(null);
   const [showReferralPromo,   setShowReferralPromo]   = useState(false);
+  const [calendlyDismissed,   setCalendlyDismissed]   = useState(false);
+  const [objectivesToast,     setObjectivesToast]     = useState<{ amount: number } | null>(null);
+
+  // Reconcilia objetivos de ação + conquistas por quantidade uma vez por sessão —
+  // credita Olicoins de coisas que o profissional já fez (mesmo antes da feature existir).
+  useEffect(() => {
+    const professionalId = session?.user?.id;
+    if (!professionalId) return;
+    Promise.all([
+      reconcileActionObjectives(professionalId),
+      reconcileAchievements(professionalId),
+    ]).then(([objectives, achievements]) => {
+      const amount =
+        objectives.newlyEarned.reduce((sum, o) => sum + o.pontos, 0) +
+        achievements.newlyEarned.reduce((sum, a) => sum + a.tier.pontos, 0);
+      if (amount === 0) return;
+      setObjectivesToast({ amount });
+      setTimeout(() => setObjectivesToast(null), 2000);
+    });
+  }, [session?.user?.id]);
 
   // Popup de indicação — aparece UMA vez (foco no primeiro acesso ao dashboard).
   useEffect(() => {
@@ -196,6 +223,13 @@ export default function DashboardScreen() {
     setShowReferralPromo(false);
     try { await AsyncStorage.setItem('@oli:referral_promo_seen', '1'); } catch { /* nada */ }
   }, []);
+
+  const handleVisitaAgendadaOpen = useCallback(async () => {
+    if (!session?.user?.id || !profile) return;
+    const agora = new Date().toISOString();
+    setProfile({ ...profile, visita_solicitada_em: agora });
+    await supabase.from('profiles').update({ visita_solicitada_em: agora }).eq('id', session.user.id);
+  }, [session, profile]);
 
   const goToReferral = useCallback(async () => {
     await dismissReferralPromo();
@@ -355,9 +389,10 @@ export default function DashboardScreen() {
 
         {/* ── Header ── */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerLeft}>
             <Text style={styles.greeting}>Olá, {userName}</Text>
             <Text style={styles.plan}>Plano {userPlan}</Text>
+            {session?.user?.id && <OlicoinsBadge professionalId={session.user.id} />}
           </View>
           <TouchableOpacity
             style={styles.avatarCircle}
@@ -373,6 +408,9 @@ export default function DashboardScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* ── Progresso do perfil (Olicoins) ── */}
+        {profile && <ProfileCompletionCard profile={profile} />}
 
         {/* ── Widget: Saldo de Horas (apenas se houver pacote ativo) ── */}
         {hourBalance && (
@@ -561,6 +599,15 @@ export default function DashboardScreen() {
         )}
 
       </ScrollView>
+
+      <OlicoinsToast visible={!!objectivesToast} amount={objectivesToast?.amount ?? 0} />
+
+      {/* ── Badge flutuante: Agendar visita (some após 1º agendamento) ── */}
+      <CalendlyVisitBadge
+        visible={!!profile && !profile.visita_solicitada_em && !calendlyDismissed}
+        onOpen={handleVisitaAgendadaOpen}
+        onDismiss={() => setCalendlyDismissed(true)}
+      />
 
       {/* ── Modal: Alerta de Timer ── */}
       <Modal visible={!!alertKey} animationType="fade" transparent>
@@ -952,7 +999,8 @@ const styles = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: colors.oliBackground },
   content: { paddingBottom: 40 },
 
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.lg },
+  headerLeft:   { alignItems: 'flex-start', gap: spacing.xs },
   greeting:     { fontSize: 24, fontWeight: '700', color: colors.oliDarkGray },
   plan:         { fontSize: 13, fontWeight: '500', color: colors.oliGold, marginTop: 2 },
   avatarCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: `${colors.oliGreen}26`, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },

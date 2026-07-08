@@ -144,6 +144,7 @@ export default function RootLayout() {
         <Stack.Screen name="welcome"     options={{ headerShown: false }} />
         <Stack.Screen name="login"       options={{ headerShown: false }} />
         <Stack.Screen name="onboarding"  options={{ headerShown: false }} />
+        <Stack.Screen name="completar-perfil" options={{ headerShown: false }} />
         <Stack.Screen name="mfa-verify"  options={{ headerShown: false }} />
         <Stack.Screen name="mfa-setup"   options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="nova-senha"  options={{ headerShown: false }} />
