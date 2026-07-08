@@ -242,7 +242,7 @@ export default function PerfilScreen() {
             <View style={styles.avatarEditBadge}>
               {uploadingPhoto
                 ? <ActivityIndicator size="small" color={colors.white} />
-                : <Ionicons name="camera" size={14} color={colors.white} />
+                : <Ionicons name="camera" size={16} color={colors.white} />
               }
             </View>
           </TouchableOpacity>
@@ -635,9 +635,9 @@ const styles = StyleSheet.create({
     position:        'absolute',
     bottom:          0,
     right:           0,
-    width:           28,
-    height:          28,
-    borderRadius:    14,
+    width:           32,
+    height:          32,
+    borderRadius:    16,
     backgroundColor: colors.oliGreen,
     justifyContent:  'center',
     alignItems:      'center',
