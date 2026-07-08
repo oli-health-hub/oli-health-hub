@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +24,8 @@ const MONTHS = [
   'jul','ago','set','out','nov','dez',
 ];
 
+const CAROUSEL_WIDTH = Dimensions.get('window').width - spacing.md * 2;
+
 export function RoomDetailModal({
   room, selectedDate, reservations, onClose, onReserve,
 }: Props) {
@@ -33,6 +36,14 @@ export function RoomDetailModal({
 
   const dateLabel = `${selectedDate.getDate()} de ${MONTHS[selectedDate.getMonth()]}`;
   const photos    = getRoomPhotos(room.id);
+
+  const carouselRef            = useRef<ScrollView>(null);
+  const [activePhoto, setActivePhoto] = useState(0);
+
+  const goToPhoto = (i: number) => {
+    carouselRef.current?.scrollTo({ x: i * CAROUSEL_WIDTH, animated: true });
+    setActivePhoto(i);
+  };
 
   return (
     <SafeAreaProvider>
@@ -59,10 +70,15 @@ export function RoomDetailModal({
           <Image source={photos[0]} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
         ) : (
           <ScrollView
+            ref={carouselRef}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             style={styles.carousel}
+            onMomentumScrollEnd={e => {
+              const i = Math.round(e.nativeEvent.contentOffset.x / CAROUSEL_WIDTH);
+              setActivePhoto(i);
+            }}
           >
             {photos.map((p, i) => (
               <Image key={i} source={p} style={styles.carouselPhoto} resizeMode="cover" accessibilityIgnoresInvertColors />
@@ -70,7 +86,7 @@ export function RoomDetailModal({
           </ScrollView>
         )}
 
-        {/* Miniaturas — sinalizam que há mais fotos (arraste a imagem acima) */}
+        {/* Miniaturas — toque pra pular direto pra foto */}
         {photos.length > 1 && (
           <ScrollView
             horizontal
@@ -79,7 +95,14 @@ export function RoomDetailModal({
             contentContainerStyle={styles.thumbRowContent}
           >
             {photos.map((p, i) => (
-              <Image key={i} source={p} style={styles.thumb} resizeMode="cover" accessibilityIgnoresInvertColors />
+              <TouchableOpacity key={i} onPress={() => goToPhoto(i)} accessibilityLabel={`Ver foto ${i + 1} da sala`}>
+                <Image
+                  source={p}
+                  style={[styles.thumb, i === activePhoto && styles.thumbActive]}
+                  resizeMode="cover"
+                  accessibilityIgnoresInvertColors
+                />
+              </TouchableOpacity>
             ))}
           </ScrollView>
         )}
@@ -284,6 +307,11 @@ const styles = StyleSheet.create({
     height:          44,
     borderRadius:    radius.sm,
     backgroundColor: colors.border,
+    borderWidth:     2,
+    borderColor:     'transparent',
+  },
+  thumbActive: {
+    borderColor:     colors.oliGreen,
   },
 
   specialtiesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
