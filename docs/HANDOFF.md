@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 8/Julho/2026.
+> Última atualização: 8/Julho/2026 (sessão 2).
 
 ---
 
@@ -297,6 +297,32 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 - **🐛 Fix Expo web SSR quebrando (achado ao testar preview):** `expo-secure-store` e o storage do Supabase Auth (`AsyncStorage`→`localStorage`) não têm guard pra ambiente SSR do Expo web (`window` indefinido em Node) — crash total ao abrir `expo start --web`. Guard `Platform.OS==='web'` adicionado em `src/services/supabase.ts` e novo `src/utils/secureStoreWeb.ts` (usado por `useAppLock.ts` + `communicareSSO.ts`). **Zero efeito no app nativo** (guard só ativa em `Platform.OS==='web'`, que o app não usa em produção — só ajuda quem quiser rodar preview web local). App não tem alvo web oficial (só iOS/Android); outros módulos nativos (câmera, picker etc.) provavelmente ainda quebram no preview web, não foram testados.
 
+### ✅ Resolvido na sessão 8/jul (sessão 2 — onboarding enxuto, gamificação Olicoins, fix RLS avatar)
+
+- **🐛 Fix upload de foto de perfil quebrado:** bucket `avatars` no Storage só tinha policies INSERT/UPDATE/DELETE, faltava **SELECT**. 1º upload de cada usuário funcionava (INSERT puro), mas trocar foto já existente usa `upsert:true` → vira `INSERT...ON CONFLICT DO UPDATE`, que exige o Postgres enxergar a linha conflitante via policy SELECT — sem ela, RLS bloqueava com `new row violates row-level security policy`. Migration `avatar_select_own_policy` (policy SELECT restrita à própria pasta, igual as outras). **Resolvido em produção**, sem mudança de código.
+- **🐛 Fix miniaturas de foto de sala:** `RoomDetailModal` — thumbnails abaixo do carousel principal eram só decorativas (clique não fazia nada, só swipe funcionava). Agora tocar na miniatura chama `scrollTo` no carousel + borda verde marca a ativa.
+
+- **🎯 Onboarding enxuto:** reduzido de 5 steps (~1400 linhas) pra 1 tela — WhatsApp (obrigatório) + CRM/conselho (opcional) + tratamento Dr./Dra. Indicação por `?ref=` resolvida em silêncio (sem UI). O resto (atendimento, situação jurídica, financeiro, como conheceu) saiu do onboarding e virou missão gamificada dentro do app, editável em **Perfil → Editar** (novos `SelectRow`/`ToggleRow` reaproveitando o mesmo padrão do WhatsApp).
+
+- **🪙 Sistema de gamificação Olicoins** (nome interno pro programa de recompensas — conceito de resgate/câmbio pra R$ ainda **não definido**, registrado como pendência):
+  - `olicoins_ledger` (migration): ledger append-only, evento único por profissional (idempotente — creditar 2x não duplica).
+  - `src/utils/profileSections.ts`: **10 seções de perfil** (atendimento/jurídico, atividade/local, financeiro, como conheceu, foto de perfil, bio, rede social, subespecialidades, visita agendada, plano pago).
+  - `src/services/olicoinsService.ts`: **11 objetivos de ação** (1ª reserva, 1º paciente, 1º post, indicação enviada, módulo ativo, 1º atendimento realizado, 1º pacote de horas, curtir, comentar, ativar MFA, fechar plano anual) — reconciliados automaticamente ao abrir o Início (retroativo pra quem já tinha feito antes de existir a feature).
+  - `src/services/achievementsService.ts`: **5 trilhas de conquista por quantidade** (reservas, pacientes, engajamento comunidade, horas de sala usadas, pacotes de horas comprados), tiers Bronze/Prata/Ouro/Platina, mesmo ledger.
+  - `app/completar-perfil.tsx`: hub "Seus objetivos" — grid de medalhas redondas (sem card de fundo, só círculo+texto), separado em 3 seções com divisória e contador X/Y. Cada medalha mostra descrição de como completar + chip "🪙+X" quando pendente.
+  - `ProfileCompletionCard` (Início + Perfil): barra de progresso com shimmer contínuo + respiração de brilho (efeito "líquido subindo"), nunca some — vira dourada quando 100%.
+  - `OlicoinsBadge`: contador animado (conta pra cima + "pop" ao ganhar), visível no header do Início e do Perfil.
+  - `OlicoinsToast`: toast "+X Olicoins!" ao completar seção/objetivo.
+  - Ícone: `FontAwesome5 coins` (moedinha), não bitcoin.
+  - Badge "Perfil completo" no card da Comunidade quando os 20 objetivos de perfil+ação (não conta conquistas) estão feitos.
+  - **Pendente:** streak de dias consecutivos ativo (precisa trigger Postgres + fundador definir o que conta como "dia ativo") e selos customizados com significado próprio (hoje são ícones genéricos Ionicons) — ambos registrados em memory `project-roadmap`.
+
+- **📅 Badge flutuante "Agendar visita"** (`CalendlyVisitBadge`, Início): linka pro Calendly (`calendly.com/olihealthhub/atendimento-presencial`). Fecha com X mas volta a cada abertura do app até 1º agendamento. **Modo otimista** (marca `profiles.visita_solicitada_em` ao clicar, sem confirmação real) — plano Calendly é free, sem API/webhook disponível pra confirmar de verdade.
+
+- **🐛 Achado, registrado, não corrigido:** NPS picker pós-checkout (`app/(tabs)/index.tsx` `recentPatients`) mostra os 6 últimos pacientes CADASTRADOS, não os atendidos NAQUELE DIA. Fix real: derivar de `todayReservations` (já existe no mesmo arquivo). Ver memory `project-roadmap`.
+
+- Commits `5eaab52` (fix fotos sala) + `5ac50a5` (feature onboarding+gamificação). **OTA enviada** — prod `c0170fc2-d00b-4458-a0e2-718c297f6709` / preview `8d701be8-7c74-480c-bf0b-61417d48bd6b`.
+
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
    - ✅ `URL Configuration` → Redirect URLs adicionadas. Reset de senha FUNCIONANDO.
@@ -358,3 +384,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (6/jul):** Sessão focada em **publicação iOS e UX de entrada**. Screenshots iOS redimensionadas para 1284×2778 (`assets/Print Screen App iOS/resized-65/`). ASC preenchido (metadata pt-BR, App Privacy, Medical, Free) e build 1.0.0(1) submetido → rejeitado 3.1.1 (IAP) → argumento 3.1.5(b) serviço físico enviado à Apple → **aceito, app publicado na App Store**. `buildNumber` iOS atualizado `1→2` (próximo rebuild). Fix ícones Dr./Dra. no onboarding (prop `flex` no `OptionCard`). Nova tela `app/welcome.tsx` (boas-vindas antes do login). Fix Face ID loop: `session && (inLogin || inWelcome)` no routing do `_layout.tsx`. **OTA acumulada ainda não enviada** — rodar agora que app está publicado.
 
 **Resumo de 1 linha (7-8/jul):** Sessão focada em **página de recebimento do founder + feed social na Comunidade**. OTA da sessão 6/jul enviada (`8f55c8b`, groups `502b009d`/`5086acf8`). Nova `/meu-recebimento` no Admin (salário+comissão por ocupação, só o founder vê, lembrete agendado 05/09 pra checar renovação de contrato). Comunidade virou parcialmente rede social: feed de posts (curtir/comentar), switcher Feed/Colegas com swipe, WhatsApp+subespecialidades no perfil/card, moderação de posts no Admin. Fix bug de `@` duplicado no Instagram. Testado ponta-a-ponta em device real via `expo start` (LAN de casa não funcionou por isolamento de rede — contornado com hotspot do Mac e depois WiFi da clínica). Achado e corrigido de brinde: crash de SSR no Expo web (Supabase/SecureStore sem guard pra `window` indefinido) — não afeta o app nativo. **OTA do feed social enviada** (commit `6d8eff4`, groups `1b7e983d`/`e13ecccc`).
+
+**Resumo de 1 linha (8/jul sessão 2):** Sessão focada em **onboarding enxuto + gamificação (Olicoins)**. Fix RLS do upload de avatar (faltava policy SELECT no bucket) e fix clique nas miniaturas de foto de sala. Onboarding cortado de 5 steps pra 1 tela (WhatsApp+CRM); resto virou 10 seções de perfil + 11 objetivos de ação + 5 trilhas de conquista, tudo creditando Olicoins num ledger novo, com reconciliação automática/retroativa, barra de progresso animada e hub visual em grid de medalhas (`completar-perfil.tsx`). Badge flutuante "Agendar visita" linkando Calendly (modo otimista, sem webhook — plano free). Achado e registrado (não corrigido): NPS picker do checkout lista pacientes errados. **OTA enviada** (commits `5eaab52`+`5ac50a5`, groups `c0170fc2`/`8d701be8`).
