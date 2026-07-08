@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
+import { secureStore as SecureStore } from '../utils/secureStoreWeb';
 import { supabase } from '../services/supabase';
 
 // 0 = bloqueia imediatamente ao retornar do background (Face ID sempre).

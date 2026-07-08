@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 23/Junho/2026 (sessão 2).
+> Última atualização: 8/Julho/2026.
 
 ---
 
@@ -284,6 +284,19 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 - **🔑 Sentry DSN configurado:** `EXPO_PUBLIC_SENTRY_DSN` setado em `.env`.
 
+### ✅ Resolvido na sessão 7-8/jul (página de recebimento + feed social)
+
+- **💰 Página pessoal de recebimento do founder** — `admin/app/meu-recebimento/page.tsx`, restrita por e-mail (`guilherme.pasquetti@gmail.com`, `notFound()` pra qualquer outro admin; link na sidebar só aparece pra ele). Calcula salário-base (R$4.000 até ago/2026, R$6.000 a partir de set/2026 **só se** `CONTRATO_RENOVADO=true` no topo do arquivo) + comissão em alíquota única (cliff) sobre faturamento total do mês conforme ocupação de sala: 8% até 30%, 12% até 60%, 15% acima. Ocupação = horas reservadas ÷ (salas × dias do mês × 15h), mesma métrica do Mapa do Dia. **Lembrete agendado pra 05/09/2026** perguntando se o contrato foi renovado (pra virar o switch do salário). Commit `158fb6d`.
+
+- **📱 Feed social interno na Comunidade** — `comunidade.tsx` ganhou switcher **Feed / Colegas** (era só diretório antes) com **swipe horizontal** pra trocar de aba (`PanResponder` nativo, sem lib nova) + animação de slide. Feed: posts de texto livre (sem categoria fixa), curtir, comentar (1 nível, sem thread), autor apaga próprio post. Schema novo: `community_posts`/`community_post_likes`/`community_post_comments` com RLS (bloqueia post de usuário `comunidade_banned` — reusa coluna de moderação que já existia). Migration `20260707_community_feed.sql` aplicada em produção. Novo `src/services/communityService.ts`, componente `src/components/community/PostFeed.tsx`.
+  - **Admin:** `/comunidade` lista todos os posts + apaga qualquer um (moderação), link na sidebar.
+  - **Cards de profissional enriquecidos:** `profiles` ganhou colunas `whatsapp` + `subespecialidades` (text[]). Editáveis em `perfil.tsx` (WhatsApp como `EditableRow`, subespecialidades via `TagInput.tsx` novo — até 5 tags livres). Aparecem no `ProfessionalDetailModal` (WhatsApp em REDES SOCIAIS, subespecialidades em card próprio).
+  - **🐛 Fix Instagram duplicando `@`:** placeholder sugeria digitar com `@`, mas exibição já prefixava `@` → ficava `@@handle`. Corrigido nos 3 pontos: `perfil.tsx` salva sem `@` (`.replace(/^@/, '')`), exibição e link do card também normalizam (defensivo pra quem já salvou torto antes do fix).
+  - **Fora de escopo (registrado, não construído):** compartilhar/repost, mídia em post, notificação push de curtida/comentário, edição de post, busca por subespecialidade, swipe entre as abas inferiores do app (só dentro de Comunidade por ora — mudar a navegação principal é risco maior, ver pedido do fundador).
+  - Commit `458f805` (feature) + `0d8db0d` (handoff anterior). **OTA ainda não enviada** — só testado via `expo start` local (LAN/hotspot + Expo Go) nesta sessão.
+
+- **🐛 Fix Expo web SSR quebrando (achado ao testar preview):** `expo-secure-store` e o storage do Supabase Auth (`AsyncStorage`→`localStorage`) não têm guard pra ambiente SSR do Expo web (`window` indefinido em Node) — crash total ao abrir `expo start --web`. Guard `Platform.OS==='web'` adicionado em `src/services/supabase.ts` e novo `src/utils/secureStoreWeb.ts` (usado por `useAppLock.ts` + `communicareSSO.ts`). **Zero efeito no app nativo** (guard só ativa em `Platform.OS==='web'`, que o app não usa em produção — só ajuda quem quiser rodar preview web local). App não tem alvo web oficial (só iOS/Android); outros módulos nativos (câmera, picker etc.) provavelmente ainda quebram no preview web, não foram testados.
+
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
    - ✅ `URL Configuration` → Redirect URLs adicionadas. Reset de senha FUNCIONANDO.
@@ -301,6 +314,8 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 ~~11. **🍎 App Store Connect**~~ ✅ **RESOLVIDO** — argumento 3.1.5(b) (serviço físico) **aceito pela Apple**. App **publicado** na App Store.
 ~~12. **OTA pendente**~~ ✅ **ENVIADA (6/jul)** — commit `8f55c8b`. Update group ID prod `502b009d-44a8-479f-9c46-3b9dad0924df` / preview `5086acf8-73b1-4ec5-8caf-6122019559a0`. Inclui: welcome screen, fix Face ID routing, fix Dr./Dra. (ícone neutro + anti-duplicação), preços DB.
 13. **Login social (Google + Apple)** — deferido para após aprovação da produção. Requer rebuild nativo (versionCode 3). Ver memory `project-roadmap`.
+14. **🆕 OTA pendente (feed social)** — commit `458f805` só testado localmente (`expo start`), não foi pra produção/preview ainda. Rodar `eas update` nos 2 canais quando aprovado.
+15. **🆕 Lembrete 05/09/2026** — tarefa agendada pra perguntar se contrato renovou (salário founder 4000→6000). Ver `admin/app/meu-recebimento/page.tsx` (`CONTRATO_RENOVADO`).
 
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
@@ -341,3 +356,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (23/jun sessão 2):** Sessão focada em **segurança, qualidade de dados e fonte única de verdade**. Resolvidos: gate de reserva server-side, oli_encrypt restrito, limpeza de teste (12 usage_charges + 3 contas), hard delete admin, salas dinâmicas admin, labels financeiro, pacotes de horas + módulos lidos do DB em runtime. **Play Store: Google aprovou closed testing** — enviar link de opt-in aos 12 testers → aguardar 14 dias. **App Store Connect: `eas submit` falhou com 500 da Apple** — re-rodar `eas submit --platform ios --id 2ea6728b-27bc-4aac-b447-37c91fb6ad3e` quando ASC estabilizar, depois preencher metadata + submit for review. Pendências: OTA production + ASC metadata+submit + foto Sala 4.
 
 **Resumo de 1 linha (6/jul):** Sessão focada em **publicação iOS e UX de entrada**. Screenshots iOS redimensionadas para 1284×2778 (`assets/Print Screen App iOS/resized-65/`). ASC preenchido (metadata pt-BR, App Privacy, Medical, Free) e build 1.0.0(1) submetido → rejeitado 3.1.1 (IAP) → argumento 3.1.5(b) serviço físico enviado à Apple → **aceito, app publicado na App Store**. `buildNumber` iOS atualizado `1→2` (próximo rebuild). Fix ícones Dr./Dra. no onboarding (prop `flex` no `OptionCard`). Nova tela `app/welcome.tsx` (boas-vindas antes do login). Fix Face ID loop: `session && (inLogin || inWelcome)` no routing do `_layout.tsx`. **OTA acumulada ainda não enviada** — rodar agora que app está publicado.
+
+**Resumo de 1 linha (7-8/jul):** Sessão focada em **página de recebimento do founder + feed social na Comunidade**. OTA da sessão 6/jul enviada (`8f55c8b`, groups `502b009d`/`5086acf8`). Nova `/meu-recebimento` no Admin (salário+comissão por ocupação, só o founder vê, lembrete agendado 05/09 pra checar renovação de contrato). Comunidade virou parcialmente rede social: feed de posts (curtir/comentar), switcher Feed/Colegas com swipe, WhatsApp+subespecialidades no perfil/card, moderação de posts no Admin. Fix bug de `@` duplicado no Instagram. Testado ponta-a-ponta em device real via `expo start` (LAN de casa não funcionou por isolamento de rede — contornado com hotspot do Mac e depois WiFi da clínica). Achado e corrigido de brinde: crash de SSR no Expo web (Supabase/SecureStore sem guard pra `window` indefinido) — não afeta o app nativo. **Pendente: OTA do feed social ainda não enviada** (commit `458f805`).

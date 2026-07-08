@@ -62,7 +62,7 @@ export default function PerfilScreen() {
         especialidade:                especialidade.trim() || null,
         bio:                          bio.trim()   || null,
         consultation_duration_minutes: durationMin,
-        instagram:                    instagram.trim() || null,
+        instagram:                    instagram.trim().replace(/^@/, '') || null,
         linkedin:                     linkedin.trim()  || null,
         website:                      website.trim()   || null,
         whatsapp:                     whatsapp.trim()  || null,

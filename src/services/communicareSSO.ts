@@ -7,7 +7,7 @@
  * identidade ao médico; SSO acontece em paralelo.
  */
 
-import * as SecureStore from 'expo-secure-store';
+import { secureStore as SecureStore } from '../utils/secureStoreWeb';
 import { supabase } from './supabase';
 import { ccSSO, ccIsConfigured } from './communicareApi';
 

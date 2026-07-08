@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, RefreshControl, Modal, Image, Linking, Alert, ActivityIndicator,
+  StyleSheet, RefreshControl, Modal, Image, Linking, Alert, ActivityIndicator, Animated, PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -362,7 +362,7 @@ function ProfessionalDetailModal({
               {instagram && (
                 <TouchableOpacity
                   style={[detailStyles.socialRow, (whatsapp || false) && detailStyles.socialRowBorder]}
-                  onPress={() => openUrl(`https://instagram.com/${instagram}`)}
+                  onPress={() => openUrl(`https://instagram.com/${instagram.replace(/^@/, '')}`)}
                   accessibilityLabel={`Ver Instagram de ${profile.nome}`}
                 >
                   <View style={[detailStyles.socialIcon, { backgroundColor: '#E1306C15' }]}>
@@ -370,7 +370,7 @@ function ProfessionalDetailModal({
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={detailStyles.socialLabel}>Instagram</Text>
-                    <Text style={detailStyles.socialValue}>@{instagram}</Text>
+                    <Text style={detailStyles.socialValue}>@{instagram.replace(/^@/, '')}</Text>
                   </View>
                   <Ionicons name="open-outline" size={14} color={colors.gray} />
                 </TouchableOpacity>
@@ -462,6 +462,48 @@ export default function ComunidadeScreen() {
   const [showPastEvts,    setShowPastEvts]    = useState(false);
   const [showScrollHint,  setShowScrollHint]  = useState(true);
   const [activeTab,       setActiveTab]       = useState<'diretorio' | 'feed'>('diretorio');
+  const contentOpacity   = useRef(new Animated.Value(1)).current;
+  const contentTranslateX = useRef(new Animated.Value(0)).current;
+  const activeTabRef     = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  // Ordem visual dos tabs (Feed à esquerda, Colegas à direita) — usada tanto
+  // pro tap na pill quanto pro swipe, pra animação seguir sempre a mesma direção.
+  const TAB_ORDER: ('feed' | 'diretorio')[] = ['feed', 'diretorio'];
+
+  function switchTab(tab: 'diretorio' | 'feed') {
+    if (tab === activeTab) return;
+    const goingForward = TAB_ORDER.indexOf(tab) > TAB_ORDER.indexOf(activeTab);
+    const outTo = goingForward ? -32 : 32;
+    Animated.parallel([
+      Animated.timing(contentOpacity,    { toValue: 0,     duration: 120, useNativeDriver: true }),
+      Animated.timing(contentTranslateX, { toValue: outTo, duration: 120, useNativeDriver: true }),
+    ]).start(() => {
+      setActiveTab(tab);
+      contentTranslateX.setValue(-outTo);
+      Animated.parallel([
+        Animated.timing(contentOpacity,    { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(contentTranslateX, { toValue: 0, duration: 180, useNativeDriver: true }),
+      ]).start();
+    });
+  }
+
+  // Swipe horizontal na área de conteúdo troca de aba — não intercepta scroll
+  // vertical (só ativa quando o gesto é claramente mais horizontal que vertical).
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, gesture) =>
+        Math.abs(gesture.dx) > 20 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 2,
+      onPanResponderRelease: (_evt, gesture) => {
+        const idx = TAB_ORDER.indexOf(activeTabRef.current);
+        if (gesture.dx < -50 && idx < TAB_ORDER.length - 1) {
+          switchTab(TAB_ORDER[idx + 1]);
+        } else if (gesture.dx > 50 && idx > 0) {
+          switchTab(TAB_ORDER[idx - 1]);
+        }
+      },
+    }),
+  ).current;
 
   const load = async () => {
     const { data } = await supabase
@@ -539,11 +581,11 @@ export default function ComunidadeScreen() {
         </View>
       </View>
 
-      {/* Feed / Diretório */}
+      {/* Feed / Colegas */}
       <View style={styles.tabSwitcher}>
         <TouchableOpacity
           style={[styles.tabPill, activeTab === 'feed' && styles.tabPillActive]}
-          onPress={() => setActiveTab('feed')}
+          onPress={() => switchTab('feed')}
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === 'feed' }}
           accessibilityLabel="Ver feed da comunidade"
@@ -552,15 +594,19 @@ export default function ComunidadeScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabPill, activeTab === 'diretorio' && styles.tabPillActive]}
-          onPress={() => setActiveTab('diretorio')}
+          onPress={() => switchTab('diretorio')}
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === 'diretorio' }}
-          accessibilityLabel="Ver diretório de profissionais"
+          accessibilityLabel="Ver colegas da comunidade"
         >
-          <Text style={[styles.tabPillText, activeTab === 'diretorio' && styles.tabPillTextActive]}>Diretório</Text>
+          <Text style={[styles.tabPillText, activeTab === 'diretorio' && styles.tabPillTextActive]}>Colegas</Text>
         </TouchableOpacity>
       </View>
 
+      <Animated.View
+        style={{ flex: 1, opacity: contentOpacity, transform: [{ translateX: contentTranslateX }] }}
+        {...panResponder.panHandlers}
+      >
       {activeTab === 'feed' ? (
         <ScrollView contentContainerStyle={styles.feedScroll}>
           <PostFeed />
@@ -697,6 +743,7 @@ export default function ComunidadeScreen() {
           </ScrollView>
         </>
       )}
+      </Animated.View>
 
       {activeTab === 'diretorio' && <ScrollMoreIndicator visible={showScrollHint} />}
     </SafeAreaView>
