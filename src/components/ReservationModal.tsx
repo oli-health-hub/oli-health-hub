@@ -30,7 +30,7 @@ const DAY_LABELS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 // ─── Geração de slots ─────────────────────────────────────────────────────────
 
 function buildStartSlots(date: Date, reservations: Reservation[], roomName: string): Date[] {
-  if (date.getDay() === 0 || date.getDay() === 6) return [];
+  if (date.getDay() === 0) return [];
 
   const slots: Date[] = [];
   const dayStart = new Date(date); dayStart.setHours(8, 0, 0, 0);
@@ -118,7 +118,7 @@ function DayStrip({
         const key        = toKey(d);
         const isSelected = toKey(selected) === key;
         const isToday    = toKey(d) === toKey(today);
-        const isWeekend  = d.getDay() === 0 || d.getDay() === 6;
+        const isWeekend  = d.getDay() === 0;
         const hasReserv  = reservedDates.has(key);
 
         return (
@@ -256,7 +256,7 @@ export function ReservationModal({
     }
   };
 
-  const isWeekend = pickedDate.getDay() === 0 || pickedDate.getDay() === 6;
+  const isWeekend = pickedDate.getDay() === 0;
 
   return (
     <SafeAreaProvider>
@@ -294,7 +294,7 @@ export function ReservationModal({
           {isWeekend || startSlots.length === 0 ? (
             <Text style={styles.noSlots}>
               {isWeekend
-                ? 'Sem atendimento nos finais de semana.'
+                ? 'Sem atendimento aos domingos.'
                 : 'Nenhum horário disponível para este dia.'}
             </Text>
           ) : (

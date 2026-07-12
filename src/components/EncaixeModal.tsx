@@ -19,13 +19,13 @@ import type { Patient, Reservation, Room } from '../models/types';
 
 const SLOT_MINUTES = 30;
 
-/** Próximos N dias úteis a partir de hoje (inclui hoje se for dia de semana). */
+/** Próximos N dias úteis a partir de hoje (inclui hoje e sábado; exclui domingo). */
 function nextWeekdays(count: number): Date[] {
   const days: Date[] = [];
   const cur = new Date(); cur.setHours(0, 0, 0, 0);
   while (days.length < count) {
     const dow = cur.getDay();
-    if (dow !== 0 && dow !== 6) days.push(new Date(cur));
+    if (dow !== 0) days.push(new Date(cur));
     cur.setDate(cur.getDate() + 1);
   }
   return days;

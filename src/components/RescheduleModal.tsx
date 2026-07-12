@@ -29,7 +29,7 @@ interface Props {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns the next 14 weekdays (Mon–Fri) starting from tomorrow */
+/** Returns the next 14 dias úteis (Seg–Sáb, sem domingo) starting from tomorrow */
 function buildWeekdays(): Date[] {
   const result: Date[] = [];
   const cursor = new Date();
@@ -38,7 +38,7 @@ function buildWeekdays(): Date[] {
 
   while (result.length < 14) {
     const dow = cursor.getDay();
-    if (dow !== 0 && dow !== 6) result.push(new Date(cursor));
+    if (dow !== 0) result.push(new Date(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
   return result;
@@ -51,7 +51,7 @@ function buildStartSlots(
   roomName: string,
   excludeId: string,
 ): Date[] {
-  if (date.getDay() === 0 || date.getDay() === 6) return [];
+  if (date.getDay() === 0) return [];
 
   const slots: Date[] = [];
   const dayStart = new Date(date); dayStart.setHours(8, 0, 0, 0);
