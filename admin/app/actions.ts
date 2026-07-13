@@ -411,3 +411,37 @@ export async function deletePost(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath('/comunidade');
 }
+
+/** Envia push broadcast (ou pra 1 médico) pra todos os tokens registrados.
+ *  Chama a Expo Push API direto — já estamos server-side com service role. */
+export async function sendBroadcastPush(formData: FormData) {
+  const title            = formData.get('title') as string;
+  const body             = formData.get('body') as string;
+  const professionalId   = (formData.get('professional_id') as string) || null;
+
+  if (!title?.trim() || !body?.trim()) throw new Error('Título e mensagem são obrigatórios.');
+
+  const supabase = await createSupabaseAdmin();
+  let query = supabase.from('push_tokens').select('token');
+  if (professionalId) query = query.eq('professional_id', professionalId);
+  const { data: rows, error } = await query;
+  if (error) throw new Error(error.message);
+  if (!rows || rows.length === 0) return { sent: 0, total: 0 };
+
+  const messages = rows.map((r) => ({ to: r.token, title, body, sound: 'default' as const }));
+  let sent = 0;
+  for (let i = 0; i < messages.length; i += 100) {
+    const chunk = messages.slice(i, i + 100);
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(chunk),
+    });
+    if (!res.ok) continue;
+    const result = await res.json() as { data?: { status: string }[] };
+    sent += result.data?.filter((t) => t.status === 'ok').length ?? 0;
+  }
+
+  revalidatePath('/notificacoes');
+  return { sent, total: messages.length };
+}

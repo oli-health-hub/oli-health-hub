@@ -174,6 +174,7 @@ const NAV = [
       { href: '/medicos',    label: 'Médicos',    Icon: IconUsers,    badge: false },
       { href: '/historico',  label: 'Histórico',  Icon: IconCalendar, badge: false },
       { href: '/comunidade', label: 'Comunidade', Icon: IconChat,     badge: false },
+      { href: '/notificacoes', label: 'Notificações', Icon: IconBell, badge: false },
     ],
   },
   {

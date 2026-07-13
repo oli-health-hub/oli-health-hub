@@ -25,6 +25,8 @@ import { ProfileCompletionCard } from '../../src/components/ProfileCompletionCar
 import { OlicoinsToast } from '../../src/components/OlicoinsToast';
 import { reconcileActionObjectives } from '../../src/services/olicoinsService';
 import { reconcileAchievements } from '../../src/services/achievementsService';
+import { registerPushToken } from '../../src/services/pushService';
+import { captureCityFromLocationOnce } from '../../src/services/locationService';
 import { fetchHourBalance } from '../../src/services/financeiroService';
 import type { HourBalance } from '../../src/services/financeiroService';
 import { sendNPS } from '../../src/services/npsService';
@@ -190,6 +192,23 @@ export default function DashboardScreen() {
   const [showReferralPromo,   setShowReferralPromo]   = useState(false);
   const [calendlyDismissed,   setCalendlyDismissed]   = useState(false);
   const [objectivesToast,     setObjectivesToast]     = useState<{ amount: number } | null>(null);
+
+  // Registra o Expo push token do device pra este profissional (push remoto).
+  useEffect(() => {
+    const professionalId = session?.user?.id;
+    if (!professionalId) return;
+    void registerPushToken(professionalId);
+  }, [session?.user?.id]);
+
+  // Localização sutil, 1x só — pede permissão (se ainda não decidida) e preenche
+  // cidade/UF automaticamente. Nunca pergunta de novo depois que o SO já decidiu.
+  useEffect(() => {
+    const professionalId = session?.user?.id;
+    if (!professionalId) return;
+    captureCityFromLocationOnce(professionalId, profile?.cidade_uf ?? null).then(cidadeUf => {
+      if (cidadeUf && profile) setProfile({ ...profile, cidade_uf: cidadeUf });
+    });
+  }, [session?.user?.id]);
 
   // Reconcilia objetivos de ação + conquistas por quantidade uma vez por sessão —
   // credita Olicoins de coisas que o profissional já fez (mesmo antes da feature existir).

@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.oli.healthhub",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "Usamos a câmera para escanear o QR Code de checkout da sala e para tirar foto de perfil.",
         "NSPhotoLibraryUsageDescription": "Acesse sua galeria para escolher uma foto de perfil.",
@@ -23,6 +23,7 @@
         "NSCalendarsUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
         "NSCalendarsFullAccessUsageDescription": "Salvamos suas reservas de sala na agenda do iPhone.",
         "NSFaceIDUsageDescription": "Usamos o Face ID para proteger o acesso ao app e desbloquear após inatividade.",
+        "NSLocationWhenInUseUsageDescription": "Usamos sua localização só uma vez pra saber de qual cidade você é — não rastreamos sua posição.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -32,7 +33,7 @@
         "backgroundColor": "#F4EFEA"
       },
       "package": "com.oli.healthhub",
-      "versionCode": 2,
+      "versionCode": 3,
       "allowBackup": false,
       "permissions": [
         "android.permission.CAMERA",
@@ -40,7 +41,8 @@
         "android.permission.WRITE_CALENDAR",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -83,6 +85,12 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#5F7D67"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Usamos sua localização só uma vez pra saber de qual cidade você é — não rastreamos sua posição."
         }
       ],
       "expo-font"

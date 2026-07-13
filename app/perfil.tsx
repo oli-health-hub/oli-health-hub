@@ -19,6 +19,7 @@ import { ProfileCompletionCard } from '../src/components/ProfileCompletionCard';
 import { OlicoinsBadge } from '../src/components/OlicoinsBadge';
 import { OlicoinsToast } from '../src/components/OlicoinsToast';
 import { creditOlicoins } from '../src/services/olicoinsService';
+import { unregisterPushToken } from '../src/services/pushService';
 import { PROFILE_SECTIONS } from '../src/utils/profileSections';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
@@ -341,6 +342,7 @@ export default function PerfilScreen() {
         text: 'Sair',
         style: 'destructive',
         onPress: async () => {
+          if (session?.user?.id) await unregisterPushToken(session.user.id);
           await signOut();
           router.replace('/login');
         },

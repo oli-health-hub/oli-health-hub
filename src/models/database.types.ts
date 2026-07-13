@@ -924,6 +924,38 @@ export type Database = {
           },
         ]
       }
+      push_tokens: {
+        Row: {
+          id: string
+          platform: string | null
+          professional_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          platform?: string | null
+          professional_id: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          platform?: string | null
+          professional_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
         Row: {
           beneficio_aplicado: boolean
