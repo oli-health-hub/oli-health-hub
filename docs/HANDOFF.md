@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 8/Julho/2026 (sessão 2).
+> Última atualização: 12/Julho/2026.
 
 ---
 
@@ -323,6 +323,26 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 - Commits `5eaab52` (fix fotos sala) + `5ac50a5` (feature onboarding+gamificação). **OTA enviada** — prod `c0170fc2-d00b-4458-a0e2-718c297f6709` / preview `8d701be8-7c74-480c-bf0b-61417d48bd6b`.
 
+### ✅ Resolvido na sessão 12/jul (sábado liberado + push notifications + localização)
+
+- **🗓️ Sábado liberado no mesmo horário dos dias úteis:** `ReservationModal`, `RescheduleModal` e `EncaixeModal` bloqueavam sábado junto com domingo (`getDay()===0 || getDay()===6`). Agora só domingo fecha — sábado usa o mesmo 08:00–18:30 e mesma lógica de slots. Commit `8a1e5fd`. OTA prod `789d4a6f-dd8b-45d8-916f-f0444b3e1a9d` / preview `1f3d207a-0862-4876-8712-606c594091cb`.
+
+- **🔔 Push notifications remotas — ativo, sem precisar de rebuild** (`expo-notifications` já estava no binário publicado, foi tudo por OTA):
+  - `push_tokens` (migration): 1 token por device/profissional, RLS própria linha (select/insert/update/delete só o dono).
+  - `src/services/pushService.ts`: `registerPushToken` no login (Início), `unregisterPushToken` no logout (Perfil).
+  - Edge function `send-push` (deployada, v1 ACTIVE): aceita JWT de admin OU `service_role`, dispara via Expo Push API em chunks de 100, limpa tokens mortos (`DeviceNotRegistered`).
+  - **Admin → Notificações** (`/notificacoes`, novo item na sidebar): formulário de broadcast manual (título+mensagem pra todos os devices), usa `createSupabaseAdmin` direto — não depende do secret abaixo.
+  - **3 campanhas automáticas** via `pg_cron` + `pg_net` (extensões habilitadas nesta sessão): `push_lembrete_reserva_amanha` (diário 18h BRT — quem tem reserva amanhã), `push_reacao_inatividade` (diário — 7 e 14 dias sem login, via `auth.users.last_sign_in_at`), `push_objetivos_pendentes` (segunda-feira — nudge de perfil incompleto, replica em SQL puro as 10 seções de `profileSections.ts`).
+  - **⚠️ Pendência de setup manual (só o fundador, nunca cola a key aqui no chat):** os cron jobs leem a service_role key de `vault.decrypted_secrets` (secret `service_role_key`) — ainda não criada. Rodar 1x no **SQL Editor do painel Supabase**: `select vault.create_secret('<cola a Service Role Key de Settings → API>', 'service_role_key');`. Sem isso as campanhas rodam mas saem em silêncio (`raise notice`), sem push nenhum. Broadcast manual do Admin funciona independente disso.
+
+- **📍 Localização sutil — código pronto, mas INERTE até rebuild nativo** (`expo-location` é módulo novo, não linkado no binário atual, não vai por OTA):
+  - `src/services/locationService.ts` (`captureCityFromLocationOnce`): pede permissão 1x (nunca reprompta — usa o próprio estado do SO pra saber se já foi decidido), reverse-geocode só pra preencher `profiles.cidade_uf` quando vazio. Zero tracking contínuo, zero coordenadas salvas.
+  - Chamado silenciosamente no Início junto do registro de push token.
+  - `app.json`: `NSLocationWhenInUseUsageDescription` (iOS) + `ACCESS_COARSE_LOCATION` (Android) + plugin `expo-location`, **versionCode/buildNumber bumped pra 3** — batched com o login social que já estava na fila (evita 2 submissions separadas pra loja).
+  - **Ativa só depois do próximo `eas build` + submit.** Testar em device real antes de submeter (Expo Go/`expo start` não tem o módulo nativo linkado).
+
+- Commit `08406a3`. **OTA enviada** — prod `9ea30a10-6654-4898-aff5-818d6ca7955e` / preview `ad274cb8-2665-4710-a1d3-40e4f478244c`.
+
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
    - ✅ `URL Configuration` → Redirect URLs adicionadas. Reset de senha FUNCIONANDO.
@@ -386,3 +406,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (7-8/jul):** Sessão focada em **página de recebimento do founder + feed social na Comunidade**. OTA da sessão 6/jul enviada (`8f55c8b`, groups `502b009d`/`5086acf8`). Nova `/meu-recebimento` no Admin (salário+comissão por ocupação, só o founder vê, lembrete agendado 05/09 pra checar renovação de contrato). Comunidade virou parcialmente rede social: feed de posts (curtir/comentar), switcher Feed/Colegas com swipe, WhatsApp+subespecialidades no perfil/card, moderação de posts no Admin. Fix bug de `@` duplicado no Instagram. Testado ponta-a-ponta em device real via `expo start` (LAN de casa não funcionou por isolamento de rede — contornado com hotspot do Mac e depois WiFi da clínica). Achado e corrigido de brinde: crash de SSR no Expo web (Supabase/SecureStore sem guard pra `window` indefinido) — não afeta o app nativo. **OTA do feed social enviada** (commit `6d8eff4`, groups `1b7e983d`/`e13ecccc`).
 
 **Resumo de 1 linha (8/jul sessão 2):** Sessão focada em **onboarding enxuto + gamificação (Olicoins)**. Fix RLS do upload de avatar (faltava policy SELECT no bucket) e fix clique nas miniaturas de foto de sala. Onboarding cortado de 5 steps pra 1 tela (WhatsApp+CRM); resto virou 10 seções de perfil + 11 objetivos de ação + 5 trilhas de conquista, tudo creditando Olicoins num ledger novo, com reconciliação automática/retroativa, barra de progresso animada e hub visual em grid de medalhas (`completar-perfil.tsx`). Badge flutuante "Agendar visita" linkando Calendly (modo otimista, sem webhook — plano free). Achado e registrado (não corrigido): NPS picker do checkout lista pacientes errados. **OTA enviada** (commits `5eaab52`+`5ac50a5`, groups `c0170fc2`/`8d701be8`).
+
+**Resumo de 1 linha (12/jul):** Sessão focada em **agenda de sábado + comunicação com o cliente (push notifications) + fundação de localização**. Sábado liberado no mesmo horário dos dias úteis nos 3 fluxos de reserva (só domingo fecha). Sistema de push remoto completo: `push_tokens` + edge function `send-push` + broadcast manual no Admin (`/notificacoes`) + 3 campanhas automáticas via `pg_cron`/`pg_net` (lembrete de reserva, reação a inatividade 7/14 dias, nudge de objetivos pendentes) — tudo foi por OTA, sem rebuild, porque `expo-notifications` já estava no binário. **Pendência do fundador:** criar secret `service_role_key` no Vault do Supabase (SQL Editor, nunca aqui no chat) pras campanhas automáticas disparar de verdade. `expo-location` instalado pra captura sutil de cidade/UF (1x, sem tracking) — código pronto mas inerte até o próximo rebuild nativo (versionCode/buildNumber já bumped pra 3, batched com o login social). Commits `8a1e5fd` + `08406a3`. **OTA enviada** (groups `789d4a6f`/`1f3d207a` e `9ea30a10`/`ad274cb8`).
