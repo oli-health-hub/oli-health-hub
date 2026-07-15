@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 12/Julho/2026.
+> Última atualização: 15/Julho/2026.
 
 ---
 
@@ -170,9 +170,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - Textos: `docs/PLAY_STORE_LISTING.md` (short/full desc, Data Safety, Content rating IARC, App access, target audience).
 - Conta demo revisor: `revisor.google@olihealthhub.com.br` / `RevisorOLI@2026` (plano BASE, onboarding completo).
 
-**Próximo passo (fundador):**
-1. Enviar link de opt-in do closed testing para os 12 testers → contador de 14 dias começa com o primeiro opt-in.
-2. Após 14 dias → Play Console → Teste fechado → Promover para Produção.
+**✅ PUBLICADO EM PRODUÇÃO (13/jul).** Faixa Produção configurada (países/regiões + versão) e enviada — app live na Google Play Store. Sem próximo passo pendente aqui.
 
 ## 11. PENDÊNCIAS / próximos passos
 
@@ -333,7 +331,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
   - Edge function `send-push` (deployada, v1 ACTIVE): aceita JWT de admin OU `service_role`, dispara via Expo Push API em chunks de 100, limpa tokens mortos (`DeviceNotRegistered`).
   - **Admin → Notificações** (`/notificacoes`, novo item na sidebar): formulário de broadcast manual (título+mensagem pra todos os devices), usa `createSupabaseAdmin` direto — não depende do secret abaixo.
   - **3 campanhas automáticas** via `pg_cron` + `pg_net` (extensões habilitadas nesta sessão): `push_lembrete_reserva_amanha` (diário 18h BRT — quem tem reserva amanhã), `push_reacao_inatividade` (diário — 7 e 14 dias sem login, via `auth.users.last_sign_in_at`), `push_objetivos_pendentes` (segunda-feira — nudge de perfil incompleto, replica em SQL puro as 10 seções de `profileSections.ts`).
-  - **⚠️ Pendência de setup manual (só o fundador, nunca cola a key aqui no chat):** os cron jobs leem a service_role key de `vault.decrypted_secrets` (secret `service_role_key`) — ainda não criada. Rodar 1x no **SQL Editor do painel Supabase**: `select vault.create_secret('<cola a Service Role Key de Settings → API>', 'service_role_key');`. Sem isso as campanhas rodam mas saem em silêncio (`raise notice`), sem push nenhum. Broadcast manual do Admin funciona independente disso.
+  - **✅ RESOLVIDO (15/jul):** secret `service_role_key` criado no Vault. **Pegadinha encontrada:** projeto já migrou pro sistema novo de API keys (Settings → API Keys → aba "Publishable and secret API keys") — a key JWT legacy (`eyJ...`, aba "Legacy") **não bate mais** com o `SUPABASE_SERVICE_ROLE_KEY` que as Edge Functions recebem em runtime (retornava 401 "Invalid token"). A key certa é a **secret key nova** (`sb_secret_...`, seção "Secret keys" → linha `default`). Testado ponta-a-ponta via `call_send_push()` direto no SQL Editor → `send-push` retornou 200 `{"sent":2,"total":2,"removed":0}`, push real recebido em 2 devices do fundador. **Lição:** em projetos Supabase migrados pro novo sistema de keys, sempre usar a aba "Publishable and secret API keys" (não "Legacy") ao configurar `service_role_key` em qualquer lugar (Vault, `.env`, CI) — a legacy JWT ainda aparece no dashboard mas não é mais o valor ativo em runtime.
 
 - **📍 Localização sutil — código pronto, mas INERTE até rebuild nativo** (`expo-location` é módulo novo, não linkado no binário atual, não vai por OTA):
   - `src/services/locationService.ts` (`captureCityFromLocationOnce`): pede permissão 1x (nunca reprompta — usa o próprio estado do SO pra saber se já foi decidido), reverse-geocode só pra preencher `profiles.cidade_uf` quando vazio. Zero tracking contínuo, zero coordenadas salvas.
@@ -343,6 +341,41 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 - Commit `08406a3`. **OTA enviada** — prod `9ea30a10-6654-4898-aff5-818d6ca7955e` / preview `ad274cb8-2665-4710-a1d3-40e4f478244c`.
 
+### 🔴 INCIDENTE resolvido (13/jul) — app não abria em produção (iOS)
+- **Causa:** `app/(tabs)/index.tsx` chamava `captureCityFromLocationOnce` (import `expo-location`) direto no mount do Início. Módulo nativo **não estava linkado** no binário publicado (App Store + Play Store) — só entra no próximo rebuild (versionCode/buildNumber 3). Import de módulo nativo não-linkado derrubava a tela Início pra quem recebeu a OTA de 12/jul → `ErrorBoundary` global capturava ("Algo deu errado") e reabria em loop; alguns casos nem chegavam a mostrar o fallback.
+- **Fix:** removida a chamada + import em `index.tsx` (commit `c9574f5`). `src/services/locationService.ts` mantido intacto — reativar (re-adicionar a chamada) só depois do próximo `eas build` que compile `expo-location`.
+- **OTA hotfix enviada** — prod `b5530d83-ec12-48eb-a284-35693dca1637` / preview `be16775c-2382-414d-89b6-230c31329dbf`.
+- **Lição:** código que depende de módulo nativo novo (adicionado via `app.json` plugin) **não pode ser chamado em caminho ativo** antes do rebuild nativo correspondente ir pra loja — só o `import`/require já quebra em binários antigos, mesmo com try/catch na função (o import roda fora do catch). Daqui pra frente, features assim devem ficar behind um guard explícito (feature flag ou try/catch no import dinâmico) até confirmar que o build com o módulo nativo já está em produção.
+
+### ✅ Resolvido na sessão 15/jul (base de usuários limpa + perfis de equipe)
+
+- **🧹 Limpeza da base de usuários:** dos 17 profiles existentes, excluídos 7 (hard delete): `alciambelli@gmail.com` (admin sem função clara), `revisor.google@olihealthhub.com.br` (conta demo Google Play), `idp24g38b0hhf2eg1yt@icloud.com` (conta do App Review Apple), `meloi.michelle@gmail.com` + `mi_eloi@hotmail.com` (Michelle Eloi duplicada), `mi.marangos@gmail.com` + `gui.pasquetti@gmail.com` (a pedido do fundador). Ficaram **10 contas**: founder + 9 profissionais reais. Zero dependência órfã (checado `referido_por`/`coupons.created_by`/`coupon_redemptions` antes de cada delete).
+
+- **🆕 Feature: Perfis de Equipe (founder/especialista/parceiro)** — hoje `profiles` só modelava médico (CRM, especialidade clínica etc.); founder e os especialistas do chatbot (Ana Luiza, Isabella, Amanda, Ronaldo, Olivia — hoje só personas hardcoded em `app/chatbot.tsx`, sem presença na Comunidade) não tinham onde existir. Implementado:
+  - Migration `20260715_team_profile_types.sql`: `profiles_user_type_check` liberado pra `founder`/`specialist`/`partner` (além de `subscriber`/`hour_user`/`admin`). `plan` continua `START` pra esses perfis (irrelevante, só não aparece badge de plano).
+  - `admin/app/actions.ts`: `createTeamProfile` (cria `auth.users` interno via `auth.admin.createUser`, sem e-mail de convite — usa `inviteUser`/`inviteUserByEmail` só pra usuários reais) + `updateTeamProfileFields` (whitelist update, mesmo padrão de `updateProfileFields`). Ambas **zeram sempre** `tratamento`/`crm`/`subespecialidades`/`tipos_atendimento`/`convenios` — perfil de equipe nunca carrega campo clínico, mesmo convertendo um médico existente.
+  - Admin: nova área `/equipe` (lista, `/equipe/novo`, `/equipe/[id]` com zona de perigo pra hard delete). Sidebar novo item "Equipe". `/medicos`, dashboard e `/planos` agora excluem esses `user_type` das contagens/listas.
+  - `/usuarios`: seletor "Converter em Equipe" (Founder/Especialista/Parceiro) tanto na tabela de Admins quanto na de médicos — único jeito de transformar um cadastro **já existente** (não dá pra fazer isso por `/equipe/novo`, que só cria conta nova).
+  - App (`app/(tabs)/comunidade.tsx`): perfis de equipe mostram badge de papel ("Founder"/"Especialista OLI"/"Parceiro") no lugar do badge de plano; seção "Perfil Clínico", "Subespecialidades" e "Indicado por" somem (`!roleBadge` guard); `displayName()` nunca prefixa Dr./Dra. pra esses `user_type`.
+
+- **🐛 3 bugs achados ao rodar o fluxo com a própria conta do founder (converter admin → founder):**
+  1. **Lockout do painel:** `admin/middleware.ts` só liberava `user_type==='admin'` — founder ficava trancado fora do admin inteiro ao converter. Fix: aceita `admin` OU `founder`.
+  2. **Segundo gate esquecido:** `admin/app/login/page.tsx` tinha checagem **própria e separada** do middleware (`!== 'admin'` → signOut + "Acesso não autorizado") — mesmo depois do fix #1, o login continuava rejeitando founder. Fix igual, no mesmo padrão. **Lição:** ao adicionar um novo `user_type` com acesso ao painel, checar TODOS os pontos de auth gate, não só o middleware (grep por `user_type.*admin` pega os dois).
+  3. **Dados clínicos residuais:** converter um médico existente (founder já tinha `tratamento='Dr.'`, `crm`, `subespecialidades=['Clínico Geral']`) não limpava esses campos — sobrava "Dr." no nome e chip de subespecialidade médica no card da Comunidade mesmo com badge de Founder. Fix: `createTeamProfile`/`updateTeamProfileFields` zeram esses campos sempre (não só quando o admin lembra de apagar manualmente).
+  - Perfil do founder convertido e testado ponta-a-ponta: aparece em `/equipe`, sumiu de `/medicos`, card da Comunidade mostra "Founder" limpo (nome sem Dr., sem plano, sem perfil clínico, sem indicação).
+
+- **🎨 Feedback visual ao salvar:** `/equipe/[id]` e `/equipe/novo` eram `<form action={...}>` puro (sem indicação de sucesso — parecia não salvar nada). Convertidos pra client components (`TeamProfileForm.tsx`, `NewTeamProfileForm.tsx`) com `useTransition` — mostra "✓ Salvo" ao editar, redireciona pra `/equipe` ao criar.
+
+- **⚠️ Lição de processo:** mudança em `app/(tabs)/comunidade.tsx` foi commitada mas a OTA só foi rodada numa sessão de retrabalho depois — o fundador testou no app e viu o comportamento antigo (badge de plano, "Indicado por") porque a mudança nunca tinha chegado no bundle. **Sempre rodar `eas update` nos 2 canais logo após editar qualquer arquivo em `app/`/`src/`, no mesmo turno — não deixar acumulado.**
+
+- Commits: `9aa3f6f`, `6a0ee25`, `8eb3dd3`, `9cd13c6`, `41ef75e`, `2fb4a7e` (branch `main`, Vercel auto-deploy). **OTA enviada em 2 rodadas** — 1ª leva (badge + esconde indicação): prod `254c6abc-359c-4279-8030-c1926abade71` / preview `9ccafeb7-1a9b-44d8-b86b-cea663413d62`. 2ª leva (limpa Dr./subespecialidade residual): prod `669e4657-ebd5-41fe-9d88-05b77193c43f` / preview `d2cc665c-3da9-41e3-a792-eea9f74e9929`.
+
+### 🔴 Achado (13/jul) — MRR do admin inflado por assinatura de teste
+- **Sintoma:** tile "MRR Asaas" no admin (`/` e `/financeiro`) mostrava ~R$499, sem nenhuma assinatura BASE/PRO real ativa na DB (`subscriptions` só tinha START/R$0).
+- **Causa:** assinatura **real e ativa no Asaas** (não só na nossa DB) da conta demo do revisor Google Play — cliente "Revisor Google", Plano PRO, **R$5.990,00/Anual** (rateado = R$499,17/mês, batendo exato com o valor exibido). Criada durante a config da conta demo (§10.1) e nunca cancelada — cobrança recorrente real com cartão vinculado, risco de cobrar de verdade no próximo ciclo.
+- **Ação:** fundador confirmou ser teste, vai cancelar direto no Asaas (Cobranças → Assinaturas → lixeira). Depois de cancelar, MRR volta a refletir só clientes reais.
+- **Lição:** contas demo/revisor não devem ter assinatura Asaas real — usar crédito manual (`hour_balance`) ou plano sem cobrança de verdade, nunca uma subscription recorrente de cartão.
+
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
    - ✅ `URL Configuration` → Redirect URLs adicionadas. Reset de senha FUNCIONANDO.
@@ -351,7 +384,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 2. ~~**🔴 Asaas sandbox → produção**~~ ✅ **RESOLVIDO 18/jun**.
 3. ~~**Sentry DSN ausente**~~ ✅ **RESOLVIDO** — `EXPO_PUBLIC_SENTRY_DSN` setado em `.env`.
 4. **Foto sala faltando**: só **Sala 4 (Audio Visual)**. Quando chegar: `assets/room-photos/4a.jpg`, processa com `sips -Z 1200 -s formatOptions 78 4a.jpg --out sala-4.jpg`, registra em `roomPhotos.ts` (key `4`), `eas update`.
-5. **Play Store produção**: Google aprovou closed testing. **Enviar link de opt-in aos 12 testers** → aguardar 14 dias → promover para produção. Ver §10.1.
+5. ~~**Play Store produção**~~ ✅ **RESOLVIDO 13/jul** — app publicado em produção na Google Play Store. Ver §10.1.
 6. ~~**`oli_encrypt`/`oli_decrypt`**~~ ✅ **RESOLVIDO 23/jun** — EXECUTE revogado de `authenticated`.
 7. **Communicare**: aguardar token + endpoint LISTA + status + webhook. Depois remontar card da agenda.
 8. **VIP** preço; **Cron** auto-desativar START 30d sem reserva; **expo-blur** lock screen (rebuild nativo).
@@ -376,6 +409,9 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - `professionalId` sempre explícito nas ops Supabase.
 - Componentes PascalCase, telas kebab-case, mudanças cirúrgicas.
 - LGPD: CPF nunca em texto puro (hash SHA-256); dados de saúde = sensíveis (Art. 11); consentimento com timestamp; audit log (Art. 37); export/delete (Art. 18).
+- **Gramática — "OLI" é substantivo masculino:** sempre "do OLI", "no OLI", "ao OLI" — nunca "da OLI", "na OLI", "à OLI". Vale em qualquer comunicação (push, e-mail, telas do app, docs).
+- Mesmo em copy informal, respeitar concordância verbal — não misturar registro (ex.: "dê uma olhada e marque", nunca "dá uma olhada e marque").
+- Comunicação com o usuário (push, onboarding, UI) não expõe detalhe técnico do produto (hash, criptografia, nome de coluna) — descrever o benefício em linguagem simples (ex.: "fica visível só para você" em vez de "CPF protegido por hash").
 
 ## 13. Comandos úteis
 
@@ -408,3 +444,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (8/jul sessão 2):** Sessão focada em **onboarding enxuto + gamificação (Olicoins)**. Fix RLS do upload de avatar (faltava policy SELECT no bucket) e fix clique nas miniaturas de foto de sala. Onboarding cortado de 5 steps pra 1 tela (WhatsApp+CRM); resto virou 10 seções de perfil + 11 objetivos de ação + 5 trilhas de conquista, tudo creditando Olicoins num ledger novo, com reconciliação automática/retroativa, barra de progresso animada e hub visual em grid de medalhas (`completar-perfil.tsx`). Badge flutuante "Agendar visita" linkando Calendly (modo otimista, sem webhook — plano free). Achado e registrado (não corrigido): NPS picker do checkout lista pacientes errados. **OTA enviada** (commits `5eaab52`+`5ac50a5`, groups `c0170fc2`/`8d701be8`).
 
 **Resumo de 1 linha (12/jul):** Sessão focada em **agenda de sábado + comunicação com o cliente (push notifications) + fundação de localização**. Sábado liberado no mesmo horário dos dias úteis nos 3 fluxos de reserva (só domingo fecha). Sistema de push remoto completo: `push_tokens` + edge function `send-push` + broadcast manual no Admin (`/notificacoes`) + 3 campanhas automáticas via `pg_cron`/`pg_net` (lembrete de reserva, reação a inatividade 7/14 dias, nudge de objetivos pendentes) — tudo foi por OTA, sem rebuild, porque `expo-notifications` já estava no binário. **Pendência do fundador:** criar secret `service_role_key` no Vault do Supabase (SQL Editor, nunca aqui no chat) pras campanhas automáticas disparar de verdade. `expo-location` instalado pra captura sutil de cidade/UF (1x, sem tracking) — código pronto mas inerte até o próximo rebuild nativo (versionCode/buildNumber já bumped pra 3, batched com o login social). Commits `8a1e5fd` + `08406a3`. **OTA enviada** (groups `789d4a6f`/`1f3d207a` e `9ea30a10`/`ad274cb8`).
+
+**Resumo de 1 linha (15/jul):** Sessão focada em **secret do push (fechado), limpeza da base de usuários e feature nova de Perfis de Equipe**. `service_role_key` criado no Vault com a key certa (sistema novo `sb_secret_...`, não a legacy JWT) — push testado e funcionando. Base de 17 usuários reduzida a 10 (7 contas de teste/duplicadas excluídas). Nova feature: `user_type` founder/especialista/parceiro pra dar presença na Comunidade a gente que não é médico (founder, especialistas do chatbot, futuros parceiros), com CRUD completo no admin (`/equipe`) e conversão de conta existente via `/usuarios`. Rollout com o próprio founder revelou 3 bugs (middleware + login page só liberavam `user_type==='admin'`, travando founder fora do painel; dados clínicos residuais não eram limpos ao converter médico existente) — todos corrigidos, mais feedback visual "✓ Salvo" no admin que não existia antes. Lição registrada: mudança em `app/` sem OTA no mesmo turno gera confusão ("não salvou" quando na verdade só não tinha chegado no bundle). Commits `9aa3f6f`…`2fb4a7e`. **OTA enviada em 2 rodadas** (groups `254c6abc`/`9ccafeb7` e `669e4657`/`d2cc665c`).
