@@ -58,18 +58,38 @@ export default async function UsuariosPage() {
                   <td className="px-4 py-3 text-oli-gray">{emailMap[p.id] ?? '—'}</td>
                   <td className="px-4 py-3 text-oli-lgray">{new Date(p.created_at).toLocaleDateString('pt-BR')}</td>
                   <td className="px-4 py-3">
-                    {admins.length > 1 && (
-                      <form action={setUserType}>
-                        <input type="hidden" name="user_id"   value={p.id} />
-                        <input type="hidden" name="user_type" value="subscriber" />
+                    <div className="flex items-center gap-2">
+                      {admins.length > 1 && (
+                        <form action={setUserType}>
+                          <input type="hidden" name="user_id"   value={p.id} />
+                          <input type="hidden" name="user_type" value="subscriber" />
+                          <button
+                            type="submit"
+                            className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-red-50 text-oli-red hover:bg-red-100 transition-colors"
+                          >
+                            Remover admin
+                          </button>
+                        </form>
+                      )}
+                      <form action={setUserType} className="flex items-center gap-1">
+                        <input type="hidden" name="user_id" value={p.id} />
+                        <select
+                          name="user_type"
+                          defaultValue="founder"
+                          className="text-[11px] border border-oli-border rounded-lg px-1.5 py-1"
+                        >
+                          <option value="founder">Founder</option>
+                          <option value="specialist">Especialista</option>
+                          <option value="partner">Parceiro</option>
+                        </select>
                         <button
                           type="submit"
-                          className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-red-50 text-oli-red hover:bg-red-100 transition-colors"
+                          className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                         >
-                          Remover admin
+                          Converter em Equipe
                         </button>
                       </form>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
