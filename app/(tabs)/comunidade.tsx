@@ -167,8 +167,8 @@ function ProfessionalCard({
         {profile.bio ?? 'Nenhuma descrição adicionada ainda.'}
       </Text>
 
-      {/* Indicação */}
-      {referidoPor && (
+      {/* Indicação (perfis de equipe não têm indicador — não faz sentido) */}
+      {referidoPor && !roleBadge && (
         <View style={styles.referralBadge}>
           <Ionicons name="link-outline" size={11} color={colors.oliGold} />
           <Text style={styles.referralText} numberOfLines={1}>
@@ -283,8 +283,8 @@ function ProfessionalDetailModal({
               )}
             </View>
 
-            {/* Indicado por */}
-            {referidoPor && (
+            {/* Indicado por (perfis de equipe não têm indicador) */}
+            {referidoPor && !roleBadge && (
               <View style={detailStyles.referralHero}>
                 <Ionicons name="link-outline" size={13} color={colors.oliGold} />
                 <Text style={detailStyles.referralHeroText}>
