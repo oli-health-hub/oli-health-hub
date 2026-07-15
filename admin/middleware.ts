@@ -34,14 +34,15 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .single();
 
-      if (profile?.user_type === 'admin') {
+      if (profile?.user_type === 'admin' || profile?.user_type === 'founder') {
         return NextResponse.redirect(new URL('/', request.url));
       }
     }
     return supabaseResponse;
   }
 
-  // Rotas protegidas — exige autenticação + user_type = 'admin'
+  // Rotas protegidas — exige autenticação + user_type = 'admin' ou 'founder'
+  // (founder também gerencia o painel, mas aparece como perfil de equipe no app)
   if (!user) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -52,7 +53,7 @@ export async function middleware(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  if (profile?.user_type !== 'admin') {
+  if (profile?.user_type !== 'admin' && profile?.user_type !== 'founder') {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
