@@ -507,6 +507,12 @@ export async function createTeamProfile(formData: FormData) {
       website,
       whatsapp,
       onboarding_complete: true,
+      // Perfis de equipe não são médicos — nunca carregam campos clínicos.
+      tratamento: null,
+      crm: null,
+      subespecialidades: null,
+      tipos_atendimento: null,
+      convenios: null,
     })
     .eq('id', userId);
   if (updateError) throw new Error(updateError.message);
@@ -540,6 +546,14 @@ export async function updateTeamProfileFields(formData: FormData) {
   setIfPresent('website',       'website');
   setIfPresent('whatsapp',      'whatsapp');
   setIfPresent('admin_notes',   'admin_notes');
+
+  // Perfis de equipe não são médicos — nunca carregam campos clínicos,
+  // mesmo que tenham sido herdados de um cadastro de médico convertido.
+  updates.tratamento = null;
+  updates.crm = null;
+  updates.subespecialidades = null;
+  updates.tipos_atendimento = null;
+  updates.convenios = null;
 
   if (Object.keys(updates).length === 0) return;
 

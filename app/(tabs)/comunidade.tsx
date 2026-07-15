@@ -26,6 +26,8 @@ function getInitials(nome: string): string {
 }
 
 function displayName(profile: Profile): string {
+  // Perfis de equipe (founder/especialista/parceiro) não são médicos — nunca prefixa Dr./Dra.
+  if (ROLE_BADGE[profile.user_type]) return profile.nome;
   const t = profile.tratamento;
   // Não duplicar tratamento se o nome já começa com "Dr"/"Dra".
   const nomeJaTemTratamento = /^\s*dra?\.?\s/i.test(profile.nome ?? '');
@@ -356,8 +358,8 @@ function ProfessionalDetailModal({
             </View>
           )}
 
-          {/* ── Subespecialidades ── */}
-          {subespecialidades.length > 0 && (
+          {/* ── Subespecialidades ── (não se aplica a perfis de equipe) */}
+          {subespecialidades.length > 0 && !roleBadge && (
             <View style={[detailStyles.card, shadows.small]}>
               <View style={detailStyles.cardHeader}>
                 <Text style={detailStyles.sectionLabel}>SUBESPECIALIDADES</Text>
