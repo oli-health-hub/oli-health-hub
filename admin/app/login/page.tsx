@@ -32,7 +32,7 @@ export default function LoginPage() {
       .eq('id', data.user.id)
       .single();
 
-    if (profile?.user_type !== 'admin') {
+    if (profile?.user_type !== 'admin' && profile?.user_type !== 'founder') {
       await supabase.auth.signOut();
       setError('Acesso não autorizado para este painel.');
       setLoading(false);
