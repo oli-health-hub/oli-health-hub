@@ -110,16 +110,45 @@ export default async function UsuariosPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <form action={setUserType}>
-                        <input type="hidden" name="user_id"   value={p.id} />
-                        <input type="hidden" name="user_type" value="admin" />
-                        <button
-                          type="submit"
-                          className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-green-50 text-oli-green hover:bg-green-100 transition-colors"
-                        >
-                          Tornar admin
-                        </button>
-                      </form>
+                      <div className="flex items-center gap-2">
+                        <form action={setUserType}>
+                          <input type="hidden" name="user_id"   value={p.id} />
+                          <input type="hidden" name="user_type" value="admin" />
+                          <button
+                            type="submit"
+                            className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-green-50 text-oli-green hover:bg-green-100 transition-colors"
+                          >
+                            Tornar admin
+                          </button>
+                        </form>
+                        {!['founder', 'specialist', 'partner'].includes(p.user_type) ? (
+                          <form action={setUserType} className="flex items-center gap-1">
+                            <input type="hidden" name="user_id" value={p.id} />
+                            <select
+                              name="user_type"
+                              defaultValue="founder"
+                              className="text-[11px] border border-oli-border rounded-lg px-1.5 py-1"
+                            >
+                              <option value="founder">Founder</option>
+                              <option value="specialist">Especialista</option>
+                              <option value="partner">Parceiro</option>
+                            </select>
+                            <button
+                              type="submit"
+                              className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                            >
+                              Converter em Equipe
+                            </button>
+                          </form>
+                        ) : (
+                          <a
+                            href={`/equipe/${p.id}`}
+                            className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                          >
+                            Editar em Equipe →
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
