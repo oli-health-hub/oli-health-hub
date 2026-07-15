@@ -2,6 +2,7 @@
 
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'node:crypto';
 
 /** Altera o plano de um médico */
 export async function changePlan(formData: FormData) {
@@ -302,6 +303,7 @@ export async function softDeleteUser(formData: FormData) {
 
   revalidatePath('/medicos');
   revalidatePath(`/medicos/${userId}`);
+  revalidatePath('/equipe');
 }
 
 /** Hard delete: apaga completamente do auth + todos os dados relacionados (irreversível). */
@@ -321,6 +323,7 @@ export async function hardDeleteUser(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath('/medicos');
+  revalidatePath('/equipe');
 }
 
 /** Adiciona documento ao prontuário do médico (URL já no Storage) */
@@ -444,4 +447,105 @@ export async function sendBroadcastPush(formData: FormData) {
 
   revalidatePath('/notificacoes');
   return { sent, total: messages.length };
+}
+
+// ─── Equipe (founder / especialista / parceiro) ────────────────────────────────
+
+const TEAM_USER_TYPES = ['founder', 'specialist', 'partner'] as const;
+type TeamUserType = (typeof TEAM_USER_TYPES)[number];
+
+function slugify(nome: string) {
+  return nome
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+/** Cria um perfil de equipe (founder/especialista/parceiro) — não é login real,
+ *  só existe pra ter presença na Comunidade do app. Cria um auth.users interno
+ *  (sem enviar e-mail de convite) + preenche os campos relevantes no profiles. */
+export async function createTeamProfile(formData: FormData) {
+  const nome          = (formData.get('nome') as string ?? '').trim();
+  const userType      = formData.get('user_type') as string;
+  const especialidade = (formData.get('especialidade') as string | null)?.trim() || null;
+  const bio            = (formData.get('bio')          as string | null)?.trim() || null;
+  const fotoUrl         = (formData.get('foto_url')     as string | null)?.trim() || null;
+  const instagram       = (formData.get('instagram')    as string | null)?.trim() || null;
+  const linkedin        = (formData.get('linkedin')     as string | null)?.trim() || null;
+  const website          = (formData.get('website')      as string | null)?.trim() || null;
+  const whatsapp         = (formData.get('whatsapp')     as string | null)?.trim() || null;
+
+  if (!nome) throw new Error('Nome é obrigatório.');
+  if (!TEAM_USER_TYPES.includes(userType as TeamUserType)) throw new Error('Tipo de perfil inválido.');
+
+  const supabase = await createSupabaseAdmin();
+  const email = `equipe+${slugify(nome)}-${Date.now().toString(36)}@olihealthhub.com.br`;
+
+  const { data: created, error: createError } = await supabase.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    password: randomUUID(),
+    user_metadata: { nome },
+  });
+  if (createError) throw new Error(createError.message);
+
+  const userId = created.user.id;
+
+  // A linha em profiles já foi criada pelo trigger handle_new_user (plan=START,
+  // user_type=subscriber) — só falta ajustar pros campos de equipe.
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      user_type: userType,
+      especialidade,
+      bio,
+      foto_url: fotoUrl,
+      instagram,
+      linkedin,
+      website,
+      whatsapp,
+      onboarding_complete: true,
+    })
+    .eq('id', userId);
+  if (updateError) throw new Error(updateError.message);
+
+  revalidatePath('/equipe');
+}
+
+/** Atualiza dados de um perfil de equipe (founder/especialista/parceiro) */
+export async function updateTeamProfileFields(formData: FormData) {
+  const userId = formData.get('user_id') as string;
+  if (!userId) throw new Error('user_id obrigatório');
+
+  const updates: Record<string, unknown> = {};
+  const setIfPresent = (key: string, formKey: string) => {
+    const v = formData.get(formKey);
+    if (v !== null) updates[key] = (v as string).trim() || null;
+  };
+
+  const userType = formData.get('user_type') as string | null;
+  if (userType !== null) {
+    if (!TEAM_USER_TYPES.includes(userType as TeamUserType)) throw new Error('Tipo de perfil inválido.');
+    updates.user_type = userType;
+  }
+
+  setIfPresent('nome',          'nome');
+  setIfPresent('especialidade', 'especialidade');
+  setIfPresent('bio',           'bio');
+  setIfPresent('foto_url',      'foto_url');
+  setIfPresent('instagram',     'instagram');
+  setIfPresent('linkedin',      'linkedin');
+  setIfPresent('website',       'website');
+  setIfPresent('whatsapp',      'whatsapp');
+  setIfPresent('admin_notes',   'admin_notes');
+
+  if (Object.keys(updates).length === 0) return;
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/equipe/${userId}`);
+  revalidatePath('/equipe');
 }

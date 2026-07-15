@@ -24,7 +24,7 @@ export default async function MedicosPage() {
   const { data: medicos } = await supabase
     .from('profiles')
     .select('id, nome, crm, especialidade, plan, created_at, assessorias_atuais')
-    .neq('user_type', 'admin')
+    .not('user_type', 'in', '(admin,founder,specialist,partner)')
     .order('created_at', { ascending: false })
     .limit(200);
 

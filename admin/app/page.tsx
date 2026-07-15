@@ -169,7 +169,7 @@ export default async function HomePage() {
     { data: receitaLastMes },
     { data: todasReservasHoje },
   ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('user_type', 'admin'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).not('user_type', 'in', '(admin,founder,specialist,partner)'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
     supabase.from('reservations').select('id, status').gte('start_time', todayStart.toISOString()).lte('start_time', todayEnd.toISOString()).not('status', 'in', '("nao_compareceu")'),
     supabase.from('reservations').select('id').gte('start_time', ystStart.toISOString()).lte('start_time', ystEnd.toISOString()).not('status', 'in', '("nao_compareceu")'),

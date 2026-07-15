@@ -155,6 +155,14 @@ function IconQR() {
   );
 }
 
+function IconStar() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.5l2.9 6.2 6.6.7-5 4.6 1.4 6.6L12 17.3l-5.9 3.3 1.4-6.6-5-4.6 6.6-.7z" />
+    </svg>
+  );
+}
+
 // ─── Navegação ────────────────────────────────────────────────────────────────
 
 // Sidebar enxuto: 9 itens em 4 grupos. Páginas consolidadas em /financeiro e /catalogo.
@@ -175,6 +183,7 @@ const NAV = [
       { href: '/historico',  label: 'Histórico',  Icon: IconCalendar, badge: false },
       { href: '/comunidade', label: 'Comunidade', Icon: IconChat,     badge: false },
       { href: '/notificacoes', label: 'Notificações', Icon: IconBell, badge: false },
+      { href: '/equipe',     label: 'Equipe',     Icon: IconStar,     badge: false },
     ],
   },
   {

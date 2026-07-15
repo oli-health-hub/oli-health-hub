@@ -50,6 +50,14 @@ const PLAN_BADGE: Record<string, { label: string; color: string }> = {
   VIP:   { label: 'VIP',   color: '#7B6EA8' },
 };
 
+// Badge de papel pra perfis de equipe (founder/especialista/parceiro) — não são
+// médicos, então não faz sentido mostrar badge de plano/palestrante/NPS/etc.
+const ROLE_BADGE: Record<string, { label: string; color: string }> = {
+  founder:    { label: 'Founder',          color: colors.oliGold },
+  specialist: { label: 'Especialista OLI', color: '#5B7FA6' },
+  partner:    { label: 'Parceiro OLI',     color: '#7B6EA8' },
+};
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
 function AvatarCircle({ profile, size }: { profile: Profile; size: number }) {
@@ -77,6 +85,7 @@ function ProfessionalCard({
 }) {
   const plan        = profile.plan ?? 'START';
   const planBadge   = PLAN_BADGE[plan] ?? PLAN_BADGE.START;
+  const roleBadge   = ROLE_BADGE[profile.user_type];
   const isSpeaker   = (profile as Profile & { is_speaker?: boolean }).is_speaker === true;
   const npsScore    = (profile as Profile & { nps_score?: number | null }).nps_score;
   const isTopRated  = typeof npsScore === 'number' && npsScore >= 8.5;
@@ -90,33 +99,42 @@ function ProfessionalCard({
     >
       {/* ── Badges de gamificação (acima do avatar) ── */}
       <View style={styles.badgeRow}>
-        {/* Plano */}
-        <View style={[styles.planBadge, { backgroundColor: `${planBadge.color}18`, borderColor: `${planBadge.color}40` }]}>
-          <Text style={[styles.planBadgeText, { color: planBadge.color }]}>{planBadge.label}</Text>
-        </View>
-
-        {/* Palestrante */}
-        {isSpeaker && (
-          <View style={styles.speakerBadge}>
-            <Ionicons name="mic" size={10} color={colors.oliGold} />
-            <Text style={styles.speakerBadgeText}>Palestrante</Text>
+        {roleBadge ? (
+          /* Perfil de equipe (founder/especialista/parceiro) — badge de papel, não de plano */
+          <View style={[styles.planBadge, { backgroundColor: `${roleBadge.color}18`, borderColor: `${roleBadge.color}40` }]}>
+            <Text style={[styles.planBadgeText, { color: roleBadge.color }]}>{roleBadge.label}</Text>
           </View>
-        )}
+        ) : (
+          <>
+            {/* Plano */}
+            <View style={[styles.planBadge, { backgroundColor: `${planBadge.color}18`, borderColor: `${planBadge.color}40` }]}>
+              <Text style={[styles.planBadgeText, { color: planBadge.color }]}>{planBadge.label}</Text>
+            </View>
 
-        {/* NPS alto */}
-        {isTopRated && (
-          <View style={styles.topRatedBadge}>
-            <Ionicons name="star" size={10} color="#FFA500" />
-            <Text style={styles.topRatedBadgeText}>Top</Text>
-          </View>
-        )}
+            {/* Palestrante */}
+            {isSpeaker && (
+              <View style={styles.speakerBadge}>
+                <Ionicons name="mic" size={10} color={colors.oliGold} />
+                <Text style={styles.speakerBadgeText}>Palestrante</Text>
+              </View>
+            )}
 
-        {/* Perfil 100% completo (Olicoins) */}
-        {isProfileFullyComplete(profile) && (
-          <View style={styles.completeBadge}>
-            <Ionicons name="ribbon" size={10} color={colors.oliGreen} />
-            <Text style={styles.completeBadgeText}>Perfil completo</Text>
-          </View>
+            {/* NPS alto */}
+            {isTopRated && (
+              <View style={styles.topRatedBadge}>
+                <Ionicons name="star" size={10} color="#FFA500" />
+                <Text style={styles.topRatedBadgeText}>Top</Text>
+              </View>
+            )}
+
+            {/* Perfil 100% completo (Olicoins) */}
+            {isProfileFullyComplete(profile) && (
+              <View style={styles.completeBadge}>
+                <Ionicons name="ribbon" size={10} color={colors.oliGreen} />
+                <Text style={styles.completeBadgeText}>Perfil completo</Text>
+              </View>
+            )}
+          </>
         )}
       </View>
 
@@ -174,6 +192,7 @@ function ProfessionalDetailModal({
 
   const plan        = profile.plan ?? 'START';
   const planBadge   = PLAN_BADGE[plan] ?? PLAN_BADGE.START;
+  const roleBadge   = ROLE_BADGE[profile.user_type];
   const isSpeaker   = (profile as Profile & { is_speaker?: boolean }).is_speaker === true;
   const npsScore    = (profile as Profile & { nps_score?: number | null }).nps_score;
   const isTopRated  = typeof npsScore === 'number' && npsScore >= 8.5;
@@ -236,22 +255,31 @@ function ProfessionalDetailModal({
 
             {/* Badges no hero */}
             <View style={detailStyles.heroBadgeRow}>
-              <View style={[detailStyles.heroPlanBadge, { backgroundColor: `${planBadge.color}18`, borderColor: `${planBadge.color}50` }]}>
-                <Text style={[detailStyles.heroPlanBadgeText, { color: planBadge.color }]}>{planBadge.label}</Text>
-              </View>
-
-              {isSpeaker && (
-                <View style={detailStyles.heroSpeakerBadge}>
-                  <Ionicons name="mic" size={12} color={colors.oliGold} />
-                  <Text style={detailStyles.heroSpeakerText}>Palestrante OLI</Text>
+              {roleBadge ? (
+                /* Perfil de equipe (founder/especialista/parceiro) — badge de papel, não de plano */
+                <View style={[detailStyles.heroPlanBadge, { backgroundColor: `${roleBadge.color}18`, borderColor: `${roleBadge.color}50` }]}>
+                  <Text style={[detailStyles.heroPlanBadgeText, { color: roleBadge.color }]}>{roleBadge.label}</Text>
                 </View>
-              )}
+              ) : (
+                <>
+                  <View style={[detailStyles.heroPlanBadge, { backgroundColor: `${planBadge.color}18`, borderColor: `${planBadge.color}50` }]}>
+                    <Text style={[detailStyles.heroPlanBadgeText, { color: planBadge.color }]}>{planBadge.label}</Text>
+                  </View>
 
-              {isTopRated && (
-                <View style={detailStyles.heroTopBadge}>
-                  <Ionicons name="star" size={12} color="#FFA500" />
-                  <Text style={detailStyles.heroTopText}>Top Avaliado</Text>
-                </View>
+                  {isSpeaker && (
+                    <View style={detailStyles.heroSpeakerBadge}>
+                      <Ionicons name="mic" size={12} color={colors.oliGold} />
+                      <Text style={detailStyles.heroSpeakerText}>Palestrante OLI</Text>
+                    </View>
+                  )}
+
+                  {isTopRated && (
+                    <View style={detailStyles.heroTopBadge}>
+                      <Ionicons name="star" size={12} color="#FFA500" />
+                      <Text style={detailStyles.heroTopText}>Top Avaliado</Text>
+                    </View>
+                  )}
+                </>
               )}
             </View>
 
@@ -277,54 +305,56 @@ function ProfessionalDetailModal({
             </Text>
           </View>
 
-          {/* ── Perfil Clínico ── */}
-          <View style={[detailStyles.card, shadows.small]}>
-            <View style={detailStyles.cardHeader}>
-              <Text style={detailStyles.sectionLabel}>PERFIL CLÍNICO</Text>
-              <Ionicons name="medical-outline" size={16} color={colors.oliGreen} />
+          {/* ── Perfil Clínico ── (perfis de equipe não são médicos, não mostra) */}
+          {!roleBadge && (
+            <View style={[detailStyles.card, shadows.small]}>
+              <View style={detailStyles.cardHeader}>
+                <Text style={detailStyles.sectionLabel}>PERFIL CLÍNICO</Text>
+                <Ionicons name="medical-outline" size={16} color={colors.oliGreen} />
+              </View>
+
+              <InfoRow icon="calendar-outline" label="Membro desde" value={memberSince} />
+              <InfoRow
+                icon="star-outline"
+                label="Plano"
+                value={planBadge.label}
+                valueColor={planBadge.color}
+                isLast={tiposAtend.length === 0 && convenios.length === 0}
+              />
+
+              {tiposAtend.length > 0 && (
+                <View style={[detailStyles.infoRow, detailStyles.infoRowBorder]}>
+                  <View style={detailStyles.infoIconWrap}>
+                    <Ionicons name="clipboard-outline" size={16} color={colors.oliGreen} />
+                  </View>
+                  <Text style={detailStyles.infoLabel}>Atendimento</Text>
+                  <View style={detailStyles.chipGroup}>
+                    {tiposAtend.map(t => (
+                      <View key={t} style={detailStyles.infoChip}>
+                        <Text style={detailStyles.infoChipText}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {convenios.length > 0 && (
+                <View style={detailStyles.infoRow}>
+                  <View style={detailStyles.infoIconWrap}>
+                    <Ionicons name="card-outline" size={16} color={colors.oliGreen} />
+                  </View>
+                  <Text style={detailStyles.infoLabel}>Convênios</Text>
+                  <View style={detailStyles.chipGroup}>
+                    {convenios.map(c => (
+                      <View key={c} style={detailStyles.infoChip}>
+                        <Text style={detailStyles.infoChipText}>{c}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
-
-            <InfoRow icon="calendar-outline" label="Membro desde" value={memberSince} />
-            <InfoRow
-              icon="star-outline"
-              label="Plano"
-              value={planBadge.label}
-              valueColor={planBadge.color}
-              isLast={tiposAtend.length === 0 && convenios.length === 0}
-            />
-
-            {tiposAtend.length > 0 && (
-              <View style={[detailStyles.infoRow, detailStyles.infoRowBorder]}>
-                <View style={detailStyles.infoIconWrap}>
-                  <Ionicons name="clipboard-outline" size={16} color={colors.oliGreen} />
-                </View>
-                <Text style={detailStyles.infoLabel}>Atendimento</Text>
-                <View style={detailStyles.chipGroup}>
-                  {tiposAtend.map(t => (
-                    <View key={t} style={detailStyles.infoChip}>
-                      <Text style={detailStyles.infoChipText}>{t}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {convenios.length > 0 && (
-              <View style={detailStyles.infoRow}>
-                <View style={detailStyles.infoIconWrap}>
-                  <Ionicons name="card-outline" size={16} color={colors.oliGreen} />
-                </View>
-                <Text style={detailStyles.infoLabel}>Convênios</Text>
-                <View style={detailStyles.chipGroup}>
-                  {convenios.map(c => (
-                    <View key={c} style={detailStyles.infoChip}>
-                      <Text style={detailStyles.infoChipText}>{c}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </View>
+          )}
 
           {/* ── Subespecialidades ── */}
           {subespecialidades.length > 0 && (

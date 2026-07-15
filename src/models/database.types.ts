@@ -1245,13 +1245,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "usage_charges_reservation_id_fkey"
-            columns: ["reservation_id"]
-            isOneToOne: false
-            referencedRelation: "reservations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "usage_charges_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
@@ -1316,13 +1309,6 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "modules"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_modules_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1392,6 +1378,15 @@ export type Database = {
         Args: { p_new_user_id: string; p_referrer_id: string }
         Returns: undefined
       }
+      call_send_push: {
+        Args: {
+          p_body: string
+          p_data?: Json
+          p_professional_id: string
+          p_title: string
+        }
+        Returns: undefined
+      }
       check_auth_rate_limit: { Args: { p_identifier: string }; Returns: Json }
       clear_auth_attempts: {
         Args: { p_identifier: string }
@@ -1403,6 +1398,9 @@ export type Database = {
       is_oli_admin: { Args: never; Returns: boolean }
       oli_decrypt: { Args: { cipher: string }; Returns: string }
       oli_encrypt: { Args: { plain: string }; Returns: string }
+      push_lembrete_reserva_amanha: { Args: never; Returns: undefined }
+      push_objetivos_pendentes: { Args: never; Returns: undefined }
+      push_reacao_inatividade: { Args: never; Returns: undefined }
       record_auth_attempt: {
         Args: { p_identifier: string; p_ip?: string; p_succeeded: boolean }
         Returns: undefined
@@ -1439,7 +1437,6 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
