@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { hasReservationCredit } from '../services/financeiroService';
+import { isRoomConflictError } from '../services/reservationService';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour, formatDate } from '../utils/formatters';
 import { useAndroidBack } from '../hooks/useAndroidBack';
@@ -226,15 +227,19 @@ export function ReservationModal({
         endTime:   selectedEnd!.toISOString(),
       };
 
-      addReservation(reservation);
+      await addReservation(reservation);
 
       if (isCalendarGranted) {
         await saveToCalendar(selectedStart!, selectedEnd!);
       }
 
       onReserve();
-    } catch {
-      Alert.alert('Erro', 'Não foi possível confirmar a reserva. Tente novamente.');
+    } catch (err) {
+      if (isRoomConflictError(err)) {
+        Alert.alert('Sala já reservada', 'Outro profissional reservou essa sala nesse horário. Escolha outro horário.');
+      } else {
+        Alert.alert('Erro', 'Não foi possível confirmar a reserva. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }

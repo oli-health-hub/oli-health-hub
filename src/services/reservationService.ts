@@ -57,6 +57,11 @@ export async function fetchRoomOccupancy(daysAhead = 180): Promise<Reservation[]
   }));
 }
 
+/** Postgres 23P01 = violação da exclusion constraint `reservations_no_room_overlap` (sala já ocupada nesse horário). */
+export function isRoomConflictError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === '23P01';
+}
+
 export async function createReservation(reservation: Reservation, professionalId: string): Promise<void> {
   const { error } = await supabase.from('reservations').insert({
     id:             reservation.id,

@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { communicareService } from '../services/communicare';
+import { isRoomConflictError } from '../services/reservationService';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour, formatDate } from '../utils/formatters';
 import { useAndroidBack } from '../hooks/useAndroidBack';
@@ -168,7 +169,17 @@ export function RescheduleModal({ reservation, onClose, onConfirm }: Props) {
   const handleConfirm = async () => {
     if (!canConfirm) return;
 
-    rescheduleReservation(reservation.id, selectedStart!, selectedEnd!);
+    try {
+      await rescheduleReservation(reservation.id, selectedStart!, selectedEnd!);
+    } catch (err) {
+      Alert.alert(
+        'Sala já reservada',
+        isRoomConflictError(err)
+          ? 'Outro profissional reservou essa sala nesse horário. Escolha outro horário.'
+          : 'Não foi possível reagendar. Tente novamente.',
+      );
+      return;
+    }
 
     const selectedRoom = rooms.find(r => r.name === selectedRoomName);
     if (selectedRoom) {

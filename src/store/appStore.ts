@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import type { Room, Reservation, PlanType } from '../models/types';
-import { createReservation, deleteReservation, updateReservation } from '../services/reservationService';
+import {
+  createReservation, deleteReservation, updateReservation,
+  fetchRoomOccupancy, isRoomConflictError,
+} from '../services/reservationService';
 import { logUsageCharge } from '../services/usageChargeService';
 import {
   scheduleSessionNotifications,
@@ -135,9 +138,11 @@ interface AppStore {
   checkout:       () => void;
   enterBuffer:    () => void;
   enterOvertime:  () => void;
-  addReservation:    (reservation: Reservation) => void;
+  /** Lança se o servidor rejeitar (ex.: conflito de sala — exclusion constraint) — reverte o otimismo local nesse caso. */
+  addReservation:    (reservation: Reservation) => Promise<void>;
   cancelReservation: (id: string) => void;
-  rescheduleReservation: (id: string, newStart: Date, newEnd: Date) => void;
+  /** Lança se o servidor rejeitar (ex.: conflito de sala — exclusion constraint) — reverte o otimismo local nesse caso. */
+  rescheduleReservation: (id: string, newStart: Date, newEnd: Date) => Promise<void>;
   occupyCurrentRoom:     (roomName: string, professionalName: string) => void;
   startRoomUse:            (id: string) => void;
   endRoomUse:              (id: string) => void;
@@ -222,20 +227,35 @@ export const useAppStore = create<AppStore>((set, get) => {
     enterBuffer:   () => set({ isInBuffer: true,  isOvertime: false }),
     enterOvertime: () => get().extendSession(30),
 
-    addReservation: (reservation) => {
+    addReservation: async (reservation) => {
       const byStart = (a: Reservation, b: Reservation) =>
         new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-      const upcoming = [...get().upcomingReservations, reservation].sort(byStart);
+      const prevUpcoming  = get().upcomingReservations;
+      const prevOccupancy = get().roomOccupancy;
+      const upcoming = [...prevUpcoming, reservation].sort(byStart);
       set({
         upcomingReservations: upcoming,
         todayReservations:    upcoming.filter(r => isToday(r.startTime)),
-        roomOccupancy:        [...get().roomOccupancy, reservation].sort(byStart),
+        roomOccupancy:        [...prevOccupancy, reservation].sort(byStart),
       });
       get()._syncNextReservation();
-      // Sync Supabase em background
+
       const professionalId = useAuthStore.getState().session?.user?.id;
-      if (professionalId) {
-        createReservation(reservation, professionalId).catch(() => {});
+      if (!professionalId) return;
+      try {
+        await createReservation(reservation, professionalId);
+      } catch (err) {
+        // Servidor rejeitou (ex.: outro profissional reservou a mesma sala/horário primeiro) — reverte o otimismo local
+        set({
+          upcomingReservations: prevUpcoming,
+          todayReservations:    prevUpcoming.filter(r => isToday(r.startTime)),
+          roomOccupancy:        prevOccupancy,
+        });
+        get()._syncNextReservation();
+        if (isRoomConflictError(err)) {
+          fetchRoomOccupancy().then(o => set({ roomOccupancy: o })).catch(() => {});
+        }
+        throw err;
       }
     },
 
@@ -337,24 +357,40 @@ export const useAppStore = create<AppStore>((set, get) => {
 
     setActiveConsultationId: (id) => set({ activeConsultationId: id }),
 
-    rescheduleReservation: (id, newStart, newEnd) => {
+    rescheduleReservation: async (id, newStart, newEnd) => {
       const patch = (r: Reservation) =>
         r.id === id
           ? { ...r, startTime: newStart.toISOString(), endTime: newEnd.toISOString() }
           : r;
-      const upcoming = get().upcomingReservations.map(patch).sort(
+      const prevUpcoming  = get().upcomingReservations;
+      const prevOccupancy = get().roomOccupancy;
+      const upcoming = prevUpcoming.map(patch).sort(
         (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
       );
       set({
         upcomingReservations: upcoming,
         todayReservations:    upcoming.filter(r => isToday(r.startTime)),
-        roomOccupancy:        get().roomOccupancy.map(patch),
+        roomOccupancy:        prevOccupancy.map(patch),
       });
       get()._syncNextReservation();
-      updateReservation(id, {
-        start_time: newStart.toISOString(),
-        end_time:   newEnd.toISOString(),
-      }).catch(() => {});
+      try {
+        await updateReservation(id, {
+          start_time: newStart.toISOString(),
+          end_time:   newEnd.toISOString(),
+        });
+      } catch (err) {
+        // Servidor rejeitou (ex.: sala já ocupada nesse horário por outro profissional) — reverte o otimismo local
+        set({
+          upcomingReservations: prevUpcoming,
+          todayReservations:    prevUpcoming.filter(r => isToday(r.startTime)),
+          roomOccupancy:        prevOccupancy,
+        });
+        get()._syncNextReservation();
+        if (isRoomConflictError(err)) {
+          fetchRoomOccupancy().then(o => set({ roomOccupancy: o })).catch(() => {});
+        }
+        throw err;
+      }
     },
 
     setRooms: (rooms) => set({ rooms }),
