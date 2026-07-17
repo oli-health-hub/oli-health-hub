@@ -175,7 +175,7 @@ function MonthCalendar({
 
 export default function AgendaScreen() {
   const {
-    rooms, upcomingReservations,
+    rooms, upcomingReservations, roomOccupancy,
     cancelReservation,
   } = useAppStore();
 
@@ -380,7 +380,7 @@ export default function AgendaScreen() {
         {/* ── Grid de salas (2 colunas) ── */}
         <View style={styles.grid}>
           {filteredRooms.map(room => {
-            const segs     = buildDaySegments(selectedDate, upcomingReservations, room.name);
+            const segs     = buildDaySegments(selectedDate, roomOccupancy, room.name);
             const freeText = room.isAvailable ? nextFreeLabel(segs, selectedDate) : 'Ocupada';
             const freeColor = freeText === 'Sem horários livres' || !room.isAvailable
               ? colors.oliLightGray
@@ -487,7 +487,7 @@ export default function AgendaScreen() {
           <RoomDetailModal
             room={selectedRoom}
             selectedDate={selectedDate}
-            reservations={upcomingReservations}
+            reservations={roomOccupancy}
             onClose={() => setShowDetailModal(false)}
             onReserve={() => {
               setShowDetailModal(false);

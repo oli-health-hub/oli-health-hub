@@ -123,6 +123,8 @@ interface AppStore {
   todayReservations:    Reservation[];
   /** Reservas de hoje até ~180 dias à frente — usada por agenda, encaixe e reagendamento (checagem de conflito não pode se limitar a hoje). */
   upcomingReservations: Reservation[];
+  /** Ocupação de sala de TODOS os profissionais (via RPC, RLS não expõe a tabela direto) — única fonte confiável pra checar conflito de sala/horário entre médicos diferentes. */
+  roomOccupancy:        Reservation[];
   rooms:                Room[];
   /** ID da consulta ativa no Communicare — necessário para encerrar dos dois lados */
   activeConsultationId: string | null;
@@ -142,6 +144,7 @@ interface AppStore {
   setActiveConsultationId: (id: string | null) => void;
   setRooms:                (rooms: Room[]) => void;
   setUpcomingReservations: (reservations: Reservation[]) => void;
+  setRoomOccupancy:        (reservations: Reservation[]) => void;
   setConsultationDuration: (minutes: number) => void;
   setUserName:             (name: string) => void;
   setUserPlan:             (plan: PlanType) => void;
@@ -164,6 +167,7 @@ export const useAppStore = create<AppStore>((set, get) => {
 
     todayReservations:    [],
     upcomingReservations: [],
+    roomOccupancy:        [],
     rooms:                INITIAL_ROOMS,
     activeConsultationId: null,
 
@@ -225,6 +229,7 @@ export const useAppStore = create<AppStore>((set, get) => {
       set({
         upcomingReservations: upcoming,
         todayReservations:    upcoming.filter(r => isToday(r.startTime)),
+        roomOccupancy:        [...get().roomOccupancy, reservation].sort(byStart),
       });
       get()._syncNextReservation();
       // Sync Supabase em background
@@ -245,6 +250,7 @@ export const useAppStore = create<AppStore>((set, get) => {
       set({
         upcomingReservations: upcoming,
         todayReservations:    upcoming.filter(r => isToday(r.startTime)),
+        roomOccupancy:        get().roomOccupancy.filter(r => r.id !== id),
         rooms:                updatedRooms,
       });
       get()._syncNextReservation();
@@ -342,6 +348,7 @@ export const useAppStore = create<AppStore>((set, get) => {
       set({
         upcomingReservations: upcoming,
         todayReservations:    upcoming.filter(r => isToday(r.startTime)),
+        roomOccupancy:        get().roomOccupancy.map(patch),
       });
       get()._syncNextReservation();
       updateReservation(id, {
@@ -359,6 +366,8 @@ export const useAppStore = create<AppStore>((set, get) => {
       });
       get()._syncNextReservation();
     },
+
+    setRoomOccupancy: (reservations) => set({ roomOccupancy: reservations }),
 
     setConsultationDuration: (minutes) => set({ consultationDurationMinutes: minutes }),
 

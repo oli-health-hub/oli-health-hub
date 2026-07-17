@@ -1409,6 +1409,16 @@ export type Database = {
       delete_account_data: { Args: { p_user_id: string }; Returns: Json }
       export_my_data: { Args: never; Returns: Json }
       generate_referral_code: { Args: { p_user_id: string }; Returns: string }
+      get_room_occupancy: {
+        Args: { days_ahead?: number }
+        Returns: {
+          end_time: string
+          id: string
+          room_name: string
+          start_time: string
+          status: string
+        }[]
+      }
       is_oli_admin: { Args: never; Returns: boolean }
       oli_decrypt: { Args: { cipher: string }; Returns: string }
       oli_encrypt: { Args: { plain: string }; Returns: string }

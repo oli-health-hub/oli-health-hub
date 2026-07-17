@@ -115,7 +115,7 @@ export function RescheduleModal({ reservation, onClose, onConfirm }: Props) {
   useAndroidBack(onClose);
   const {
     rooms,
-    upcomingReservations,
+    roomOccupancy,
     rescheduleReservation,
   } = useAppStore();
   const { session } = useAuthStore();
@@ -135,15 +135,15 @@ export function RescheduleModal({ reservation, onClose, onConfirm }: Props) {
   );
 
   const startSlots = useMemo(
-    () => buildStartSlots(selectedDate, upcomingReservations, selectedRoomName, reservation.id),
-    [selectedDate, upcomingReservations, selectedRoomName, reservation.id],
+    () => buildStartSlots(selectedDate, roomOccupancy, selectedRoomName, reservation.id),
+    [selectedDate, roomOccupancy, selectedRoomName, reservation.id],
   );
 
   const endSlots = useMemo(
     () => selectedStart
-      ? buildEndSlots(selectedStart, selectedDate, upcomingReservations, selectedRoomName, reservation.id)
+      ? buildEndSlots(selectedStart, selectedDate, roomOccupancy, selectedRoomName, reservation.id)
       : [],
-    [selectedStart, selectedDate, upcomingReservations, selectedRoomName, reservation.id],
+    [selectedStart, selectedDate, roomOccupancy, selectedRoomName, reservation.id],
   );
 
   const handleDaySelect = (idx: number) => {

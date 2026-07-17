@@ -37,6 +37,26 @@ export async function fetchUpcomingReservations(professionalId: string, daysAhea
   return data.map(toReservation);
 }
 
+/**
+ * Ocupação de TODAS as salas por TODOS os profissionais (hoje até `daysAhead` dias no futuro).
+ * Usada só pra checagem de conflito de horário/sala — reservas de outros profissionais não
+ * apareciam aqui antes, então dois médicos podiam reservar a mesma sala no mesmo horário sem aviso.
+ * RLS de `reservations` só libera as próprias linhas, então isso passa pela RPC
+ * `get_room_occupancy` (SECURITY DEFINER) — expõe só sala/horário/status, sem identificar
+ * o outro profissional.
+ */
+export async function fetchRoomOccupancy(daysAhead = 180): Promise<Reservation[]> {
+  const { data, error } = await supabase.rpc('get_room_occupancy', { days_ahead: daysAhead });
+  if (error) throw error;
+  return (data ?? []).map(r => ({
+    id:        r.id,
+    roomName:  r.room_name,
+    startTime: r.start_time,
+    endTime:   r.end_time,
+    status:    r.status as ReservationStatus,
+  }));
+}
+
 export async function createReservation(reservation: Reservation, professionalId: string): Promise<void> {
   const { error } = await supabase.from('reservations').insert({
     id:             reservation.id,
