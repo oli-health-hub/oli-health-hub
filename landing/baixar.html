@@ -35,9 +35,9 @@
   <div class="card">
     <div class="bar"></div>
     <div class="body">
-      <div class="icon">🎁</div>
-      <h1>Você foi indicado!</h1>
-      <p>Baixe o OLI Health Hub e cadastre-se. Ao ativar sua conta, você e quem te indicou ganham crédito de horas nas salas.</p>
+      <div class="icon" id="icon">📲</div>
+      <h1 id="heading">Baixe o OLI Health Hub</h1>
+      <p id="subtext">Coworking médico OLI agora no seu bolso. Reserve salas, gerencie pacientes e acompanhe tudo em tempo real.</p>
 
       <div class="code-wrap" id="codeWrap">
         <div class="code-label">Seu código de indicação</div>
@@ -52,23 +52,27 @@
 
       <a class="btn btn-ghost" id="openAppBtn" href="#" style="display:none">Já tenho o app — abrir</a>
 
-      <p class="hint" id="hint">No cadastro, informe seu código na etapa “Como você nos conheceu?”.</p>
+      <p class="hint" id="hint" style="display:none">No cadastro, informe seu código na etapa “Como você nos conheceu?”.</p>
     </div>
   </div>
   <p class="footer">OLI Health Hub · <a href="/privacidade">Política de Privacidade</a> · LGPD</p>
 
   <script>
-    // URLs das lojas — preencher o ID da App Store quando publicado.
-    var APP_STORE_URL  = 'https://apps.apple.com/br/app/oli-health-hub/id0000000000';
+    // URLs das lojas.
+    var APP_STORE_URL  = 'https://apps.apple.com/br/app/oli-health-hub/id6774743117';
     var PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.oli.healthhub';
 
     var qs   = new URLSearchParams(location.search);
     var code = (qs.get('ref') || '').trim().toUpperCase();
 
-    // Exibe o código, se houver
+    // Com código de indicação (?ref=...): troca para a mensagem de indicação e exibe o código.
     if (code) {
+      document.getElementById('icon').textContent = '🎁';
+      document.getElementById('heading').textContent = 'Você foi indicado!';
+      document.getElementById('subtext').textContent = 'Baixe o OLI Health Hub e cadastre-se. Ao ativar sua conta, você e quem te indicou ganham crédito de horas nas salas.';
       document.getElementById('code').textContent = code;
       document.getElementById('codeWrap').style.display = 'block';
+      document.getElementById('hint').style.display = 'block';
       var open = document.getElementById('openAppBtn');
       open.href = 'olihealthhub://onboarding?ref=' + encodeURIComponent(code);
       open.style.display = 'flex';
@@ -79,12 +83,24 @@
 
     // Destaca a loja do dispositivo atual
     var ua = navigator.userAgent || '';
-    if (/android/i.test(ua)) {
+    var isAndroid = /android/i.test(ua);
+    var isIOS     = /iphone|ipad|ipod/i.test(ua);
+
+    if (isAndroid) {
       document.getElementById('iosBtn').style.display = 'none';
       document.getElementById('androidBtn').className = 'btn btn-green';
-    } else if (/iphone|ipad|ipod/i.test(ua)) {
+    } else if (isIOS) {
       document.getElementById('androidBtn').style.display = 'none';
       document.getElementById('iosBtn').className = 'btn btn-green';
+    }
+
+    // Sem código de indicação (ex.: QR code do material impresso) — redireciona direto para a loja certa.
+    if (!code) {
+      if (isAndroid) {
+        location.href = PLAY_STORE_URL;
+      } else if (isIOS) {
+        location.href = APP_STORE_URL;
+      }
     }
 
     // Copiar código
