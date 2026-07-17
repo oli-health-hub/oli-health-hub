@@ -70,6 +70,13 @@ const LUMA_ICS_URL =
   process.env.EXPO_PUBLIC_EVENTS_ICS_URL ??
   `https://api.lu.ma/ics/get?entity=calendar&id=${LUMA_CALENDAR_ID}`;
 
+// Eventos onde alguém do OLI é host/cohost mas o evento vive num calendário
+// Luma de terceiros (não dá pra mover pro calendário OLI sem bagunçar a
+// organização de quem é dono) — incluídos manualmente aqui pelo api_id (evt-...).
+const EXTRA_EVENT_IDS: string[] = [
+  'evt-demtQ2UypxbuXJx', // Hackathon Inaugural (Jornada R1/R2) — calendário MBS-Health Arena
+];
+
 /** True quando há um feed de eventos configurado (sempre, via fallback OLI). */
 export function lumaIsConfigured(): boolean {
   return !!LUMA_ICS_URL;
@@ -181,22 +188,63 @@ class LumaMockService implements ILumaService {
   }
 }
 
+/** Busca um evento individual pelo api_id via endpoint público JSON do Luma
+ *  (usado pra eventos em calendário de terceiros — ver EXTRA_EVENT_IDS). */
+async function fetchLumaEventById(eventApiId: string): Promise<LumaEvent | null> {
+  try {
+    const res = await fetch(`https://api.lu.ma/event/get?event_api_id=${eventApiId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const e = data?.event;
+    if (!e?.start_at) return null;
+    return {
+      id:          e.api_id,
+      title:       e.name ?? 'Evento',
+      description: '',
+      startAt:     e.start_at,
+      endAt:       e.end_at ?? e.start_at,
+      coverUrl:    e.cover_url || undefined,
+      eventUrl:    e.url ? `https://lu.ma/${e.url}` : 'https://lu.ma',
+      location:    e.geo_address_info?.full_address ?? 'OLI Health Hub',
+      isFree:      true,
+      guestCount:  0,
+      tags:        [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Serviço real: lê o feed iCal público do calendário OLI no Luma.
+ * Serviço real: lê o feed iCal público do calendário OLI no Luma +
+ * eventos extras cadastrados manualmente (EXTRA_EVENT_IDS).
  * - Sem API key / sem plano Plus.
  * - Filtra apenas eventos futuros, ordena por data crescente.
  * - Erro de rede/parse → [] (nunca quebra a tela; aba mostra "sem eventos").
  */
 class LumaIcsService implements ILumaService {
   async getUpcomingEvents(): Promise<LumaEvent[]> {
+    const [calendarEvents, extraEvents] = await Promise.all([
+      this.fetchCalendarEvents(),
+      Promise.all(EXTRA_EVENT_IDS.map(fetchLumaEventById)),
+    ]);
+
+    const now = Date.now();
+    const byId = new Map<string, LumaEvent>();
+    for (const e of [...calendarEvents, ...extraEvents]) {
+      if (e) byId.set(e.id, e);
+    }
+    return Array.from(byId.values())
+      .filter(e => new Date(e.startAt).getTime() >= now)
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }
+
+  private async fetchCalendarEvents(): Promise<LumaEvent[]> {
     try {
       const res = await fetch(LUMA_ICS_URL, { headers: { accept: 'text/calendar' } });
       if (!res.ok) return [];
       const ics = await res.text();
-      const now = Date.now();
-      return parseICS(ics)
-        .filter(e => new Date(e.startAt).getTime() >= now)
-        .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+      return parseICS(ics);
     } catch {
       return [];
     }
