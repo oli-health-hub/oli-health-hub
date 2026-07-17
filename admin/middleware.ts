@@ -25,6 +25,10 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Rotas públicas — deixa passar
+  if (pathname.startsWith('/definir-senha')) {
+    return supabaseResponse;
+  }
+
   if (pathname.startsWith('/login')) {
     // Se já logado e é admin, manda para home
     if (user) {

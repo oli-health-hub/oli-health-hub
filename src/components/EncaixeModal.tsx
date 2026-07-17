@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { hasReservationCredit } from '../services/financeiroService';
+import { isRoomConflictError } from '../services/reservationService';
 import { colors, spacing, radius, shadows } from '../theme/designSystem';
 import { formatHour } from '../utils/formatters';
 import { notifyPatientEncaixe } from '../utils/whatsapp';
@@ -187,9 +188,18 @@ export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
       endTime:   endTime.toISOString(),
       status:    'agendado',
     };
-    addReservation(reservation);
-    setSelectedTime(pendingSlot);
-    setPendingSlot(null);
+    try {
+      await addReservation(reservation);
+      setSelectedTime(pendingSlot);
+      setPendingSlot(null);
+    } catch (err) {
+      Alert.alert(
+        'Sala já reservada',
+        isRoomConflictError(err)
+          ? 'Outro profissional reservou essa sala nesse horário. Escolha outra sala ou horário.'
+          : 'Não foi possível confirmar a reserva. Tente novamente.',
+      );
+    }
   };
 
   const canConfirm = selectedTime !== null;

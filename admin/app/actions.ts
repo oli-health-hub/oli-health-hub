@@ -54,7 +54,9 @@ export async function inviteUser(formData: FormData) {
   if (!email) throw new Error('E-mail obrigatório.');
 
   const supabase = await createSupabaseAdmin();
-  const { error } = await supabase.auth.admin.inviteUserByEmail(email);
+  const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
+    redirectTo: 'https://admin.olihealthhub.com.br/definir-senha',
+  });
   if (error) throw new Error(error.message);
   revalidatePath('/usuarios');
 }
