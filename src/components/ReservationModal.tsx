@@ -154,7 +154,7 @@ export function ReservationModal({
   room, selectedDate: initialDate, isCalendarGranted, onReserve, onClose,
 }: Props) {
   useAndroidBack(onClose);
-  const { addReservation, todayReservations } = useAppStore();
+  const { addReservation, upcomingReservations } = useAppStore();
   const router = useRouter();
 
   // O dia é selecionado dentro do modal — começa com o dia sugerido pela agenda
@@ -176,19 +176,19 @@ export function ReservationModal({
   // Datas com reservas para marcar pontinhos no strip
   const pad = (n: number) => String(n).padStart(2, '0');
   const reservedDates = useMemo(() => new Set<string>(
-    todayReservations.map(r => r.startTime.slice(0, 10)),
-  ), [todayReservations]);
+    upcomingReservations.map(r => r.startTime.slice(0, 10)),
+  ), [upcomingReservations]);
 
   const startSlots = useMemo(
-    () => buildStartSlots(pickedDate, todayReservations, room.name),
-    [pickedDate, todayReservations, room.name],
+    () => buildStartSlots(pickedDate, upcomingReservations, room.name),
+    [pickedDate, upcomingReservations, room.name],
   );
 
   const endSlots = useMemo(
     () => selectedStart
-      ? buildEndSlots(selectedStart, pickedDate, todayReservations, room.name)
+      ? buildEndSlots(selectedStart, pickedDate, upcomingReservations, room.name)
       : [],
-    [selectedStart, pickedDate, todayReservations, room.name],
+    [selectedStart, pickedDate, upcomingReservations, room.name],
   );
 
   const handleSelectStart = (slot: Date) => {

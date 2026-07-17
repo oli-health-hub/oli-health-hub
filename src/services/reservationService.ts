@@ -18,18 +18,20 @@ function toReservation(r: {
   };
 }
 
-export async function fetchTodayReservations(professionalId: string): Promise<Reservation[]> {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
+/** Reservas do profissional de hoje até `daysAhead` dias no futuro (cobre agenda, encaixe e reagendamento). */
+export async function fetchUpcomingReservations(professionalId: string, daysAhead = 180): Promise<Reservation[]> {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + daysAhead);
+  end.setHours(23, 59, 59, 999);
 
   const { data, error } = await supabase
     .from('reservations')
     .select('*')
     .eq('professional_id', professionalId)
-    .gte('start_time', todayStart.toISOString())
-    .lte('start_time', todayEnd.toISOString())
+    .gte('start_time', start.toISOString())
+    .lte('start_time', end.toISOString())
     .order('start_time');
   if (error) throw error;
   return data.map(toReservation);

@@ -22,6 +22,12 @@ export const COST_PER_MINUTE: Record<PlanType, number> = {
 const BUFFER_MS  = 15 * 60 * 1000; // 15 min
 const CONFLICT_MS = 45 * 60 * 1000; // conflito se próxima reserva em < 45 min
 
+const isToday = (iso: string) => {
+  const d = new Date(iso);
+  const t = new Date();
+  return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+};
+
 // ─── Salas iniciais (substituídas pela API do Communicare na Fase 3) ──────────
 const BASE_CLINICA = [
   'Maca convencional',
@@ -115,6 +121,8 @@ interface AppStore {
   nextReservationTime: Date | null;
 
   todayReservations:    Reservation[];
+  /** Reservas de hoje até ~180 dias à frente — usada por agenda, encaixe e reagendamento (checagem de conflito não pode se limitar a hoje). */
+  upcomingReservations: Reservation[];
   rooms:                Room[];
   /** ID da consulta ativa no Communicare — necessário para encerrar dos dois lados */
   activeConsultationId: string | null;
@@ -133,7 +141,7 @@ interface AppStore {
   endRoomUse:              (id: string) => void;
   setActiveConsultationId: (id: string | null) => void;
   setRooms:                (rooms: Room[]) => void;
-  setTodayReservations:    (reservations: Reservation[]) => void;
+  setUpcomingReservations: (reservations: Reservation[]) => void;
   setConsultationDuration: (minutes: number) => void;
   setUserName:             (name: string) => void;
   setUserPlan:             (plan: PlanType) => void;
@@ -155,6 +163,7 @@ export const useAppStore = create<AppStore>((set, get) => {
     nextReservationTime: null,
 
     todayReservations:    [],
+    upcomingReservations: [],
     rooms:                INITIAL_ROOMS,
     activeConsultationId: null,
 
@@ -170,12 +179,13 @@ export const useAppStore = create<AppStore>((set, get) => {
       );
       if (firstPending && !firstPending.consultationStartedAt) {
         const now = new Date().toISOString();
+        const patch = (r: Reservation) =>
+          r.id === firstPending.id
+            ? { ...r, status: 'em_uso' as const, consultationStartedAt: now }
+            : r;
         set({
-          todayReservations: get().todayReservations.map(r =>
-            r.id === firstPending.id
-              ? { ...r, status: 'em_uso' as const, consultationStartedAt: now }
-              : r,
-          ),
+          todayReservations:    get().todayReservations.map(patch),
+          upcomingReservations: get().upcomingReservations.map(patch),
         });
         updateReservation(firstPending.id, {
           status:                    'em_uso',
@@ -209,10 +219,13 @@ export const useAppStore = create<AppStore>((set, get) => {
     enterOvertime: () => get().extendSession(30),
 
     addReservation: (reservation) => {
-      const sorted = [...get().todayReservations, reservation].sort(
-        (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
-      );
-      set({ todayReservations: sorted });
+      const byStart = (a: Reservation, b: Reservation) =>
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      const upcoming = [...get().upcomingReservations, reservation].sort(byStart);
+      set({
+        upcomingReservations: upcoming,
+        todayReservations:    upcoming.filter(r => isToday(r.startTime)),
+      });
       get()._syncNextReservation();
       // Sync Supabase em background
       const professionalId = useAuthStore.getState().session?.user?.id;
@@ -222,14 +235,18 @@ export const useAppStore = create<AppStore>((set, get) => {
     },
 
     cancelReservation: (id) => {
-      const target = get().todayReservations.find(r => r.id === id);
-      const updatedReservations = get().todayReservations.filter(r => r.id !== id);
+      const target = get().upcomingReservations.find(r => r.id === id);
+      const upcoming = get().upcomingReservations.filter(r => r.id !== id);
       const updatedRooms = target
         ? get().rooms.map(r =>
             r.name === target.roomName ? { ...r, isAvailable: true, occupiedBy: undefined } : r,
           )
         : get().rooms;
-      set({ todayReservations: updatedReservations, rooms: updatedRooms });
+      set({
+        upcomingReservations: upcoming,
+        todayReservations:    upcoming.filter(r => isToday(r.startTime)),
+        rooms:                updatedRooms,
+      });
       get()._syncNextReservation();
       deleteReservation(id).catch(() => {});
     },
@@ -245,14 +262,16 @@ export const useAppStore = create<AppStore>((set, get) => {
 
     startRoomUse: (id) => {
       const now = new Date().toISOString();
+      const patch = (r: Reservation) => {
+        if (r.id === id)
+          return { ...r, status: 'em_uso' as const, consultationStartedAt: now };
+        if (r.status === 'em_uso')
+          return { ...r, status: 'concluido' as const, consultationEndedAt: r.consultationEndedAt ?? now };
+        return r;
+      };
       set({
-        todayReservations: get().todayReservations.map(r => {
-          if (r.id === id)
-            return { ...r, status: 'em_uso' as const, consultationStartedAt: now };
-          if (r.status === 'em_uso')
-            return { ...r, status: 'concluido' as const, consultationEndedAt: r.consultationEndedAt ?? now };
-          return r;
-        }),
+        todayReservations:    get().todayReservations.map(patch),
+        upcomingReservations: get().upcomingReservations.map(patch),
       });
     },
 
@@ -260,17 +279,18 @@ export const useAppStore = create<AppStore>((set, get) => {
       const now = new Date().toISOString();
       const { userPlan, todayReservations } = get();
       const target = todayReservations.find(r => r.id === id);
+      const patch = (r: Reservation) =>
+        r.id === id
+          ? { ...r, status: 'concluido' as const, consultationEndedAt: r.consultationEndedAt ?? now }
+          : r;
 
       set({
-        todayReservations: todayReservations.map(r =>
-          r.id === id
-            ? { ...r, status: 'concluido' as const, consultationEndedAt: r.consultationEndedAt ?? now }
-            : r,
-        ),
+        todayReservations:    todayReservations.map(patch),
+        upcomingReservations: get().upcomingReservations.map(patch),
         activeConsultationId: null,
       });
 
-      // Persiste status concluído no Supabase — impede que fetchTodayReservations
+      // Persiste status concluído no Supabase — impede que o fetch de reservas
       // sobrescreva o estado local e reinicie o timer ao reabrir o app
       updateReservation(id, {
         status:                'concluido',
@@ -312,12 +332,17 @@ export const useAppStore = create<AppStore>((set, get) => {
     setActiveConsultationId: (id) => set({ activeConsultationId: id }),
 
     rescheduleReservation: (id, newStart, newEnd) => {
-      const updated = get().todayReservations.map(r =>
+      const patch = (r: Reservation) =>
         r.id === id
           ? { ...r, startTime: newStart.toISOString(), endTime: newEnd.toISOString() }
-          : r,
-      ).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-      set({ todayReservations: updated });
+          : r;
+      const upcoming = get().upcomingReservations.map(patch).sort(
+        (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+      );
+      set({
+        upcomingReservations: upcoming,
+        todayReservations:    upcoming.filter(r => isToday(r.startTime)),
+      });
       get()._syncNextReservation();
       updateReservation(id, {
         start_time: newStart.toISOString(),
@@ -327,8 +352,11 @@ export const useAppStore = create<AppStore>((set, get) => {
 
     setRooms: (rooms) => set({ rooms }),
 
-    setTodayReservations: (reservations) => {
-      set({ todayReservations: reservations });
+    setUpcomingReservations: (reservations) => {
+      set({
+        upcomingReservations: reservations,
+        todayReservations:    reservations.filter(r => isToday(r.startTime)),
+      });
       get()._syncNextReservation();
     },
 
