@@ -7,7 +7,7 @@ import { TeamProfileForm } from './TeamProfileForm';
 
 export const dynamic = 'force-dynamic';
 
-const TEAM_TYPES = ['founder', 'specialist', 'partner'];
+const TEAM_TYPES = ['founder', 'specialist', 'partner', 'team'];
 
 export default async function EquipeDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createSupabaseServer();

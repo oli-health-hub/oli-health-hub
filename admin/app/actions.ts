@@ -451,9 +451,9 @@ export async function sendBroadcastPush(formData: FormData) {
   return { sent, total: messages.length };
 }
 
-// ─── Equipe (founder / especialista / parceiro) ────────────────────────────────
+// ─── Equipe (founder / especialista / parceiro / equipe OLI) ──────────────────
 
-const TEAM_USER_TYPES = ['founder', 'specialist', 'partner'] as const;
+const TEAM_USER_TYPES = ['founder', 'specialist', 'partner', 'team'] as const;
 type TeamUserType = (typeof TEAM_USER_TYPES)[number];
 
 function slugify(nome: string) {

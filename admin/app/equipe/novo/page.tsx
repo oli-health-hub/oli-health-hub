@@ -13,7 +13,7 @@ export default function NovoPerfilEquipePage() {
 
       <h1 className="text-xl font-bold text-oli-dark mb-1">Novo perfil de equipe</h1>
       <p className="text-sm text-oli-gray mb-6">
-        Founder, especialista ou parceiro — aparece na Comunidade do app, sem campos médicos.
+        Founder, especialista, parceiro ou equipe OLI — aparece na Comunidade do app, sem campos médicos.
         Não é um login real (sem e-mail de convite).
       </p>
 

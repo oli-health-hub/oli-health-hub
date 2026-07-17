@@ -52,12 +52,14 @@ const PLAN_BADGE: Record<string, { label: string; color: string }> = {
   VIP:   { label: 'VIP',   color: '#7B6EA8' },
 };
 
-// Badge de papel pra perfis de equipe (founder/especialista/parceiro) — não são
-// médicos, então não faz sentido mostrar badge de plano/palestrante/NPS/etc.
+// Badge de papel pra perfis de equipe (founder/especialista/parceiro/equipe OLI) —
+// não são médicos, então não faz sentido mostrar badge de plano/palestrante/NPS/etc.
+// O "Título/Papel" específico (ex: "Recepção") aparece à parte, no chip de especialidade.
 const ROLE_BADGE: Record<string, { label: string; color: string }> = {
   founder:    { label: 'Founder',          color: colors.oliGold },
   specialist: { label: 'Especialista OLI', color: '#5B7FA6' },
   partner:    { label: 'Parceiro OLI',     color: '#7B6EA8' },
+  team:       { label: 'Equipe OLI',       color: colors.oliLightGray },
 };
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────

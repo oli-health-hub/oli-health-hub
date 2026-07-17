@@ -7,12 +7,14 @@ const TYPE_LABEL: Record<string, string> = {
   founder:    'Founder',
   specialist: 'Especialista',
   partner:    'Parceiro',
+  team:       'Equipe OLI',
 };
 
 const TYPE_COLOR: Record<string, string> = {
   founder:    'bg-yellow-50 text-yellow-700',
   specialist: 'bg-blue-50 text-blue-600',
   partner:    'bg-green-50 text-oli-green',
+  team:       'bg-gray-100 text-gray-600',
 };
 
 export default async function EquipePage() {
@@ -21,7 +23,7 @@ export default async function EquipePage() {
   const { data: equipe } = await supabase
     .from('profiles')
     .select('id, nome, especialidade, user_type, created_at')
-    .in('user_type', ['founder', 'specialist', 'partner'])
+    .in('user_type', ['founder', 'specialist', 'partner', 'team'])
     .order('created_at', { ascending: false });
 
   return (
@@ -30,7 +32,7 @@ export default async function EquipePage() {
         <div>
           <h1 className="text-xl font-bold text-oli-dark">Equipe</h1>
           <p className="text-sm text-oli-gray mt-0.5">
-            Founder, especialistas e parceiros — perfis não-médicos visíveis na Comunidade do app.
+            Founder, especialistas, parceiros e equipe OLI — perfis não-médicos visíveis na Comunidade do app.
           </p>
         </div>
         <Link

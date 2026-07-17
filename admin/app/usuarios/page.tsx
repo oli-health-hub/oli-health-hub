@@ -82,6 +82,7 @@ export default async function UsuariosPage() {
                           <option value="founder">Founder</option>
                           <option value="specialist">Especialista</option>
                           <option value="partner">Parceiro</option>
+                          <option value="team">Equipe OLI</option>
                         </select>
                         <button
                           type="submit"
@@ -148,6 +149,7 @@ export default async function UsuariosPage() {
                           <option value="founder">Founder</option>
                           <option value="specialist">Especialista</option>
                           <option value="partner">Parceiro</option>
+                          <option value="team">Equipe OLI</option>
                         </select>
                         <button
                           type="submit"
@@ -208,7 +210,7 @@ export default async function UsuariosPage() {
                             Tornar admin
                           </button>
                         </form>
-                        {!['founder', 'specialist', 'partner'].includes(p.user_type) ? (
+                        {!['founder', 'specialist', 'partner', 'team'].includes(p.user_type) ? (
                           <form action={setUserType} className="flex items-center gap-1">
                             <input type="hidden" name="user_id" value={p.id} />
                             <select
@@ -219,6 +221,7 @@ export default async function UsuariosPage() {
                               <option value="founder">Founder</option>
                               <option value="specialist">Especialista</option>
                               <option value="partner">Parceiro</option>
+                              <option value="team">Equipe OLI</option>
                             </select>
                             <button
                               type="submit"
