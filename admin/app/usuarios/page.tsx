@@ -27,7 +27,8 @@ export default async function UsuariosPage() {
   }
 
   const admins      = (profiles ?? []).filter(p => p.user_type === 'admin');
-  const nonAdmins   = (profiles ?? []).filter(p => p.user_type !== 'admin');
+  const pending     = (profiles ?? []).filter(p => p.user_type === 'pending');
+  const nonAdmins   = (profiles ?? []).filter(p => p.user_type !== 'admin' && p.user_type !== 'pending');
 
   return (
     <div className="p-7 space-y-8">
@@ -103,10 +104,76 @@ export default async function UsuariosPage() {
         </div>
       </section>
 
-      {/* Promover médico a admin */}
+      {/* Convites aceitos aguardando classificação */}
       <section>
         <h2 className="text-sm font-bold text-oli-dark mb-3">
-          Médicos cadastrados
+          Aguardando classificação
+          <span className="ml-2 font-normal text-oli-lgray">— convite aceito, ainda não é profissional de saúde nem equipe</span>
+        </h2>
+        <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-oli-border">
+                {['Nome', 'E-mail', 'Desde', 'Ação'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-oli-lgray uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-oli-border">
+              {pending.map(p => (
+                <tr key={p.id} className="hover:bg-stone-50 transition-colors">
+                  <td className="px-4 py-3 font-semibold text-oli-dark">{p.nome ?? '—'}</td>
+                  <td className="px-4 py-3 text-oli-gray">{emailMap[p.id] ?? '—'}</td>
+                  <td className="px-4 py-3 text-oli-lgray">{new Date(p.created_at).toLocaleDateString('pt-BR')}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <form action={setUserType}>
+                        <input type="hidden" name="user_id"   value={p.id} />
+                        <input type="hidden" name="user_type" value="subscriber" />
+                        <button
+                          type="submit"
+                          className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-green-50 text-oli-green hover:bg-green-100 transition-colors"
+                        >
+                          Classificar como profissional de saúde
+                        </button>
+                      </form>
+                      <form action={setUserType} className="flex items-center gap-1">
+                        <input type="hidden" name="user_id" value={p.id} />
+                        <select
+                          name="user_type"
+                          defaultValue="admin"
+                          className="text-[11px] border border-oli-border rounded-lg px-1.5 py-1"
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="founder">Founder</option>
+                          <option value="specialist">Especialista</option>
+                          <option value="partner">Parceiro</option>
+                        </select>
+                        <button
+                          type="submit"
+                          className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        >
+                          Classificar como Equipe
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {pending.length === 0 && (
+            <div className="flex items-center justify-center py-8 text-oli-lgray text-sm">
+              Ninguém aguardando classificação
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Promover profissional de saúde a admin */}
+      <section>
+        <h2 className="text-sm font-bold text-oli-dark mb-3">
+          Profissionais de saúde cadastrados
           <span className="ml-2 font-normal text-oli-lgray">— promover a admin se necessário</span>
         </h2>
         <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">

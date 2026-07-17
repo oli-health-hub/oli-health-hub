@@ -30,7 +30,7 @@ export default async function MedicosPage() {
   const { data: medicos } = await supabase
     .from('profiles')
     .select('id, nome, crm, especialidade, plan, created_at, assessorias_atuais, account_status')
-    .not('user_type', 'in', '(admin,founder,specialist,partner)')
+    .not('user_type', 'in', '(admin,founder,specialist,partner,pending)')
     .neq('account_status', 'deleted')
     .order('created_at', { ascending: false })
     .limit(200);
@@ -38,7 +38,7 @@ export default async function MedicosPage() {
   const { count: excluidosCount } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
-    .not('user_type', 'in', '(admin,founder,specialist,partner)')
+    .not('user_type', 'in', '(admin,founder,specialist,partner,pending)')
     .eq('account_status', 'deleted');
 
   // Conta módulos ativos por profissional

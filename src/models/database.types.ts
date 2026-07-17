@@ -1388,6 +1388,14 @@ export type Database = {
       }
     }
     Functions: {
+      _create_profile_and_subscription: {
+        Args: { p_email: string; p_nome?: string; p_user_id: string; p_user_type?: string }
+        Returns: undefined
+      }
+      accept_invite: {
+        Args: { p_is_health_professional?: boolean }
+        Returns: undefined
+      }
       apply_referral_benefit: {
         Args: { p_new_user_id: string; p_referrer_id: string }
         Returns: undefined
