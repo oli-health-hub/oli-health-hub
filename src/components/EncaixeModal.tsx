@@ -112,7 +112,7 @@ interface Props {
 
 export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
   useAndroidBack(onClose);
-  const { rooms, upcomingReservations, addReservation, userName } = useAppStore();
+  const { rooms, upcomingReservations, roomOccupancy, addReservation, userName } = useAppStore();
   const router = useRouter();
 
   const dates = useMemo(() => nextWeekdays(5), []);
@@ -140,8 +140,8 @@ export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
   // Salas disponíveis no slot pendente (para oferecer reserva)
   const availableRoomsForPending = useMemo(() => {
     if (!pendingSlot) return [];
-    return rooms.filter(r => r.isAvailable && isRoomFreeAtSlot(r, pendingSlot, upcomingReservations));
-  }, [pendingSlot, rooms, upcomingReservations]);
+    return rooms.filter(r => r.isAvailable && isRoomFreeAtSlot(r, pendingSlot, roomOccupancy));
+  }, [pendingSlot, rooms, roomOccupancy]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);

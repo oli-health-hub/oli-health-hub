@@ -3,13 +3,13 @@ import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import { usePatientStore } from '../store/patientStore';
 import { fetchRooms } from '../services/roomService';
-import { fetchUpcomingReservations } from '../services/reservationService';
+import { fetchUpcomingReservations, fetchRoomOccupancy } from '../services/reservationService';
 import { supabase } from '../services/supabase';
 import type { Patient, PlanType } from '../models/types';
 
 export function useSupabaseInit() {
   const { session, profile } = useAuthStore();
-  const { setRooms, setUpcomingReservations, setConsultationDuration, setUserName, setUserPlan } = useAppStore();
+  const { setRooms, setUpcomingReservations, setRoomOccupancy, setConsultationDuration, setUserName, setUserPlan } = useAppStore();
   const { setPatients } = usePatientStore();
 
   useEffect(() => {
@@ -24,13 +24,15 @@ export function useSupabaseInit() {
       if (profile.plan) setUserPlan(profile.plan as PlanType);
     }
 
-    // Carrega salas e reservas (hoje + ~180 dias à frente) em paralelo
+    // Carrega salas, reservas próprias e ocupação de sala de todos os profissionais (hoje + ~180 dias à frente) em paralelo
     Promise.all([
       fetchRooms(),
       fetchUpcomingReservations(userId),
-    ]).then(([rooms, reservations]) => {
+      fetchRoomOccupancy(),
+    ]).then(([rooms, reservations, occupancy]) => {
       setRooms(rooms);
       setUpcomingReservations(reservations);
+      setRoomOccupancy(occupancy);
     }).catch(() => {
       // Mantém dados locais em caso de falha de rede
     });
