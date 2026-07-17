@@ -175,7 +175,7 @@ function MonthCalendar({
 
 export default function AgendaScreen() {
   const {
-    rooms, todayReservations,
+    rooms, upcomingReservations,
     cancelReservation,
   } = useAppStore();
 
@@ -194,13 +194,13 @@ export default function AgendaScreen() {
 
   // Datas com reservas (para marcar pontos no calendário)
   const reservedDates = new Set<string>(
-    todayReservations.map(r => r.startTime.slice(0, 10)),
+    upcomingReservations.map(r => r.startTime.slice(0, 10)),
   );
 
   // Reservas do dia selecionado
   const pad = (n: number) => String(n).padStart(2, '0');
   const selectedDateStr = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}`;
-  const dayReservations = todayReservations.filter(r => r.startTime.startsWith(selectedDateStr));
+  const dayReservations = upcomingReservations.filter(r => r.startTime.startsWith(selectedDateStr));
 
   useEffect(() => {
     (async () => {
@@ -380,7 +380,7 @@ export default function AgendaScreen() {
         {/* ── Grid de salas (2 colunas) ── */}
         <View style={styles.grid}>
           {filteredRooms.map(room => {
-            const segs     = buildDaySegments(selectedDate, todayReservations, room.name);
+            const segs     = buildDaySegments(selectedDate, upcomingReservations, room.name);
             const freeText = room.isAvailable ? nextFreeLabel(segs, selectedDate) : 'Ocupada';
             const freeColor = freeText === 'Sem horários livres' || !room.isAvailable
               ? colors.oliLightGray
@@ -487,7 +487,7 @@ export default function AgendaScreen() {
           <RoomDetailModal
             room={selectedRoom}
             selectedDate={selectedDate}
-            reservations={todayReservations}
+            reservations={upcomingReservations}
             onClose={() => setShowDetailModal(false)}
             onReserve={() => {
               setShowDetailModal(false);

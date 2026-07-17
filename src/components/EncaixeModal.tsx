@@ -112,7 +112,7 @@ interface Props {
 
 export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
   useAndroidBack(onClose);
-  const { rooms, todayReservations, addReservation, userName } = useAppStore();
+  const { rooms, upcomingReservations, addReservation, userName } = useAppStore();
   const router = useRouter();
 
   const dates = useMemo(() => nextWeekdays(5), []);
@@ -123,10 +123,10 @@ export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
   /** Slot sem cobertura de reserva que o profissional tocou — exibe opção de reservar sala */
   const [pendingSlot,      setPendingSlot]      = useState<Date | null>(null);
 
-  // Reservas do dia selecionado (filtra todayReservations + reservas adicionadas na sessão)
+  // Reservas do dia selecionado (filtra upcomingReservations + reservas adicionadas na sessão)
   const dayReservations = useMemo(
-    () => reservationsForDate(selectedDate, todayReservations),
-    [selectedDate, todayReservations],
+    () => reservationsForDate(selectedDate, upcomingReservations),
+    [selectedDate, upcomingReservations],
   );
 
   // Todos os slots do dia + flag de cobertura
@@ -140,8 +140,8 @@ export function EncaixeModal({ paciente, onClose, onConfirm }: Props) {
   // Salas disponíveis no slot pendente (para oferecer reserva)
   const availableRoomsForPending = useMemo(() => {
     if (!pendingSlot) return [];
-    return rooms.filter(r => r.isAvailable && isRoomFreeAtSlot(r, pendingSlot, todayReservations));
-  }, [pendingSlot, rooms, todayReservations]);
+    return rooms.filter(r => r.isAvailable && isRoomFreeAtSlot(r, pendingSlot, upcomingReservations));
+  }, [pendingSlot, rooms, upcomingReservations]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);

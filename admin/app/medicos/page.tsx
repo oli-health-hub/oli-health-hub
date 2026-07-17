@@ -10,6 +10,12 @@ const PLAN_COLOR: Record<string, string> = {
   VIP:   'bg-yellow-50 text-yellow-700',
 };
 
+const STATUS_BADGE: Record<string, { label: string; color: string }> = {
+  paused:    { label: 'Pausada',   color: 'bg-amber-50 text-amber-700' },
+  suspended: { label: 'Suspensa',  color: 'bg-orange-50 text-orange-700' },
+  banned:    { label: 'Banida',    color: 'bg-red-50 text-oli-red' },
+};
+
 // Assessorias OLI — usadas pra identificar gaps de upsell por médico.
 const ASSESSORIAS: { key: string; short: string; full: string }[] = [
   { key: 'contabilidade', short: 'Cont', full: 'Contabilidade' },
@@ -23,10 +29,17 @@ export default async function MedicosPage() {
 
   const { data: medicos } = await supabase
     .from('profiles')
-    .select('id, nome, crm, especialidade, plan, created_at, assessorias_atuais')
+    .select('id, nome, crm, especialidade, plan, created_at, assessorias_atuais, account_status')
     .not('user_type', 'in', '(admin,founder,specialist,partner)')
+    .neq('account_status', 'deleted')
     .order('created_at', { ascending: false })
     .limit(200);
+
+  const { count: excluidosCount } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .not('user_type', 'in', '(admin,founder,specialist,partner)')
+    .eq('account_status', 'deleted');
 
   // Conta módulos ativos por profissional
   const professionalIds = (medicos ?? []).map(m => m.id);
@@ -47,7 +60,14 @@ export default async function MedicosPage() {
     <div className="p-7">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-oli-dark">Médicos</h1>
-        <span className="text-sm text-oli-gray">{medicos?.length ?? 0} cadastrados</span>
+        <div className="flex items-center gap-4">
+          {!!excluidosCount && (
+            <Link href="/medicos/excluidos" className="text-sm text-oli-lgray hover:text-oli-dark transition-colors underline">
+              {excluidosCount} excluída{excluidosCount !== 1 ? 's' : ''} →
+            </Link>
+          )}
+          <span className="text-sm text-oli-gray">{medicos?.length ?? 0} cadastrados</span>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
@@ -55,7 +75,7 @@ export default async function MedicosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-oli-border">
-                {['Nome', 'CRM', 'Especialidade', 'Plano', 'Módulos', 'Assessorias', 'Cadastro'].map(h => (
+                {['Nome', 'Status', 'CRM', 'Especialidade', 'Plano', 'Módulos', 'Assessorias', 'Cadastro'].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-oli-lgray uppercase tracking-wider">
                     {h}
                   </th>
@@ -69,6 +89,7 @@ export default async function MedicosPage() {
                 const moduleCount = moduleCountMap[m.id] ?? 0;
                 const date        = new Date(m.created_at).toLocaleDateString('pt-BR');
                 const tem         = new Set(m.assessorias_atuais ?? []);
+                const statusBadge = STATUS_BADGE[m.account_status ?? 'active'];
 
                 return (
                   <tr key={m.id} className="hover:bg-stone-50 transition-colors">
@@ -76,6 +97,12 @@ export default async function MedicosPage() {
                       <Link href={`/medicos/${m.id}`} className="font-semibold text-oli-dark hover:text-oli-green transition-colors">
                         {m.nome ?? '—'}
                       </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      {statusBadge
+                        ? <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadge.color}`}>{statusBadge.label}</span>
+                        : <span className="text-oli-lgray">—</span>
+                      }
                     </td>
                     <td className="px-4 py-3 text-oli-gray">{m.crm ?? '—'}</td>
                     <td className="px-4 py-3 text-oli-gray">{m.especialidade ?? '—'}</td>

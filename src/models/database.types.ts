@@ -1245,6 +1245,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "usage_charges_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "usage_charges_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
@@ -1309,6 +1316,13 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_modules_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1429,6 +1443,7 @@ export type Database = {
         | "module_activated"
         | "plan_subscribed"
         | "plan_activated"
+        | "reservation_created"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1437,6 +1452,7 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
@@ -1561,6 +1577,7 @@ export const Constants = {
         "module_activated",
         "plan_subscribed",
         "plan_activated",
+        "reservation_created",
       ],
     },
   },
