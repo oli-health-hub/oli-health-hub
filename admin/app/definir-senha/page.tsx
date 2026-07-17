@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
 
 export default function DefinirSenhaPage() {
-  const [status,   setStatus]   = useState<'loading' | 'ready' | 'invalid' | 'done'>('loading');
+  const [status,   setStatus]   = useState<'loading' | 'ready' | 'invalid' | 'role' | 'done'>('loading');
   const [password, setPassword] = useState('');
   const [confirm,  setConfirm]  = useState('');
   const [error,    setError]    = useState('');
   const [saving,   setSaving]   = useState(false);
+  const [isHealthProfessional, setIsHealthProfessional] = useState<boolean | null>(null);
 
   // O link de convite/reset chega com os tokens no fragmento (#) da URL —
   // extrai manualmente e abre a sessão antes de permitir definir a senha.
@@ -49,6 +50,27 @@ export default function DefinirSenhaPage() {
 
     if (updateError) {
       setError('Não foi possível salvar a senha. Tente novamente.');
+      return;
+    }
+
+    setStatus('role');
+  }
+
+  async function handleRoleSubmit() {
+    if (isHealthProfessional === null) return;
+    setSaving(true);
+
+    // Só agora o convite é considerado aceito — profile e subscription são
+    // criados aqui, não no envio do convite (evita "usuário fantasma" na base).
+    // Se for profissional de saúde, entra direto na base clínica; senão fica
+    // pendente em Usuários até alguém classificar.
+    const { error: acceptError } = await getSupabaseBrowser().rpc('accept_invite', {
+      p_is_health_professional: isHealthProfessional,
+    });
+    setSaving(false);
+
+    if (acceptError) {
+      setError('Houve um erro ao ativar sua conta. Avise quem te convidou.');
       return;
     }
     setStatus('done');
@@ -122,6 +144,51 @@ export default function DefinirSenhaPage() {
                   {saving ? 'Salvando...' : 'Salvar senha'}
                 </button>
               </form>
+            </>
+          )}
+
+          {status === 'role' && (
+            <>
+              <h2 className="text-lg font-bold text-oli-dark mb-2">Só mais uma coisa</h2>
+              <p className="text-sm text-oli-gray mb-5">Você é um profissional de saúde (atende pacientes)?</p>
+
+              <div className="flex flex-col gap-2 mb-5">
+                <button
+                  type="button"
+                  onClick={() => setIsHealthProfessional(true)}
+                  className={`text-left border rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                    isHealthProfessional === true
+                      ? 'border-oli-green bg-oli-green/5 text-oli-dark'
+                      : 'border-oli-border text-oli-gray hover:border-oli-green/40'
+                  }`}
+                >
+                  Sim, sou profissional de saúde
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsHealthProfessional(false)}
+                  className={`text-left border rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                    isHealthProfessional === false
+                      ? 'border-oli-green bg-oli-green/5 text-oli-dark'
+                      : 'border-oli-border text-oli-gray hover:border-oli-green/40'
+                  }`}
+                >
+                  Não, sou da equipe/admin
+                </button>
+              </div>
+
+              {error && (
+                <p className="text-sm text-oli-red bg-red-50 px-3 py-2 rounded-lg mb-4">{error}</p>
+              )}
+
+              <button
+                type="button"
+                onClick={handleRoleSubmit}
+                disabled={saving || isHealthProfessional === null}
+                className="w-full bg-oli-green text-white font-bold py-3 rounded-xl hover:bg-oli-green-dk transition-colors disabled:opacity-60"
+              >
+                {saving ? 'Salvando...' : 'Concluir'}
+              </button>
             </>
           )}
 

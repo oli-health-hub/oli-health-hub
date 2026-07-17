@@ -9,7 +9,7 @@ export default async function MedicosExcluidosPage() {
   const { data: excluidos } = await supabase
     .from('profiles')
     .select('id, nome, crm, especialidade, status_reason, created_at')
-    .not('user_type', 'in', '(admin,founder,specialist,partner)')
+    .not('user_type', 'in', '(admin,founder,specialist,partner,pending)')
     .eq('account_status', 'deleted')
     .order('created_at', { ascending: false })
     .limit(500);
