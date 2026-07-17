@@ -33,7 +33,7 @@ export default async function PlanosPage() {
   const { data: semPlano } = await supabase
     .from('profiles')
     .select('id, nome, crm, plan, created_at')
-    .not('user_type', 'in', '(admin,founder,specialist,partner)')
+    .not('user_type', 'in', '(admin,founder,specialist,partner,team)')
     .not('id', 'in', `(${(subs ?? []).map(s => {
       const p = s.profiles as unknown as { id: string } | null;
       return `"${p?.id}"`;

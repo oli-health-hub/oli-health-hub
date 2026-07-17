@@ -129,7 +129,7 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
     .eq('id', params.id)
     .single();
 
-  if (!p || ['admin', 'founder', 'specialist', 'partner'].includes(p.user_type)) return notFound();
+  if (!p || ['admin', 'founder', 'specialist', 'partner', 'pending', 'team'].includes(p.user_type)) return notFound();
 
   // E-mail do auth
   const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(params.id);

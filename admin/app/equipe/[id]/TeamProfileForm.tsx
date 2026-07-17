@@ -74,6 +74,7 @@ export function TeamProfileForm(props: Props) {
           <option value="founder">Founder</option>
           <option value="specialist">Especialista</option>
           <option value="partner">Parceiro</option>
+          <option value="team">Equipe OLI</option>
         </select>
       </FieldWrap>
 
