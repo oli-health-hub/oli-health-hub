@@ -40,7 +40,7 @@ const INCLUDED_SERVICES: ServiceItem[] = [
 const totalMarketValue = INCLUDED_SERVICES.reduce((acc, s) => acc + s.marketPrice, 0);
 
 function buildModuleLabel(valor: number, tipo: string): string {
-  if (valor === 0 || tipo === 'incluido') return 'Incluso no plano';
+  if (tipo === 'incluido') return 'Incluso no plano';
   const fmt = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
   if (tipo === 'mensal') return `${fmt}/mês`;
   if (tipo === 'unico')  return `${fmt} único`;
@@ -189,13 +189,14 @@ export default function EcossistemaScreen() {
         ) : (Object.keys(MODULE_CATALOG) as ModuleId[]).map((moduleId) => {
           const base     = MODULE_CATALOG[moduleId];
           const override = modulePriceMap.get(moduleId);
-          const mod: OLIModule = override
+          const hasRealPrice = override && (override.valor > 0 || override.tipo === 'incluido');
+          const mod: OLIModule = hasRealPrice
             ? {
                 ...base,
                 pricing: {
                   ...base.pricing,
-                  amount:       override.valor > 0 ? override.valor : undefined,
-                  displayLabel: buildModuleLabel(override.valor, override.tipo),
+                  amount:       override!.valor > 0 ? override!.valor : undefined,
+                  displayLabel: buildModuleLabel(override!.valor, override!.tipo),
                 },
               }
             : base;
