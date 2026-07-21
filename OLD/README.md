@@ -12,6 +12,7 @@ Arquivos que **não fazem parte** da estrutura definida em `docs/OLI_BASE.md` (d
 | `caveman/` | Ferramenta open-source de terceiros (`JuliusBrussee/caveman`) | Repositório git aninhado, sem relação com o produto OLI. Já era ignorado pelo git. |
 | `mockups/` | `admin-mockup.html`, `totem-qr.html` | Mockups HTML soltos na raiz, substituídos pelo admin Next.js (`admin/`) e pela rota de totem (`admin/app/totem`). Não referenciados por nenhum deploy. |
 | `notas-sessao/` | `SESSAO_2026-05-26.md` | Nota de sessão de trabalho pontual; estado operacional vivo fica em `docs/HANDOFF.md`. |
+| `fotos-brutas/` | Screenshots originais (WhatsApp jpegs do Android, `IMG_*.PNG` do iOS) | Material fonte já processado — as versões finais usadas nas lojas ficam em `assets/Print Screen App/selected/` e `assets/Print Screen App iOS/resized-65/`. Nunca foram versionados no git (não há histórico a restaurar), mantidos só por precaução. |
 
 ## Como restaurar
-Itens versionados (Swift, mockups, nota) preservam histórico no git — use `git mv` para trazer de volta. O `caveman/` é um repositório externo independente.
+Itens versionados (Swift, mockups, nota) preservam histórico no git — use `git mv` para trazer de volta. O `caveman/` é um repositório externo independente. `fotos-brutas/` nunca foi commitado — é só mover de volta com `mv`.
