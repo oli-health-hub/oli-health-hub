@@ -528,8 +528,12 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 **Concluído (confirmado ao vivo, 21/jul sessão 5):** registro A trocado no registro.br pra `216.198.79.1`, propagado. `dig olihealthhub.com.br` retorna o IP da Vercel. Testado direto no domínio: `/`, `/baixar`, `/confirmado`, `/privacidade` → todos HTTP 200; `/baixar?ref=MAR-8124A` mostra a copy individual do Marangos ("Bem-vindo ao OLI!") — confirma que o fix do `76eed6b` (que nunca tinha ido ao ar por causa do Netlify) finalmente está em produção.
 
-**🟡 Cleanup opcional (sem urgência, não afeta produção):**
-- **Site Netlify antigo (`olihealthhub`, site_id `cc03c6f3-...`)** ficou órfão — domínio não aponta mais pra ele, mas o projeto continua linkado ao repo. Isso significa que ele **continua tentando buildar a cada push** (e vai continuar falhando por crédito até 23/jul, depois passaria a "gastar" crédito à toa sem servir nada). Considerar desconectar o repo do site Netlify (Site settings → Build & deploy → Stop builds, ou deletar o site) quando sobrar tempo.
+**✅ Cleanup feito (21/jul sessão 5, via API):**
+- Site Netlify antigo (`olihealthhub`, site_id `cc03c6f3-...`) teve **builds parados** (`build_settings.stop_builds = true`) — não tenta mais buildar a cada push, não gasta crédito à toa.
+- **Domínio desassociado** do site Netlify (`custom_domain = null`) — era só config órfã, DNS já não apontava mais pra lá havia horas.
+- Site **não foi deletado** (decisão consciente — fica inerte, sem custo/risco, dá pra reverter se precisar). Repo continua linkado no GitHub app da Netlify; se quiser remover de vez, é em Site settings → General → Delete site, ou revogar o GitHub App em `github.com/settings/installations`.
+
+**🟡 Pendência de doc (baixa prioridade):**
 - **§3 (Infra — IDs e ambientes) e a "Regra de deploy"** ainda listam Netlify como host do site — atualizar pra Vercel (projeto `oli-landing`) na próxima passada de limpeza de docs.
 
 ## 12. Convenções (do CLAUDE.md)
