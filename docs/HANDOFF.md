@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 17/Julho/2026.
+> Última atualização: 21/Julho/2026.
 
 ---
 
@@ -132,6 +132,8 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - UI extra: banner em `app/meu-plano.tsx`; `ReferralPromoModal` no Início (1º acesso).
 
 **⚠️ Limitação conhecida:** sem SDK de attribution (Branch etc.), instalações novas NÃO fazem deferred deep link — o indicado **digita o código manualmente** (mostrado/copiável na landing). Deep link `?ref=` só pré-preenche se o app já estiver instalado.
+
+**⚠️ Não confundir com:** o **Programa de Indicação de Parceiros Externos** (sessão 21/jul, ver §11) é outra coisa — comissão em R$ pra parceiros comerciais (ex.: distribuidores) que trazem profissionais novos, ainda sem implementação técnica. Este §7 é o programa peer-to-peer entre médicos, já em produção.
 
 ## 8. Autenticação / App Lock (biometria) — estado final
 
@@ -411,11 +413,41 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 - **Dados de teste:** reservas de teste (`test-week-1`..`6`) criadas pra visualizar a semana com dados reais e **excluídas depois** — não sobrou nada na base.
 
+### ✅ Resolvido na sessão 21/jul (site institucional + decoupling admin↔equipe)
+
+- **🌐 Site: planos START/BASE/PRO reais + galeria de salas.** `landing/index.html` ainda mostrava BASE/PRO/VIP antigo com preços/features desatualizados. Corrigido pra refletir `oli-plans.ts` (START grátis R$2,00/min, BASE R$299 R$1,50/min, PRO R$599 R$1,30/min) + nova seção com fotos das 9 salas (`landing/room-photos/`). De brinde: `OLD/README.md` (nunca commitado) documentando o reorg de 17/06, e lock stale de sessão de maio removido. Commit `c4a419a`, push direto (Netlify auto-deploy).
+
+- **🔒 Decoupling admin↔equipe — RESOLVIDO** (fecha §11.18): Claudia (recepção, `user_type='team'`) não conseguia entrar no admin porque `admin/middleware.ts` e `admin/app/login/page.tsx` só liberavam `user_type in (admin, founder)` — acesso ao painel e papel na Comunidade usavam o mesmo campo.
+  - Migration `decouple_admin_access_from_user_type`: nova coluna `profiles.is_admin boolean`, independente do `user_type`. Backfill deu `true` pra quem já tinha acesso (founders). Claudia recebeu `is_admin=true` manualmente — mantém `user_type='team'` intocado (badge "Equipe OLI" na Comunidade não muda).
+  - **Bug relacionado corrigido de brinde:** `is_oli_admin()` (usada em 9 policies RLS — plans, subscriptions, hour_packages, hour_balance, usage_charges, modules, user_modules, referrals) só reconhecia `user_type='admin'`, nem `founder` contava. Agora checa `is_admin`.
+  - `admin/middleware.ts` + `admin/app/login/page.tsx`: gate trocado pra `is_admin`.
+  - `admin/app/usuarios/page.tsx` + `actions.ts`: nova ação `toggleAdminAccess` — concede/revoga acesso ao painel sem mexer no `user_type`/papel da pessoa (era o pedido original do fundador, não implementado até agora). Seção "Administradores" da página lista por `is_admin`, mostra o `user_type` como badge de papel.
+  - `database.types.ts` regenerado. `tsc --noEmit` limpo em app e admin. Advisors de segurança sem novidade (warnings de `is_oli_admin` — search_path mutable, security definer executável por `authenticated` — já existiam antes, não são regressão).
+  - Estado final dos 13 perfis: 3 com acesso ao painel (Guilherme/founder, Igor/founder, Claudia/team), 10 `subscriber` sem acesso — nenhum `user_type` de médico foi alterado.
+  - Commit `c31f6d7`, push direto.
+
 ### 🔴 Achado (13/jul) — MRR do admin inflado por assinatura de teste
 - **Sintoma:** tile "MRR Asaas" no admin (`/` e `/financeiro`) mostrava ~R$499, sem nenhuma assinatura BASE/PRO real ativa na DB (`subscriptions` só tinha START/R$0).
 - **Causa:** assinatura **real e ativa no Asaas** (não só na nossa DB) da conta demo do revisor Google Play — cliente "Revisor Google", Plano PRO, **R$5.990,00/Anual** (rateado = R$499,17/mês, batendo exato com o valor exibido). Criada durante a config da conta demo (§10.1) e nunca cancelada — cobrança recorrente real com cartão vinculado, risco de cobrar de verdade no próximo ciclo.
 - **Ação:** fundador confirmou ser teste, vai cancelar direto no Asaas (Cobranças → Assinaturas → lixeira). Depois de cancelar, MRR volta a refletir só clientes reais.
 - **Lição:** contas demo/revisor não devem ter assinatura Asaas real — usar crédito manual (`hour_balance`) ou plano sem cobrança de verdade, nunca uma subscription recorrente de cartão.
+
+### 🆕 Sessão 21/jul — Programa de Indicação de Parceiros Externos (comercial, ainda não implementado)
+
+- **Não é código** — decisão de negócio, sem commit/migration/OTA. Documento formal em `Programa de Indicação - Modelo de Comissionamento.docx`, pasta `OLI - HH` (fora do repo).
+- **Contexto:** piloto com um parceiro comercial (representante de distribuidora de produtos estéticos, carteira própria de clientes da área de estética) que vai divulgar o OLI pra base dele em troca de comissão — diferente do programa de indicação peer-to-peer já implementado (§7).
+- **Papel do parceiro:** indicação passiva — só divulga, sem prospecção ativa nem acompanhamento de fechamento. Volume estimado: 4 a 10 indicações/mês.
+- **Mecanismo de atribuição definido:** link de indicação único por parceiro, rastreado num admin (indicações geradas, status do cadastro, comissão devida/paga), janela de atribuição de 90 dias entre clique e cadastro. **Não implementado ainda** — hoje só existe o `referral_code` do programa peer-to-peer (§7), que não serve pra esse caso (não gera R$, gera minutos).
+- **Estrutura de comissão fechada (tier passivo, 10%):**
+  - START sem uso → R$ 0.
+  - START, cliente aluga a 1ª hora → 100% do valor da 1ª hora (≈R$120), pago uma vez na 1ª sessão faturada.
+  - BASE anual (R$3.588/ano) → R$359, pago uma vez na confirmação do plano anual.
+  - PRO anual (R$7.188/ano) → R$719, pago uma vez na confirmação.
+  - BASE mensal → 10% sobre 6 meses de mensalidade = R$179, pago uma vez, 60 dias após a ativação.
+  - PRO mensal → 10% sobre 6 meses de mensalidade = R$359, pago uma vez, 60 dias após a ativação.
+- **Por que esse desenho:** comissão ancorada na mensalidade do plano (não na minutagem — parceiro não controla nem prevê uso); pagamento único, sem obrigação recorrente mês a mês (pedido explícito do fundador); plano mensal paga sobre 6 meses (não 12) e só após carência de 60 dias porque a receita não é garantida como no anual (cliente pode cancelar a qualquer momento); percentual calibrado pra esforço passivo — um tier ativo (15-20%) fica documentado como degrau futuro, não decidido agora.
+- **Escalabilidade:** se o piloto funcionar, mesmo modelo (link + comissão) pode ser replicado pra outros parceiros indicadores.
+- **Fonte de preços usada:** `src/models/oli-plans.ts` (BASE R$299/mês, PRO R$599/mês, START gratuito).
 
 ### 🔴 Em aberto
 1. **Config Supabase dashboard** (em `Authentication`):
@@ -438,7 +470,8 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 15. **🆕 Lembrete 05/09/2026** — tarefa agendada pra perguntar se contrato renovou (salário founder 4000→6000). Ver `admin/app/meu-recebimento/page.tsx` (`CONTRATO_RENOVADO`).
 ~~16. **OTA (fix reservas invisíveis)**~~ ✅ **ENVIADA (17/jul)** — commit `8648209`. Update group ID prod `c4a362ec-6deb-4637-9bff-c3000b843025` / preview `5cb13c3a-64ea-4022-87db-20792f0a61e3`.
 ~~17. **OTA (fix conflito de sala + badge Equipe OLI + evento Luma)**~~ ✅ **ENVIADA (17/jul sessão 2)** — commits `31628a6`+`9777305`+`bd1cf5d`. Update group ID prod `1702e018-3adc-4740-ab14-49a73bd4a1ea` / preview `c3795e25-e23d-4e6a-b31c-7deca7593a42`.
-18. **🆕 Decoupling admin↔equipe (achado 17/jul sessão 2, não implementado):** `profiles.user_type` é campo único — hoje é impossível alguém ser `founder`/`team`/`especialista` **e também** ter acesso ao painel admin ao mesmo tempo, porque "acesso ao painel" e "papel na Comunidade" usam o mesmo campo. Sintoma real: Claudia (`user_type='team'`) não consegue entrar no admin, mesmo devendo ter acesso. Bug relacionado achado: `is_oli_admin()` (usada em 9 políticas RLS — planos, assinaturas, módulos, etc.) só reconhece `user_type='admin'`, nem `founder` conta — Guilherme e Igor podem estar sem esse privilégio de escrita via RLS em alguns caminhos (mitigado hoje porque o admin usa `service_role`, que ignora RLS). Fix proposto (aprovado em conversa, não implementado): coluna `profiles.is_admin boolean` independente do `user_type`; middleware/login/`is_oli_admin()` passam a checar `is_admin` em vez de `user_type in (admin,founder)`; `/usuarios` ganha ação de conceder/revogar acesso sem mexer no papel da pessoa. Pausado a pedido do fundador pra resolver o evento do Luma primeiro — retomar quando ele confirmar.
+~~18. **Decoupling admin↔equipe**~~ ✅ **RESOLVIDO (21/jul)** — ver sessão 21/jul abaixo. Fix do acesso da Claudia.
+19. **🆕 Programa de Indicação de Parceiros Externos (definido 21/jul, não implementado):** modelo de comissão fechado (ver sessão 21/jul acima) — falta construir o mecanismo de atribuição (link único por parceiro + tela no admin) e o fluxo de pagamento (cálculo de comissão devida + registro de pago). Sem prazo definido — depende do piloto ser aprovado pelo fundador com o sócio comercial.
 
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
@@ -494,3 +527,7 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (17/jul):** Sessão focada em **e-mail de confirmação quebrado + bug crítico de reservas invisíveis + notificação automática de reserva**. Fix do link de confirmação caindo em `localhost:3000`: Site URL do Supabase Auth desatualizado (config, não código). Investigando reserva "sumida" da Nathalia, achado bug real bem mais amplo: `todayReservations` no `appStore` só carregava reservas de hoje, mas alimentava agenda, criação, reagendamento e encaixe de reserva pra QUALQUER dia — reservas futuras ficavam invisíveis pro próprio profissional e checagem de conflito de horário não enxergava reservas de outros dias (risco de dupla-reserva). Corrigido com `upcomingReservations` (hoje+180d) como fonte pros 4 fluxos, `todayReservations` virou derivado, dashboard intocado. Commit `8648209`, **OTA enviada** (groups `c4a362ec`/`5cb13c3a`). Nova feature: notificação de reserva reaproveitando a central de notificação do admin já existente (`admin_notifications`/`NotificationFeed.tsx`) + trigger Postgres automático + edge function `notify-reservation` + e-mail via Resend (SMTP dos e-mails de auth já usava Resend, não documentado antes). Achado e corrigido no teste: endereço de e-mail com "ç" derrubava o envio inteiro (Resend rejeita o array `to` todo se 1 endereço for inválido) — testado com sucesso depois do fix.
 
 **Resumo de 1 linha (17/jul sessão 2):** Sessão focada em **higiene do admin + um bug crítico de segurança de reservas + onboarding de convite/equipe**. `/medicos` separa contas excluídas numa página própria com badge de status. Achado e corrigido o bug mais sério da sessão: checagem de conflito de sala usava dados escopados por RLS ao próprio profissional — médico A nunca via reserva do médico B na mesma sala, dupla-reserva sem aviso; fix em duas camadas (RPC `get_room_occupancy` client-side + exclusion constraint `reservations_no_room_overlap` no Postgres, race-condition-safe). Convite de admin corrigido (caía no site institucional por falta de `redirectTo` — mesma causa-raiz do bug de e-mail de confirmação de mais cedo) + nova página `/definir-senha`. Convite aceito não vira usuário automaticamente até classificação (`user_type='pending'` até alguém decidir se é profissional de saúde ou equipe). Mapa das Salas ganha visão Semana. Novo `user_type='team'` genérico ("Equipe OLI") pra papéis como recepção, sem precisar de migration por cargo. **Processo novo:** branch de sessão (`claude/hopeful-sanderson-6de50e`) + PR pra `main` a cada mudança (#1–#6, todos merged), branch default do GitHub corrigido de volta pra `main`. **OTA pendente** (commits `31628a6` + `9777305`) — rodar antes do próximo teste em device.
+
+**Resumo de 1 linha (21/jul):** Sessão **comercial, sem código**. Fechado o modelo de comissão do Programa de Indicação de Parceiros Externos — piloto com um parceiro (representante de distribuidora de estética, indicação passiva via link, 4-10 indicações/mês estimadas). Comissão de 10% ancorada na mensalidade do plano (não na minutagem), pagamento único (não recorrente): 1ª hora integral no START, valor cheio na confirmação do plano anual, valor sobre 6 meses após 60 dias de carência no plano mensal. Documento formal gerado (`OLI - HH/Programa de Indicação - Modelo de Comissionamento.docx`). Mecanismo de atribuição (link + tela admin) e fluxo de pagamento **ainda não implementados** — ver item 19 em §11.
+
+**Resumo de 1 linha (21/jul sessão 2):** Sessão focada em **site institucional + acesso da Claudia ao admin**. Landing page corrigida pra refletir preços reais START/BASE/PRO (estava com BASE/PRO/VIP antigo) + galeria de 9 fotos de sala; commit `c4a419a`. Resolvido o bug de decoupling admin↔equipe registrado na sessão 17/jul: Claudia (`user_type='team'`) não conseguia entrar no painel porque acesso e papel na Comunidade usavam o mesmo campo. Nova coluna `profiles.is_admin` independente do `user_type`; `is_oli_admin()` (9 RLS policies) corrigida de brinde pra reconhecer founder também, não só admin; `/usuarios` ganha ação de conceder/revogar acesso sem trocar o papel. Claudia com acesso, nenhum `user_type` de médico alterado. Commit `c31f6d7`, push direto (Vercel auto-deploy).
