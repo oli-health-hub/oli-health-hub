@@ -765,6 +765,7 @@ export type Database = {
           foto_url: string | null
           id: string
           instagram: string | null
+          is_admin: boolean
           is_speaker: boolean
           linkedin: string | null
           local_atuacao: string | null
@@ -820,6 +821,7 @@ export type Database = {
           foto_url?: string | null
           id: string
           instagram?: string | null
+          is_admin?: boolean
           is_speaker?: boolean
           linkedin?: string | null
           local_atuacao?: string | null
@@ -875,6 +877,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           instagram?: string | null
+          is_admin?: boolean
           is_speaker?: boolean
           linkedin?: string | null
           local_atuacao?: string | null
@@ -1389,7 +1392,12 @@ export type Database = {
     }
     Functions: {
       _create_profile_and_subscription: {
-        Args: { p_email: string; p_nome?: string; p_user_id: string; p_user_type?: string }
+        Args: {
+          p_email: string
+          p_nome?: string
+          p_user_id: string
+          p_user_type?: string
+        }
         Returns: undefined
       }
       accept_invite: {

@@ -34,30 +34,30 @@ export async function middleware(request: NextRequest) {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('user_type')
+        .select('is_admin')
         .eq('id', user.id)
         .single();
 
-      if (profile?.user_type === 'admin' || profile?.user_type === 'founder') {
+      if (profile?.is_admin) {
         return NextResponse.redirect(new URL('/', request.url));
       }
     }
     return supabaseResponse;
   }
 
-  // Rotas protegidas — exige autenticação + user_type = 'admin' ou 'founder'
-  // (founder também gerencia o painel, mas aparece como perfil de equipe no app)
+  // Rotas protegidas — exige autenticação + is_admin = true
+  // (independente de user_type/papel na Comunidade — founder/team/specialist podem ter acesso)
   if (!user) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('user_type')
+    .select('is_admin')
     .eq('id', user.id)
     .single();
 
-  if (profile?.user_type !== 'admin' && profile?.user_type !== 'founder') {
+  if (!profile?.is_admin) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 

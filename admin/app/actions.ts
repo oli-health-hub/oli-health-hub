@@ -76,6 +76,21 @@ export async function setUserType(formData: FormData) {
   revalidatePath('/usuarios');
 }
 
+/** Concede/revoga acesso ao painel admin — independente do user_type (papel na Comunidade) */
+export async function toggleAdminAccess(formData: FormData) {
+  const userId   = formData.get('user_id')  as string;
+  const isAdmin  = formData.get('is_admin') === 'true';
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_admin: isAdmin })
+    .eq('id', userId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/usuarios');
+}
+
 /** Ativa / desativa um módulo de um médico */
 export async function setModuleStatus(formData: FormData) {
   const userModuleId = formData.get('user_module_id') as string;
