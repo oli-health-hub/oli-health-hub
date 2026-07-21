@@ -504,7 +504,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 19. **🆕 Programa de Indicação de Parceiros Externos** — modelo de comissão fechado (sessão 21/jul) + **mecanismo de atribuição do piloto (Marangos) implementado (21/jul sessão 4)**: perfil `user_type='partner'` + código `MAR-8124A` + `?ref=` na `/baixar`, reaproveitando o programa de indicação peer-to-peer (§7). Falta ainda: **tela no admin** pra listar indicações/comissão por parceiro (hoje só dá pra consultar via SQL na tabela `referrals`) e o **fluxo de pagamento** (cálculo de comissão devida + registro de pago). Sem prazo definido — depende do piloto validar volume.
 ~~20. **Push pendente (21/jul sessão 4)**~~ ✅ **RESOLVIDO (21/jul sessão 5)** — `git push origin main` rodado no terminal do fundador (commits `76eed6b`+`a7035a7` publicados). Mas isso revelou um problema maior: ver item 21.
 
-21. **🔴🆕 Netlify bloqueado por crédito esgotado — migração pro Vercel em andamento (21/jul sessão 5).** Ver §14 para o diagnóstico completo e o estado exato da migração (TXT verificado, falta trocar o registro A no registro.br). **Enquanto o A não for trocado, mudanças em `landing/` continuam sem efeito no site ao vivo**, mesmo com push/commit ok.
+~~21. **Netlify bloqueado por crédito esgotado — migração pro Vercel**~~ ✅ **RESOLVIDO (21/jul sessão 5)** — registro A trocado no registro.br (`216.198.79.1`), propagado, confirmado ao vivo: `/`, `/baixar`, `/confirmado`, `/privacidade` todos 200, `cleanUrls` funcionando, copy do Marangos ("Bem-vindo ao OLI!") aparecendo certo em `/baixar?ref=MAR-8124A`. Site institucional agora serve 100% do Vercel (projeto `oli-landing`). Ver §14 pro histórico completo. **Falta só o cleanup opcional** (desconectar domínio do site Netlify antigo, atualizar §3) — sem urgência, não afeta nada em produção.
 
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
@@ -512,7 +512,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - **Secret de Edge Function** (Asaas, CC token) → muda no Supabase, vale na hora.
 - **`EXPO_PUBLIC_*`** (Sentry, Luma) → está no bundle → OTA/rebuild.
 
-## 14. 🆕 Migração do site (landing/) — Netlify → Vercel (sessão 21/jul sessão 5, EM ANDAMENTO)
+## 14. Migração do site (landing/) — Netlify → Vercel (sessão 21/jul sessão 5, ✅ CONCLUÍDA)
 
 **Causa raiz (achada nesta sessão):** o site institucional (`landing/`, domínio `olihealthhub.com.br`) parou de publicar deploys — todo commit desde `c31f6d7` (mais cedo em 21/jul) falhava silenciosamente. Diagnóstico via Netlify API (`netlify-cli api getSiteDeploy`, CLI já estava autenticada localmente na máquina do fundador, user `contato@olihealthhub.com.br`, team **Oliteam**):
 - Site real é **`olihealthhub`** (site_id `cc03c6f3-1725-4527-83a8-d26b6413ec17`, não o `bespoke-starship-3fd6f9` vazio que o `.netlify/state.json` da raiz do repo linkava — por isso o fundador não achava o projeto procurando no painel).
@@ -526,11 +526,11 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - Projeto Vercel novo criado pelo fundador: nome **`oli-landing`**, team "Guilherme's projects" (Hobby), root directory `landing`, preset "Other", build command vazio, output directory `.`. Deploy inicial ok (`oli-landing-five.vercel.app` com "Valid Configuration").
 - Domínio `olihealthhub.com.br` adicionado ao projeto Vercel. Registro **TXT** de verificação (`_vercel` → `vc-domain-verify=olihealthhub.com.br,c6c49421679b56206c16`) criado no registro.br e **já verificado** (domain ownership confirmado pela Vercel).
 
-**🔴 Falta (próxima sessão, se não tiver sido feito):**
-- Trocar o registro **A** do domínio no **registro.br**: de `75.2.60.5` (Netlify) pra **`216.198.79.1`** (Vercel) — só isso falta pro tráfego real migrar. Vercel só reexibe essa instrução depois que o TXT verificar (já verificou); conferir a aba Domains do projeto `oli-landing` pra pegar o valor atualizado se a Vercel tiver mudado o IP recomendado nesse meio tempo.
-- Depois de trocar o A e propagar: testar `olihealthhub.com.br/baixar?ref=MAR-8124A` — deve mostrar a copy individual do Marangos ("Bem-vindo ao OLI!"), confirmando que o `76eed6b` finalmente foi ao ar (nunca tinha sido publicado até este ponto, apesar de commitado há dias).
-- Depois de confirmar tudo funcionando no Vercel: **atualizar a "Regra de deploy" do §3** (trocar Netlify por Vercel pra mudanças em `landing/`) e decidir se desconecta o domínio do site Netlify antigo (não obrigatório — só fica órfão, sem custo/risco).
-- Netlify continua sendo usado indiretamente: nada, na real — depois da migração, o site Netlify (`olihealthhub`) fica sem função. Não precisa cancelar a conta, só não vai mais receber deploy (o repo aponta pro Vercel agora via domínio, não via config — o Netlify continuaria fazendo build a cada push, gastando crédito à toa, até esvaziar de novo; **considerar desconectar o repo do site Netlify** depois que o Vercel estiver 100% confirmado, pra parar de consumir crédito à toa).
+**Concluído (confirmado ao vivo, 21/jul sessão 5):** registro A trocado no registro.br pra `216.198.79.1`, propagado. `dig olihealthhub.com.br` retorna o IP da Vercel. Testado direto no domínio: `/`, `/baixar`, `/confirmado`, `/privacidade` → todos HTTP 200; `/baixar?ref=MAR-8124A` mostra a copy individual do Marangos ("Bem-vindo ao OLI!") — confirma que o fix do `76eed6b` (que nunca tinha ido ao ar por causa do Netlify) finalmente está em produção.
+
+**🟡 Cleanup opcional (sem urgência, não afeta produção):**
+- **Site Netlify antigo (`olihealthhub`, site_id `cc03c6f3-...`)** ficou órfão — domínio não aponta mais pra ele, mas o projeto continua linkado ao repo. Isso significa que ele **continua tentando buildar a cada push** (e vai continuar falhando por crédito até 23/jul, depois passaria a "gastar" crédito à toa sem servir nada). Considerar desconectar o repo do site Netlify (Site settings → Build & deploy → Stop builds, ou deletar o site) quando sobrar tempo.
+- **§3 (Infra — IDs e ambientes) e a "Regra de deploy"** ainda listam Netlify como host do site — atualizar pra Vercel (projeto `oli-landing`) na próxima passada de limpeza de docs.
 
 ## 12. Convenções (do CLAUDE.md)
 
