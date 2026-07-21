@@ -561,13 +561,11 @@ export default function DashboardScreen() {
         </View>
 
         {/* ── Monitor de Atrasos ── */}
-        {todayReservations.length > 0 && (
-          <DelayMonitorCard
-            reservations={todayReservations}
-            stdDurationMin={consultationDurationMinutes}
-            isSessionActive={timer.isRunning}
-          />
-        )}
+        <DelayMonitorCard
+          reservations={todayReservations}
+          stdDurationMin={consultationDurationMinutes}
+          isSessionActive={timer.isRunning}
+        />
 
         {/* Agenda de pacientes (Communicare) — desativada até a integração CC
             entrar em produção. Re-montar <CommunicareAgendaCard /> quando ligar. */}
