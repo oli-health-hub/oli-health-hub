@@ -65,11 +65,24 @@
     var qs   = new URLSearchParams(location.search);
     var code = (qs.get('ref') || '').trim().toUpperCase();
 
+    // Mensagens individuais por parceiro comercial externo (não são profissionais
+    // de saúde — o texto não pode dar a entender que ELES ganham crédito de horas,
+    // só quem se cadastra). Adicionar um parceiro novo = uma linha aqui, nada mais.
+    // Códigos que não estiverem neste mapa usam o texto padrão de indicação entre
+    // médicos (benefício mútuo), abaixo.
+    var PARTNER_COPY = {
+      'MAR-8124A': {
+        heading: 'Bem-vindo ao OLI!',
+        subtext: 'Indicação do Marangos: baixe o app, cadastre-se e ganhe uma hora de uso grátis nas salas.'
+      }
+    };
+
     // Com código de indicação (?ref=...): troca para a mensagem de indicação e exibe o código.
     if (code) {
+      var partner = PARTNER_COPY[code];
       document.getElementById('icon').textContent = '🎁';
-      document.getElementById('heading').textContent = 'Você foi indicado!';
-      document.getElementById('subtext').textContent = 'Baixe o OLI Health Hub e cadastre-se. Ao ativar sua conta, você e quem te indicou ganham crédito de horas nas salas.';
+      document.getElementById('heading').textContent = partner ? partner.heading : 'Você foi indicado!';
+      document.getElementById('subtext').textContent = partner ? partner.subtext : 'Baixe o OLI Health Hub e cadastre-se. Ao ativar sua conta, você e quem te indicou ganham crédito de horas nas salas.';
       document.getElementById('code').textContent = code;
       document.getElementById('codeWrap').style.display = 'block';
       document.getElementById('hint').style.display = 'block';
