@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, Image, Linking,
+  StyleSheet, Alert, Image,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,29 +15,33 @@ import { useModuleStore } from '../../src/store/moduleStore';
 import { MODULE_CATALOG, isModuleIncludedInPlan, type ModuleId, type OLIModule } from '../../src/models/modules';
 import { fetchModulePricing, type ModulePriceOverride } from '../../src/services/moduleService';
 import type { PlanType } from '../../src/models/types';
+import { FEATURES, type Feature } from '../meu-plano';
 import CheckoutModal from '../../src/components/CheckoutModal';
 import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
 
-// ─── Serviços Inclusos no Plano ───────────────────────────────────────────────
+// ─── Destaques de benefícios por plano ─────────────────────────────────────────
+// Deriva da mesma matriz de `meu-plano.tsx` (fonte única) — mostra o que o
+// plano atual desbloqueia em relação ao tier anterior, em vez de repetir uma
+// lista fixa que não respeita o plano real do médico.
 
-type ServiceItem = {
-  icon:        string;
-  name:        string;
-  detail:      string;
-  marketPrice: number;
-  unit:        string;
-};
+const PLAN_TIER_ORDER: PlanType[] = ['START', 'BASE', 'PRO', 'VIP'];
 
-const INCLUDED_SERVICES: ServiceItem[] = [
-  { icon: 'people-outline',         name: 'Recepção Assistida',  detail: 'Secretária compartilhada — 20 dias úteis', marketPrice: 2_500.00, unit: 'mês'     },
-  { icon: 'document-text-outline',  name: 'Consultoria Jurídica', detail: '1 de 3 consultas incluídas',              marketPrice:   350.00, unit: 'consulta' },
-  { icon: 'calculator-outline',     name: 'Consultoria Contábil', detail: '1 consulta incluída',                     marketPrice:   300.00, unit: 'consulta' },
-  { icon: 'location-outline',       name: 'Endereço Fiscal',      detail: 'CNPJ registrado no OLI',                  marketPrice:   150.00, unit: 'mês'     },
-  { icon: 'wifi-outline',           name: 'Internet Fibra 1 Gb',  detail: 'Uso nas salas',                           marketPrice:   120.00, unit: 'mês'     },
-  { icon: 'star-outline',           name: 'Evento OLI',           detail: '1 evento incluído / mês',                 marketPrice:   200.00, unit: 'evento'  },
-];
+function getPlanHighlights(userPlan: PlanType): Feature[] {
+  const tierIdx = PLAN_TIER_ORDER.indexOf(userPlan);
+  const included = (plan: PlanType) => FEATURES.filter(f => f.plans[plan] === 'yes');
 
-const totalMarketValue = INCLUDED_SERVICES.reduce((acc, s) => acc + s.marketPrice, 0);
+  if (tierIdx <= 0) return included(userPlan).slice(0, 4);
+
+  const prevPlan = PLAN_TIER_ORDER[tierIdx - 1];
+  const prevSet  = new Set(included(prevPlan).map(f => f.label));
+  const upgrades = included(userPlan).filter(f => !prevSet.has(f.label));
+
+  return (upgrades.length > 0 ? upgrades : included(userPlan)).slice(0, 4);
+}
+
+// ─── Módulos em destaque (preview — lista completa fica em /modulos) ──────────
+
+const HIGHLIGHT_MODULE_IDS: ModuleId[] = ['communicare', 'contabil_mello', 'scribe_ia'];
 
 function buildModuleLabel(valor: number, tipo: string): string {
   if (tipo === 'incluido') return 'Incluso no plano';
@@ -46,6 +50,16 @@ function buildModuleLabel(valor: number, tipo: string): string {
   if (tipo === 'unico')  return `${fmt} único`;
   return fmt;
 }
+
+// ─── Especialistas OLI (todos "em breve" — preview compacto) ──────────────────
+
+const AGENTS = [
+  { title: 'Ana Luiza', avatar: 'A', photo: require('../../assets/images/agentes/ana-luiza.jpg'), color: colors.oliGreen },
+  { title: 'Isabella',  avatar: 'I', photo: require('../../assets/images/agentes/isabella.jpg'),   color: colors.oliGold },
+  { title: 'Amanda',    avatar: 'A', photo: undefined, color: colors.oliCoral },
+  { title: 'Ronaldo',   avatar: 'R', photo: undefined, color: colors.oliPurple },
+  { title: 'Olivia',    avatar: 'O', photo: undefined, color: '#7B9E82' },
+] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -72,6 +86,8 @@ export default function EcossistemaScreen() {
       })
       .catch(() => {});
   }, []);
+
+  const planHighlights = getPlanHighlights(userPlan);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -122,37 +138,56 @@ export default function EcossistemaScreen() {
           )}
         </View>
 
-        {/* ── Serviços Inclusos no Plano ── */}
+        {/* ── Indicação OLI ── */}
+        <TouchableOpacity
+          style={[styles.card, shadows.card, styles.referralCard]}
+          onPress={() => router.push('/indicacao')}
+          accessibilityLabel="Programa de Indicação — indique um colega e ganhe 1 hora grátis"
+        >
+          <View style={styles.referralIconWrap}>
+            <Ionicons name="gift" size={22} color={colors.oliGreen} />
+          </View>
+          <View style={styles.referralInfo}>
+            <Text style={styles.sectionTitle}>Indicação OLI</Text>
+            <Text style={styles.planDesc}>
+              Indique um colega médico. Quando ele se cadastrar, você ganha 1 hora grátis de sala.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.oliLightGray} />
+        </TouchableOpacity>
+
+        {/* ── Benefícios do Plano ── */}
         <View style={[styles.card, shadows.card]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Serviços Inclusos</Text>
-            <Ionicons name="gift-outline" size={20} color={colors.oliGold} />
+            <Text style={styles.sectionTitle}>
+              {userPlan === 'START' ? 'Benefícios do seu plano' : `O que o ${userPlan} desbloqueia`}
+            </Text>
+            <Ionicons name="ribbon-outline" size={20} color={colors.oliGold} />
           </View>
 
-          {INCLUDED_SERVICES.map((svc, i) => (
+          {planHighlights.map((f, i) => (
             <View
-              key={svc.name}
-              style={[svcStyles.row, i < INCLUDED_SERVICES.length - 1 && svcStyles.rowBorder]}
+              key={f.label}
+              style={[svcStyles.row, i < planHighlights.length - 1 && svcStyles.rowBorder]}
             >
               <View style={svcStyles.iconWrap}>
-                <Ionicons name={svc.icon as any} size={18} color={colors.oliGreen} />
+                <Ionicons name="checkmark" size={16} color={colors.oliGreen} />
               </View>
               <View style={svcStyles.info}>
-                <Text style={svcStyles.name}>{svc.name}</Text>
-                <Text style={svcStyles.detail}>{svc.detail}</Text>
+                <Text style={svcStyles.name}>{f.label}</Text>
+                {f.detail && <Text style={svcStyles.detail}>{f.detail}</Text>}
               </View>
-              <Text style={svcStyles.marketPrice}>
-                R${svc.marketPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}/{svc.unit}
-              </Text>
             </View>
           ))}
 
-          <View style={svcStyles.footer}>
-            <Text style={svcStyles.footerLabel}>Valor de mercado destes serviços</Text>
-            <Text style={svcStyles.footerValue}>
-              R${totalMarketValue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}/mês
-            </Text>
-          </View>
+          <TouchableOpacity
+            style={styles.upgradeBtn}
+            onPress={() => router.push('/meu-plano')}
+            accessibilityLabel="Ver todos os benefícios do plano"
+          >
+            <Text style={styles.upgradeBtnText}>Ver todos os benefícios</Text>
+            <Ionicons name="arrow-forward" size={13} color={colors.oliGold} />
+          </TouchableOpacity>
         </View>
 
         {/* ── WhatsApp Recepção ── */}
@@ -186,7 +221,7 @@ export default function EcossistemaScreen() {
           <View style={moduleStyles.loading}>
             <ActivityIndicator color={colors.oliGreen} />
           </View>
-        ) : (Object.keys(MODULE_CATALOG) as ModuleId[]).map((moduleId) => {
+        ) : HIGHLIGHT_MODULE_IDS.map((moduleId) => {
           const base     = MODULE_CATALOG[moduleId];
           const override = modulePriceMap.get(moduleId);
           const hasRealPrice = override && (override.valor > 0 || override.tipo === 'incluido');
@@ -215,66 +250,35 @@ export default function EcossistemaScreen() {
         })}
 
         {/* ── Especialistas OLI ── */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
-          Especialistas OLI
-        </Text>
-        <Text style={[styles.sectionDesc, { paddingHorizontal: spacing.md }]}>
-          Nossos especialistas de IA estão chegando. Em breve você poderá tirar dúvidas
-          especializadas diretamente por aqui.
-        </Text>
-
         <View style={[styles.card, shadows.card]}>
-          <AgentCard
-            avatar="A"
-            photo={require('../../assets/images/agentes/ana-luiza.jpg')}
-            color={colors.oliGreen}
-            title="Ana Luiza"
-            role="Direito Médico"
-            subtitle="CFM, LGPD, contratos e ética médica"
-            onPress={() => router.push('/chatbot?persona=ana')}
-            comingSoon
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
-            avatar="I"
-            photo={require('../../assets/images/agentes/isabella.jpg')}
-            color={colors.oliGold}
-            title="Isabella"
-            role="Contabilidade Médica"
-            subtitle="Impostos, PJ médica, nota fiscal e pró-labore"
-            onPress={() => router.push('/chatbot?persona=isabella')}
-            comingSoon
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
-            avatar="A"
-            color={colors.oliCoral}
-            title="Amanda"
-            role="OLI Convênios"
-            subtitle="Credenciamento, faturamento TISS e glosas"
-            onPress={() => router.push('/chatbot?persona=convenios')}
-            comingSoon
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
-            avatar="R"
-            color={colors.oliPurple}
-            title="Ronaldo"
-            role="OLI Carreira"
-            subtitle="Posicionamento, captação e gestão de no-show"
-            onPress={() => router.push('/chatbot?persona=carreira')}
-            comingSoon
-          />
-          <View style={styles.agentDivider} />
-          <AgentCard
-            avatar="O"
-            color="#7B9E82"
-            title="Olivia"
-            role="OLI Health Hub"
-            subtitle="Salas, planos, reservas e eventos"
-            onPress={() => router.push('/chatbot?persona=olivia')}
-            comingSoon
-          />
+          <View style={styles.cardHeader}>
+            <Text style={styles.sectionTitle}>Especialistas OLI</Text>
+            <View style={agentPreviewStyles.soonBadge}>
+              <Ionicons name="time-outline" size={12} color={colors.oliGold} />
+              <Text style={agentPreviewStyles.soonText}>Em breve</Text>
+            </View>
+          </View>
+          <Text style={styles.planDesc}>
+            5 especialistas de IA — jurídico, contábil, convênios, carreira e OLI — para tirar
+            dúvidas direto pelo app.
+          </Text>
+          <View style={agentPreviewStyles.strip}>
+            {AGENTS.map((a, i) => (
+              <View
+                key={a.title}
+                style={[
+                  agentPreviewStyles.avatar,
+                  { backgroundColor: a.color, marginLeft: i === 0 ? 0 : -12, zIndex: AGENTS.length - i },
+                ]}
+              >
+                {a.photo ? (
+                  <Image source={a.photo} style={agentPreviewStyles.avatarImg} />
+                ) : (
+                  <Text style={agentPreviewStyles.avatarText}>{a.avatar}</Text>
+                )}
+              </View>
+            ))}
+          </View>
         </View>
 
       </ScrollView>
@@ -426,88 +430,26 @@ const moduleStyles = StyleSheet.create({
   ctaText:     { fontSize: 12, fontWeight: '700' },
 });
 
-// ── AgentCard ─────────────────────────────────────────────────────────────────
+// ── Especialistas OLI (preview) — Styles ────────────────────────────────────────
 
-function AgentCard({
-  avatar, photo, color, title, role, subtitle, onPress, comingSoon,
-}: {
-  avatar:   string;
-  photo?:   ReturnType<typeof require>;
-  color:    string;
-  title:    string;
-  role:     string;
-  subtitle: string;
-  onPress:  () => void;
-  comingSoon?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={[agentStyles.row, comingSoon && agentStyles.rowDisabled]}
-      onPress={comingSoon ? undefined : onPress}
-      disabled={comingSoon}
-      activeOpacity={comingSoon ? 1 : 0.75}
-      accessibilityLabel={comingSoon ? `${title} — ${role} — em breve` : `Consultar ${title} — ${role}`}
-    >
-      <View style={[agentStyles.avatar, { backgroundColor: color }]}>
-        {photo ? (
-          <Image source={photo} style={agentStyles.photo} />
-        ) : (
-          <Text style={agentStyles.avatarText}>{avatar}</Text>
-        )}
-      </View>
-      <View style={agentStyles.info}>
-        <View style={agentStyles.nameRow}>
-          <Text style={agentStyles.name}>{title}</Text>
-          <View style={[agentStyles.roleBadge, { backgroundColor: `${color}18` }]}>
-            <Text style={[agentStyles.roleText, { color }]}>{role}</Text>
-          </View>
-        </View>
-        <Text style={agentStyles.subtitle} numberOfLines={1}>{subtitle}</Text>
-      </View>
-      {comingSoon ? (
-        <View style={agentStyles.soonBadge}>
-          <Ionicons name="time-outline" size={12} color={colors.oliGold} />
-          <Text style={agentStyles.soonText}>Em breve</Text>
-        </View>
-      ) : (
-        <View style={[agentStyles.chatBtn, { backgroundColor: `${color}15` }]}>
-          <Ionicons name="chatbubble-ellipses-outline" size={16} color={color} />
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-const agentStyles = StyleSheet.create({
-  row:        { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 14, paddingHorizontal: spacing.md },
-  avatar:     { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', flexShrink: 0, overflow: 'hidden' },
-  photo:      { width: 50, height: 50, borderRadius: 25 },
-  avatarText: { color: colors.white, fontSize: 20, fontWeight: '700' },
-  info:       { flex: 1, gap: 4 },
-  nameRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
-  name:       { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
-  roleBadge:  { borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
-  roleText:   { fontSize: 11, fontWeight: '700' },
-  subtitle:   { fontSize: 12, color: colors.gray },
-  chatBtn:    { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  rowDisabled:{ opacity: 0.55 },
-  soonBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.oliGold}18`, borderRadius: radius.full, paddingHorizontal: 9, paddingVertical: 4, flexShrink: 0 },
+const agentPreviewStyles = StyleSheet.create({
+  soonBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.oliGold}18`, borderRadius: radius.full, paddingHorizontal: 9, paddingVertical: 4 },
   soonText:   { fontSize: 11, fontWeight: '700', color: colors.oliGold },
+  strip:      { flexDirection: 'row', marginTop: spacing.sm },
+  avatar:     { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white, overflow: 'hidden' },
+  avatarImg:  { width: 40, height: 40, borderRadius: 20 },
+  avatarText: { color: colors.white, fontSize: 15, fontWeight: '700' },
 });
 
-// ── Serviços Inclusos Styles ──────────────────────────────────────────────────
+// ── Benefícios do Plano — Styles (linhas com check, reaproveitado do antigo "Serviços Inclusos") ──
 
 const svcStyles = StyleSheet.create({
-  row:        { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 11 },
-  rowBorder:  { borderBottomWidth: 0.5, borderBottomColor: colors.border },
-  iconWrap:   { width: 34, height: 34, borderRadius: 17, backgroundColor: `${colors.oliGreen}12`, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  info:       { flex: 1 },
-  name:       { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
-  detail:     { fontSize: 12, color: colors.gray, marginTop: 2 },
-  marketPrice:{ fontSize: 13, fontWeight: '700', color: colors.oliDarkGray },
-  footer:     { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footerLabel:{ fontSize: 13, color: colors.gray },
-  footerValue:{ fontSize: 14, fontWeight: '700', color: colors.oliGold },
+  row:       { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 11 },
+  rowBorder: { borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  iconWrap:  { width: 34, height: 34, borderRadius: 17, backgroundColor: `${colors.oliGreen}12`, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  info:      { flex: 1 },
+  name:      { fontSize: 14, fontWeight: '600', color: colors.oliDarkGray },
+  detail:    { fontSize: 12, color: colors.gray, marginTop: 2 },
 });
 
 // ── Main Styles ───────────────────────────────────────────────────────────────
@@ -534,7 +476,6 @@ const styles = StyleSheet.create({
   planDesc:         { fontSize: 14, color: colors.gray, lineHeight: 20 },
   upgradeBtn:       { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm },
   upgradeBtnText:   { fontSize: 13, fontWeight: '700', color: colors.oliGold },
-  agentDivider:     { height: 0.5, backgroundColor: colors.border, marginHorizontal: spacing.md },
   sectionDesc:      { fontSize: 13, color: colors.gray, lineHeight: 18, marginTop: -spacing.xs },
   receptionBtn: {
     flexDirection:   'row',
@@ -546,4 +487,8 @@ const styles = StyleSheet.create({
     padding:         spacing.md,
   },
   receptionBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+
+  referralCard:     { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  referralIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: `${colors.oliGreen}15`, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  referralInfo:     { flex: 1, gap: 2 },
 });

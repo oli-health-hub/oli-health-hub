@@ -86,9 +86,9 @@ const PLANS: PlanMeta[] = [
 // MATRIZ DE BENEFÍCIOS (fonte: Panorama Contratual v3.0)
 // ─────────────────────────────────────────────────────────────────────────────
 
-type FeatureStatus = 'yes' | 'no' | 'soon';
+export type FeatureStatus = 'yes' | 'no' | 'soon';
 
-interface Feature {
+export interface Feature {
   label:           string;
   detail?:         string;
   /** Rótulo quantitativo por plano — exibido como detalhe quando o status é 'yes' */
@@ -107,7 +107,7 @@ const FEATURE_CATEGORIES = [
   'SERVIÇOS VIP (EM BREVE)',
 ] as const;
 
-const FEATURES: Feature[] = [
+export const FEATURES: Feature[] = [
   // ── INFRAESTRUTURA FÍSICA ──
   {
     label:    'Acesso aos consultórios',

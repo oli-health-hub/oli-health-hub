@@ -17,6 +17,7 @@ import { colors, spacing, radius, shadows } from '../src/theme/designSystem';
 import { TagInput } from '../src/components/TagInput';
 import { ProfileCompletionCard } from '../src/components/ProfileCompletionCard';
 import { OlicoinsBadge } from '../src/components/OlicoinsBadge';
+import { IndiqueEGanheButton } from '../src/components/IndiqueEGanheButton';
 import { OlicoinsToast } from '../src/components/OlicoinsToast';
 import { creditOlicoins } from '../src/services/olicoinsService';
 import { unregisterPushToken } from '../src/services/pushService';
@@ -383,7 +384,12 @@ export default function PerfilScreen() {
           <View style={styles.planBadge}>
             <Text style={styles.planBadgeText}>Plano {userPlan}</Text>
           </View>
-          {session?.user?.id && <OlicoinsBadge professionalId={session.user.id} />}
+          {session?.user?.id && (
+            <View style={styles.badgeRow}>
+              <OlicoinsBadge professionalId={session.user.id} />
+              <IndiqueEGanheButton />
+            </View>
+          )}
         </View>
 
         {/* ── Progresso do perfil (Olicoins) ── */}
@@ -897,6 +903,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 48 },
 
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },
+  badgeRow:      { flexDirection: 'row', gap: spacing.sm, marginTop: 2 },
   avatarWrap:    { marginBottom: spacing.md, position: 'relative' },
   avatar: {
     width: 96, height: 96, borderRadius: 48,

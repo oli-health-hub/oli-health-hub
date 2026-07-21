@@ -21,6 +21,7 @@ import { QRScannerModal } from '../../src/components/QRScannerModal';
 import { ReferralPromoModal } from '../../src/components/ReferralPromoModal';
 import { CalendlyVisitBadge } from '../../src/components/CalendlyVisitBadge';
 import { OlicoinsBadge } from '../../src/components/OlicoinsBadge';
+import { IndiqueEGanheButton } from '../../src/components/IndiqueEGanheButton';
 import { ProfileCompletionCard } from '../../src/components/ProfileCompletionCard';
 import { OlicoinsToast } from '../../src/components/OlicoinsToast';
 import { reconcileActionObjectives } from '../../src/services/olicoinsService';
@@ -400,7 +401,6 @@ export default function DashboardScreen() {
           <View style={styles.headerLeft}>
             <Text style={styles.greeting}>Olá, {userName}</Text>
             <Text style={styles.plan}>Plano {userPlan}</Text>
-            {session?.user?.id && <OlicoinsBadge professionalId={session.user.id} />}
           </View>
           <TouchableOpacity
             style={styles.avatarCircle}
@@ -416,6 +416,13 @@ export default function DashboardScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        {session?.user?.id && (
+          <View style={styles.badgeRow}>
+            <OlicoinsBadge professionalId={session.user.id} />
+            <IndiqueEGanheButton />
+          </View>
+        )}
 
         {/* ── Progresso do perfil (Olicoins) ── */}
         {profile && <ProfileCompletionCard profile={profile} />}
@@ -1005,8 +1012,9 @@ const styles = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: colors.oliBackground },
   content: { paddingBottom: 40 },
 
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.lg },
+  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.sm },
   headerLeft:   { alignItems: 'flex-start', gap: spacing.xs },
+  badgeRow:     { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   greeting:     { fontSize: 24, fontWeight: '700', color: colors.oliDarkGray },
   plan:         { fontSize: 13, fontWeight: '500', color: colors.oliGold, marginTop: 2 },
   avatarCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: `${colors.oliGreen}26`, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
