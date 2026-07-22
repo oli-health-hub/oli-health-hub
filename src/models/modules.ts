@@ -123,9 +123,9 @@ export const MODULE_CATALOG: Record<ModuleId, OLIModule> = {
       displayLabel: 'A definir',
     },
     requiredPlan: 'BASE',
-    activationType: 'oauth',
-    activationLayer: 'self_service',
-    status: 'coming_soon',
+    activationType: 'contact_sales',
+    activationLayer: 'oli_config',
+    status: 'available',
     includedInPlans: ['VIP'],
     featuresByPlan: {
       BASE: [

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../src/store/appStore';
 import { contactReception } from '../../src/utils/whatsapp';
+import { contractModule } from '../../src/utils/moduleContract';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { useAuthStore } from '../../src/store/authStore';
 import { useModuleStore } from '../../src/store/moduleStore';
@@ -340,15 +341,7 @@ function ModuleCard({
 
   const statusColor = STATUS_COLOR[status];
 
-  const handleCTA = async () => {
-    if (module.activationType === 'in_app_form' && module.pricing.amount !== undefined) {
-      onContractPress?.(module);
-      return;
-    }
-    await contactReception(
-      `Olá! Tenho interesse em contratar o módulo *${module.name}* (${module.provider}). Poderia me passar mais informações?`
-    );
-  };
+  const handleCTA = () => contractModule(module, (m) => onContractPress?.(m));
 
   const handleLocked = () => {
     Alert.alert(

@@ -22,6 +22,7 @@ import {
   type OLIModule,
 } from '../src/models/modules';
 import CheckoutModal from '../src/components/CheckoutModal';
+import { contractModule } from '../src/utils/moduleContract';
 import type { PlanType } from '../src/models/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ export default function ModulosScreen() {
                     active={active}
                     canAccess={canAccess}
                     userPlan={userPlan}
-                    onContract={() => setCheckoutModule(mod)}
+                    onContract={() => contractModule(mod, setCheckoutModule)}
                     onUpgrade={() => router.push('/meu-plano')}
                   />
                 );
