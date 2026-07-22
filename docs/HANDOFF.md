@@ -536,6 +536,14 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 **🟡 Pendência de doc (baixa prioridade):**
 - **§3 (Infra — IDs e ambientes) e a "Regra de deploy"** ainda listam Netlify como host do site — atualizar pra Vercel (projeto `oli-landing`) na próxima passada de limpeza de docs.
 
+### 🔴 INCIDENTE resolvido (22/jul) — app sumiu da Google Play (404 na ficha)
+
+- **Sintoma:** `play.google.com/store/apps/details?id=com.oli.healthhub` retornava 404 direto do servidor do Google — não era atraso de indexação de busca, a ficha não resolvia.
+- **Investigação (sem acesso a Play Console/e-mail do dev — feita via prints do fundador):** "Atividades de envio" mostrava envio #3 (13/jul, 8:30) com status "Publicado" — bate com o handoff, foi ao ar de verdade naquele dia. Não existe registro de nenhuma ação de remoção entre 13/jul e 21/jul nessa tela (ela só loga envios feitos pelo time, não enforcement automático do Google).
+- **Causa raiz não confirmada** — não foi possível cravar por falta de acesso a "Política e programas → Status do app" nem ao e-mail da conta de desenvolvedor (únicos lugares que mostram o motivo real de uma suspensão/remoção automática). Hipóteses não verificadas: prazo de target API level vencido, Data Safety expirado, ou denúncia de política.
+- **Resolução:** durante a investigação, envio #4 (21/jul, 22:28) — Produção — foi enviado e passou pela análise do Google. App voltou ao ar (`Updated on Jul 21, 2026` na ficha pública), instalação confirmada funcionando pelo fundador.
+- **Pendência real:** já que a causa raiz não foi identificada, o mesmo pode acontecer de novo sem aviso. Se sumir de novo, checar primeiro "Política e programas → Status do app" e e-mail do dev antes de reenviar — pra não ficar só reagindo ao sintoma.
+
 ## 12. Convenções (do CLAUDE.md)
 
 - TypeScript estrito, sem `any`, sem `console.log` em produção.
