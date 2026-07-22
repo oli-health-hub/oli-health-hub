@@ -40,6 +40,15 @@ function getPlanHighlights(userPlan: PlanType): Feature[] {
   return (upgrades.length > 0 ? upgrades : included(userPlan)).slice(0, 4);
 }
 
+// ─── Cor de destaque por plano (hero do card "Meu Plano") ─────────────────────
+
+const PLAN_COLOR: Record<PlanType, string> = {
+  START: colors.oliLightGray,
+  BASE:  colors.oliGreen,
+  PRO:   colors.oliGold,
+  VIP:   colors.oliPurple,
+};
+
 // ─── Módulos em destaque (preview — lista completa fica em /modulos) ──────────
 
 const HIGHLIGHT_MODULE_IDS: ModuleId[] = ['communicare', 'contabil_mello', 'scribe_ia'];
@@ -102,35 +111,35 @@ export default function EcossistemaScreen() {
         }}
       >
 
-        {/* ── Meu Plano ── */}
-        <View style={[styles.card, shadows.card]}>
+        {/* ── Meu Plano (hero na cor do plano) ── */}
+        <View style={[styles.card, styles.heroCard, shadows.card, { backgroundColor: PLAN_COLOR[userPlan] }]}>
           <View style={styles.planHeader}>
-            <Text style={styles.sectionTitle}>Meu Plano</Text>
+            <Text style={[styles.sectionTitle, styles.heroText]}>Meu Plano</Text>
             <TouchableOpacity
               onPress={() => router.push('/meu-plano')}
               accessibilityLabel="Ver benefícios e opções de upgrade"
             >
-              <Text style={styles.upgradeLink}>Ver planos</Text>
+              <Text style={styles.heroLink}>Ver planos</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.planRow}>
-            <Text style={styles.planName}>{userPlan}</Text>
-            <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>Ativo</Text>
+            <Text style={styles.heroPlanName}>{userPlan}</Text>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>Ativo</Text>
             </View>
           </View>
-          <Text style={styles.planDesc}>
+          <Text style={styles.heroDesc}>
             Acesso à infraestrutura premium, recepção assistida e agendamento online.
           </Text>
           {userPlan !== 'VIP' && (
             <TouchableOpacity
-              style={styles.upgradeBtn}
+              style={styles.heroUpgradeBtn}
               onPress={() => router.push('/meu-plano')}
               accessibilityLabel="Fazer upgrade do plano"
             >
-              <Ionicons name="arrow-up-circle-outline" size={15} color={colors.oliGold} />
-              <Text style={styles.upgradeBtnText}>
+              <Ionicons name="arrow-up-circle-outline" size={15} color={PLAN_COLOR[userPlan]} />
+              <Text style={[styles.upgradeBtnText, { color: PLAN_COLOR[userPlan] }]}>
                 {userPlan === 'START' ? 'Fazer Upgrade para BASE ou PRO' :
                  userPlan === 'BASE'  ? 'Fazer Upgrade para PRO' :
                                         'Ver Plano VIP (em breve)'}
@@ -222,33 +231,37 @@ export default function EcossistemaScreen() {
           <View style={moduleStyles.loading}>
             <ActivityIndicator color={colors.oliGreen} />
           </View>
-        ) : HIGHLIGHT_MODULE_IDS.map((moduleId) => {
-          const base     = MODULE_CATALOG[moduleId];
-          const override = modulePriceMap.get(moduleId);
-          const hasRealPrice = override && (override.valor > 0 || override.tipo === 'incluido');
-          const mod: OLIModule = hasRealPrice
-            ? {
-                ...base,
-                pricing: {
-                  ...base.pricing,
-                  amount:       override!.valor > 0 ? override!.valor : undefined,
-                  displayLabel: buildModuleLabel(override!.valor, override!.tipo),
-                },
-              }
-            : base;
-          const included = isModuleIncludedInPlan(moduleId, userPlan);
-          const active   = isModuleActive(moduleId, userPlan);
-          return (
-            <ModuleCard
-              key={moduleId}
-              module={mod}
-              userPlan={userPlan}
-              isIncluded={included}
-              isActive={active && !included}
-              onContractPress={setCheckoutModule}
-            />
-          );
-        })}
+        ) : (
+          <View style={moduleStyles.grid}>
+            {HIGHLIGHT_MODULE_IDS.map((moduleId) => {
+              const base     = MODULE_CATALOG[moduleId];
+              const override = modulePriceMap.get(moduleId);
+              const hasRealPrice = override && (override.valor > 0 || override.tipo === 'incluido');
+              const mod: OLIModule = hasRealPrice
+                ? {
+                    ...base,
+                    pricing: {
+                      ...base.pricing,
+                      amount:       override!.valor > 0 ? override!.valor : undefined,
+                      displayLabel: buildModuleLabel(override!.valor, override!.tipo),
+                    },
+                  }
+                : base;
+              const included = isModuleIncludedInPlan(moduleId, userPlan);
+              const active   = isModuleActive(moduleId, userPlan);
+              return (
+                <ModuleTile
+                  key={moduleId}
+                  module={mod}
+                  userPlan={userPlan}
+                  isIncluded={included}
+                  isActive={active && !included}
+                  onContractPress={setCheckoutModule}
+                />
+              );
+            })}
+          </View>
+        )}
 
         {/* ── Especialistas OLI ── */}
         <View style={[styles.card, shadows.card]}>
@@ -299,13 +312,29 @@ export default function EcossistemaScreen() {
   );
 }
 
-// ── ModuleCard ────────────────────────────────────────────────────────────────
+// ── ModuleTile (grid 2 colunas) ─────────────────────────────────────────────────
 
 const PLAN_RANK: Record<PlanType, number> = { START: 0, BASE: 1, PRO: 2, VIP: 3 };
 
 type ModuleDisplayStatus = 'included' | 'active' | 'available' | 'locked' | 'coming_soon';
 
-function ModuleCard({
+const STATUS_LABEL: Record<ModuleDisplayStatus, string> = {
+  included:    'Incluso no plano',
+  active:      'Ativo',
+  available:   'Disponível',
+  locked:      'Bloqueado',
+  coming_soon: 'Em breve',
+};
+
+const STATUS_COLOR: Record<ModuleDisplayStatus, string> = {
+  included:    colors.oliGreen,
+  active:      colors.oliGreen,
+  available:   colors.oliGold,
+  locked:      colors.oliLightGray,
+  coming_soon: colors.oliLightGray,
+};
+
+function ModuleTile({
   module, userPlan, isIncluded, isActive, onContractPress,
 }: {
   module:           OLIModule;
@@ -323,25 +352,11 @@ function ModuleCard({
   else if (canContract) status = 'available';
   else                  status = 'locked';
 
-  const STATUS_LABEL: Record<ModuleDisplayStatus, string> = {
-    included:    'Incluso no plano',
-    active:      'Ativo',
-    available:   'Disponível',
-    locked:      `Requer ${module.requiredPlan}`,
-    coming_soon: 'Em breve',
-  };
-
-  const STATUS_COLOR: Record<ModuleDisplayStatus, string> = {
-    included:    colors.oliGreen,
-    active:      colors.oliGreen,
-    available:   colors.oliGold,
-    locked:      colors.oliLightGray,
-    coming_soon: colors.oliLightGray,
-  };
-
   const statusColor = STATUS_COLOR[status];
 
   const handleCTA = () => contractModule(module, (m) => onContractPress?.(m));
+
+  const handleInfo = () => Alert.alert(module.name, module.description);
 
   const handleLocked = () => {
     Alert.alert(
@@ -351,76 +366,65 @@ function ModuleCard({
   };
 
   return (
-    <View style={[moduleStyles.card, shadows.small]}>
-      <View style={[moduleStyles.accentBar, { backgroundColor: statusColor }]} />
-      <View style={moduleStyles.body}>
-        <View style={moduleStyles.headerRow}>
-          <View style={moduleStyles.titleGroup}>
-            <Text style={moduleStyles.name}>{module.name}</Text>
-            <Text style={moduleStyles.provider}>{module.provider}</Text>
-          </View>
-          <View style={[moduleStyles.statusBadge, { backgroundColor: `${statusColor}18` }]}>
-            {(status === 'included' || status === 'active') && (
-              <Ionicons name="checkmark-circle" size={11} color={statusColor} />
-            )}
-            {status === 'locked' && (
-              <Ionicons name="lock-closed" size={11} color={statusColor} />
-            )}
-            <Text style={[moduleStyles.statusText, { color: statusColor }]}>
-              {STATUS_LABEL[status]}
-            </Text>
-          </View>
+    <View style={[tileStyles.tile, shadows.small, { borderTopColor: statusColor }]}>
+      <TouchableOpacity
+        style={tileStyles.infoBtn}
+        onPress={handleInfo}
+        accessibilityLabel={`Mais informações sobre ${module.name}`}
+      >
+        <Ionicons name="information-circle-outline" size={18} color={colors.oliLightGray} />
+      </TouchableOpacity>
+
+      <Text style={tileStyles.name} numberOfLines={2}>{module.name}</Text>
+      <Text style={tileStyles.price}>{module.pricing.displayLabel}</Text>
+
+      {status === 'available' && (
+        <TouchableOpacity
+          style={[tileStyles.cta, { borderColor: statusColor }]}
+          onPress={handleCTA}
+          accessibilityLabel={`Contratar módulo ${module.name}`}
+        >
+          <Text style={[tileStyles.ctaText, { color: statusColor }]}>Contratar</Text>
+        </TouchableOpacity>
+      )}
+
+      {status === 'locked' && (
+        <TouchableOpacity
+          style={[tileStyles.cta, { borderColor: `${colors.oliLightGray}60` }]}
+          onPress={handleLocked}
+          accessibilityLabel={`Módulo requer plano ${module.requiredPlan}`}
+        >
+          <Text style={[tileStyles.ctaText, { color: colors.oliLightGray }]} numberOfLines={1}>
+            Requer {module.requiredPlan}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {(status === 'included' || status === 'active' || status === 'coming_soon') && (
+        <View style={[tileStyles.statusPill, { backgroundColor: `${statusColor}18` }]}>
+          <Text style={[tileStyles.statusPillText, { color: statusColor }]}>
+            {STATUS_LABEL[status]}
+          </Text>
         </View>
-
-        <Text style={moduleStyles.tagline}>{module.tagline}</Text>
-
-        <View style={moduleStyles.footer}>
-          <Text style={moduleStyles.price}>{module.pricing.displayLabel}</Text>
-
-          {status === 'available' && (
-            <TouchableOpacity
-              style={[moduleStyles.cta, { borderColor: statusColor }]}
-              onPress={handleCTA}
-              accessibilityLabel={`Contratar módulo ${module.name}`}
-            >
-              <Text style={[moduleStyles.ctaText, { color: statusColor }]}>Contratar</Text>
-              <Ionicons name="arrow-forward" size={13} color={statusColor} />
-            </TouchableOpacity>
-          )}
-
-          {status === 'locked' && (
-            <TouchableOpacity
-              style={[moduleStyles.cta, { borderColor: `${colors.oliLightGray}60` }]}
-              onPress={handleLocked}
-              accessibilityLabel={`Módulo requer plano ${module.requiredPlan}`}
-            >
-              <Text style={[moduleStyles.ctaText, { color: colors.oliLightGray }]}>
-                Upgrade para {module.requiredPlan}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      )}
     </View>
   );
 }
 
 const moduleStyles = StyleSheet.create({
-  loading:     { paddingVertical: spacing.lg, alignItems: 'center' },
-  card:        { flexDirection: 'row', backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden' },
-  accentBar:   { width: 4 },
-  body:        { flex: 1, padding: spacing.md, gap: 6 },
-  headerRow:   { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
-  titleGroup:  { flex: 1, gap: 2 },
-  name:        { fontSize: 15, fontWeight: '700', color: colors.oliDarkGray },
-  provider:    { fontSize: 12, color: colors.oliLightGray },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3, flexShrink: 0 },
-  statusText:  { fontSize: 11, fontWeight: '700' },
-  tagline:     { fontSize: 13, color: colors.gray, lineHeight: 18 },
-  footer:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  price:       { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray },
-  cta:         { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderRadius: radius.md, paddingVertical: 8, paddingHorizontal: 14 },
-  ctaText:     { fontSize: 12, fontWeight: '700' },
+  loading: { paddingVertical: spacing.lg, alignItems: 'center' },
+  grid:    { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+});
+
+const tileStyles = StyleSheet.create({
+  tile:           { width: '47%', backgroundColor: colors.white, borderRadius: radius.lg, borderTopWidth: 3, padding: spacing.sm, gap: 4 },
+  infoBtn:        { position: 'absolute', top: 6, right: 6, padding: 2, zIndex: 1 },
+  name:           { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray, marginRight: 18, minHeight: 34 },
+  price:          { fontSize: 12, fontWeight: '700', color: colors.oliDarkGray },
+  cta:            { marginTop: 4, alignItems: 'center', borderWidth: 1.5, borderRadius: radius.md, paddingVertical: 7 },
+  ctaText:        { fontSize: 11, fontWeight: '700' },
+  statusPill:     { marginTop: 4, alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3 },
+  statusPillText: { fontSize: 10, fontWeight: '700' },
 });
 
 // ── Especialistas OLI (preview) — Styles ────────────────────────────────────────
@@ -461,15 +465,21 @@ const styles = StyleSheet.create({
   seeAllLink:       { fontSize: 13, fontWeight: '600', color: colors.oliGold },
   planHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   sectionTitle:     { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
-  upgradeLink:      { fontSize: 14, fontWeight: '700', color: colors.oliGold },
   planRow:          { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-  planName:         { fontSize: 24, fontWeight: '700', color: colors.oliGreen },
-  activeBadge:      { backgroundColor: colors.oliGreen, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
-  activeBadgeText:  { color: colors.white, fontSize: 12, fontWeight: '700' },
   planDesc:         { fontSize: 14, color: colors.gray, lineHeight: 20 },
   upgradeBtn:       { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm },
   upgradeBtnText:   { fontSize: 13, fontWeight: '700', color: colors.oliGold },
   sectionDesc:      { fontSize: 13, color: colors.gray, lineHeight: 18, marginTop: -spacing.xs },
+
+  // ── Hero do plano (fundo na cor do plano) ──
+  heroCard:         { overflow: 'hidden' },
+  heroText:         { color: colors.white },
+  heroLink:         { fontSize: 14, fontWeight: '700', color: colors.white, textDecorationLine: 'underline' },
+  heroPlanName:     { fontSize: 24, fontWeight: '700', color: colors.white },
+  heroBadge:        { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
+  heroBadgeText:    { color: colors.white, fontSize: 12, fontWeight: '700' },
+  heroDesc:         { fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 20 },
+  heroUpgradeBtn:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm, backgroundColor: colors.white, borderRadius: radius.full, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 7 },
   receptionBtn: {
     flexDirection:   'row',
     alignItems:      'center',
