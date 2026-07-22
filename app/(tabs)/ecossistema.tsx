@@ -1,23 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, Image,
-  ActivityIndicator,
+  StyleSheet, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../src/store/appStore';
 import { contactReception } from '../../src/utils/whatsapp';
-import { contractModule } from '../../src/utils/moduleContract';
 import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
-import { useAuthStore } from '../../src/store/authStore';
-import { useModuleStore } from '../../src/store/moduleStore';
-import { MODULE_CATALOG, isModuleIncludedInPlan, type ModuleId, type OLIModule } from '../../src/models/modules';
-import { fetchModulePricing, type ModulePriceOverride } from '../../src/services/moduleService';
 import type { PlanType } from '../../src/models/types';
 import { FEATURES, type Feature } from '../meu-plano';
-import CheckoutModal from '../../src/components/CheckoutModal';
 import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
 
 // ─── Destaques de benefícios por plano ─────────────────────────────────────────
@@ -49,18 +42,6 @@ const PLAN_COLOR: Record<PlanType, string> = {
   VIP:   colors.oliPurple,
 };
 
-// ─── Módulos em destaque (preview — lista completa fica em /modulos) ──────────
-
-const HIGHLIGHT_MODULE_IDS: ModuleId[] = ['communicare', 'contabil_mello', 'scribe_ia'];
-
-function buildModuleLabel(valor: number, tipo: string): string {
-  if (tipo === 'incluido') return 'Incluso no plano';
-  const fmt = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
-  if (tipo === 'mensal') return `${fmt}/mês`;
-  if (tipo === 'unico')  return `${fmt} único`;
-  return fmt;
-}
-
 // ─── Especialistas OLI (todos "em breve" — preview compacto) ──────────────────
 
 const AGENTS = [
@@ -76,26 +57,7 @@ const AGENTS = [
 export default function EcossistemaScreen() {
   const { userPlan } = useAppStore();
   const router = useRouter();
-  const [checkoutModule, setCheckoutModule] = useState<OLIModule | null>(null);
   const [showScrollHint, setShowScrollHint] = useState(true);
-  const [modulePriceMap, setModulePriceMap] = useState<Map<ModuleId, ModulePriceOverride>>(new Map());
-
-  const user = useAuthStore((s) => s.user);
-  const { loadModules, isModuleActive, isLoaded: modulesLoaded } = useModuleStore();
-
-  useEffect(() => {
-    if (user?.id) loadModules(user.id, userPlan);
-  }, [user?.id, userPlan]);
-
-  useEffect(() => {
-    fetchModulePricing()
-      .then(overrides => {
-        const map = new Map<ModuleId, ModulePriceOverride>();
-        overrides.forEach(o => map.set(o.slug, o));
-        setModulePriceMap(map);
-      })
-      .catch(() => {});
-  }, []);
 
   const planHighlights = getPlanHighlights(userPlan);
 
@@ -211,57 +173,24 @@ export default function EcossistemaScreen() {
         </TouchableOpacity>
 
         {/* ── Módulos e Soluções ── */}
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { paddingHorizontal: spacing.md }]}>
-            Módulos e Soluções
+        <View style={[styles.card, shadows.card]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.sectionTitle}>Módulos e Soluções</Text>
+            <Ionicons name="grid-outline" size={20} color={colors.oliGold} />
+          </View>
+          <Text style={styles.planDesc}>
+            Communicare, Contabilidade Médica, Scribe IA e mais — add-ons que potencializam
+            seu plano, contratados individualmente.
           </Text>
           <TouchableOpacity
+            style={styles.modulesBtn}
             onPress={() => router.push('/modulos')}
-            accessibilityLabel="Ver todos os módulos"
-            style={{ paddingHorizontal: spacing.md }}
+            accessibilityLabel="Ver todos os módulos e soluções"
           >
-            <Text style={styles.seeAllLink}>Ver todos</Text>
+            <Text style={styles.modulesBtnText}>Ver Módulos e Soluções</Text>
+            <Ionicons name="arrow-forward" size={16} color={colors.white} />
           </TouchableOpacity>
         </View>
-        <Text style={[styles.sectionDesc, { paddingHorizontal: spacing.md }]}>
-          Add-ons que potencializam seu plano. Cada módulo pode ser contratado individualmente.
-        </Text>
-
-        {!modulesLoaded ? (
-          <View style={moduleStyles.loading}>
-            <ActivityIndicator color={colors.oliGreen} />
-          </View>
-        ) : (
-          <View style={moduleStyles.grid}>
-            {HIGHLIGHT_MODULE_IDS.map((moduleId) => {
-              const base     = MODULE_CATALOG[moduleId];
-              const override = modulePriceMap.get(moduleId);
-              const hasRealPrice = override && (override.valor > 0 || override.tipo === 'incluido');
-              const mod: OLIModule = hasRealPrice
-                ? {
-                    ...base,
-                    pricing: {
-                      ...base.pricing,
-                      amount:       override!.valor > 0 ? override!.valor : undefined,
-                      displayLabel: buildModuleLabel(override!.valor, override!.tipo),
-                    },
-                  }
-                : base;
-              const included = isModuleIncludedInPlan(moduleId, userPlan);
-              const active   = isModuleActive(moduleId, userPlan);
-              return (
-                <ModuleTile
-                  key={moduleId}
-                  module={mod}
-                  userPlan={userPlan}
-                  isIncluded={included}
-                  isActive={active && !included}
-                  onContractPress={setCheckoutModule}
-                />
-              );
-            })}
-          </View>
-        )}
 
         {/* ── Especialistas OLI ── */}
         <View style={[styles.card, shadows.card]}>
@@ -297,135 +226,11 @@ export default function EcossistemaScreen() {
 
       </ScrollView>
 
-      {/* ── Modal de Checkout ── */}
-      {checkoutModule && (
-        <CheckoutModal
-          visible={!!checkoutModule}
-          module={checkoutModule}
-          onClose={() => setCheckoutModule(null)}
-        />
-      )}
-
       <ScrollMoreIndicator visible={showScrollHint} />
       </View>
     </SafeAreaView>
   );
 }
-
-// ── ModuleTile (grid 2 colunas) ─────────────────────────────────────────────────
-
-const PLAN_RANK: Record<PlanType, number> = { START: 0, BASE: 1, PRO: 2, VIP: 3 };
-
-type ModuleDisplayStatus = 'included' | 'active' | 'available' | 'locked' | 'coming_soon';
-
-const STATUS_LABEL: Record<ModuleDisplayStatus, string> = {
-  included:    'Incluso no plano',
-  active:      'Ativo',
-  available:   'Disponível',
-  locked:      'Bloqueado',
-  coming_soon: 'Em breve',
-};
-
-const STATUS_COLOR: Record<ModuleDisplayStatus, string> = {
-  included:    colors.oliGreen,
-  active:      colors.oliGreen,
-  available:   colors.oliGold,
-  locked:      colors.oliLightGray,
-  coming_soon: colors.oliLightGray,
-};
-
-function ModuleTile({
-  module, userPlan, isIncluded, isActive, onContractPress,
-}: {
-  module:           OLIModule;
-  userPlan:         PlanType;
-  isIncluded:       boolean;
-  isActive:         boolean;
-  onContractPress?: (module: OLIModule) => void;
-}) {
-  const canContract = PLAN_RANK[userPlan] >= PLAN_RANK[module.requiredPlan];
-
-  let status: ModuleDisplayStatus;
-  if (module.status === 'coming_soon') status = 'coming_soon';
-  else if (isIncluded)  status = 'included';
-  else if (isActive)    status = 'active';
-  else if (canContract) status = 'available';
-  else                  status = 'locked';
-
-  const statusColor = STATUS_COLOR[status];
-
-  const handleCTA = () => contractModule(module, (m) => onContractPress?.(m));
-
-  const handleInfo = () => Alert.alert(module.name, module.description);
-
-  const handleLocked = () => {
-    Alert.alert(
-      `Requer Plano ${module.requiredPlan}`,
-      `Este módulo está disponível a partir do plano ${module.requiredPlan}. Faça upgrade para acessá-lo.`,
-    );
-  };
-
-  return (
-    <View style={[tileStyles.tile, shadows.small, { borderColor: `${statusColor}55` }]}>
-      <TouchableOpacity
-        style={tileStyles.infoBtn}
-        onPress={handleInfo}
-        accessibilityLabel={`Mais informações sobre ${module.name}`}
-      >
-        <Ionicons name="information-circle-outline" size={18} color={colors.oliLightGray} />
-      </TouchableOpacity>
-
-      <Text style={tileStyles.name} numberOfLines={2}>{module.name}</Text>
-      <Text style={tileStyles.price}>{module.pricing.displayLabel}</Text>
-
-      {status === 'available' && (
-        <TouchableOpacity
-          style={[tileStyles.cta, { borderColor: statusColor }]}
-          onPress={handleCTA}
-          accessibilityLabel={`Contratar módulo ${module.name}`}
-        >
-          <Text style={[tileStyles.ctaText, { color: statusColor }]}>Contratar</Text>
-        </TouchableOpacity>
-      )}
-
-      {status === 'locked' && (
-        <TouchableOpacity
-          style={[tileStyles.cta, { borderColor: `${colors.oliLightGray}60` }]}
-          onPress={handleLocked}
-          accessibilityLabel={`Módulo requer plano ${module.requiredPlan}`}
-        >
-          <Text style={[tileStyles.ctaText, { color: colors.oliLightGray }]} numberOfLines={1}>
-            Requer {module.requiredPlan}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {(status === 'included' || status === 'active' || status === 'coming_soon') && (
-        <View style={[tileStyles.statusPill, { backgroundColor: `${statusColor}18` }]}>
-          <Text style={[tileStyles.statusPillText, { color: statusColor }]}>
-            {STATUS_LABEL[status]}
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-const moduleStyles = StyleSheet.create({
-  loading: { paddingVertical: spacing.lg, alignItems: 'center' },
-  grid:    { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-});
-
-const tileStyles = StyleSheet.create({
-  tile:           { width: '47%', backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, padding: spacing.sm, gap: 4 },
-  infoBtn:        { position: 'absolute', top: 6, right: 6, padding: 2, zIndex: 1 },
-  name:           { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray, marginRight: 18, minHeight: 34 },
-  price:          { fontSize: 12, fontWeight: '700', color: colors.oliDarkGray },
-  cta:            { marginTop: 4, alignItems: 'center', borderWidth: 1.5, borderRadius: radius.md, paddingVertical: 7 },
-  ctaText:        { fontSize: 11, fontWeight: '700' },
-  statusPill:     { marginTop: 4, alignSelf: 'flex-start', borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3 },
-  statusPillText: { fontSize: 10, fontWeight: '700' },
-});
 
 // ── Especialistas OLI (preview) — Styles ────────────────────────────────────────
 
@@ -461,15 +266,14 @@ const styles = StyleSheet.create({
     padding:         spacing.md,
   },
   cardHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  sectionRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  seeAllLink:       { fontSize: 13, fontWeight: '600', color: colors.oliGold },
   planHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   sectionTitle:     { fontSize: 18, fontWeight: '700', color: colors.oliDarkGray },
   planRow:          { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   planDesc:         { fontSize: 14, color: colors.gray, lineHeight: 20 },
   upgradeBtn:       { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.sm },
   upgradeBtnText:   { fontSize: 13, fontWeight: '700', color: colors.oliGold },
-  sectionDesc:      { fontSize: 13, color: colors.gray, lineHeight: 18, marginTop: -spacing.xs },
+  modulesBtn:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.oliGold, borderRadius: radius.md, paddingVertical: 13, marginTop: spacing.sm },
+  modulesBtnText:   { color: colors.white, fontSize: 15, fontWeight: '700' },
 
   // ── Hero do plano (fundo na cor do plano) ──
   heroCard:         { overflow: 'hidden' },

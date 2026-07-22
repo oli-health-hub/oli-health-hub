@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, ScrollView, StyleSheet,
+  ActivityIndicator, Alert, ScrollView, StyleSheet,
   Text, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -175,6 +175,13 @@ function ModuleRow({
       <View style={styles.moduleHeader}>
         <View style={styles.moduleTitleWrap}>
           <Text style={styles.moduleName}>{module.name}</Text>
+          <TouchableOpacity
+            onPress={() => Alert.alert(module.name, module.description)}
+            accessibilityLabel={`Mais informações sobre ${module.name}`}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="information-circle-outline" size={16} color={colors.oliLightGray} />
+          </TouchableOpacity>
           {isBeta && (
             <View style={styles.betaBadge}>
               <Text style={styles.betaText}>BETA</Text>
