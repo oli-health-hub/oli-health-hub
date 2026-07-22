@@ -114,25 +114,19 @@ export const MODULE_CATALOG: Record<ModuleId, OLIModule> = {
     tagline: 'Prontuário eletrônico e CRM clínico integrado ao OLI',
     description:
       'Conecte seu Communicare ao OLI e gerencie pacientes, prontuários e ' +
-      'cobranças sem sair do app. Planos BASE e PRO incluem acesso ao módulo ' +
-      'Básico e Cuidar. VIP inclui Cuidar Automatizado com agendamento online ' +
-      'e cobrança automática.',
+      'cobranças sem sair do app. Disponível no plano PRO: gestão de agenda ' +
+      'pela recepção e emissão de nota fiscal automatizada.',
     pricing: {
       period: 'tbd',
       currency: 'BRL',
       displayLabel: 'A definir',
     },
-    requiredPlan: 'BASE',
+    requiredPlan: 'PRO',
     activationType: 'contact_sales',
     activationLayer: 'oli_config',
     status: 'available',
     includedInPlans: ['VIP'],
     featuresByPlan: {
-      BASE: [
-        'communicare.prontuario_basico',
-        'communicare.agenda_propria',
-        'communicare.pacientes_ilimitados',
-      ],
       PRO: [
         'communicare.prontuario_basico',
         'communicare.agenda_propria',
@@ -262,7 +256,7 @@ export const MODULE_CATALOG: Record<ModuleId, OLIModule> = {
     description:
       'Equipe especializada em médicos: abertura de PJ, planejamento tributário, ' +
       'emissão de NF, Simples Nacional, Lucro Presumido e assessoria contábil contínua. ' +
-      'Diagnóstico gratuito incluso no plano BASE.',
+      'Diagnóstico gratuito incluso nos planos BASE e PRO.',
     pricing: {
       period: 'tbd',
       currency: 'BRL',

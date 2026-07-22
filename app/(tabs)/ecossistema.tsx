@@ -366,7 +366,7 @@ function ModuleTile({
   };
 
   return (
-    <View style={[tileStyles.tile, shadows.small, { borderTopColor: statusColor }]}>
+    <View style={[tileStyles.tile, shadows.small, { borderColor: `${statusColor}55` }]}>
       <TouchableOpacity
         style={tileStyles.infoBtn}
         onPress={handleInfo}
@@ -417,7 +417,7 @@ const moduleStyles = StyleSheet.create({
 });
 
 const tileStyles = StyleSheet.create({
-  tile:           { width: '47%', backgroundColor: colors.white, borderRadius: radius.lg, borderTopWidth: 3, padding: spacing.sm, gap: 4 },
+  tile:           { width: '47%', backgroundColor: colors.white, borderRadius: radius.lg, borderWidth: 1, padding: spacing.sm, gap: 4 },
   infoBtn:        { position: 'absolute', top: 6, right: 6, padding: 2, zIndex: 1 },
   name:           { fontSize: 13, fontWeight: '700', color: colors.oliDarkGray, marginRight: 18, minHeight: 34 },
   price:          { fontSize: 12, fontWeight: '700', color: colors.oliDarkGray },
