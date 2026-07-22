@@ -12,7 +12,7 @@ export function IndiqueEGanheButton() {
       onPress={() => router.push('/indicacao')}
       accessibilityLabel="Programa de Indicação — indique um colega e ganhe 1 hora grátis"
     >
-      <Ionicons name="gift-outline" size={12} color={colors.oliGreen} />
+      <Ionicons name="gift-outline" size={15} color={colors.oliGreen} />
       <Text style={styles.text}>Indique e Ganhe</Text>
     </TouchableOpacity>
   );
@@ -22,12 +22,11 @@ const styles = StyleSheet.create({
   btn: {
     flexDirection:     'row',
     alignItems:        'center',
-    gap:               4,
+    gap:               6,
     backgroundColor:   `${colors.oliGreen}1A`,
     borderRadius:      radius.full,
-    paddingHorizontal: 10,
-    paddingVertical:   3,
-    marginTop:         4,
+    paddingHorizontal: 14,
+    paddingVertical:   7,
   },
-  text: { fontSize: 12, fontWeight: '700', color: colors.oliGreen },
+  text: { fontSize: 14, fontWeight: '700', color: colors.oliGreen },
 });

@@ -384,12 +384,10 @@ export default function PerfilScreen() {
           <View style={styles.planBadge}>
             <Text style={styles.planBadgeText}>Plano {userPlan}</Text>
           </View>
-          {session?.user?.id && (
-            <View style={styles.badgeRow}>
-              <OlicoinsBadge professionalId={session.user.id} />
-              <IndiqueEGanheButton />
-            </View>
-          )}
+          {session?.user?.id && <OlicoinsBadge professionalId={session.user.id} />}
+          <View style={styles.badgeRow}>
+            <IndiqueEGanheButton />
+          </View>
         </View>
 
         {/* ── Progresso do perfil (Olicoins) ── */}
@@ -903,7 +901,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 48 },
 
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },
-  badgeRow:      { flexDirection: 'row', gap: spacing.sm, marginTop: 2 },
+  badgeRow:      { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   avatarWrap:    { marginBottom: spacing.md, position: 'relative' },
   avatar: {
     width: 96, height: 96, borderRadius: 48,

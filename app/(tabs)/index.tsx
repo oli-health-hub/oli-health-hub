@@ -401,6 +401,7 @@ export default function DashboardScreen() {
           <View style={styles.headerLeft}>
             <Text style={styles.greeting}>Olá, {userName}</Text>
             <Text style={styles.plan}>Plano {userPlan}</Text>
+            {session?.user?.id && <OlicoinsBadge professionalId={session.user.id} />}
           </View>
           <TouchableOpacity
             style={styles.avatarCircle}
@@ -417,12 +418,9 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {session?.user?.id && (
-          <View style={styles.badgeRow}>
-            <OlicoinsBadge professionalId={session.user.id} />
-            <IndiqueEGanheButton />
-          </View>
-        )}
+        <View style={styles.badgeRow}>
+          <IndiqueEGanheButton />
+        </View>
 
         {/* ── Progresso do perfil (Olicoins) ── */}
         {profile && <ProfileCompletionCard profile={profile} />}
