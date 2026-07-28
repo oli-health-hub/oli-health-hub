@@ -17,6 +17,7 @@ const ROOM_PHOTOS: Record<number, ImageSourcePropType[]> = {
     require('../../assets/room-photos/sala-1b.jpg'),
   ],
   2: [require('../../assets/room-photos/sala-2.jpg')],
+  4: [require('../../assets/room-photos/sala-4.jpg')],
   3: [
     require('../../assets/room-photos/sala-3.jpg'),
     require('../../assets/room-photos/sala-3b.jpg'),
