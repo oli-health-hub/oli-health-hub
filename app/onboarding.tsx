@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform,
+  View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, Keyboard,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -127,6 +127,8 @@ export default function OnboardingScreen() {
     <SafeAreaProvider>
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.flex}>
         <View style={styles.content}>
           <Text style={styles.title}>Só mais um passo</Text>
           <Text style={styles.subtitle}>
@@ -181,6 +183,8 @@ export default function OnboardingScreen() {
             {!loading && <Ionicons name="checkmark" size={18} color={colors.white} />}
           </TouchableOpacity>
         </View>
+      </View>
+      </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
     </SafeAreaProvider>
