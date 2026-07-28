@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform, Keyboard,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -54,6 +54,14 @@ export default function OnboardingScreen() {
   // código pendente de um link de compartilhamento (?ref=).
   const [referidoPorId, setReferidoPorId] = useState<string | null>(null);
   const [comoConheceu,  setComoConheceu]  = useState<string | null>(null);
+  const [referrerNome,  setReferrerNome]  = useState<string | null>(null);
+
+  // Fallback manual do código de indicação — cobre instalação nova sem
+  // deferred deep link (usuário baixou o app depois de ver o link/código).
+  const [showManualRef, setShowManualRef] = useState(false);
+  const [manualCode,    setManualCode]    = useState('');
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualError,   setManualError]   = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -65,11 +73,38 @@ export default function OnboardingScreen() {
       if (match && match.id !== profile?.id && alive) {
         setReferidoPorId(match.id);
         setComoConheceu('membro_oli');
+        setReferrerNome(match.nome);
       }
       await clearPendingReferralCode();
     })();
     return () => { alive = false; };
   }, [profile?.id]);
+
+  const handleApplyCode = async () => {
+    const c = manualCode.trim();
+    if (!c) return;
+    setManualLoading(true);
+    setManualError(null);
+    const { data } = await supabase.rpc('resolve_referral_code', { p_code: c.toUpperCase() });
+    const match = (data as { id: string; nome: string }[] | null)?.[0];
+    setManualLoading(false);
+    if (!match || match.id === profile?.id) {
+      setManualError('Código não encontrado.');
+      return;
+    }
+    setReferidoPorId(match.id);
+    setComoConheceu('membro_oli');
+    setReferrerNome(match.nome);
+  };
+
+  const handleRemoveCode = () => {
+    setReferidoPorId(null);
+    setReferrerNome(null);
+    setComoConheceu(null);
+    setManualCode('');
+    setManualError(null);
+    setShowManualRef(false);
+  };
 
   const whatsappDigits = whatsapp.replace(/\D/g, '');
   const isValid = whatsappDigits.length >= 10;
@@ -170,6 +205,51 @@ export default function OnboardingScreen() {
             autoCapitalize="characters"
             accessibilityLabel="Conselho de classe"
           />
+
+          {/* Indicação — resolvida em silêncio via deep link; fallback manual aqui */}
+          {referidoPorId ? (
+            <View style={[styles.refAppliedRow, styles.questionSpacing]}>
+              <Ionicons name="gift-outline" size={16} color={colors.oliGreen} />
+              <Text style={styles.refAppliedText}>Indicado por {referrerNome ?? 'um membro OLI'}</Text>
+              <TouchableOpacity onPress={handleRemoveCode} accessibilityLabel="Remover indicação">
+                <Text style={styles.refRemoveText}>Remover</Text>
+              </TouchableOpacity>
+            </View>
+          ) : showManualRef ? (
+            <View style={[styles.refWrap, styles.questionSpacing]}>
+              <View style={styles.refInputRow}>
+                <TextInput
+                  style={styles.refInput}
+                  placeholder="Ex: MAR-8124A"
+                  placeholderTextColor={colors.gray}
+                  value={manualCode}
+                  onChangeText={setManualCode}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  accessibilityLabel="Código de indicação"
+                />
+                <TouchableOpacity
+                  style={[styles.refApplyBtn, (!manualCode.trim() || manualLoading) && styles.refApplyBtnDisabled]}
+                  onPress={handleApplyCode}
+                  disabled={manualLoading || !manualCode.trim()}
+                  accessibilityLabel="Aplicar código de indicação"
+                >
+                  {manualLoading
+                    ? <ActivityIndicator size="small" color={colors.white} />
+                    : <Text style={styles.refApplyText}>Aplicar</Text>}
+                </TouchableOpacity>
+              </View>
+              {manualError && <Text style={styles.refErrorText}>{manualError}</Text>}
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.questionSpacing}
+              onPress={() => setShowManualRef(true)}
+              accessibilityLabel="Tenho um código de indicação"
+            >
+              <Text style={styles.refToggleText}>Tem um código de indicação?</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.footer}>
@@ -218,6 +298,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15,
     color: colors.oliDarkGray, backgroundColor: colors.white,
   },
+
+  refToggleText: { fontSize: 13, color: colors.oliGreen, fontWeight: '600', textDecorationLine: 'underline' },
+  refWrap: { gap: spacing.xs },
+  refInputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  refInput: {
+    flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: 14, color: colors.oliDarkGray,
+  },
+  refApplyBtn: {
+    backgroundColor: colors.oliGreen, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    minWidth: 80, alignItems: 'center', justifyContent: 'center',
+  },
+  refApplyBtnDisabled: { opacity: 0.5 },
+  refApplyText: { color: colors.white, fontWeight: '600', fontSize: 14 },
+  refErrorText: { color: colors.oliRed, fontSize: 12 },
+  refAppliedRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: `${colors.oliGreen}14`, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+  },
+  refAppliedText: { flex: 1, color: colors.oliGreen, fontWeight: '600', fontSize: 13 },
+  refRemoveText: { color: colors.oliLightGray, fontSize: 12, textDecorationLine: 'underline' },
 
   footer: { padding: spacing.lg },
   finishBtn: {
