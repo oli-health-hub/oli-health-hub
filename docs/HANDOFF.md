@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 21/Julho/2026.
+> Última atualização: 22/Julho/2026.
 
 ---
 
@@ -544,6 +544,33 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - **Resolução:** durante a investigação, envio #4 (21/jul, 22:28) — Produção — foi enviado e passou pela análise do Google. App voltou ao ar (`Updated on Jul 21, 2026` na ficha pública), instalação confirmada funcionando pelo fundador.
 - **Pendência real:** já que a causa raiz não foi identificada, o mesmo pode acontecer de novo sem aviso. Se sumir de novo, checar primeiro "Política e programas → Status do app" e e-mail do dev antes de reenviar — pra não ficar só reagindo ao sintoma.
 
+### ✅ Resolvido na sessão 22/jul (indicação em destaque + reforma da aba Ecossistema + fix módulos)
+
+- **🎯 Motivação:** Programa de Indicação (§7) é diferencial forte sendo divulgado ativamente, mas estava enterrado — só num popup de 1ª vez, dentro de Perfil, e no fim de `meu-plano.tsx`. Pedido do fundador: dar mais visibilidade sem virar ruído.
+
+- **🆕 Botão "Indique e Ganhe"** (`src/components/IndiqueEGanheButton.tsx`): pill verde com ícone de presente, ao lado do contador de Olicoins no header do **Início** e do **Perfil** → abre `/indicacao`. Olicoins manteve a posição original (feedback do fundador: só o botão de indicação precisava de destaque/centralização, não o contador).
+
+- **🎨 Aba Ecossistema — reformulada (Direção A do plano discutido na sessão):**
+  - Card **"Meu Plano"** virou hero com fundo na cor do plano (START cinza, BASE verde, PRO dourado, VIP roxo) em vez de card branco genérico — badge "Ativo" e botão de upgrade translúcidos/brancos sobre a cor.
+  - Novo card **"Indicação OLI"** — banner clicável com ícone de presente → `/indicacao`. Antes a aba não tinha nenhuma menção ao programa.
+  - **"Serviços Inclusos" removido** — era uma lista fixa (Recepção, Jurídico, Contábil...) igual pra qualquer plano, sem checar feature flags reais. Substituído por **"Benefícios do Plano"**: deriva de `FEATURES` (matriz já existente em `meu-plano.tsx`, agora exportada) mostrando o que o plano atual desbloqueia *em relação ao tier anterior* — sempre fiel à fonte única, sem inventar dado novo.
+  - **"Módulos e Soluções"**: depois de iterar (grid 2 colunas → feedback pedindo borda mais sutil → feedback final pra tirar o preview inteiro), a seção virou só um card-teaser com botão sólido "Ver Módulos e Soluções" → `/modulos`. Zero fetch de preço/status de módulo na aba Ecossistema agora — só navegação.
+  - **Especialistas OLI**: 5 cards grandes "em breve" viraram 1 card compacto com avatares sobrepostos (mantido como preview por decisão do fundador, "vamos ver como fica").
+
+- **🐛 Bug de dado corrigido (motivo original do pedido: "PRO mostrava contabilidade incluída"):** causa era a lista fixa "Serviços Inclusos" citada acima, que não filtrava por plano — resolvido removendo o card e trocando pela fonte dinâmica.
+
+- **🔧 Communicare Connect liberado pra contratação:** estava `status: 'coming_soon'` + `activationType: 'oauth'` (self-service que não existe). Virou `'available'` + `'contact_sales'` — contratação passa pelo WhatsApp da recepção, mesmo padrão de Contabilidade Médica e Gestão de Convênios. `requiredPlan` ajustado de BASE pra **PRO** (regra de negócio: BASE não inclui Communicare).
+
+- **🐛 Bug de inconsistência corrigido:** `/modulos.tsx` abria o `CheckoutModal` (pagamento Asaas) pra **qualquer** módulo, inclusive os sem preço definido (contabil_mello, communicare, scribe_ia) — só `ecossistema.tsx` tinha a lógica certa de rotear pro WhatsApp quando não há formulário + preço in-app. Extraído pra `src/utils/moduleContract.ts` (fonte única da regra "sem contratação direta → WhatsApp da recepção"), usado nas duas telas.
+
+- **📝 Descrições de módulo corrigidas** (copy desatualizada/errada, achada durante a sessão):
+  - Communicare Connect: descrição citava plano VIP (não comercializado, contra convenção do CLAUDE.md) e dizia que BASE tinha acesso. Reescrita: só PRO, foco em gestão de agenda + emissão de NF.
+  - Contabilidade Médica: descrição só mencionava diagnóstico gratuito no BASE, mas o PRO também já inclui (dado em `featuresByPlan` já estava certo, só o texto não refletia).
+
+- **🎨 Ícone de informação nos módulos:** em vez de mostrar a descrição completa inline (ocupava espaço), cada card de `/modulos.tsx` ganhou um ícone "i" que abre a descrição completa via alerta nativo — mesmo padrão testado nos tiles do Ecossistema antes de serem removidos de lá.
+
+- Commits da sessão: `cd08f2e` (fix Monitor de Atendimentos) `1f34fe8` `8b606ba` (fix incluso-falso + 1ª leva do redesign) `957ff45` (ajuste Olicoins/botão) `344fe62` (libera Communicare) `ed6f67f` (hero + grid módulos) `46ba7f3` (fix descrições + borda) `93882ed` (remove preview módulos). OTA enviada em várias rodadas — última: production `b792c374-2cb3-4cee-ac55-7cfbd2b53f6d` / preview `21dcfd46-ee18-44ae-8b9a-fd8f3fbf496b`.
+
 ## 12. Convenções (do CLAUDE.md)
 
 - TypeScript estrito, sem `any`, sem `console.log` em produção.
@@ -602,3 +629,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (21/jul sessão 4):** Sessão focada em **campanha WhatsApp do parceiro Marangos + automação da indicação**. Criativo 1080×1350 com foto real de sala (canvas-design), iterado até título objetivo sem jargão + 2 checks + CTA apontando pro link na legenda. Em vez de um cupom falado, reaproveitado o programa de indicação peer-to-peer: Marangos ganhou perfil `user_type='partner'` (invisível na Comunidade) e código `MAR-8124A` — link `/baixar?ref=MAR-8124A` credita 1h automaticamente a quem se cadastra (não a ele, já que não usa sala; ajuste feito em `apply_referral_benefit` só pra indicadores `partner`, indicação médico-médico intocada). **Bug crítico achado e corrigido de brinde:** a função de crédito de indicação estava quebrada havia semanas (schema de `referrals` mudou e a função não acompanhou) — qualquer indicação real ia falhar e derrubar o cadastro inteiro da pessoa; corrigido e testado ponta a ponta, zero profissionais reais afetados até aqui. Migrations `referral_partner_credits_new_user` + `fix_referral_benefit_schema_drift`. Depois, achado que o texto do banner de indicação (`landing/baixar.html`) soava como se o parceiro externo ganhasse crédito de horas também — corrigido com mapa `PARTNER_COPY` (texto individual por código). **Publicação travada:** este ambiente (Cowork) não tem credenciais de GitHub — commit `76eed6b` ficou só local, fundador precisa dar `git push` ou editar pelo site do GitHub pra ir ao ar. Documentado o contorno de lock de git deste ambiente (`mv` no lugar de `rm`) pra sessões futuras.
 
 **Resumo de 1 linha (21/jul sessão 5):** Sessão focada em **destravar publicação do site (achado: não era o push, era o Netlify) + iniciar migração pro Vercel**. Push do commit `76eed6b` (pendência da sessão 4) rodado com sucesso pelo fundador — mas o site ao vivo continuou com a copy antiga do Marangos. Investigado via Netlify API (CLI já autenticada localmente): conta **Oliteam** estourou o crédito de uso da Netlify, todo deploy (git-triggered ou manual) desde `c31f6d7` retornava `"Skipped due to account credit usage exceeded"` — reset só em 23/jul. Decisão: migrar `landing/` pro **Vercel** (mesma conta do admin, sem esse teto). Criado `landing/vercel.json` (`cleanUrls` — equivalente ao pretty_urls do Netlify), commit `4f2a3e0`. Fundador criou projeto `oli-landing` no Vercel (root dir `landing`, sem build), adicionou o domínio, verificou o registro TXT de ownership. **Falta só trocar o registro A no registro.br** (`75.2.60.5` → `216.198.79.1`) pra completar a migração — ver §14 pro estado exato e checklist de conferência pós-migração.
+
+**Resumo de 1 linha (22/jul):** Sessão focada em **dar destaque ao Programa de Indicação + reformular a aba Ecossistema + incidente Android**. Novo botão "Indique e Ganhe" ao lado do contador de Olicoins (Início + Perfil) → `/indicacao`. Ecossistema reformulada em várias rodadas de feedback: card "Meu Plano" virou hero na cor do plano, novo card de Indicação, "Serviços Inclusos" (lista fixa errada — raiz do bug "PRO mostrava contabilidade incluída") trocado por "Benefícios do Plano" dinâmico vindo da mesma matriz `FEATURES` de `meu-plano.tsx`, e "Módulos e Soluções" acabou virando só um card-teaser pra `/modulos` (preview em grid foi tentado e removido a pedido do fundador). De brinde: Communicare Connect liberado pra contratação via WhatsApp (estava `coming_soon`/`oauth`, virou `available`/`contact_sales`, `requiredPlan` PRO); descrições erradas de módulo corrigidas (Communicare citava VIP indevidamente, Contabilidade Médica não mencionava que PRO também tem diagnóstico grátis); inconsistência corrigida entre `/modulos` e Ecossistema na regra de contratação (extraída pra `src/utils/moduleContract.ts`). Separadamente, **incidente**: app sumiu da Google Play (404) — investigado e resolvido via reenvio no Play Console, causa raiz não confirmada (ver seção própria acima, §11). Commits: `cd08f2e`→`93882ed` (ver seção da sessão acima pra lista completa). OTA enviada em múltiplas rodadas — última: production `b792c374-2cb3-4cee-ac55-7cfbd2b53f6d` / preview `21dcfd46-ee18-44ae-8b9a-fd8f3fbf496b`.
