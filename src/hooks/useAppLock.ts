@@ -2,16 +2,12 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { secureStore as SecureStore } from '../utils/secureStoreWeb';
-import { supabase } from '../services/supabase';
 
 // 0 = bloqueia imediatamente ao retornar do background (Face ID sempre).
 // Mantido como const para fácil ajuste futuro caso queira tolerância.
 const LOCK_AFTER_MS       = 0;
 const SECURE_KEY_ENABLED  = 'oli_biometric_enabled';
 const SECURE_KEY_BG_TIME  = 'oli_background_time';
-// Se o desbloqueio foi via código do dispositivo (não biometria), a próxima
-// sessão exige login com e-mail/senha — flag persistida e consumida no cold start.
-const SECURE_KEY_FORCE_PWD = 'oli_force_password_next';
 
 export interface AppLockState {
   isLocked:           boolean;
@@ -45,15 +41,6 @@ export function useAppLock(): AppLockState {
       const stored = await SecureStore.getItemAsync(SECURE_KEY_ENABLED);
       const enabled = stored === 'true';
       setBiometricEnabled(enabled);
-
-      // Sessão anterior foi desbloqueada com CÓDIGO do dispositivo →
-      // exige login completo (e-mail/senha) agora. Consome a flag e desloga.
-      const forcePwd = await SecureStore.getItemAsync(SECURE_KEY_FORCE_PWD);
-      if (forcePwd === 'true') {
-        await SecureStore.deleteItemAsync(SECURE_KEY_FORCE_PWD);
-        await supabase.auth.signOut().catch(() => {});
-        return; // não bloqueia — _layout leva ao login
-      }
 
       // COLD START: se biometria estiver habilitada, app abre BLOQUEADO
       // Usuário precisa autenticar antes de acessar conteúdo logado.
@@ -104,8 +91,8 @@ export function useAppLock(): AppLockState {
       // Tentativa normal = biometria pura (disableDeviceFallback=true) → só a
       // animação nativa do Face ID, sem 2º popup.
       // Tentativa via "código do dispositivo" (fallback após falha) →
-      // disableDeviceFallback=false: iOS oferece o código. Se desbloquear assim,
-      // a PRÓXIMA sessão exige login com e-mail/senha.
+      // disableDeviceFallback=false: iOS oferece o código. Vale como
+      // desbloqueio normal — só o toggle de biometria no Perfil desloga.
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage:         'Acesse o OLI Health Hub',
         cancelLabel:           'Cancelar',
@@ -113,9 +100,6 @@ export function useAppLock(): AppLockState {
       });
 
       if (result.success) {
-        if (useDevicePasscode) {
-          await SecureStore.setItemAsync(SECURE_KEY_FORCE_PWD, 'true');
-        }
         setIsLocked(false);
         await SecureStore.deleteItemAsync(SECURE_KEY_BG_TIME);
       }

@@ -60,10 +60,6 @@ export function AppLockScreen({ onUnlock }: Props) {
               <Ionicons name="keypad-outline" size={20} color={colors.oliDarkGray} />
               <Text style={styles.passcodeText}>Usar código do dispositivo</Text>
             </TouchableOpacity>
-
-            <Text style={styles.hint}>
-              Ao usar o código do dispositivo, o próximo acesso pedirá seu e-mail e senha.
-            </Text>
           </>
         )}
 
@@ -119,5 +115,4 @@ const styles = StyleSheet.create({
     marginTop:       spacing.md,
   },
   passcodeText: { color: colors.oliDarkGray, fontSize: 14, fontWeight: '600' },
-  hint:       { fontSize: 12, color: colors.oliLightGray, textAlign: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.sm },
 });
