@@ -592,3 +592,27 @@ export async function updateLead(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath('/leads');
 }
+
+/** Registra o pagamento de uma comissão de parceiro (Programa de Indicação de
+ *  Parceiros Externos). O valor devido é calculado em runtime na página —
+ *  aqui só grava que aquela comissão específica (por indicado + tipo) foi paga. */
+export async function registerCommissionPayment(formData: FormData) {
+  const partnerId  = formData.get('partner_id')  as string;
+  const referredId = formData.get('referred_id') as string;
+  const tipo       = formData.get('tipo')        as string;
+  const valor      = parseFloat(formData.get('valor') as string);
+  const observacoes = (formData.get('observacoes') as string) || null;
+
+  if (isNaN(valor) || valor <= 0) throw new Error('Valor de comissão inválido.');
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('partner_commission_payments').insert({
+    partner_id:               partnerId,
+    referred_professional_id: referredId,
+    tipo,
+    valor,
+    observacoes,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath('/parceiros');
+}

@@ -202,6 +202,7 @@ const NAV = [
       { href: '/financeiro', label: 'Financeiro', Icon: IconCreditCard, badge: false },
       { href: '/catalogo',   label: 'Catálogo',   Icon: IconLayers,     badge: false },
       { href: '/cupons',     label: 'Cupons',     Icon: IconCreditCard, badge: false },
+      { href: '/parceiros',  label: 'Parceiros',  Icon: IconTruck,      badge: false },
     ],
   },
   {

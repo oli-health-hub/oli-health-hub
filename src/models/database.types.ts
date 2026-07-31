@@ -663,6 +663,54 @@ export type Database = {
           },
         ]
       }
+      partner_commission_payments: {
+        Row: {
+          created_at: string
+          id: string
+          observacoes: string | null
+          pago_em: string
+          partner_id: string
+          referred_professional_id: string
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pago_em?: string
+          partner_id: string
+          referred_professional_id: string
+          tipo: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pago_em?: string
+          partner_id?: string
+          referred_professional_id?: string
+          tipo?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commission_payments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commission_payments_referred_professional_id_fkey"
+            columns: ["referred_professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           communicare_id: string | null
@@ -1552,6 +1600,11 @@ export type Database = {
       }
       oli_decrypt: { Args: { cipher: string }; Returns: string }
       oli_encrypt: { Args: { plain: string }; Returns: string }
+      profile_faltam_count: {
+        Args: { p: Database["public"]["Tables"]["profiles"]["Row"] }
+        Returns: number
+      }
+      push_aniversario_cadastro: { Args: never; Returns: undefined }
       push_dispatch_allowed: {
         Args: {
           p_category: string
@@ -1562,9 +1615,16 @@ export type Database = {
       }
       push_lembrete_reserva_amanha: { Args: never; Returns: undefined }
       push_nudge_avaliacao_app: { Args: never; Returns: undefined }
+      push_nudge_comunidade: { Args: never; Returns: undefined }
+      push_nudge_indicacao: { Args: never; Returns: undefined }
       push_nudge_primeira_reserva: { Args: never; Returns: undefined }
+      push_nudge_primeiro_paciente: { Args: never; Returns: undefined }
       push_objetivos_pendentes: { Args: never; Returns: undefined }
       push_reacao_inatividade: { Args: never; Returns: undefined }
+      push_resumo_comunidade_diario: { Args: never; Returns: undefined }
+      push_sugestao_anual: { Args: never; Returns: undefined }
+      push_sugestao_modulo: { Args: never; Returns: undefined }
+      push_sugestao_upgrade_plano: { Args: never; Returns: undefined }
       record_auth_attempt: {
         Args: { p_identifier: string; p_ip?: string; p_succeeded: boolean }
         Returns: undefined
