@@ -128,6 +128,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             min-height: calc(100vh - 96px);
+            max-height: 860px;
         }
 
         .hero-content {
@@ -174,10 +175,19 @@
             position: relative;
             overflow: hidden;
         }
+        /* A foto é retrato. Se ficar no fluxo com width:100%, a altura
+           intrínseca dela estica a linha do grid (num monitor largo,
+           1280px de largura viram 1920px de altura) e o texto do lado
+           é empurrado para fora da tela. Absoluta, ela preenche o painel
+           sem opinar sobre a altura dele. */
         .hero-image img {
+            position: absolute;
+            inset: 0;
             width: 100%; height: 100%;
             object-fit: cover;
+            object-position: center 60%;
             display: block;
+            z-index: 0;
         }
         .hero-image::before {
             content: '';
@@ -691,7 +701,7 @@
         @media (max-width: 768px) {
             .logo img { height: 60px; }
             nav { display: none; }
-            .hero { grid-template-columns: 1fr; min-height: auto; }
+            .hero { grid-template-columns: 1fr; min-height: auto; max-height: none; }
             .hero-image { height: 260px; }
             .hero-content h1 { font-size: 34px; }
             .section { padding: 64px 24px; }

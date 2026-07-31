@@ -38,13 +38,17 @@
 | Bundle iOS | `com.oli.healthhub` |
 | EAS canais | `production` (TestFlight) + `preview` |
 | Admin (Vercel) | projeto `admin`, root dir = `admin/` |
-| Site (Netlify) | `olihealthhub.com.br`, publish dir = `landing/`, repo GitHub `guipasquetti/oli-health-hub` branch `main` |
+| Site (Vercel) | projeto `oli-landing`, root dir = `landing/`, domínio `olihealthhub.com.br` (A → `216.198.79.1`), team "Guilherme's projects" (Hobby) |
 | Repo | `github.com/guipasquetti/oli-health-hub` |
+
+> ⚠️ **O site NÃO está mais na Netlify** desde 21/jul (ver §14). A conta Netlify estourou o crédito, os builds foram parados e o domínio desassociado. Qualquer recurso Netlify-specific (**Netlify Forms**, `_redirects`, `_headers`) **não funciona** — o equivalente na Vercel é `vercel.json`, e captura de formulário é via Supabase (ver §15).
+>
+> Existe uma cópia órfã do site em `iCloud/OLI - HH/Website/oli-deploy/` (era a pasta de deploy manual da era Netlify). **Não editar** — não vai ao ar. O que publica é `landing/`.
 
 **Regra de deploy:**
 - Mudança no **app** → `eas update` nos DOIS canais (`production` + `preview`). Reportar os 2 update group IDs.
 - Mudança no **admin** → `git push` (Vercel auto-deploy).
-- Mudança no **site/landing** → `git push` (Netlify auto-deploy — ⚠️ ver pendência §11).
+- Mudança no **site/landing** → `git push` (Vercel auto-deploy, projeto `oli-landing`).
 - Mudança em **edge function** → deploy via Supabase MCP / CLI.
 
 ## 4. Planos e preços (ATUAL — sem VIP por enquanto)
@@ -535,8 +539,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - **Domínio desassociado** do site Netlify (`custom_domain = null`) — era só config órfã, DNS já não apontava mais pra lá havia horas.
 - Site **não foi deletado** (decisão consciente — fica inerte, sem custo/risco, dá pra reverter se precisar). Repo continua linkado no GitHub app da Netlify; se quiser remover de vez, é em Site settings → General → Delete site, ou revogar o GitHub App em `github.com/settings/installations`.
 
-**🟡 Pendência de doc (baixa prioridade):**
-- **§3 (Infra — IDs e ambientes) e a "Regra de deploy"** ainda listam Netlify como host do site — atualizar pra Vercel (projeto `oli-landing`) na próxima passada de limpeza de docs.
+~~**🟡 Pendência de doc (baixa prioridade):** §3 e a "Regra de deploy" ainda listam Netlify~~ ✅ **RESOLVIDO (31/jul sessão 2)** — §3 corrigido pra Vercel/`oli-landing`, com aviso explícito de que recursos Netlify-specific não funcionam mais. A pendência de doc custou uma tarde inteira de trabalho na pasta errada: ver §15.
 
 ### 🔴 INCIDENTE resolvido (22/jul) — app sumiu da Google Play (404 na ficha)
 
@@ -612,6 +615,42 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - Mesmo em copy informal, respeitar concordância verbal — não misturar registro (ex.: "dê uma olhada e marque", nunca "dá uma olhada e marque").
 - Comunicação com o usuário (push, onboarding, UI) não expõe detalhe técnico do produto (hash, criptografia, nome de coluna) — descrever o benefício em linguagem simples (ex.: "fica visível só para você" em vez de "CPF protegido por hash").
 
+## 15. Site institucional — reescrita de conteúdo + captura de leads (31/jul sessão 2)
+
+**Contexto:** o site tinha três problemas somados. (1) O formulário de contato era **puramente decorativo** — `<form>` sem `action`, sem `name` nos campos e sem uma linha de JS na página inteira; todo lead preenchido desde sempre se perdeu, e ninguém sabia. (2) Todas as imagens de seção eram **geradas por IA** (renders de consultório que não existem). (3) A copy nunca dizia o que o OLI é: o H1 era o slogan "Operação invisível, crescimento visível", e o modelo de negócio (sala por minuto) só aparecia no quarto bloco.
+
+**⚠️ Armadilha que custou a sessão — a pasta órfã.** Existe `iCloud/OLI - HH/Website/oli-deploy/`, cópia da era Netlify, byte a byte igual ao `landing/`. Toda a reescrita foi feita nela por engano; o erro só apareceu ao abrir este handoff e ler §14. **Regra: o site que vai ao ar é `landing/` no repo, publicado pela Vercel (`oli-landing`). Nada mais.** A cópia órfã continua no iCloud — se sobrar tempo, apagar.
+
+**Captura de leads — nova tabela `leads` (migration `create_leads_table_for_site_form`):**
+- Colunas: `nome`, `whatsapp`, `email` (obrigatórios), `especialidade`, `origem`, `status`, `observacoes`, `referrer`, `user_agent`.
+- `status` ∈ `novo | contatado | visita_agendada | convertido | descartado`. `origem` ∈ `site | whatsapp | indicacao | evento | outro`.
+- RLS: **INSERT liberado pra `anon`** com `with check (origem = 'site')` — é formulário público; CHECK constraints na tabela limitam tamanho de campo e validam formato de e-mail. **SELECT/UPDATE/DELETE só com `is_oli_admin()`**.
+- Testado por simulação de role (`set local role anon`): insert válido grava, leitura anônima devolve 0 linhas, e-mail inválido e origem forjada são recusados. Linha de teste removida.
+- O `landing/index.html` insere direto na REST API do Supabase com a **chave publicável** (`sb_publishable_...`, hardcoded no HTML de propósito — é pública e só consegue inserir).
+- **Por que não Netlify Forms:** era a solução óbvia e foi a primeira implementada, mas Netlify Forms **não existe na Vercel** — teria falhado 100% das submissões em produção. Mesma armadilha do §14.
+- **Ainda não existe tela de leads no admin.** Hoje só dá pra ver via SQL/painel do Supabase. Próximo passo natural: `/leads` no admin + notificação (o enum de `admin_notifications` precisaria de um valor novo, tipo `lead_received`).
+- **RD Station:** decisão do fundador — não integrar o site. O RD fica só na LP de marketing.
+
+**Fotos reais (fim das imagens de IA):**
+- 8 fotos de `iCloud/OLI - HH/Fotos Estrutura/Tratadas/` + 6 de `iCloud/OLI - HH/MBS/assets/` → otimizadas pra `landing/fotos/` (34 MB → 2,1 MB, PNG→JPEG progressivo, lado maior 1600px).
+- As de `MBS/assets` são as únicas **com gente**: Claudia atendendo um paciente no balcão e Claudia na recepção. Resolveram o único ponto do site que falava de recepção e mostrava sala vazia.
+- ⚠️ `Fotos Estrutura/` na raiz (fora de `Tratadas/`) é o espaço **em obra** — sala vazia, caixa no chão. Não usar em nada comercial.
+- Os 11 `img_*.jpg` de IA (14,6 MB) e `room-photos/` (984 KB) foram **deletados de `landing/`** — nenhuma outra página os referenciava.
+- 🔴 **Direito de imagem:** a foto do balcão mostra a Claudia e um homem. Fundador confirmou que são pessoas conhecidas e autorizou o uso.
+
+**Reescrita da copy** (regra fixada: linguagem concreta, zero jargão):
+- H1: "Consultório pronto. Você paga só o tempo que usa." Removidos da página inteira: *ecossistema, premium, pay-per-use, networking, elite, patamar, blindar, hub de saúde premium*.
+- Ordem das seções trocada: o espaço agora vem **antes** do preço (`problema → modelo → infraestrutura → planos → contato`).
+- Planos com a conta pronta: R$ 100 por consulta de 50 min; BASE compensa a partir de **10 h/mês**, PRO a partir de **25 h/mês** (pontos de virada calculados, batem com `oli-plans.ts`).
+- Formulário reduzido de 5 campos obrigatórios pra 3 (especialidade virou opcional, "interesse de plano" saiu).
+- Removidos: galeria "Conheça as salas" (fotos antigas, a pedido do fundador) e o selo "Mais popular" do PRO (afirmação insustentável hoje → "Mais completo"). Tirado também o "CRM clínico Communicare" do PRO — nome de fornecedor e integração ainda em mock (§6).
+- `<title>`, meta description e tags Open Graph reescritos — o `<title>` ainda era o slogan antigo, e é o que aparece quando o link é mandado no WhatsApp.
+- Todos os WhatsApp do site unificados no **comercial (11) 97223-3745** (era o da recepção, 91998-0777).
+
+**🐛 Fix de layout do hero (achado em produção pelo fundador):** em monitor grande aparecia só o teto da sala e o texto sumia. Causa: a foto do hero é retrato (1024×1536) e o `<img>` estava no fluxo com `width:100%; height:100%` dentro de um `.hero-image` sem altura definida — a altura intrínseca da imagem esticava a linha do grid. Medido ao vivo: **hero com 2130px de altura num viewport de 1102px**, com o texto centralizado nesse bloco, portanto fora da tela. Fix: `position:absolute; inset:0` na imagem (sai do fluxo, não opina sobre a altura) + `object-position: center 60%` + `max-height: 860px` no `.hero` (anulado no breakpoint mobile). Confirmado ao vivo: hero volta pra 1006px, título/texto/botões visíveis sem rolar.
+
+**Estado:** `landing/` já publicado pelo fundador com a reescrita e o Supabase (confirmado ao vivo). **O fix do hero ainda não foi commitado** — é a próxima ação.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -663,3 +702,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (22/jul):** Sessão focada em **dar destaque ao Programa de Indicação + reformular a aba Ecossistema + incidente Android**. Novo botão "Indique e Ganhe" ao lado do contador de Olicoins (Início + Perfil) → `/indicacao`. Ecossistema reformulada em várias rodadas de feedback: card "Meu Plano" virou hero na cor do plano, novo card de Indicação, "Serviços Inclusos" (lista fixa errada — raiz do bug "PRO mostrava contabilidade incluída") trocado por "Benefícios do Plano" dinâmico vindo da mesma matriz `FEATURES` de `meu-plano.tsx`, e "Módulos e Soluções" acabou virando só um card-teaser pra `/modulos` (preview em grid foi tentado e removido a pedido do fundador). De brinde: Communicare Connect liberado pra contratação via WhatsApp (estava `coming_soon`/`oauth`, virou `available`/`contact_sales`, `requiredPlan` PRO); descrições erradas de módulo corrigidas (Communicare citava VIP indevidamente, Contabilidade Médica não mencionava que PRO também tem diagnóstico grátis); inconsistência corrigida entre `/modulos` e Ecossistema na regra de contratação (extraída pra `src/utils/moduleContract.ts`). Separadamente, **incidente**: app sumiu da Google Play (404) — investigado e resolvido via reenvio no Play Console, causa raiz não confirmada (ver seção própria acima, §11). Commits: `cd08f2e`→`93882ed` (ver seção da sessão acima pra lista completa). OTA enviada em múltiplas rodadas — última: production `b792c374-2cb3-4cee-ac55-7cfbd2b53f6d` / preview `21dcfd46-ee18-44ae-8b9a-fd8f3fbf496b`.
 
 **Resumo de 1 linha (31/jul):** Sessão de **4 fixes + início da régua de nurturing push**. Fixes: (1) teclado do WhatsApp preso no onboarding (`phone-pad` sem tecla de fechar); (2) campo manual de código de indicação — não existia NENHUM lugar pra digitar código em instalação nova, só resolvia via deep link; (3) foto da Sala 4, última pendente das 9 salas; (4) App Lock deslogando "toda hora" — causa era o fallback de código do dispositivo forçando re-login completo, removido a pedido do fundador (só o toggle de biometria desloga agora). Commits `38d9b6d`→`17aa558`, OTA enviada em 4 rodadas (ver seção da sessão acima pros group IDs). Depois, início da implementação do `OLI_Nurturing_Push.docx` (régua de 8 estágios/23 gatilhos): recusado recompensar avaliação de loja com Olicoins (viola política Apple/Google, app já sumiu uma vez da Play Store) — desenhada pesquisa de satisfação interna como alternativa compliant, prompt nativo de loja fica pra depois do próximo rebuild. Fatia 1 (piloto) implementada: infra de governança de push (`push_dispatch_log`), estágio Boas-vindas, pesquisa de satisfação (`app/avaliacao-app.tsx`) — banco já em produção via Supabase MCP, **código do app ainda não commitado/OTA** (próxima ação). Faltam ~18 gatilhos dos outros 6 estágios.
+
+**Resumo de 1 linha (31/jul sessão 2):** Sessão focada no **site institucional** — e a lição da sessão é de processo. Achado que o formulário de contato do site **nunca funcionou** (era `<form>` decorativo, sem JS, sem `name` nos campos: todo lead preenchido desde sempre se perdeu) e que todas as imagens de seção eram **geradas por IA**. Reescrita completa da copy (H1 virou "Consultório pronto. Você paga só o tempo que usa."; removidos ecossistema/premium/pay-per-use/networking; espaço movido pra antes do preço; planos com a conta pronta — R$ 100 por consulta de 50 min, BASE compensa em 10 h/mês, PRO em 25 h/mês), 14 fotos reais tratadas substituindo as de IA (34 MB → 2,1 MB), e captura de leads nova. **Armadilha:** a tarde inteira foi trabalhada em `iCloud/.../Website/oli-deploy/` — cópia órfã da era Netlify, idêntica ao `landing/` — porque §3 ainda listava Netlify como host; o erro só apareceu ao abrir este handoff. Pior: a captura de leads tinha sido feita com **Netlify Forms, que não existe na Vercel** e teria falhado 100% em produção. Refeito com tabela `leads` no Supabase (RLS: insert anônimo só com `origem='site'`, leitura só `is_oli_admin()`), testado por simulação de role. §3 corrigido pra Vercel e a pendência de doc de 21/jul fechada. Fundador publicou; depois reportou o hero mostrando só o teto em monitor grande — causa medida ao vivo (imagem retrato no fluxo esticava o grid pra 2130px num viewport de 1102px), corrigida com `position:absolute` + `max-height`. **Pendências:** commit do fix do hero, tela `/leads` no admin (hoje só via SQL), e apagar a pasta órfã `oli-deploy`.
