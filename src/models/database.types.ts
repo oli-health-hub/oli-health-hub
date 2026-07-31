@@ -663,6 +663,50 @@ export type Database = {
           },
         ]
       }
+      partner_commission_config: {
+        Row: {
+          carencia_dias_mensal: number
+          comissiona: boolean
+          partner_id: string
+          primeira_hora_pct: number
+          updated_at: string
+          valor_base_anual: number
+          valor_base_mensal: number
+          valor_pro_anual: number
+          valor_pro_mensal: number
+        }
+        Insert: {
+          carencia_dias_mensal?: number
+          comissiona?: boolean
+          partner_id: string
+          primeira_hora_pct?: number
+          updated_at?: string
+          valor_base_anual?: number
+          valor_base_mensal?: number
+          valor_pro_anual?: number
+          valor_pro_mensal?: number
+        }
+        Update: {
+          carencia_dias_mensal?: number
+          comissiona?: boolean
+          partner_id?: string
+          primeira_hora_pct?: number
+          updated_at?: string
+          valor_base_anual?: number
+          valor_base_mensal?: number
+          valor_pro_anual?: number
+          valor_pro_mensal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commission_config_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_commission_payments: {
         Row: {
           created_at: string

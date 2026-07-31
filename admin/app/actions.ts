@@ -73,6 +73,14 @@ export async function setUserType(formData: FormData) {
     .eq('id', userId);
 
   if (error) throw new Error(error.message);
+
+  // Mesmo provisionamento automático de createTeamProfile — cobre conversão
+  // de conta existente em parceiro via /usuarios.
+  if (userType === 'partner') {
+    await supabase.rpc('generate_referral_code', { p_user_id: userId });
+    await supabase.from('partner_commission_config').upsert({ partner_id: userId }, { onConflict: 'partner_id', ignoreDuplicates: true });
+  }
+
   revalidatePath('/usuarios');
 }
 
@@ -534,6 +542,14 @@ export async function createTeamProfile(formData: FormData) {
     .eq('id', userId);
   if (updateError) throw new Error(updateError.message);
 
+  // Parceiro precisa de código de indicação (link /baixar?ref=) + config de
+  // comissão (default: comissiona, valores do modelo-padrão) pra funcionar
+  // sem precisar de SQL manual.
+  if (userType === 'partner') {
+    await supabase.rpc('generate_referral_code', { p_user_id: userId });
+    await supabase.from('partner_commission_config').insert({ partner_id: userId });
+  }
+
   revalidatePath('/equipe');
 }
 
@@ -615,4 +631,45 @@ export async function registerCommissionPayment(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath('/parceiros');
+}
+
+/** Atualiza a regra de comissão de um parceiro (comissiona sim/não + valores
+ *  por tier). Editável no admin pra não depender de código a cada parceiro
+ *  novo — cada parceiro pode ter valores diferentes do modelo-padrão. */
+export async function updatePartnerCommissionConfig(formData: FormData) {
+  const partnerId = formData.get('partner_id') as string;
+  if (!partnerId) throw new Error('partner_id obrigatório.');
+
+  const config = {
+    partner_id:           partnerId,
+    comissiona:           formData.get('comissiona') === 'true',
+    primeira_hora_pct:    parseFloat(formData.get('primeira_hora_pct') as string) || 0,
+    valor_base_anual:     parseFloat(formData.get('valor_base_anual') as string) || 0,
+    valor_pro_anual:      parseFloat(formData.get('valor_pro_anual') as string) || 0,
+    valor_base_mensal:    parseFloat(formData.get('valor_base_mensal') as string) || 0,
+    valor_pro_mensal:     parseFloat(formData.get('valor_pro_mensal') as string) || 0,
+    carencia_dias_mensal: parseInt(formData.get('carencia_dias_mensal') as string, 10) || 0,
+    updated_at:           new Date().toISOString(),
+  };
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('partner_commission_config').upsert(config, { onConflict: 'partner_id' });
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/parceiros');
+  revalidatePath(`/equipe/${partnerId}`);
+}
+
+/** Gera o código de indicação de um parceiro que ainda não tem (fallback pra
+ *  perfis criados antes deste provisionamento automático existir). */
+export async function ensurePartnerReferralCode(formData: FormData) {
+  const partnerId = formData.get('partner_id') as string;
+  if (!partnerId) throw new Error('partner_id obrigatório.');
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.rpc('generate_referral_code', { p_user_id: partnerId });
+  if (error) throw new Error(error.message);
+  await supabase.from('partner_commission_config').upsert({ partner_id: partnerId }, { onConflict: 'partner_id', ignoreDuplicates: true });
+
+  revalidatePath(`/equipe/${partnerId}`);
 }
