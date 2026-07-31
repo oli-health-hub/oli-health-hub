@@ -11,7 +11,7 @@
 - **App** (médicos): React Native + Expo SDK 54, iOS + Android.
 - **Admin** (operação): Next.js, hospedado na Vercel.
 - **Site institucional**: estático em `landing/`, hospedado no **Netlify** (`olihealthhub.com.br`).
-- Modelo de receita: **mensalidade de plano + cobrança por minuto de uso de sala** (minutagem) + módulos + pacotes de horas.
+- Modelo de receita: **mensalidade de plano + horas de sala vendidas em blocos de 1h e consumidas por minuto** + módulos. Regra completa e armadilhas de copy em **§16** — leia antes de escrever qualquer material comercial.
 
 ## 2. Stack
 
@@ -641,9 +641,9 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 - 🔴 **Direito de imagem:** a foto do balcão mostra a Claudia e um homem. Fundador confirmou que são pessoas conhecidas e autorizou o uso.
 
 **Reescrita da copy** (regra fixada: linguagem concreta, zero jargão):
-- H1: "Consultório pronto. Você paga só o tempo que usa." Removidos da página inteira: *ecossistema, premium, pay-per-use, networking, elite, patamar, blindar, hub de saúde premium*.
+- H1: "Consultório pronto. Você paga só o tempo que usa." (⚠️ **substituído na sessão 3 — ver §16**, a promessa por minuto estava errada). Removidos da página inteira: *ecossistema, premium, pay-per-use, networking, elite, patamar, blindar, hub de saúde premium*.
 - Ordem das seções trocada: o espaço agora vem **antes** do preço (`problema → modelo → infraestrutura → planos → contato`).
-- Planos com a conta pronta: R$ 100 por consulta de 50 min; BASE compensa a partir de **10 h/mês**, PRO a partir de **25 h/mês** (pontos de virada calculados, batem com `oli-plans.ts`).
+- Planos com a conta pronta: R$ 100 por consulta de 50 min (⚠️ **corrigido na sessão 3 — ver §16**); BASE compensa a partir de **10 h/mês**, PRO a partir de **25 h/mês** (pontos de virada calculados, batem com `oli-plans.ts`).
 - Formulário reduzido de 5 campos obrigatórios pra 3 (especialidade virou opcional, "interesse de plano" saiu).
 - Removidos: galeria "Conheça as salas" (fotos antigas, a pedido do fundador) e o selo "Mais popular" do PRO (afirmação insustentável hoje → "Mais completo"). Tirado também o "CRM clínico Communicare" do PRO — nome de fornecedor e integração ainda em mock (§6).
 - `<title>`, meta description e tags Open Graph reescritos — o `<title>` ainda era o slogan antigo, e é o que aparece quando o link é mandado no WhatsApp.
@@ -652,6 +652,54 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 **🐛 Fix de layout do hero (achado em produção pelo fundador):** em monitor grande aparecia só o teto da sala e o texto sumia. Causa: a foto do hero é retrato (1024×1536) e o `<img>` estava no fluxo com `width:100%; height:100%` dentro de um `.hero-image` sem altura definida — a altura intrínseca da imagem esticava a linha do grid. Medido ao vivo: **hero com 2130px de altura num viewport de 1102px**, com o texto centralizado nesse bloco, portanto fora da tela. Fix: `position:absolute; inset:0` na imagem (sai do fluxo, não opina sobre a altura) + `object-position: center 60%` + `max-height: 860px` no `.hero` (anulado no breakpoint mobile). Confirmado ao vivo: hero volta pra 1006px, título/texto/botões visíveis sem rolar.
 
 **Estado:** `landing/` já publicado pelo fundador com a reescrita e o Supabase (confirmado ao vivo). ✅ Fix do hero commitado e no ar (`64c0112`). Faltam: tela `/leads` no admin (hoje só via SQL) e apagar a pasta órfã `oli-deploy` no iCloud.
+
+## 16. Página `/consultorio` + correção da promessa de cobrança (31/jul sessão 3)
+
+**Contexto:** o fundador quis um link pessoal pra mandar no WhatsApp mostrando **uma sala específica** — sem ser a home institucional, que é fria demais pra um primeiro contato com amigo. Criada `landing/consultorio.html`, no mesmo padrão visual do site.
+
+**A página (`olihealthhub.com.br/consultorio`):**
+- Layout mobile-first (coluna única, 560px), fotos `consultorio-ginecologia.jpg` + `-vertical.jpg` + `lounge-espera.jpg`.
+- **`?para=Nome`** → mostra "Nome, essa é a sala que eu te falei." no topo e pré-preenche a mensagem do WhatsApp com o nome. É o que tira a cara de disparo em massa.
+- **`?ref=CODIGO`** → repassado pro botão "Baixar o aplicativo" (`/baixar?ref=`), preservando o benefício de indicação (§7).
+- Open Graph aponta pra foto da sala → a prévia no WhatsApp já mostra o consultório antes do clique.
+- CTA de WhatsApp no comercial (11) 97223-3745, igual ao resto do site.
+- ⚠️ A foto da sala de gineco tem **cadeira com perneiras** bem visível. Pra público de estética/odonto pode ler como "consultório de ginecologista" — `consultorio-verde.jpg` (maca reta) é a alternativa. Decisão do fundador pendente.
+- Não linkada de lugar nenhum: só chega quem recebe a URL.
+
+**🔴 Correção de premissa — o modelo de cobrança estava descrito errado no site inteiro.**
+
+Regra real, confirmada pelo fundador (**é premissa, não pode divergir em nenhuma frente**):
+
+| | Regra |
+|---|---|
+| Compra de horas | **Só em blocos de 1 hora.** Nunca menos. É preciso ter horas no banco pra reservar. |
+| Reserva | Múltiplos de 30 min (reserva de 30 min é válida e desconta só 30 min do saldo) |
+| Consumo | Por minuto, dentro da reserva |
+| Excedente | Arredonda pros próximos 30 min; passou de 30 sem checkout, cobra mais 30 |
+
+- ✅ **`src/services/usageChargeService.ts` (`calcUsageCharge`) já implementa isso corretamente.** Não "consertar" achando que deveria ser hora cheia — o comportamento atual é o desejado.
+- ❌ O que estava errado era **só a copy**: o site vendia "pague só os minutos que usar" e dava o exemplo "uma consulta de 50 min sai por R$ 100", o que implica comprar 50 minutos avulsos — inexistente. Quem entra novo compra 1h (R$ 120) e fica com 10 min de saldo.
+
+**Trechos corrigidos em `landing/index.html`:**
+
+| Onde | Antes | Agora |
+|---|---|---|
+| H1 do hero | "Você paga só o tempo que usa." | "Sem aluguel e sem fidelidade." |
+| `<title>` / meta / og:title | idem | idem |
+| Seção "Quanto custa" (h2) | "Pague só o tempo que usar." | "Compre horas e use por minuto." |
+| Subtítulo dos planos | "consulta de 50 min custa R$ 100" | blocos de 1h, consumo por minuto, sobra fica no saldo |
+| Card START (tagline) | "paga só os minutos que usar" | "compra horas e usa por minuto" |
+| Card START (preço/min) | "50 min sai por R$ 100" | "a hora de sala sai por R$ 120" |
+| Feature do START | "Reserve por minuto ou por hora" | "Reserve a partir de 30 minutos" |
+| Passo 01 "como funciona" | "paga só os minutos que usar" | "compra horas e consome por minuto" |
+
+- Cards BASE e PRO **não mudaram** — "R$ 1,50/min · 25% mais barato" é taxa de consumo e está correta.
+- Varredura em `landing/` confirma zero ocorrências restantes de "tempo que usa", "só os minutos", "50 min", "por minuto ou por hora".
+- ⚠️ **§15 deste handoff (linha do H1) ficou desatualizado** — registra o H1 antigo como decisão da sessão anterior. Este bloco substitui.
+- ⚠️ Não conferido se `docs/OLI_BASE.md` descreve a regra corretamente. Verificar antes de usá-lo como fonte.
+- 🟡 O H1 novo é mais defensivo e menos original que o anterior. Fundador ciente; vale explorar o saldo que não expira como diferencial.
+
+**Estado:** ⚠️ **Nada commitado nem publicado.** O sandbox de terminal caiu no meio da sessão (`useradd failed`), então `landing/consultorio.html` e as correções em `landing/index.html` existem **só na máquina do fundador**. Falta commit + push pra Vercel publicar.
 
 ## 13. Comandos úteis
 

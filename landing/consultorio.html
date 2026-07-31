@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O consultório | OLI Health Hub</title>
+<meta name="description" content="Consultório pronto na Consolação, em São Paulo, com maca para procedimentos. Você compra horas, reserva pelo aplicativo e atende. Sem aluguel fixo e sem fidelidade.">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="OLI Health Hub">
+<meta property="og:url" content="https://olihealthhub.com.br/consultorio">
+<meta property="og:title" content="Olha o consultório">
+<meta property="og:description" content="Sala pronta com maca para procedimentos, na Consolação. Você compra horas e usa quando atende, sem aluguel fixo e sem fidelidade.">
+<meta property="og:image" content="https://olihealthhub.com.br/fotos/consultorio-ginecologia.jpg">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="900">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://olihealthhub.com.br/consultorio">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --verde:#5F7D67; --verde-escuro:#4a6454; --bege:#F4EFEA;
+    --dourado:#B8893C; --cinza:#2F2F2F; --cinza-medio:#666; --branco:#fff;
+  }
+  body{font-family:'Inter',sans-serif;color:var(--cinza);background:var(--bege);-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'Poppins',sans-serif}
+
+  .wrap{max-width:560px;margin:0 auto;padding:28px 20px 48px}
+
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .brand img{height:34px;width:auto;display:block}
+  .brand-txt{font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;color:var(--verde);letter-spacing:-.2px}
+
+  .saudacao{
+    font-family:'Poppins',sans-serif;font-size:17px;font-weight:600;
+    color:var(--verde);margin-bottom:8px;display:none
+  }
+
+  h1{font-size:27px;font-weight:600;line-height:1.25;letter-spacing:-.6px;margin-bottom:12px}
+  .sub{font-size:15px;line-height:1.65;color:var(--cinza-medio);margin-bottom:22px}
+
+  .galeria{display:flex;flex-direction:column;gap:10px;margin-bottom:26px}
+  .foto{width:100%;border-radius:14px;display:block;box-shadow:0 4px 22px rgba(47,47,47,.10)}
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .duo .foto{height:100%;object-fit:cover;aspect-ratio:3/4}
+
+  .legenda{font-size:12.5px;color:#9a9a9a;text-align:center;margin:-14px 0 26px}
+
+  .lista{background:var(--branco);border-radius:16px;padding:20px 22px;margin-bottom:26px;box-shadow:0 2px 16px rgba(47,47,47,.06)}
+  .lista h2{font-size:15px;font-weight:600;margin-bottom:14px;letter-spacing:-.2px}
+  .item{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-top:1px solid #F0EBE5;font-size:14.5px;line-height:1.55}
+  .item:first-of-type{border-top:none}
+  .tick{color:var(--verde);font-weight:700;flex-shrink:0;line-height:1.45}
+
+  .destaque{
+    background:linear-gradient(135deg,var(--verde) 0%,var(--verde-escuro) 100%);
+    color:#fff;border-radius:16px;padding:22px;margin-bottom:26px;text-align:center
+  }
+  .destaque strong{font-family:'Poppins',sans-serif;font-size:17px;font-weight:600;display:block;margin-bottom:6px}
+  .destaque span{font-size:14px;line-height:1.6;opacity:.92}
+
+  .btn{
+    display:block;width:100%;text-align:center;text-decoration:none;
+    font-family:'Poppins',sans-serif;font-size:15.5px;font-weight:600;
+    padding:16px;border-radius:13px;margin-bottom:11px;transition:transform .15s ease
+  }
+  .btn:active{transform:scale(.985)}
+  .btn-wa{background:#25D366;color:#fff}
+  .btn-verde{background:var(--verde);color:#fff}
+  .btn-ghost{background:transparent;color:var(--verde);border:1.5px solid rgba(95,125,103,.45)}
+
+  .rodape{margin-top:30px;text-align:center;font-size:12px;color:#a5a5a5;line-height:1.9}
+  .rodape a{color:var(--verde);text-decoration:none}
+
+  @media (min-width:600px){
+    .wrap{max-width:640px;padding-top:44px}
+    h1{font-size:31px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <img src="/logo_oli_transparent.png" alt="OLI Health Hub">
+    <span class="brand-txt">OLI Health Hub</span>
+  </div>
+
+  <p class="saudacao" id="saudacao"></p>
+
+  <h1>Esse é um dos consultórios.</h1>
+  <p class="sub">
+    Fica na Consolação, em São Paulo. Tem mesa para conversar com o paciente e maca
+    para os procedimentos, num canto reservado da sala.
+  </p>
+
+  <div class="galeria">
+    <img class="foto" src="/fotos/consultorio-ginecologia.jpg" alt="Consultório com mesa de atendimento e maca para procedimentos">
+    <div class="duo">
+      <img class="foto" src="/fotos/consultorio-ginecologia-vertical.jpg" alt="Vista completa do consultório">
+      <img class="foto" src="/fotos/lounge-espera.jpg" alt="Sala de espera do OLI Health Hub">
+    </div>
+  </div>
+  <p class="legenda">Fotos reais do espaço, sem montagem.</p>
+
+  <div class="lista">
+    <h2>Como funciona</h2>
+    <div class="item"><span class="tick">&#10003;</span><span>Você compra horas e reserva a sala pelo aplicativo, nos dias em que vai atender.</span></div>
+    <div class="item"><span class="tick">&#10003;</span><span>Chega e atende. A sala já está limpa e pronta.</span></div>
+    <div class="item"><span class="tick">&#10003;</span><span>A recepção recebe o seu paciente, faz a cobrança e emite a nota no seu CNPJ.</span></div>
+    <div class="item"><span class="tick">&#10003;</span><span>Sem aluguel fixo, sem contrato de fidelidade, sem taxa de condomínio.</span></div>
+  </div>
+
+  <div class="destaque">
+    <strong>Você compra horas e usa por minuto</strong>
+    <span>As horas são vendidas em blocos de uma hora. O que você não usar continua no seu saldo, para o próximo atendimento.</span>
+  </div>
+
+  <a class="btn btn-wa" id="btnWa" href="#" target="_blank" rel="noopener">Falar no WhatsApp</a>
+  <a class="btn btn-verde" href="/">Ver o espaço inteiro e os valores</a>
+  <a class="btn btn-ghost" id="btnApp" href="/baixar">Baixar o aplicativo</a>
+
+  <p class="rodape">
+    OLI Health Hub &middot; Consolação, São Paulo<br>
+    <a href="/privacidade">Política de Privacidade</a>
+  </p>
+
+</div>
+
+<script>
+  // Número comercial usado nos links de WhatsApp (mesmo do site principal).
+  var WHATSAPP = '5511972233745';
+
+  var qs   = new URLSearchParams(location.search);
+  var para = (qs.get('para') || '').trim();   // ?para=Andressa  -> saudação pessoal
+  var ref  = (qs.get('ref')  || '').trim();   // ?ref=CODIGO     -> repassa pro /baixar
+
+  // Saudação pessoal. Só o primeiro nome, com a inicial maiúscula.
+  if (para) {
+    var nome = para.split(/[\s+]+/)[0];
+    nome = nome.charAt(0).toUpperCase() + nome.slice(1).toLowerCase();
+    var el = document.getElementById('saudacao');
+    el.textContent = nome + ', essa é a sala que eu te falei.';
+    el.style.display = 'block';
+  }
+
+  // Mensagem do WhatsApp já preenchida.
+  var texto = para
+    ? 'Oi! Sou ' + para + '. Vi a foto do consultório e queria saber mais.'
+    : 'Oi! Vi a página do consultório e queria saber mais.';
+  document.getElementById('btnWa').href =
+    'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(texto);
+
+  // Preserva o código de indicação ao mandar pro download.
+  if (ref) {
+    document.getElementById('btnApp').href = '/baixar?ref=' + encodeURIComponent(ref);
+  }
+</script>
+</body>
+</html>

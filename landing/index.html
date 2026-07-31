@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultório por hora na Consolação, São Paulo | OLI Health Hub</title>
-    <meta name="description" content="Consultórios prontos na Consolação, em São Paulo. Você reserva pelo aplicativo, chega e atende. A recepção recebe o seu paciente e emite a nota fiscal. Você paga só o tempo que usa.">
+    <meta name="description" content="Consultórios prontos na Consolação, em São Paulo. Você reserva pelo aplicativo, chega e atende. A recepção recebe o seu paciente e emite a nota fiscal. Sem aluguel fixo e sem fidelidade.">
 
     <meta property="og:type" content="website">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:site_name" content="OLI Health Hub">
     <meta property="og:url" content="https://olihealthhub.com.br/">
-    <meta property="og:title" content="Consultório pronto. Você paga só o tempo que usa.">
+    <meta property="og:title" content="Consultório pronto. Sem aluguel e sem fidelidade.">
     <meta property="og:description" content="Salas equipadas na Consolação, em São Paulo. A recepção recebe o seu paciente, faz a cobrança e emite a nota fiscal no seu CNPJ. Sem aluguel fixo e sem fidelidade.">
     <meta property="og:image" content="https://olihealthhub.com.br/fotos/consultorio-verde.jpg">
     <meta name="twitter:card" content="summary_large_image">
@@ -205,6 +205,17 @@
         .section-verde  { background: var(--verde); }
         .section-escuro { background: var(--cinza); }
 
+        /* Largura máxima de leitura. Sem isto o conteúdo estica de ponta a
+           ponta: num monitor de 2844px cada foto de "Como funciona" era
+           renderizada a 1308px de largura (acima do tamanho real do arquivo,
+           1600x900 esticado num box 4:3) e a seção inteira passava de 4700px
+           de altura — quatro telas só de foto. Mesma causa-raiz do hero. */
+        .section > * {
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .section-header { margin-bottom: 72px; }
         .section-header.centered { text-align: center; }
         .section-header.centered .section-sub { margin-left: auto; margin-right: auto; }
@@ -274,7 +285,7 @@
         .modelo-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 80px;
+            gap: 64px;
             align-items: center;
             margin-bottom: 96px;
         }
@@ -306,10 +317,12 @@
             font-weight: 300;
         }
 
+        /* 3/2 e não 4/3: as fotos daqui são 16:9 (1600x900) e 3:2 (1536x1024).
+           Num box 4:3 elas perdiam mais de um quarto das laterais. */
         .modelo-img {
             border-radius: 14px;
             overflow: hidden;
-            aspect-ratio: 4/3;
+            aspect-ratio: 3/2;
             box-shadow: 0 20px 60px rgba(0,0,0,0.1);
         }
         .modelo-img img {
@@ -481,10 +494,14 @@
             box-shadow: 0 20px 48px rgba(0,0,0,0.1);
         }
 
+        /* object-position sobe o recorte: a foto do consultório é retrato
+           (1024x1536) e o terço de baixo é só chão. Não afeta as outras duas
+           (paisagem — nelas o corte é lateral, não vertical). */
         .infra-img {
             width: 100%;
             aspect-ratio: 3/2;
             object-fit: cover;
+            object-position: center 45%;
             display: block;
         }
 
@@ -696,6 +713,23 @@
             .hero-content { padding: 60px 32px; }
             .hero-content h1 { font-size: 42px; }
             .planos-wrapper { grid-template-columns: 1fr; }
+            .modelo-row { gap: 48px; margin-bottom: 72px; }
+            .infra-grid { gap: 20px; }
+        }
+
+        /* Tablet retrato: em duas colunas a foto caía para ~359px e ficava
+           menor que o bloco de texto ao lado; os três cards de infraestrutura
+           ficavam com 242px cada. Quebra antes dos 768px por isso. */
+        @media (max-width: 900px) {
+            .modelo-row, .modelo-row.reverse {
+                grid-template-columns: 1fr;
+                direction: ltr;
+                gap: 32px;
+            }
+            /* Em coluna única a foto ocuparia a largura toda (832px num iPad)
+               e empurraria o passo seguinte para fora da tela. */
+            .modelo-img { width: 100%; max-width: 620px; justify-self: center; }
+            .infra-grid { grid-template-columns: 1fr 1fr; }
         }
 
         @media (max-width: 768px) {
@@ -706,10 +740,8 @@
             .hero-content h1 { font-size: 34px; }
             .section { padding: 64px 24px; }
             .dor-grid { grid-template-columns: 1fr; gap: 24px; }
-            .modelo-row, .modelo-row.reverse { grid-template-columns: 1fr; direction: ltr; gap: 32px; }
             .planos-wrapper { border-radius: 14px; }
             .plano-painel { padding: 48px 32px; }
-            .infra-grid { grid-template-columns: 1fr 1fr; }
             .sala-gallery { grid-template-columns: 1fr 1fr; }
             .contato-grid { grid-template-columns: 1fr; gap: 48px; }
             .form-card { padding: 36px 28px; }
@@ -745,7 +777,7 @@
 <section class="hero">
     <div class="hero-content">
         <span class="eyebrow">Consultórios por hora · Consolação, São Paulo</span>
-        <h1>Consultório pronto.<br>Você paga só o tempo que usa.</h1>
+        <h1>Consultório pronto.<br>Sem aluguel e sem fidelidade.</h1>
         <p>Salas equipadas na Consolação, em São Paulo. Você reserva pelo aplicativo, chega e atende. A nossa recepção recebe o seu paciente, faz a cobrança e emite a nota fiscal no seu CNPJ. Sem aluguel fixo, sem secretária para contratar, sem fidelidade.</p>
         <div class="hero-actions">
             <a href="#contato" class="btn">Solicitar visita gratuita</a>
@@ -793,7 +825,7 @@
         <div class="modelo-text">
             <div class="step-num">01</div>
             <h3>A sala já está pronta quando você chega</h3>
-            <p>Consultório climatizado, com isolamento acústico e mobiliado para atender. Você escolhe o dia e a hora pelo aplicativo e paga só os minutos que usar. Sem aluguel fixo e sem contrato de fidelidade — no mês em que você não atender, não paga nada.</p>
+            <p>Consultório climatizado, com isolamento acústico e mobiliado para atender. Você compra horas, escolhe o dia e o horário pelo aplicativo e consome por minuto — o que sobrar fica no seu saldo. Sem aluguel fixo e sem contrato de fidelidade: no mês em que você não atender, não paga nada.</p>
         </div>
         <div class="modelo-img">
             <img src="fotos/consultorio-ginecologia.jpg" alt="Consultório equipado do OLI Health Hub" loading="lazy">
@@ -879,8 +911,8 @@
 <section class="section section-bege" id="planos">
     <div class="section-header centered">
         <div class="section-label">Quanto custa</div>
-        <h2 class="section-title">Comece grátis.<br>Pague só o tempo que usar.</h2>
-        <p class="section-sub">Uma consulta de 50 minutos custa R$ 100 no plano gratuito. Doze consultas no mês custam R$ 1.200 — e mais nada. No mês em que você não atender, você não paga.</p>
+        <h2 class="section-title">Comece grátis.<br>Compre horas e use por minuto.</h2>
+        <p class="section-sub">As horas são vendidas em blocos de uma hora e consumidas por minuto — o tempo que sobrar continua no seu saldo. No plano gratuito, a hora sai por R$ 120. No mês em que você não atender, você não paga.</p>
     </div>
 
     <div class="planos-wrapper" style="grid-template-columns: repeat(3, 1fr);">
@@ -888,18 +920,18 @@
         <!-- PLANO START -->
         <div class="plano-painel base">
             <h3>START</h3>
-            <p class="plano-tagline">Sem mensalidade. Você paga só os minutos que usar.</p>
+            <p class="plano-tagline">Sem mensalidade. Você compra horas e usa por minuto.</p>
             <div class="plano-preco">
                 <span class="valor">Grátis</span>
             </div>
-            <div class="plano-minuto">R$ 2,00 por minuto · uma consulta de 50 min sai por R$ 100</div>
+            <div class="plano-minuto">R$ 2,00 por minuto · a hora de sala sai por R$ 120</div>
             <div class="plano-divider"></div>
             <ul class="plano-features">
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
                         <strong>Sala quando você quiser</strong>
-                        <span>Reserve por minuto ou por hora, sem mensalidade</span>
+                        <span>Reserve a partir de 30 minutos, sem mensalidade</span>
                     </span>
                 </li>
                 <li>
