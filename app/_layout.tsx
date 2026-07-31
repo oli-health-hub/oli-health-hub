@@ -73,6 +73,14 @@ export default function RootLayout() {
         router.push('/');           // Dashboard — onde fica o timer
       } else if (type === 'LOW_BALANCE') {
         router.push('/(tabs)/ecossistema'); // Tela de compra de horas
+      } else if (type === 'lembrete_reserva' || type === 'boas_vindas_cadastro' || type === 'nudge_primeira_reserva') {
+        router.push('/(tabs)/agenda');
+      } else if (type === 'objetivos_pendentes') {
+        router.push('/completar-perfil' as never);
+      } else if (type === 'reacao_inatividade') {
+        router.push('/');
+      } else if (type === 'nudge_avaliacao_app') {
+        router.push('/avaliacao-app' as never);
       }
     });
     return unsub;
@@ -148,6 +156,7 @@ export default function RootLayout() {
         <Stack.Screen name="mfa-verify"  options={{ headerShown: false }} />
         <Stack.Screen name="mfa-setup"   options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="nova-senha"  options={{ headerShown: false }} />
+        <Stack.Screen name="avaliacao-app" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="(tabs)"      options={{ headerShown: false }} />
         <Stack.Screen
           name="chatbot"

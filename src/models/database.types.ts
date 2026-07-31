@@ -55,6 +55,38 @@ export type Database = {
           },
         ]
       }
+      app_satisfaction_responses: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          professional_id: string
+          score: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          professional_id: string
+          score: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          professional_id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_satisfaction_responses_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -927,6 +959,38 @@ export type Database = {
           },
         ]
       }
+      push_dispatch_log: {
+        Row: {
+          category: string
+          gatilho: string
+          id: string
+          professional_id: string
+          sent_at: string
+        }
+        Insert: {
+          category: string
+          gatilho: string
+          id?: string
+          professional_id: string
+          sent_at?: string
+        }
+        Update: {
+          category?: string
+          gatilho?: string
+          id?: string
+          professional_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_dispatch_log_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_tokens: {
         Row: {
           id: string
@@ -1436,9 +1500,27 @@ export type Database = {
         }[]
       }
       is_oli_admin: { Args: never; Returns: boolean }
+      log_push_dispatch: {
+        Args: {
+          p_category: string
+          p_gatilho: string
+          p_professional_id: string
+        }
+        Returns: undefined
+      }
       oli_decrypt: { Args: { cipher: string }; Returns: string }
       oli_encrypt: { Args: { plain: string }; Returns: string }
+      push_dispatch_allowed: {
+        Args: {
+          p_category: string
+          p_gatilho: string
+          p_professional_id: string
+        }
+        Returns: boolean
+      }
       push_lembrete_reserva_amanha: { Args: never; Returns: undefined }
+      push_nudge_avaliacao_app: { Args: never; Returns: undefined }
+      push_nudge_primeira_reserva: { Args: never; Returns: undefined }
       push_objetivos_pendentes: { Args: never; Returns: undefined }
       push_reacao_inatividade: { Args: never; Returns: undefined }
       record_auth_attempt: {
