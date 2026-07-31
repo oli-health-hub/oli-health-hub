@@ -75,12 +75,24 @@ export default function RootLayout() {
         router.push('/(tabs)/ecossistema'); // Tela de compra de horas
       } else if (type === 'lembrete_reserva' || type === 'boas_vindas_cadastro' || type === 'nudge_primeira_reserva') {
         router.push('/(tabs)/agenda');
-      } else if (type === 'objetivos_pendentes') {
+      } else if (type === 'objetivos_pendentes' || type === 'conquista_desbloqueada' || type === 'perfil_100_completo') {
         router.push('/completar-perfil' as never);
-      } else if (type === 'reacao_inatividade') {
+      } else if (type === 'reacao_inatividade' || type === 'reacao_inatividade_30d' || type === 'aniversario_cadastro') {
         router.push('/');
       } else if (type === 'nudge_avaliacao_app') {
         router.push('/avaliacao-app' as never);
+      } else if (type === 'nudge_primeiro_paciente') {
+        router.push('/(tabs)/pacientes');
+      } else if (type === 'nudge_comunidade' || type === 'resumo_comunidade') {
+        router.push('/(tabs)/comunidade');
+      } else if (type === 'saldo_baixo_horas') {
+        router.push('/(tabs)/financeiro');
+      } else if (type === 'sugestao_upgrade_plano' || type === 'sugestao_anual') {
+        router.push('/(tabs)/ecossistema');
+      } else if (type === 'sugestao_modulo') {
+        router.push('/modulos' as never);
+      } else if (type === 'nudge_indicacao' || type === 'indicacao_confirmada') {
+        router.push('/indicacao' as never);
       }
     });
     return unsub;
