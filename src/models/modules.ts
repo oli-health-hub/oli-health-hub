@@ -204,7 +204,7 @@ export const MODULE_CATALOG: Record<ModuleId, OLIModule> = {
     activationType: 'contact_sales',
     activationLayer: 'oli_config',
     salesWhatsapp: process.env.EXPO_PUBLIC_OLI_SALES_PHONE,
-    status: 'available',
+    status: 'coming_soon',
     featuresByPlan: {
       PRO: [
         'ar.gestao_glosas',

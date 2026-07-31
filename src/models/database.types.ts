@@ -500,6 +500,48 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          created_at: string
+          email: string
+          especialidade: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          origem: string
+          referrer: string | null
+          status: string
+          user_agent: string | null
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          especialidade?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem?: string
+          referrer?: string | null
+          status?: string
+          user_agent?: string | null
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          especialidade?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem?: string
+          referrer?: string | null
+          status?: string
+          user_agent?: string | null
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       modules: {
         Row: {
           ativo: boolean
@@ -1552,6 +1594,7 @@ export type Database = {
         | "plan_subscribed"
         | "plan_activated"
         | "reservation_created"
+        | "lead_received"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1686,6 +1729,7 @@ export const Constants = {
         "plan_subscribed",
         "plan_activated",
         "reservation_created",
+        "lead_received",
       ],
     },
   },

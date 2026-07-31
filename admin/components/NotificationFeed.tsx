@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
 
-type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated' | 'reservation_created';
+type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated' | 'reservation_created' | 'lead_received';
 
 interface Notification {
   id:              string;
@@ -23,6 +23,7 @@ const TYPE_META: Record<NotifType, { icon: string; bg: string; label: string }> 
   plan_subscribed:  { icon: '⭐', bg: 'bg-blue-50',   label: 'Plano contratado' },
   plan_activated:   { icon: '🏆', bg: 'bg-blue-50',   label: 'Plano ativado'   },
   reservation_created: { icon: '📅', bg: 'bg-green-50', label: 'Nova reserva' },
+  lead_received:    { icon: '📋', bg: 'bg-yellow-50', label: 'Novo lead' },
 };
 
 function timeAgo(iso: string): string {

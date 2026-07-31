@@ -580,3 +580,15 @@ export async function updateTeamProfileFields(formData: FormData) {
   revalidatePath(`/equipe/${userId}`);
   revalidatePath('/equipe');
 }
+
+/** Atualiza status/observações de um lead do formulário do site */
+export async function updateLead(formData: FormData) {
+  const id           = formData.get('id') as string;
+  const status       = formData.get('status') as string;
+  const observacoes  = (formData.get('observacoes') as string) || null;
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('leads').update({ status, observacoes }).eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/leads');
+}
