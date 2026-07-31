@@ -353,6 +353,14 @@
             background: var(--branco);
         }
 
+        /* Destaque do plano do meio. Era um style inline com var(--color-gold),
+           variável que não existe na paleta (é --dourado), então a borda nunca
+           chegou a aparecer. box-shadow inset em vez de border: não soma
+           largura ao item do grid. */
+        .plano-painel.destaque {
+            box-shadow: inset 0 0 0 1px var(--dourado);
+        }
+
         .plano-painel.vip {
             background: var(--verde);
             position: relative;
@@ -712,7 +720,30 @@
             .section { padding: 80px 32px; }
             .hero-content { padding: 60px 32px; }
             .hero-content h1 { font-size: 42px; }
-            .planos-wrapper { grid-template-columns: 1fr; }
+            /* Empilhado, o bloco único vira três cards soltos. Sem isto, START
+               e BASE (ambos fundo branco, sem gap) grudam num bloco só e não dá
+               pra ver onde um plano termina e o outro começa. */
+            .planos-wrapper {
+                grid-template-columns: 1fr;
+                min-height: 0;
+                gap: 20px;
+                border-radius: 0;
+                overflow: visible;
+                box-shadow: none;
+            }
+            /* justify-self, não margin:auto — margem auto num item de grid faz
+               ele encolher para a largura intrínseca em vez de esticar. */
+            .plano-painel {
+                border-radius: 16px;
+                box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+                width: 100%;
+                max-width: 560px;
+                justify-self: center;
+            }
+            .plano-painel.destaque {
+                box-shadow: inset 0 0 0 1px var(--dourado), 0 12px 32px rgba(0,0,0,0.08);
+            }
+            .plano-features { flex: 0 0 auto; }
             .modelo-row { gap: 48px; margin-bottom: 72px; }
             .infra-grid { gap: 20px; }
         }
@@ -751,6 +782,9 @@
         }
 
         @media (max-width: 480px) {
+            .plano-painel { padding: 40px 24px; }
+            .plano-painel h3 { font-size: 28px; }
+            .plano-preco .valor { font-size: 34px; }
             .infra-grid { grid-template-columns: 1fr; }
             .sala-gallery { grid-template-columns: 1fr; }
             .hero-actions { flex-direction: column; }
@@ -915,7 +949,10 @@
         <p class="section-sub">As horas são vendidas em blocos de uma hora e consumidas por minuto — o tempo que sobrar continua no seu saldo. No plano gratuito, a hora sai por R$ 120. No mês em que você não atender, você não paga.</p>
     </div>
 
-    <div class="planos-wrapper" style="grid-template-columns: repeat(3, 1fr);">
+    <!-- Sem style inline aqui: um `grid-template-columns` inline vence qualquer
+         media query e travava os 3 planos lado a lado até em 320px. As colunas
+         vêm do CSS (3 no desktop, 1 abaixo de 1024px). -->
+    <div class="planos-wrapper">
 
         <!-- PLANO START -->
         <div class="plano-painel base">
@@ -960,7 +997,7 @@
         </div>
 
         <!-- PLANO BASE -->
-        <div class="plano-painel base" style="border: 1px solid var(--color-gold);">
+        <div class="plano-painel base destaque">
             <h3>BASE</h3>
             <p class="plano-tagline">Para quem já atende toda semana. Compensa a partir de 10 horas de sala por mês.</p>
             <div class="plano-preco">
@@ -971,35 +1008,35 @@
             <div class="plano-divider"></div>
             <ul class="plano-features">
                 <li>
-                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-icon">✓</span>
                     <span class="feat-text">
                         <strong>Tudo do START</strong>
                         <span>Sala, aplicativo, recepção e encontros</span>
                     </span>
                 </li>
                 <li>
-                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-icon">✓</span>
                     <span class="feat-text">
                         <strong>Minuto 25% mais barato</strong>
                         <span>A mensalidade se paga com 10 horas de sala no mês</span>
                     </span>
                 </li>
                 <li>
-                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-icon">✓</span>
                     <span class="feat-text">
                         <strong>Conversa com contador e advogado</strong>
                         <span>Uma sessão sobre a sua PJ, um contrato ou um convênio</span>
                     </span>
                 </li>
                 <li>
-                    <span class="feat-icon" style="color: var(--color-gold);">✓</span>
+                    <span class="feat-icon">✓</span>
                     <span class="feat-text">
                         <strong>Copa e lounge</strong>
                         <span>Lugar para descansar entre um atendimento e outro</span>
                     </span>
                 </li>
             </ul>
-            <a href="#contato" class="btn btn-ghost" style="border-color: var(--color-gold); color: var(--color-gold);">Conhecer o BASE</a>
+            <a href="#contato" class="btn btn-ghost">Conhecer o BASE</a>
         </div>
 
         <!-- PLANO PRO -->

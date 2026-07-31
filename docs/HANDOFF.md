@@ -701,6 +701,82 @@ Regra real, confirmada pelo fundador (**é premissa, não pode divergir em nenhu
 
 **Estado:** ⚠️ **Nada commitado nem publicado.** O sandbox de terminal caiu no meio da sessão (`useradd failed`), então `landing/consultorio.html` e as correções em `landing/index.html` existem **só na máquina do fundador**. Falta commit + push pra Vercel publicar.
 
+## 17. Responsividade das fotos do site (31/jul sessão 4)
+
+**Pedido:** "o layout das seções das fotos está como estava o header" — ou seja, o defeito que já tinha sido corrigido no hero (§15) continuava vivo nas seções de baixo.
+
+**Causa-raiz (a mesma do hero, medida ao vivo em `olihealthhub.com.br` com viewport de 2844px):** **nada limitava a largura do conteúdo da página.** Não existia container com `max-width` em lugar nenhum — todas as seções esticavam de ponta a ponta. Consequências medidas:
+
+| Elemento | Antes | Depois |
+|---|---|---|
+| `.modelo-img` (cada foto de "Como funciona") | **1308×981** | 608×405 |
+| Seção `#modelo` inteira | **4720px de altura** (≈4 telas só de foto) | 2416px |
+| `.infra-img` | 880×587 | 408×272 |
+
+Agravante: a 1308px de largura as fotos eram renderizadas **acima do tamanho real do arquivo** (1600×900 esticado dentro de um box 4:3) — perdiam nitidez e ainda perdiam mais de um quarto das laterais no corte.
+
+**Correções em `landing/index.html` (só CSS, nenhuma mudança de conteúdo):**
+
+- **`.section > *` com `max-width: 1280px` + margens auto.** É o fix principal — resolve sozinho a maior parte do problema, para toda seção, presente e futura.
+- **`.modelo-img`: `aspect-ratio` 4/3 → 3/2.** As fotos dessa seção são 16:9 (1600×900) e 3:2 (1536×1024); num box 4:3 perdiam as laterais à toa.
+- **`.infra-img`: `object-position: center 45%`.** `consultorio-ginecologia-vertical.jpg` é retrato (1024×1536) num card horizontal e o terço de baixo é só chão — o corte centralizado desperdiçava o enquadramento. Não afeta as outras duas fotos do grid (paisagem: nelas o corte é lateral, não vertical).
+- **Novo breakpoint `@media (max-width: 900px)`.** Antes o layout só quebrava em 768px, então em tablet retrato (iPad, 834px) a foto caía pra 359px — menor que o bloco de texto ao lado — e Infraestrutura mantinha 3 cards de 242px. Agora `.modelo-row` vira coluna única e `.infra-grid` vira 2 colunas já em 900px. As duas regras equivalentes foram **removidas do bloco de 768px** pra não duplicar.
+- **`.modelo-img { max-width: 620px; justify-self: center }`** dentro desse breakpoint — em coluna única a foto ocuparia a largura toda (832px num iPad).
+- Gaps reduzidos: `.modelo-row` 80→64px, e 48px em ≤1024px.
+
+**⚠️ Armadilha de CSS encontrada no teste (registrar pra não repetir):** a primeira tentativa usou `margin-left:auto; margin-right:auto` pra centralizar `.modelo-img`. Num **item de grid**, margem auto faz o item usar a largura intrínseca em vez de esticar — e como o filho é uma `<img>` com `width:100%`, a referência vira circular e **a foto colapsa pra 0×0**. Correto é `width:100%; max-width:...; justify-self:center`.
+
+**Validação:** medido em **10 viewports** (2560, 1920, 1440, 1280, 1024, 900, 834, 768, 430, 375px) via iframe isolado com o CSS final injetado — **zero estouro horizontal e zero elemento colapsado** em todas. Foi assim que o bug do `margin:auto` apareceu antes de ir pro ar.
+
+**Observações não corrigidas (não pedidas):**
+- `landing/consultorio.html` (§16) **não tem esse problema** — é mobile-first com `max-width` de 560/640px. Mas o bloco `.duo` usa `aspect-ratio:3/4` para as duas fotos, e uma delas (`lounge-espera.jpg`) é paisagem 3:2 → perde ~55% das laterais. Intencional ou não, fica registrado.
+- A foto do card "Consultórios equipados" segue sendo retrato num card horizontal. O `object-position` resolve bem, mas existem paisagens não usadas (`sala-psicologia.jpg`, `atendimento-mesa.jpg`) que caberiam melhor. Decisão do fundador pendente.
+
+**⚠️ Sessões concorrentes:** esta sessão e a sessão 3 rodaram em paralelo sobre o mesmo `landing/index.html`. Tocaram partes diferentes (sessão 3 = copy/H1 no `<body>`; esta = CSS no `<head>`) e **as duas sobreviveram**, verificado por grep. Mas o handoff mudou embaixo desta sessão no meio do trabalho — vale conferir o arquivo antes de assumir estado.
+
+**Estado:** ✅ **Publicado.** O fundador commitou e publicou ainda em 31/jul — confirmado ao vivo em `olihealthhub.com.br` (`.modelo-img` com `aspect-ratio: 3/2` e `.dor-grid` com `max-width: 1280px` já servindo em produção). O mesmo push levou junto as mudanças da sessão 3 (H1 "Sem aluguel e sem fidelidade" + `consultorio.html`).
+
+## 18. Responsividade dos cards de plano no mobile (31/jul sessão 5)
+
+**Pedido:** "o card dos planos no mobile está ficando ruim".
+
+**Causa-raiz — um `style` inline anulando o CSS responsivo.** O HTML tinha:
+
+```html
+<div class="planos-wrapper" style="grid-template-columns: repeat(3, 1fr);">
+```
+
+Estilo inline vence qualquer regra de media query. Ou seja: a regra `@media (max-width:1024px){ .planos-wrapper{ grid-template-columns: 1fr } }` **existia no CSS desde sempre e nunca chegou a funcionar**. Os três planos ficavam lado a lado em **qualquer** largura, inclusive 320px.
+
+Medido ao vivo em produção, viewport de 375px:
+
+| | Antes | Depois |
+|---|---|---|
+| Colunas em 375px | **3** | 1 |
+| Largura do painel | 218px | 323px |
+| **Largura útil de conteúdo** | **154px** | **275px** (+79%) |
+| Grid resolvido em 390px | `217px 220px 64px` (soma 502px num viewport de 386px → estouro) | coluna única |
+
+As três colunas desiguais somando mais que o viewport são o sintoma clássico de grid espremido com `overflow:hidden` no wrapper — o terceiro plano (PRO) era o mais amassado.
+
+**Correções em `landing/index.html`:**
+
+- **Removido o `style` inline do `.planos-wrapper`.** É o fix principal — as colunas voltam a vir do CSS (3 no desktop, 1 abaixo de 1024px).
+- **Cards separados quando empilham.** Sem isso o empilhamento continuaria ruim: START e BASE têm o mesmo fundo branco e o wrapper não tem `gap`, então virariam um bloco branco único sem fronteira visível. No breakpoint de 1024px o wrapper perde `border-radius`/`box-shadow`/`overflow:hidden` e ganha `gap: 20px`; cada `.plano-painel` ganha `border-radius: 16px` e sombra própria.
+- **`max-width: 560px` + `justify-self: center` no painel empilhado.** Em 1024px a coluna única deixava o card com 876px de largura útil — esticado e feio. Agora fica com 480px.
+- **`min-height: 0` no wrapper** (o `min-height: 680px` do desktop não faz sentido empilhado) e **`.plano-features { flex: 0 0 auto }`** (o `flex: 1` servia pra igualar altura entre colunas lado a lado).
+- **Tipografia menor em ≤480px:** `h3` 34→28px, valor do preço 40→34px, padding do painel 48px/32px → 40px/24px.
+
+**🐛 Bug de brinde encontrado:** o plano BASE tinha `style="border: 1px solid var(--color-gold)"`. **`--color-gold` não existe na paleta** (a variável é `--dourado`) — declaração inválida, descartada pelo browser, borda de destaque nunca apareceu. Trocado por classe `.destaque` usando `box-shadow: inset 0 0 0 1px var(--dourado)` (inset em vez de `border` pra não somar largura ao item do grid).
+
+Uma varredura depois achou **mais 5 ocorrências da mesma variável fantasma** no card BASE: os 4 ícones ✓ (`style="color: var(--color-gold)"`) e o botão "Conhecer o BASE" (`border-color` + `color`). Todas inertes. **Decisão do fundador: só limpar** — os inline mortos foram removidos sem trocar por `--dourado`, então o card fica visualmente idêntico ao que já estava no ar; ativar o dourado de verdade mudaria a aparência e não era o pedido. Varredura confirma **zero ocorrências de `--color-gold` em `landing/`** (fora o comentário que explica o caso) e **zero `style="grid-template-columns"`**.
+
+**Validação:** 11 viewports (1440, 1280, 1024, 900, 768, 480, 430, 390, 375, 360, 320px) via iframe isolado — 3 colunas acima de 1024, 1 coluna abaixo, **zero estouro horizontal e zero painel colapsado** em todas.
+
+**Lição que já apareceu duas vezes nesta frente:** `margin-left/right: auto` num **item de grid** faz ele encolher para a largura intrínseca em vez de esticar (na §17 isso colapsou uma foto para 0×0). Para centralizar item de grid, usar `justify-self: center` com `width: 100%; max-width: X`. Aplicado aqui desde o começo por causa disso.
+
+**Estado:** ⚠️ **Não commitado.** Sandbox de terminal caiu nesta sessão também (`useradd failed`) e o Cowork não tem credencial do GitHub — falta commit + push.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -754,3 +830,7 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (31/jul):** Sessão de **4 fixes + início da régua de nurturing push**. Fixes: (1) teclado do WhatsApp preso no onboarding (`phone-pad` sem tecla de fechar); (2) campo manual de código de indicação — não existia NENHUM lugar pra digitar código em instalação nova, só resolvia via deep link; (3) foto da Sala 4, última pendente das 9 salas; (4) App Lock deslogando "toda hora" — causa era o fallback de código do dispositivo forçando re-login completo, removido a pedido do fundador (só o toggle de biometria desloga agora). Commits `38d9b6d`→`17aa558`, OTA enviada em 4 rodadas (ver seção da sessão acima pros group IDs). Depois, início da implementação do `OLI_Nurturing_Push.docx` (régua de 8 estágios/23 gatilhos): recusado recompensar avaliação de loja com Olicoins (viola política Apple/Google, app já sumiu uma vez da Play Store) — desenhada pesquisa de satisfação interna como alternativa compliant, prompt nativo de loja fica pra depois do próximo rebuild. Fatia 1 (piloto) implementada: infra de governança de push (`push_dispatch_log`), estágio Boas-vindas, pesquisa de satisfação (`app/avaliacao-app.tsx`) — banco já em produção via Supabase MCP, **código do app ainda não commitado/OTA** (próxima ação). Faltam ~18 gatilhos dos outros 6 estágios.
 
 **Resumo de 1 linha (31/jul sessão 2):** Sessão focada no **site institucional** — e a lição da sessão é de processo. Achado que o formulário de contato do site **nunca funcionou** (era `<form>` decorativo, sem JS, sem `name` nos campos: todo lead preenchido desde sempre se perdeu) e que todas as imagens de seção eram **geradas por IA**. Reescrita completa da copy (H1 virou "Consultório pronto. Você paga só o tempo que usa."; removidos ecossistema/premium/pay-per-use/networking; espaço movido pra antes do preço; planos com a conta pronta — R$ 100 por consulta de 50 min, BASE compensa em 10 h/mês, PRO em 25 h/mês), 14 fotos reais tratadas substituindo as de IA (34 MB → 2,1 MB), e captura de leads nova. **Armadilha:** a tarde inteira foi trabalhada em `iCloud/.../Website/oli-deploy/` — cópia órfã da era Netlify, idêntica ao `landing/` — porque §3 ainda listava Netlify como host; o erro só apareceu ao abrir este handoff. Pior: a captura de leads tinha sido feita com **Netlify Forms, que não existe na Vercel** e teria falhado 100% em produção. Refeito com tabela `leads` no Supabase (RLS: insert anônimo só com `origem='site'`, leitura só `is_oli_admin()`), testado por simulação de role. §3 corrigido pra Vercel e a pendência de doc de 21/jul fechada. Fundador publicou; depois reportou o hero mostrando só o teto em monitor grande — causa medida ao vivo (imagem retrato no fluxo esticava o grid pra 2130px num viewport de 1102px), corrigida com `position:absolute` + `max-height`. Fix do hero commitado e no ar (`64c0112`). **Pendências:** tela `/leads` no admin (hoje só via SQL) e apagar a pasta órfã `oli-deploy`.
+
+**Resumo de 1 linha (31/jul sessão 4):** Sessão **só de CSS**, fechando o defeito que o fix do hero (sessão 2) tinha deixado passar nas seções de baixo. Causa-raiz medida ao vivo em viewport de 2844px: **nenhum container limitava a largura da página** — cada foto de "Como funciona" era renderizada a **1308×981** (acima do tamanho real do arquivo, 1600×900 esticado num box 4:3) e a seção inteira tinha **4720px de altura**, quatro telas só de foto. Fix principal: `.section > *` com `max-width:1280px` — uma regra que resolve toda seção, presente e futura. Mais: `.modelo-img` de 4:3 pra 3:2 (as fotos são 16:9 e 3:2, perdiam laterais à toa), `object-position:center 45%` na foto retrato do card de infraestrutura, e **breakpoint novo em 900px** porque o layout só quebrava em 768 e em iPad a foto ficava menor que o texto ao lado. Seção `#modelo` caiu de 4720 pra **2416px**. Validado em **10 viewports** (2560→375px) via iframe isolado: zero estouro horizontal, zero elemento colapsado — foi esse teste que pegou uma armadilha de CSS antes de ir pro ar (`margin:auto` num item de grid faz a foto colapsar pra **0×0**; o certo é `justify-self:center`). Registrado também que esta sessão rodou **em paralelo com a sessão 3** no mesmo `index.html` — sem conflito (sessão 3 mexeu na copy do `<body>`, esta no CSS do `<head>`), mas o handoff mudou embaixo da sessão no meio do trabalho. **Publicado** pelo fundador ainda em 31/jul, no mesmo push que levou as mudanças da sessão 3 — confirmado ao vivo em produção.
+
+**Resumo de 1 linha (31/jul sessão 5):** Sessão **só de CSS de novo**, agora nos cards de plano no mobile. Causa-raiz: um **`style` inline** (`grid-template-columns: repeat(3, 1fr)`) no `.planos-wrapper` **vencia a media query** — a regra que empilha os planos abaixo de 1024px existia no CSS desde sempre e **nunca chegou a rodar**, então os três planos ficavam lado a lado até em 320px, com **154px de largura útil** cada e o grid resolvendo pra `217px 220px 64px` num viewport de 386px (estouro). Removido o inline; largura útil em 375px foi de **154px pra 275px (+79%)**. Como START e BASE têm o mesmo fundo branco e o wrapper não tem `gap`, empilhar sozinho ia virar um bloco branco único — então no breakpoint o wrapper perde `border-radius`/`overflow:hidden`/sombra e cada painel vira card próprio com `gap:20px`, limitado a `max-width:560px` (em 1024px a coluna única dava 876px de largura útil). Tipografia e padding reduzidos em ≤480px. **Bug de brinde:** a borda dourada de destaque do BASE usava `var(--color-gold)`, **variável que não existe** na paleta (é `--dourado`) — declaração inválida, a borda nunca apareceu; virou classe `.destaque` com `box-shadow` inset. Validado em 11 viewports: zero estouro, zero painel colapsado. **Lição repetida da §17:** `margin:auto` em item de grid encolhe pra largura intrínseca — usar `justify-self:center`. **Não commitado** (sandbox caiu, Cowork sem credencial do GitHub).
