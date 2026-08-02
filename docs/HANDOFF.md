@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 31/Julho/2026.
+> Última atualização: 02/Agosto/2026.
 
 ---
 
@@ -841,6 +841,49 @@ Diagnóstico registrado para não refazer:
 4. Nunca diagnosticar por "atualizei e não mudou" — testar com query única (`/?v=timestamp`) pra descartar cache de browser.
 
 Vale lembrar (§14) que o site Netlify antigo **não foi deletado**, só ficou inerte. Se um dia o DNS voltar a apontar pra lá, o sintoma é idêntico ao desta sessão: domínio com conteúdo velho e Vercel correta. Nesse caso o registro A no registro.br tem que estar em `216.198.79.1`.
+
+## 19. Leads de tráfego pago (Meta Ads) — diagnóstico e enriquecimento (02/ago)
+
+**Contexto:** existe um **segundo fluxo de leads**, totalmente paralelo ao do §15. O do §15 é o formulário do site → tabela `leads` → tela `/leads` no admin. Este é: **Meta Lead Ads → planilha do Google → (desde 01/ago) notificações da RD Station por e-mail**. Nada dele entra na tabela `leads` nem aparece no admin.
+
+- Planilha: `1YhP7luVXgldCGY_Jp27fz8xbX-YFHVyBEYEFH7cdInc`. Colunas: `id, created_time, ad_id, ad_name, adset_id, adset_name, campaign_id, campaign_name, form_id, form_name, is_organic, platform, full_name, whatsapp_number, email, job_title, lead_status`.
+- E-mail: as notificações da RD chegam em `contato@olihealthhub.com.br` e são encaminhadas pro Gmail pessoal sob o marcador `Caixa OLI`.
+- Campanha única: `[Conversão] [Geração de Lead]`, com 2 conjuntos — `[Formulário Nativo]` e `[Formulário Nativo] [RMKT LP]`.
+
+**Base analisada: 22 leads entre 29/jul e 02/ago.** Todos com `lead_status = CREATED` — ninguém foi trabalhado.
+
+- Áreas: Medicina 5 · Estética 3 · Nutrição 3 · Enfermagem 2 · Psi 2 · Terapias 2 · Odonto 1 · Biomedicina 1 · sem encaixe 3.
+- Plataforma: **21 Instagram, 1 Facebook**.
+- Conjuntos: `Formulário Nativo` 14 · `RMKT LP` 8. O remarketing traz ~36% do volume com alcance muito menor — candidato natural a mais verba.
+
+**🔴 Geografia não bate com a oferta.** Por DDD: 15 na Grande SP; os outros 7 em Ribeirão Preto (2), Santos, São José dos Campos, **Recife, Londrina e Juiz de Fora**. A LP vende "agende uma visita" — oferta presencial. Quase um terço da verba está comprando lead que não tem como visitar o hub. **Conferir a segmentação geográfica da campanha antes de subir orçamento.**
+
+**⚠️ O campo `job_title` não é confiável** — é texto livre digitado no celular. Dois casos confirmados por checagem externa:
+- Cibele Correa declarou "Assistente Administrativo" e é **nutricionista esportiva e clínica com consultório** (@cibelecorreanutri).
+- Joicy Souza declarou "Médica" e aparece como **fisioterapeuta no Recife** (@fisioterapeutajoicysouza).
+- Consequência: qualquer contagem de "lead fora do perfil" baseada só em `job_title` erra. Uma leitura inicial marcou 3 leads como fora do perfil; ao menos 2 eram público-alvo legítimo.
+
+**🐛 `created_time` gravado em dois fusos.** As 11 primeiras linhas estão em `-03:00` e as 11 seguintes em `-05:00`, com a virada em 30/jul. Quem ordenar ou contar por dia lendo a coluna como texto vai errar. Corrigir na origem (automação Meta → Sheets).
+
+**Dois telefones inutilizáveis:** Cibele Correa (`+551170672580`) e Bruna Bianchi (`+554396915720`) têm 10 dígitos — fixo ou truncado. Não funcionam no WhatsApp; pra essas duas o canal é e-mail.
+
+**Cobertura da RD:** ela começou a notificar em 01/ago e pegou exatamente os 4 leads de 01–02/ago. Os 18 anteriores existem **só na planilha**. Não é vazamento, é integração recente.
+
+**Enriquecimento de perfil — 14 dos 22 identificados.** Só dado profissional público (Instagram, conselho, onde atua).
+
+- ✅ **O que funciona:** Google **em pt-BR pelo navegador** (`hl=pt-BR&gl=br`) buscando o `full_name` entre aspas. Os nomes da planilha *são* os nomes de exibição do Instagram (ex.: "DIH PEREIRA - Estética Facial | Lash | Lips"), então casam quase literal. Taxa alta.
+- ❌ **O que não funciona:** a ferramenta de busca web do Cowork é indexada pros EUA — cobertura de profissional brasileiro ficou em ~30%, com homônimos. **Não repetir por esse caminho.**
+- ⚠️ **Sempre validar o achado contra o DDD.** A busca ofereceu, pra Bruna Bianchi, uma endocrinologista de São Caetano do Sul que encaixava perfeitamente no `job_title` — mas o telefone dela é DDD 43 (Londrina). Era outra pessoa. Sem o cruzamento, entraria como fato.
+- Achados úteis: **Juan Carlos Camurri** usa `@einstein.br` e é do **ensino/docência do Einstein** — lead mais qualificado da base. **Natalia Callefi** tem CRN-3 96360/P; **Phelipe Aquino**, CRBM 012156 (dá pra validar no conselho antes de proposta comercial).
+- 8 não identificados (Adriana Araujo, Bruna Ferreira, Márcia Jessyca, Debs Silva, Gabriela Andrade, Maria Claudia, Ana Paula, Rafael Olinda) — nomes muito comuns.
+
+**Painel construído (fora deste repo):** artifact Cowork `leads-oli-health-hub`, em `~/Documents/Claude/Artifacts/leads-oli-health-hub/index.html`. Lê a planilha pelo MCP do Google Drive + os pedidos de visita da landing pelo Gmail, mostra área/contato/perfil enriquecido e permite marcar "contatado".
+
+**⚠️ Isso duplica o que já existe.** A esteira que o fundador descreveu (visita agendada → visita concluída → fechou/declinou) **já está implementada**: `leads.status` ∈ `novo | contatado | visita_agendada | convertido | descartado`, com tela `/leads` no admin e notificação `lead_received` (§15 + sessão 31/jul sessão 6). O painel Cowork guarda estado em `localStorage` — um navegador só, sem equipe, sem histórico. **Decisão em aberto: levar os leads do Meta pra dentro da tabela `leads` (com `origem` novo, ex. `meta_ads`) e usar o `/leads` que já existe, em vez de manter dois lugares.** É o caminho recomendado.
+
+**Limitações de ferramenta descobertas (pra não retentar):**
+- **Não existe conector MCP de RD Station** no catálogo (procurado em 02/ago por "rd station", "crm", "leads", "marketing automation" — só Zoho, HubSpot, Close, Clarify, Salesflare, Airtable). Reforça a decisão do §15 de manter o RD só na LP.
+- O **MCP do Google Drive só lê e cria arquivos** — não escreve em planilha existente. Por isso o painel não consegue gravar status de volta na planilha do Meta.
 
 ## 13. Comandos úteis
 
