@@ -6,7 +6,8 @@
  * a sessão Supabase completamente — adequado para dados de saúde (LGPD).
  *
  * Ativado pelo _layout.tsx quando há sessão ativa.
- * Eventos que resetam o timer: toque, scroll, teclado.
+ * resetTimer é chamado a cada toque na tela (onTouchStart no _layout.tsx)
+ * e ao voltar do background — qualquer uma reinicia a contagem de 30 min.
  */
 
 import { useEffect, useRef, useCallback } from 'react';

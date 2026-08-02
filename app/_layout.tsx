@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Text, TextInput } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -31,7 +31,7 @@ export default function RootLayout() {
   const router   = useRouter();
   const segments = useSegments();
   const { isLocked, unlock } = useAppLock();
-  useSessionTimeout(); // logout automático após 30 min de inatividade
+  const { resetTimer } = useSessionTimeout(); // logout automático após 30 min de inatividade
 
   useEffect(() => { initialize(); }, []);
 
@@ -152,6 +152,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <StatusBar style="dark" backgroundColor={colors.white} />
+      <View style={{ flex: 1 }} onTouchStart={resetTimer}>
       <Stack
         screenOptions={{
           headerStyle:      { backgroundColor: colors.white },
@@ -200,6 +201,7 @@ export default function RootLayout() {
       {isLocked && session && (segments[0] as string) !== 'nova-senha' && (
         <AppLockScreen onUnlock={unlock} />
       )}
+      </View>
     </ErrorBoundary>
   );
 }
