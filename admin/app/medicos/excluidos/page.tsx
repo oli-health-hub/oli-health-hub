@@ -28,7 +28,7 @@ export default async function MedicosExcluidosPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link href="/medicos" className="text-sm text-oli-lgray hover:text-oli-dark transition-colors">
-            ← Médicos
+            ← Profissionais
           </Link>
           <h1 className="text-xl font-bold text-oli-dark mt-1">Contas excluídas</h1>
           <p className="text-sm text-oli-lgray mt-1">

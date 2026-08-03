@@ -6,7 +6,7 @@ const ROUTES = [
   { href: '/fila',       title: 'Fila de Trabalho' },
   { href: '/salas',      title: 'Mapa das Salas' },
   { href: '/historico',  title: 'Histórico de Utilização' },
-  { href: '/medicos',    title: 'Médicos' },
+  { href: '/medicos',    title: 'Profissionais' },
   { href: '/planos',     title: 'Planos & Assinaturas' },
   { href: '/modulos',    title: 'Módulos Contratados' },
   { href: '/horas',      title: 'Controle de Horas' },

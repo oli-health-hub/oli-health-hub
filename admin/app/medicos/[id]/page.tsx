@@ -242,7 +242,7 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-oli-lgray">
-        <Link href="/medicos" className="hover:text-oli-green transition-colors">Médicos</Link>
+        <Link href="/medicos" className="hover:text-oli-green transition-colors">Profissionais</Link>
         <span>/</span>
         <span className="text-oli-dark font-medium">{p.nome}</span>
       </div>

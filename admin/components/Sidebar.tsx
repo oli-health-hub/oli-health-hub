@@ -188,7 +188,9 @@ const NAV = [
   {
     section: 'Clientes',
     items: [
-      { href: '/medicos',    label: 'Médicos',    Icon: IconUsers,    badge: false },
+      // Rótulo é "Profissionais" (a base tem nutricionista, psicólogo, dentista —
+      // não só médico), mas a rota segue /medicos pra não quebrar link salvo.
+      { href: '/medicos',    label: 'Profissionais', Icon: IconUsers,    badge: false },
       { href: '/historico',  label: 'Histórico',  Icon: IconCalendar, badge: false },
       { href: '/comunidade', label: 'Comunidade', Icon: IconChat,     badge: false },
       { href: '/notificacoes', label: 'Notificações', Icon: IconBell, badge: false },

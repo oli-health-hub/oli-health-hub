@@ -6,7 +6,7 @@ test.describe('Médicos (/medicos)', () => {
   });
 
   test('renders page title', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Médicos');
+    await expect(page.locator('h1')).toContainText('Profissionais');
   });
 
   test('shows cadastrados count', async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe('Médico detail (/medicos/[id])', () => {
 
   test('shows breadcrumb back to /medicos', async ({ page }) => {
     await page.goto(`/medicos/${medicoid}`);
-    await expect(page.getByRole('link', { name: 'Médicos' })).toHaveAttribute('href', '/medicos');
+    await expect(page.getByRole('link', { name: 'Profissionais' })).toHaveAttribute('href', '/medicos');
   });
 
   test('shows plan change form', async ({ page }) => {

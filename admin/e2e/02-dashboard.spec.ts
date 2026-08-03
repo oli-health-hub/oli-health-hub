@@ -15,7 +15,7 @@ test.describe('Dashboard (/)', () => {
     await expect(page.getByText('Reservas hoje')).toBeVisible();
     await expect(page.getByText('Próxima reserva')).toBeVisible();
     await expect(page.getByText('Receita hoje')).toBeVisible();
-    await expect(page.getByText('Médicos').first()).toBeVisible();
+    await expect(page.getByText('Profissionais').first()).toBeVisible();
   });
 
   test('shows "Salas ao Vivo" section', async ({ page }) => {

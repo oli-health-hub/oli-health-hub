@@ -502,41 +502,65 @@ export type Database = {
       }
       leads: {
         Row: {
+          anuncio: string | null
+          campanha: string | null
+          conjunto: string | null
           created_at: string
           email: string
           especialidade: string | null
+          external_id: string | null
           id: string
+          motivo_descarte: string | null
           nome: string
           observacoes: string | null
           origem: string
+          perfil: string | null
+          plataforma: string | null
           referrer: string | null
           status: string
+          temperatura: string | null
           user_agent: string | null
           whatsapp: string
         }
         Insert: {
+          anuncio?: string | null
+          campanha?: string | null
+          conjunto?: string | null
           created_at?: string
           email: string
           especialidade?: string | null
+          external_id?: string | null
           id?: string
+          motivo_descarte?: string | null
           nome: string
           observacoes?: string | null
           origem?: string
+          perfil?: string | null
+          plataforma?: string | null
           referrer?: string | null
           status?: string
+          temperatura?: string | null
           user_agent?: string | null
           whatsapp: string
         }
         Update: {
+          anuncio?: string | null
+          campanha?: string | null
+          conjunto?: string | null
           created_at?: string
           email?: string
           especialidade?: string | null
+          external_id?: string | null
           id?: string
+          motivo_descarte?: string | null
           nome?: string
           observacoes?: string | null
           origem?: string
+          perfil?: string | null
+          plataforma?: string | null
           referrer?: string | null
           status?: string
+          temperatura?: string | null
           user_agent?: string | null
           whatsapp?: string
         }

@@ -91,8 +91,18 @@ Receita composta por **5 fontes**:
 
 > Serviços "plenos" (gestão contínua AR, jurídico contínuo, contabilidade inclusa, gestão de carreira) ficam reservados ao **VIP** quando lançado.
 
-### Break-even START → BASE
-BASE compensa para o médico a partir de **~17h/mês** de uso (R$ 299 ÷ (R$ 0,30 × 60 min)). Abaixo disso, START é mais econômico para baixo volume.
+### Break-even entre planos
+Calculado sobre a diferença de minutagem, não sobre o valor cheio da mensalidade.
+
+| Virada | Horas/mês | Conta |
+|---|---|---|
+| START → BASE | **~10h** | R$ 299 ÷ (R$ 0,50 × 60) |
+| START → PRO | **~14h** | R$ 599 ÷ (R$ 0,70 × 60) |
+| BASE → PRO | **25h** (exatos) | (R$ 599 − R$ 299) ÷ (R$ 0,20 × 60) |
+
+Abaixo de 10h/mês o START é o mais econômico. Em 25h/mês BASE e PRO custam o mesmo (R$ 2.549); acima disso o PRO fica mais barato **e** inclui agenda, NF e prontuário.
+
+> ⚠️ Este bloco dizia **~17h** até 03/ago, com a conta `R$ 299 ÷ (R$ 0,30 × 60)` — a diferença de R$ 0,30/min é de uma tabela de preços antiga. A diferença real START→BASE é **R$ 0,50/min**. O site e a função `calcBreakevenHours()` sempre estiveram certos (~10h); só a documentação e o comentário no código é que estavam velhos.
 
 ---
 

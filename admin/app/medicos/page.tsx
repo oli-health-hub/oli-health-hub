@@ -59,7 +59,7 @@ export default async function MedicosPage() {
   return (
     <div className="p-7">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-oli-dark">Médicos</h1>
+        <h1 className="text-xl font-bold text-oli-dark">Profissionais</h1>
         <div className="flex items-center gap-4">
           {!!excluidosCount && (
             <Link href="/medicos/excluidos" className="text-sm text-oli-lgray hover:text-oli-dark transition-colors underline">

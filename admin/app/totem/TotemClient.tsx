@@ -77,7 +77,7 @@ export function TotemClient() {
           <div>
             <h1 className="text-xl font-bold text-oli-dark">Totem de Checkout</h1>
             <p className="text-sm text-oli-lgray mt-1">
-              QR Code + código digitável para checkout dos médicos. Rotaciona a cada 5 minutos.
+              QR Code + código digitável para checkout dos profissionais. Rotaciona a cada 5 minutos.
             </p>
           </div>
           <button
@@ -180,7 +180,7 @@ export function TotemClient() {
             <p className="font-bold">Como funciona</p>
             <p className="mt-0.5">
               QR e código rotacionam a cada 5 minutos para prevenir fraude por foto.
-              Exiba esta tela em um tablet ou TV fixa em cada sala. Médicos escaneiam ou digitam o código no app para encerrar a sessão.
+              Exiba esta tela em um tablet ou TV fixa em cada sala. Os profissionais escaneiam ou digitam o código no app para encerrar a sessão.
             </p>
           </div>
         </div>

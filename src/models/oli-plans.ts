@@ -491,4 +491,6 @@ export function calcBreakevenHours(
   const savings_per_minute = startPlan.ratePerMinute - basePlan.ratePerMinute;
   return parseFloat((basePlan.monthlyPrice / (savings_per_minute * 60)).toFixed(1));
 }
-// → ~17h/mês para BASE vs START (R$299 / (R$0,30 × 60))
+// → ~10h/mês para BASE vs START (R$299 / (R$0,50 × 60)).
+//   O comentário aqui dizia ~17h com R$0,30 — diferença de minutagem de uma
+//   tabela antiga. A função sempre calculou certo; só o comentário estava velho.

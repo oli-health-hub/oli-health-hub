@@ -597,14 +597,25 @@ export async function updateTeamProfileFields(formData: FormData) {
   revalidatePath('/equipe');
 }
 
-/** Atualiza status/observações de um lead do formulário do site */
+/** Atualiza etapa, qualificação e observações de um lead (site ou Meta Ads) */
 export async function updateLead(formData: FormData) {
-  const id           = formData.get('id') as string;
-  const status       = formData.get('status') as string;
-  const observacoes  = (formData.get('observacoes') as string) || null;
+  const id          = formData.get('id') as string;
+  const status      = formData.get('status') as string;
+  const observacoes = (formData.get('observacoes') as string) || null;
+  const temperatura = (formData.get('temperatura') as string) || null;
+  const perfil      = (formData.get('perfil')      as string) || null;
+
+  // O banco tem CHECK recusando motivo em lead que não está descartado. O select
+  // do motivo fica sempre visível na tela, então limpar aqui evita que mover um
+  // lead de volta pra esteira estoure com erro de constraint.
+  const motivoInformado  = (formData.get('motivo_descarte') as string) || null;
+  const motivo_descarte  = status === 'descartado' ? motivoInformado : null;
 
   const supabase = await createSupabaseAdmin();
-  const { error } = await supabase.from('leads').update({ status, observacoes }).eq('id', id);
+  const { error } = await supabase
+    .from('leads')
+    .update({ status, observacoes, temperatura, perfil, motivo_descarte })
+    .eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/leads');
 }

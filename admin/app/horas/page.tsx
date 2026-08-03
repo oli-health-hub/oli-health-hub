@@ -51,7 +51,7 @@ export default async function HorasPage() {
     <div className="p-7 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-oli-dark">Controle de Horas</h1>
-        <span className="text-sm text-oli-lgray">{rows.length} médicos com saldo</span>
+        <span className="text-sm text-oli-lgray">{rows.length} profissionais com saldo</span>
       </div>
 
       {/* Resumo consolidado por médico */}

@@ -324,7 +324,7 @@ export default async function HomePage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <p className="text-[11px] font-bold text-oli-lgray uppercase tracking-wider">Distribuição por plano</p>
-            <p className="text-sm text-oli-dark mt-1">{(activeSubs ?? []).length} médicos ativos</p>
+            <p className="text-sm text-oli-dark mt-1">{(activeSubs ?? []).length} profissionais ativos</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             {(['START','BASE','PRO','VIP'] as const).map(name => {
@@ -366,7 +366,7 @@ export default async function HomePage() {
         />
         <KpiCard
           icon={<Stethoscope size={18} color="#a855f7" />} iconBg="#FAF5FF"
-          label="Médicos" value={totalMedicos ?? 0}
+          label="Profissionais" value={totalMedicos ?? 0}
           sub={(novosHoje ?? 0) > 0 ? `+${novosHoje} novo(s) hoje` : 'cadastrados'}
         />
         <KpiCard
@@ -559,7 +559,7 @@ export default async function HomePage() {
               </span>
             </div>
             <div className="flex justify-between text-[12px]">
-              <span className="text-oli-lgray font-medium">Médicos ativos</span>
+              <span className="text-oli-lgray font-medium">Profissionais ativos</span>
               <span className="font-bold text-oli-dark">{totalMedicos ?? 0}</span>
             </div>
           </div>
