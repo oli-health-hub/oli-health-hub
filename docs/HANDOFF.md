@@ -990,6 +990,15 @@ Causa: um comentário JSX `{/* ... */}` foi posto **como irmão do elemento raiz
 
 **Lição:** comentário JSX é filho de elemento, nunca irmão da raiz do return. E, mais amplo: **quando o sandbox cai, o código entregue é não-verificado — dizer isso em voz alta não substitui rodar.** O commit foi feito com o erro dentro.
 
+**Varredura do que o `tsc` não pega, feita depois do erro:**
+
+- ✅ **Paleta Tailwind — o risco maior, e está limpo.** As cores novas dos selos (`teal`, `indigo`, `sky`, `amber`, `orange`, `red`) não estão em `admin/tailwind.config.ts`, mas o config só usa `theme.extend` — a paleta padrão do Tailwind continua inteira, então todas existem. **Era exatamente a armadilha da §17** (`var(--color-gold)`, variável inexistente, borda que nunca apareceu): classe inválida não dá erro de compilação, só não pinta.
+- ✅ `12-sidebar-navigation.spec.ts` casa `h1` com o título — o `h1` de `/medicos` virou "Profissionais", bate.
+- ✅ `NotificationFeed.tsx` trata `lead_received` por tipo, não por status — as 4 etapas novas não passam por lá.
+- ⚠️ **`06-medicos.spec.ts:59` provavelmente estoura strict mode do Playwright:** `getByRole('link', { name: 'Profissionais' })` agora casa **dois** elementos — o link da sidebar e o breadcrumb, ambos com `href="/medicos"`. **Não é regressão** (antes os dois diziam "Médicos", mesma colisão), mas se o e2e nunca rodou verde, é candidato. Resolver com `.first()` ou escopo `page.locator('nav')`.
+- 🔴 **O typecheck rodado foi só o do `admin/`.** `src/models/database.types.ts` (bloco `leads`, 8 campos novos nos 3 shapes, **editado à mão**) e `src/models/oli-plans.ts` estão no projeto raiz, que tem `npx tsc --noEmit` próprio — **esse não rodou**. Inspeção visual do bloco `leads` está consistente, mas inspeção não é typecheck.
+- ✅ **Não precisa de OTA.** Em `app/`/`src/` só mudaram tipos (apagados em runtime) e um comentário. Pela regra do §12, nada de JS/asset mudou de verdade. O admin sai por push → Vercel — com as duas armadilhas da §18 valendo (push que não dispara deployment; domínio servindo versão velha com alias preso).
+
 **São reconstituição, não foram executadas a partir do arquivo** — o banco já estava no estado final quando os arquivos nasceram. Rodar num ambiente limpo (branch do Supabase) antes de confiar nelas pra recriar o schema do zero. A importação dos 22 leads em si **não virou migration** de propósito: é carga de dado pontual vinda de planilha, não schema.
 
 ## 13. Comandos úteis
