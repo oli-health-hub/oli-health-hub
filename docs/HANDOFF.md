@@ -1001,6 +1001,117 @@ Causa: um comentário JSX `{/* ... */}` foi posto **como irmão do elemento raiz
 
 **São reconstituição, não foram executadas a partir do arquivo** — o banco já estava no estado final quando os arquivos nasceram. Rodar num ambiente limpo (branch do Supabase) antes de confiar nelas pra recriar o schema do zero. A importação dos 22 leads em si **não virou migration** de propósito: é carga de dado pontual vinda de planilha, não schema.
 
+## 23. Webhook do Meta — leads de anúncio entrando sozinhos (03/ago)
+
+Fecha a pendência que sobrou do §20: até aqui, lead de anúncio caía **só na planilha do Google** e não aparecia no admin. Os 22 importados foram carga manual. Agora existe `meta-leads-webhook`.
+
+**Edge function `meta-leads-webhook`** — deployada, **versão 1, ACTIVE, `verify_jwt: false`**. Versionada em `supabase/functions/meta-leads-webhook/index.ts`.
+
+O ponto que não é óbvio: **o webhook do Meta não manda os dados da pessoa.** Ele manda só `leadgen_id`. A função tem que voltar na Graph API com esse id pra descobrir nome, e-mail e telefone — por isso precisa de token de Página, não só de segredo de assinatura.
+
+**Fluxo:** GET de verificação (uma vez, ecoando `hub.challenge`) → POST a cada lead → valida HMAC → busca na Graph → grava em `leads` → **o trigger `trg_notify_lead_created`, que já existia, dispara a notificação e ela chega no feed do admin por realtime.** Ou seja, a parte de "aparecer sozinho no painel" sai de graça da infra que já estava lá.
+
+**Decisões que valem registro:**
+- **`external_id` = `l:<leadgen_id>`, com o prefixo `l:`.** Não é enfeite: é o formato que a integração Meta→Planilha usa, e os 22 leads importados à mão estão gravados assim. Sem o prefixo, um lead que chegasse pelos dois caminhos entraria duplicado.
+- **Corpo lido como texto antes do `JSON.parse`.** O Meta assina os bytes recebidos; reserializar o JSON muda o hash e reprovaria toda requisição legítima.
+- **Comparação de assinatura em tempo constante** — sair no primeiro byte diferente vaza quanto do hash já está certo.
+- **Sinônimos de campo.** O nome de cada pergunta é escolhido por quem monta o formulário: o atual usa `whatsapp_number`, um novo pode usar `phone_number`. A função aceita uma lista de aliases por campo em vez de casar um nome só.
+- **Códigos de resposta pensados pro retry do Meta:** 200 em sucesso, duplicado e notificação irrelevante (qualquer outra coisa faz o Meta reenviar em loop); 401 em assinatura inválida; **500 só em falha recuperável** (Graph fora, token expirado) pra ele reenviar. Lead sem campo obrigatório **não** devolve 500 — reenviar não resolveria, então loga e segue sem derrubar o resto do lote.
+- **Dupla proteção contra duplicata:** `select` antes (evita gastar chamada na Graph em reenvio) e captura do erro `23505` depois (dois webhooks do mesmo lead em corrida). O índice único parcial é a garantia final.
+
+### ⚠️ Configuração pendente — sem isso a função não faz nada
+
+Ela está no ar mas **nunca executou**: não há segredos configurados e o webhook não está assinado no Meta. Passos, na ordem:
+
+1. **Segredos** em Supabase → Edge Functions → Secrets:
+   - `META_VERIFY_TOKEN` — string inventada, qualquer uma; só precisa ser a mesma nos dois lados.
+   - `META_APP_SECRET` — App Secret do app do Meta.
+   - `META_PAGE_ACCESS_TOKEN` — token da Página, **de longo prazo**. Token curto expira em ~1h e o webhook para de gravar em silêncio (aparece como erro de Graph no log).
+   - `META_GRAPH_VERSION` — opcional, só se precisar (ver ressalva abaixo).
+2. **Assinar o webhook** no app do Meta → Webhooks → objeto **Page** → campo **`leadgen`**, apontando pra `https://xwcarrurjvfxisuaihid.supabase.co/functions/v1/meta-leads-webhook` com o mesmo verify token. O Meta faz o GET de verificação na hora.
+3. **Assinar a Página** ao app (`POST /<page-id>/subscribed_apps` com `subscribed_fields=leadgen`). Assinar o webhook sem assinar a Página é o erro clássico: verificação passa, lead nunca chega.
+4. **Testar** com a Lead Ads Testing Tool do Meta e conferir em Supabase → Edge Functions → Logs (linhas com prefixo `[meta-leads]`).
+
+**🔴 Ressalva honesta:** a função **não foi executada nem uma vez**. Sem segredos não dava, e a URL não foi alcançável a partir do ambiente da sessão (o fetch estourou timeout). O código foi escrito contra a documentação do Meta e segue o padrão do `asaas-webhook`, mas **a primeira execução de verdade vai ser a do fundador**. O ponto mais provável de falhar é `META_GRAPH_VERSION`: o default é `v23.0` e as versões da Graph rodam por prazo — se o log mostrar erro de versão não suportada, é só criar o segredo com a versão que o painel do Meta indicar, sem tocar em código. Foi feito env-var exatamente por isso.
+
+**A planilha do Google continua recebendo em paralelo** — não foi desligada. Vale manter um tempo como rede de segurança: se o webhook falhar em silêncio, dá pra comparar planilha × tabela e ver o que faltou. Depois de alguns dias batendo, pode desligar.
+
+## 24. RD Station CRM vira a fonte única de lead (03/ago)
+
+**Reviravolta:** o §23 tinha acabado de subir o webhook do Meta quando o fundador informou que **a integração do Meta já vive dentro da RD Station**, e que a equipe de marketing usa as métricas da RD para montar campanha. Decisões dele: **RD como fonte única**, **Meta desligado**, **gatilho em toda conversão**.
+
+**Isso invalida parcialmente o §23.** A `meta-leads-webhook` continua deployada mas **fica inerte de propósito** — sem segredos, ela recusa tudo. Não foi deletada: se a integração Meta→RD quebrar, ela é o plano B pronto.
+
+### O que a pesquisa mudou no desenho
+
+Duas descobertas na documentação da RD que mudaram decisões:
+
+1. **Na RD Marketing não existe endpoint que liste leads novos.** Os endpoints de contato são todos individuais (por uuid/e-mail/telefone); a única listagem é "contatos de uma segmentação". Polling ali só funciona se alguém mantiver uma segmentação viva. **Na RD CRM existe listagem paginada de verdade** (`Listar contatos`, `Listar negociações`) — foi o que tornou o retroativo viável.
+2. **`crm_deal_created` NÃO traz o contato.** Traz funil, etapa, fonte e campanha, mas nenhum e-mail ou telefone. Quem carrega os dados da pessoa é **`crm_contact_created`** (`name`, `emails[]`, `phones[]`, `job_title`). Assinar só o evento de negociação — o palpite óbvio — daria lead sem como falar com a pessoa.
+
+### Restrições da RD que moldaram o código
+
+- **Timeout de 5 segundos**, 5 retentativas em resposta não-2xx.
+- **Erro constante na mesma URL faz a RD suspender o webhook.** Por isso o padrão aqui é o **inverso** do webhook do Meta: responde 200 quase sempre, e 500 só em falha realmente transitória. Evento irrelevante (tarefa, produto, atualização) devolve 200 sem fazer nada.
+- Passar de 5s faz a RD reenviar — ou seja, **evento duplicado é comportamento esperado**, não exceção.
+
+### `rd-leads-webhook` — deployada, v1 ACTIVE, `verify_jwt:false`
+
+Versionada em `supabase/functions/rd-leads-webhook/index.ts`. Trata **os dois eventos** de propósito: `crm_contact_created` (dados inline, sem chamada extra — sempre rápido) e `crm_deal_created` (busca o contato em `GET /deals/{id}/contacts` e aproveita `deal_source`/`campaign` como atribuição). É defensivo porque **não se sabe se a integração Meta→RD cria contato, negociação ou os dois** — e a deduplicação garante que "os dois" não vire duplicata.
+
+**🔑 Deduplicação é por E-MAIL, não por `external_id`.** Decisão importante: a mesma pessoa pode chegar como contato e como negociação (ids diferentes), e **os 22 leads do Meta já estão na tabela com `external_id` no formato `l:...`** — se qualquer um deles reaparecer pela RD, o id seria outro e entraria duplicado. E-mail é o que identifica a pessoa. Criado índice `leads_email_lower_idx` porque essa checagem roda dentro do orçamento de 5s.
+
+**Migration `leads_origem_rd_station`:** origem nova `rd_station` no CHECK (mantendo `meta_ads` como legado dos 22 já importados) + o índice de e-mail. Admin ganhou o rótulo "RD Station".
+
+**Autenticação:** a doc diz que a RD CRM aceita cabeçalho customizado (`auth_header`/`auth_key`), mas isso não aparece em toda versão do painel. A função aceita **os dois caminhos** — cabeçalho configurável por `RD_AUTH_HEADER` ou `?secret=` na URL — para não travar caso o campo não exista na conta.
+
+### ⚠️ Pendente do fundador
+
+1. **Confirmar plano do CRM** — webhook exige Basic, Pro ou Advanced.
+2. **Criar os segredos** no Supabase (nunca no chat): `RD_WEBHOOK_SECRET` (valor inventado), `RD_CRM_TOKEN` (token da API da RD CRM). Opcionais: `RD_AUTH_HEADER`, `RD_CRM_API_BASE`.
+3. **Cadastrar o webhook na RD** apontando pra `https://xwcarrurjvfxisuaihid.supabase.co/functions/v1/rd-leads-webhook`, eventos `crm_contact_created` e `crm_deal_created`.
+4. **Retroativo:** o webhook só traz o que acontecer daqui pra frente. O que já está na RD hoje precisa de uma carga única pela API (`Listar contatos`) — ainda não feita.
+
+**🔴 Nunca executou**, mesma ressalva do §23: sem segredos e sem cadastro na RD. `RD_CRM_API_BASE` é env-var justamente porque o path exato da API v1 (`https://crm.rdstation.com/api/v1`) não foi verificado contra a conta real.
+
+### 🔑 Token da RD CRM — duas armadilhas documentadas
+
+**1. O token é por usuário, e o que a API devolve depende da visibilidade DESSE usuário.** Os níveis (`Restrito` / `Equipe` / `Geral`) são configurados separadamente para Negociações, Empresas e Contatos. Token de usuário com visibilidade Restrito **não dá erro — só devolve menos**: o retroativo traria uma fração dos leads e a busca de contato de negociação de outro responsável falharia em silêncio. **Usar token de usuário com visibilidade `Geral` em Contatos e Negociações.** (A configuração de visibilidade só existe nos planos Basic e Pro.)
+
+**2. O token é único e imutável por usuário — não dá pra rotacionar.** Se vazar, o único remédio é desativar o usuário. Por isso a recomendação é **usuário dedicado de integração**, não o usuário pessoal do fundador: se ele sair, trocar de papel ou for desativado, a integração morre em silêncio; e se o token vazar, mata-se o usuário de serviço sem afetar ninguém real. Contrapartida: a RD cobra por usuário, então isso pode custar um assento.
+
+**Escopo real do token:** `crm_contact_created` traz tudo inline e **não usa token nenhum**. O token só é necessário para o caminho de `crm_deal_created` (buscar o contato da negociação) e para a carga retroativa. Ou seja, mesmo um token limitado já deixa o fluxo principal funcionando.
+
+### Carga retroativa executada (03/ago) — e a descoberta que a salvou
+
+Token criado pelo fundador e validado: `/token/check` respondeu `Oli Health Hub / contato@olihealthhub.com.br`. Rodado por `rd-backfill` (`verify_jwt:true`), invocada **via `pg_net` a partir do SQL** usando `service_role_key` do Vault — o mesmo caminho que `call_send_push` já usava. Isso permitiu testar tudo sem depender do fundador rodar comando.
+
+**🔑 A descoberta:** `GET /contacts` devolve **`job_title` vazio em 100% dos 40 contatos** e telefone em menos da metade. `GET /deals` **embute o contato com `title` (o cargo) e `phones` preenchidos** — 25 das 32 negociações têm `title`, 21 têm telefone. Ler só `/contacts`, que era o caminho óbvio, descartaria 19 de 40 contatos e perderia a especialidade de **todos**. Cruzar as duas fontes derrubou o descarte de 19 para 11.
+
+**Dos 11 restantes, 8 não eram lead:** `test@meta.com`, três registros "Teste", "TESTE 2 - MICHELLE", "Gabriel Aristoteles" e **o próprio fundador** — resíduo dos testes de configuração da integração. Lista de exclusão é **explícita por e-mail** dentro da função, não heurística de "contém teste" (que descartaria alguém chamado Modesto). Revisável.
+
+**🆕 Achado que não estava em lugar nenhum da documentação: existe Google Ads rodando.** Distribuição de `fonte` depois da carga: **Busca Paga | Facebook Ads 26 · Busca Paga | Google 3 · Desconhecido 2 · Referência | linktr.ee 1**. Até aqui todo o registro do projeto (§19) falava só de Meta. As 3 do Google vieram pela campanha "Envio lead LP para CRM" e são justamente as que só têm e-mail.
+
+**Resultado:** 10 leads inseridos, 22 enriquecidos com `fonte`, 8 ignorados, 0 erros. Base foi de 22 para **32 leads** (22 `meta_ads` + 10 `rd_station`), 28 com especialidade, 4 sem telefone.
+
+**Migration `leads_whatsapp_opcional_e_fonte`:**
+- `whatsapp` deixa de ser NOT NULL — 3 leads reais de Google Ads existem só com e-mail, e já havia precedente (os 2 do Meta com telefone de 10 dígitos que não funciona). **O formulário do site continua exigindo telefone na página**; a obrigatoriedade caiu só no banco.
+- CHECK novo `leads_tem_algum_contato`: e-mail **ou** telefone. Sem ele, a coluna nula abriria espaço pra linha sem canal nenhum, que não é lead.
+- Coluna **`fonte`**, separada de `campanha`/`conjunto`/`anuncio`. **Decisão deliberada:** a RD traz o canal, o Meta traz o criativo. Sobrescrever `campanha` com o dado da RD apagaria a atribuição de criativo dos 22 leads importados. O enriquecimento **só preenche campo vazio**, nunca sobrescreve.
+
+**Normalização de telefone:** a RD guarda como a pessoa digitou — `+5511988395090`, `11954080860` (sem +55) e `922222799` (sem DDD). Os dois primeiros formatos são normalizados; o terceiro **não é chutado**: entra com `whatsapp` nulo e observação pedindo confirmação do DDD. Inventar DDD geraria WhatsApp para a pessoa errada.
+
+**Tela:** lead sem telefone mostra "sem telefone — falar por e-mail" em âmbar, e a coluna Origem passa a exibir a `fonte` em verde acima do conjunto/criativo.
+
+### Tela `/leads` — filtro por situação e observação colapsada (03/ago, após uso real)
+
+Dois pedidos do fundador depois de trabalhar a base de 32 leads:
+
+- **Filtro por situação.** Chips no topo, um por etapa, com contador. Implementados como **`<Link>` com `?status=`**, não botões — mantém a página server component (nada de `'use client'` só pra filtrar) e cada filtro ganha URL própria, compartilhável. O filtro roda **em memória**, não no banco: a base tem dezenas de linhas, e assim os contadores de todas as etapas saem da mesma consulta em vez de 9 `count`. Etapa com zero lead **não vira chip** — senão a barra nasceria com 9 filtros mortos. Padrão em `searchParams` copiado de `/pagamentos`; **Next 14.2.29, então `searchParams` é objeto simples, não Promise** (em Next 15 seria `await`).
+- **Observação colapsada.** O textarea de 8 linhas em toda linha da tabela tornava a tela impossível de varrer, e a maioria dos leads não tem observação. Virou **`<details>` nativo**: fechado mostra os primeiros 60 caracteres (ou "+ observação"), aberto mostra o textarea de 6 linhas. Nativo de propósito — abrir e fechar não justifica virar client component. **O textarea continua no DOM mesmo fechado, então o form envia normal.** Coluna caiu de 420px para 330px.
+
+**⚠️ Pendências:** a função **`rd-probe` é temporária, de diagnóstico, e deve ser apagada** (o MCP do Supabase não tem tool de deletar function — apagar pelo painel). O webhook da RD **ainda não foi cadastrado no painel da RD**: a carga trouxe o histórico, mas lead novo só entra sozinho depois do cadastro. E `rd-backfill` pode ser re-executada com segurança quantas vezes quiser — deduplica por e-mail.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -1068,3 +1179,7 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (03/ago sessão 3):** Ajuste de UI na `/leads` do admin depois do fundador usar a tela: o campo de observações estava **ilegível** — `rows={2}` + `resize-none` + `text-xs` num `max-w-6xl` dividido por 7 colunas virava um filete de ~150px, e as observações que a importação do Meta gravou passam de 200 caracteres, então só dava pra ler rolando dentro do próprio campo e não dava pra aumentá-lo na mão. Container foi pra `max-w-[1600px]` (desvio consciente do 6xl padrão das outras telas do admin), coluna fixada em `w-[420px]`, textarea pra `rows={8}` / `text-[13px]` / `leading-relaxed` / `min-h-[120px]` / `resize-y`, e o wrapper de `overflow-hidden` pra `overflow-x-auto` — sem isso, em tela menor a coluna larga empurraria a tabela pra fora e o conteúdo seria cortado sem dar como rolar. **Sem typecheck de novo:** o sandbox de shell continuou wedged (`useradd failed`) da primeira à última tentativa das três sessões do dia; `cd admin && npx tsc --noEmit` segue pendente pras mudanças de 03/ago inteiras. Nada commitado.
 
 **Resumo de 1 linha (03/ago sessão 4):** Esteira de leads de 5 pra **9 etapas** (entram "Não consegui falar", "Aguardando retorno", "Visita realizada" e "Proposta enviada" — antes o lead pulava de visita agendada direto pra convertido e quem visitou e ficou pensando sumia do radar), mais **3 campos de qualificação**: `temperatura` (quente/morno/frio), `perfil` (dentro/fora/a_confirmar — existe por causa dos 6 leads com DDD fora do raio de visita) e `motivo_descarte` com lista fechada, pra dar pra somar depois o que mais derruba lead. CHECK garante que motivo só existe em lead descartado, e a `updateLead` limpa o campo quando a etapa muda — senão reativar um lead descartado estouraria constraint na cara do usuário. Pré-preenchimento **conservador de propósito**: os 6 distantes entraram como "a confirmar", não "fora", porque quem decide isso é a conversa. 4 regras testadas por simulação no banco, todas passaram. Aba **"Médicos" virou "Profissionais"** (a base tem nutricionista, psicólogo e dentista; "Base de Clientes" foi descartado por conflitar com `/leads` e com quem está no START gratuito) — **só os rótulos, a rota segue `/medicos`**, porque renomear a pasta implicaria mover ~12 `href` sem typecheck nem e2e disponíveis. Os 4 testes e2e que casavam a string velha foram atualizados; achado de brinde que **não** foi mexido: `11-usuarios.spec.ts` procura um heading "Médicos cadastrados" que não existe mais, já estava quebrado antes. **O fundador estava trabalhando a base ao vivo durante a sessão** — 20 leads foram pra "Contatado" e o Juan Carlos saiu de "Convertido" pra "Visita agendada", mesmo já sendo usuário cadastrado do app; nada foi revertido, mas vale conferir. Sandbox wedged o dia inteiro: sem typecheck, sem e2e, nada commitado.
+
+**Resumo de 1 linha (03/ago sessão 5):** Fecha a última pendência do §20 — lead de anúncio deixa de depender de importação manual. Nova edge function **`meta-leads-webhook`** (deployada, v1 ACTIVE, `verify_jwt:false`, versionada em `supabase/functions/`): recebe o `leadgen` do Meta, valida a assinatura HMAC do **corpo cru** (reserializar o JSON invalidaria toda requisição legítima), **volta na Graph API pra buscar os dados** — o webhook do Meta manda só o `leadgen_id`, nunca os dados da pessoa, e é por isso que precisa de token de Página — e grava em `leads`; daí o trigger `trg_notify_lead_created` que já existia dispara a notificação e ela chega no feed do admin **por realtime, sem recarregar**. `external_id` gravado como `l:<leadgen_id>` de propósito, com o mesmo prefixo que a integração Meta→Planilha usa, senão um lead que viesse pelos dois caminhos duplicaria. Códigos de resposta desenhados pro retry do Meta: 200 em duplicado e em notificação irrelevante (outro código faz reenvio em loop), 500 **só** em falha recuperável; lead sem campo obrigatório loga e segue sem derrubar o lote. **A função nunca executou** — sem segredos configurados e a URL não foi alcançável do ambiente da sessão. **Falta o fundador fazer:** criar os 3 segredos, assinar o webhook no campo `leadgen` do objeto Page e **assinar a Página ao app** (esquecer esse último é o erro clássico: verificação passa e lead nunca chega). Ponto mais provável de falha é a versão da Graph — default `v23.0`, trocável pelo segredo `META_GRAPH_VERSION` sem tocar em código. A planilha do Google segue recebendo em paralelo de propósito, como rede de segurança até o webhook provar que está pegando tudo.
+
+**Resumo de 1 linha (03/ago sessão 6):** Carga retroativa da RD executada — base foi de **22 para 32 leads**. A descoberta que salvou a carga: **`GET /contacts` devolve `job_title` vazio em 100% dos 40 contatos e telefone em menos da metade, mas `GET /deals` embute o contato com `title` (o cargo) e `phones` preenchidos** — ler só o endpoint óbvio descartaria 19 de 40 e perderia a especialidade de todos; cruzar as duas fontes derrubou o descarte pra 11, dos quais **8 eram lixo de teste da configuração, incluindo o próprio fundador**. Sobraram 3 pessoas reais só com e-mail, o que motivou tornar `whatsapp` opcional no banco (com CHECK novo exigindo e-mail **ou** telefone, pra coluna nula não virar porta pra linha sem canal nenhum). Criada coluna **`fonte`** em vez de sobrescrever `campanha` — a RD traz o canal, o Meta traz o criativo, e sobrescrever apagaria a atribuição de criativo dos 22 já importados; enriquecimento só preenche campo vazio. **🆕 Achado sem registro anterior no projeto: existe Google Ads rodando** — `Busca Paga | Facebook Ads 26 · Busca Paga | Google 3 · Desconhecido 2 · Referência | linktr.ee 1`; toda a documentação até aqui (§19) falava só de Meta, e as 3 do Google são justamente as sem telefone. Telefone malformado **não é chutado**: `922222799` (sem DDD) entra nulo com observação pedindo confirmação, porque inventar DDD manda WhatsApp pra pessoa errada. Tudo rodado por `pg_net` a partir do SQL com `service_role_key` do Vault, então nada dependeu do fundador executar comando. **Pendências:** apagar a função temporária `rd-probe` pelo painel (o MCP não deleta function), e **cadastrar o webhook no painel da RD** — a carga trouxe o histórico, mas lead novo só entra sozinho depois disso.

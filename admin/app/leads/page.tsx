@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { updateLead } from '@/app/actions';
 
@@ -7,8 +8,9 @@ interface Lead {
   id:            string;
   created_at:    string;
   nome:          string;
-  whatsapp:      string;
+  whatsapp:      string | null;   // opcional: lead de Google Ads via RD vem só com e-mail
   email:         string;
+  fonte:         string | null;
   especialidade: string | null;
   origem:        string;
   status:        string;
@@ -21,8 +23,9 @@ interface Lead {
 }
 
 const ORIGEM_LABEL: Record<string, string> = {
-  site:      'Site',
-  meta_ads:  'Meta Ads',
+  site:       'Site',
+  rd_station: 'RD Station',
+  meta_ads:   'Meta Ads',
   whatsapp:  'WhatsApp',
   indicacao: 'Indicação',
   evento:    'Evento',
@@ -68,27 +71,75 @@ function formatData(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-export default async function LeadsPage() {
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | undefined>;
+}) {
   const supabase = await createSupabaseAdmin();
   const { data } = await supabase
     .from('leads')
     .select('*')
     .order('created_at', { ascending: false });
-  const leads = (data ?? []) as Lead[];
+  const todos = (data ?? []) as Lead[];
 
-  // Mais largo que o max-w-6xl das outras telas de propósito: esta tem 7 colunas
-  // e a de observações precisa de espaço real — com 6xl o texto ficava num filete
-  // de ~150px e só dava pra ler rolando dentro do campo.
+  // Filtro em memória, não no banco: a base é pequena (dezenas) e assim os
+  // contadores de cada situação saem da mesma consulta, sem 9 queries de count.
+  const filtro = searchParams.status ?? 'todos';
+  const leads  = filtro === 'todos' ? todos : todos.filter(l => l.status === filtro);
+
+  const contagem = todos.reduce<Record<string, number>>((acc, l) => {
+    acc[l.status] = (acc[l.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  // Mais largo que o max-w-6xl das outras telas de propósito: esta tem 7 colunas.
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-oli-dark">Leads</h1>
-        <p className="text-sm text-gray-500">Contatos recebidos pelo formulário do site institucional e pelos anúncios do Meta.</p>
+        <p className="text-sm text-gray-500">Contatos do site, dos anúncios e da RD Station.</p>
       </div>
 
-      {/* overflow-x-auto, não overflow-hidden: em tela menor a coluna de observações
-          (420px fixos) empurra a tabela além do container e o hidden cortava conteúdo
-          sem dar como rolar. */}
+      {/* Filtro por situação. Links, não botões: mantém a página como server
+          component e deixa cada filtro com URL própria, compartilhável. */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/leads"
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+            filtro === 'todos'
+              ? 'bg-oli-green text-white border-oli-green'
+              : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+          }`}
+        >
+          Todos <span className="opacity-70">{todos.length}</span>
+        </Link>
+
+        {Object.entries(STATUS_LABEL).map(([valor, meta]) => {
+          const n = contagem[valor] ?? 0;
+          // Etapa sem nenhum lead não vira chip — a barra ficaria com 9 filtros
+          // mortos desde o primeiro dia.
+          if (n === 0 && filtro !== valor) return null;
+          const ativo = filtro === valor;
+          return (
+            <Link
+              key={valor}
+              href={`/leads?status=${valor}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                ativo
+                  ? 'bg-oli-green text-white border-oli-green'
+                  : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
+              }`}
+            >
+              {meta.label} <span className="opacity-70">{n}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* overflow-x-auto, não overflow-hidden: em tela menor a coluna de edição
+          empurra a tabela além do container e o hidden cortava conteúdo sem dar
+          como rolar. */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
@@ -98,13 +149,17 @@ export default async function LeadsPage() {
               <th className="text-left px-4 py-3">Especialidade</th>
               <th className="text-left px-4 py-3">Origem</th>
               <th className="text-left px-4 py-3">Situação</th>
-              <th className="text-left px-4 py-3 w-[420px]">Atualizar</th>
+              <th className="text-left px-4 py-3 w-[330px]">Atualizar</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {leads.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">Nenhum lead recebido ainda.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">
+                {filtro === 'todos'
+                  ? 'Nenhum lead recebido ainda.'
+                  : 'Nenhum lead nesta situação.'}
+              </td></tr>
             )}
             {leads.map((lead) => {
               const statusMeta = STATUS_LABEL[lead.status] ?? { label: lead.status, bg: 'bg-gray-100', text: 'text-gray-500' };
@@ -115,12 +170,17 @@ export default async function LeadsPage() {
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatData(lead.created_at)}</td>
                   <td className="px-4 py-3">
                     <p className="font-semibold text-oli-dark">{lead.nome}</p>
-                    <p className="text-xs text-gray-400">{lead.whatsapp}</p>
+                    {lead.whatsapp
+                      ? <p className="text-xs text-gray-400">{lead.whatsapp}</p>
+                      : <p className="text-xs text-amber-600 font-medium">sem telefone — falar por e-mail</p>}
                     <p className="text-xs text-gray-400">{lead.email}</p>
                   </td>
                   <td className="px-4 py-3">{lead.especialidade ?? '—'}</td>
                   <td className="px-4 py-3">
                     <p>{ORIGEM_LABEL[lead.origem] ?? lead.origem}</p>
+                    {/* fonte vem da RD (canal), conjunto/anuncio vêm do Meta (criativo).
+                        São camadas diferentes — por isso aparecem juntas, sem substituição. */}
+                    {lead.fonte && <p className="text-xs text-oli-green font-medium">{lead.fonte}</p>}
                     {lead.conjunto && <p className="text-xs text-gray-400">{lead.conjunto}</p>}
                     {lead.anuncio && <p className="text-xs text-gray-400">{lead.anuncio}</p>}
                   </td>
@@ -146,7 +206,7 @@ export default async function LeadsPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 w-[420px]">
+                  <td className="px-4 py-3 w-[330px]">
                     <form action={updateLead} className="flex flex-col gap-2">
                       <input type="hidden" name="id" value={lead.id} />
 
@@ -191,17 +251,33 @@ export default async function LeadsPage() {
                         ))}
                       </select>
 
-                      <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">Observações</label>
-                      {/* rows=8 + resize-y: as observações importadas do Meta passam de 200
-                          caracteres. Com rows=2 e resize-none não dava pra ler sem rolar
-                          dentro do próprio campo, e não dava pra aumentar na mão. */}
-                      <textarea
-                        name="observacoes"
-                        defaultValue={lead.observacoes ?? ''}
-                        placeholder="Observações internas"
-                        rows={8}
-                        className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] leading-relaxed resize-y min-h-[120px]"
-                      />
+                      {/* Colapsado por padrão: a maioria dos leads não tem observação,
+                          e um textarea de 8 linhas em toda linha da tabela deixava a
+                          tela impossível de varrer. O <details> é nativo — não precisa
+                          virar client component só pra abrir e fechar.
+                          O textarea continua no DOM fechado, então o form envia normal. */}
+                      <details className="group">
+                        <summary className="cursor-pointer list-none text-[11px] text-gray-500 hover:text-oli-green">
+                          {lead.observacoes ? (
+                            <>
+                              <span className="font-semibold uppercase tracking-wide text-gray-400">Obs. </span>
+                              <span className="group-open:hidden">
+                                {lead.observacoes.slice(0, 60)}{lead.observacoes.length > 60 ? '…' : ''}
+                              </span>
+                              <span className="hidden group-open:inline text-oli-green font-semibold">fechar</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-400 group-open:text-oli-green">+ observação</span>
+                          )}
+                        </summary>
+                        <textarea
+                          name="observacoes"
+                          defaultValue={lead.observacoes ?? ''}
+                          placeholder="Observações internas"
+                          rows={6}
+                          className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] leading-relaxed resize-y"
+                        />
+                      </details>
                       <button type="submit" className="text-xs text-oli-green font-semibold underline self-start">
                         Salvar
                       </button>
