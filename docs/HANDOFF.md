@@ -1138,15 +1138,23 @@ Curiosidade a conferir se algo estranhar: a RD devolveu **`entity_type: "CONTACT
 
 **Achado:** o site **não tinha favicon nenhum** — zero `<link rel="icon">` e nenhum arquivo de ícone em `landing/`. Por isso Google e abas do navegador mostravam o ícone genérico desde sempre.
 
-**Decisão do fundador:** fundo verde OLI (`#5F7D67`) com o símbolo **vazado em creme** (`#F4EFEA`) — vira um ícone com cara de app, legível em 16px e funcional tanto em aba clara quanto escura.
+**Decisão do fundador:** fundo verde OLI (`#5F7D67`) com o símbolo **vazado em creme** (`#F4EFEA`), em **formato circular**. A primeira versão publicada era quadrada; o fundador achou o quadrado duro e pediu "sem fundo". Foram comparadas 3 opções lado a lado (sem fundo / círculo verde / quadrado) simuladas em aba clara, aba escura e no recorte circular do Google — **o círculo foi o escolhido**, porque "sem fundo" deixa o símbolo verde médio sobre o cinza escuro do Chrome em modo escuro (contraste fraco) e com traço fino demais em 16px, enquanto o círculo elimina o quadrado sem perder legibilidade.
+
+**⚠️ O `apple-touch-icon.png` continua quadrado de propósito** — o iOS aplica a própria máscara arredondada. Ícone já circular ou com transparência vira quadrado preto na tela inicial.
 
 **Fonte do ícone:** só o **símbolo** circular, nunca o logo completo — o texto "OLI HEALTH HUB" é ilegível abaixo de 48px. O símbolo foi extraído de `landing/logo_oli_transparent.png` (bounding box da metade esquerda, recortado quadrado e centralizado).
 
 **Arquivos (em `landing/`):**
 | Arquivo | Tamanho | Para quê |
 |---|---|---|
-| `favicon.png` | 512×512, ~59 KB | Google Search, abas, atalhos |
-| `apple-touch-icon.png` | 180×180, ~15 KB | tela inicial do iPhone |
+| `favicon.png` | 192×192 circular, ~17 KB | Google Search, abas, atalhos |
+| `apple-touch-icon.png` | 180×180 quadrado, ~15 KB | tela inicial do iPhone |
+
+192 e não 512: é múltiplo de 48 (o que o Google pede) e pesa 17 KB em vez de 59 KB. A primeira tentativa saiu em 512 e foi reduzida na mesma sessão.
+
+**🐛 Erro silencioso que custou uma rodada:** o primeiro `mv` dos dois arquivos moveu só o `apple-touch-icon.png` — o download do `favicon.png` não tinha completado. Resultado: as tags e um dos ícones no ar, `/favicon.png` em **404**, e nenhum aviso em lugar nenhum. Ao mover arquivo baixado, conferir com `ls` no destino depois do `mv`.
+
+**🐛 Cache de favicon engana:** publicado e funcionando, o fundador continuou vendo o ícone antigo. Favicon tem cache próprio no Chrome, que **ignora refresh e hard refresh** — e como o site nunca teve ícone, o navegador tinha memorizado "não tem". Para conferir de verdade: aba anônima, ou abrir `/favicon.png` direto. Não confundir com deploy que falhou.
 
 **Tags adicionadas nas 7 páginas** (`index`, `consultorio`, `privacidade`, `confirmado`, `baixar`, `consentimento` e o `_template-pagina-confirmacao`, pra novas páginas já nascerem com ícone):
 
