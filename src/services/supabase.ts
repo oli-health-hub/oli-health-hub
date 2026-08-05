@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import type { Database } from '../models/database.types';
 
 export const SUPABASE_URL = 'https://xwcarrurjvfxisuaihid.supabase.co';
@@ -30,3 +30,17 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON, {
     detectSessionInUrl: false,
   },
 });
+
+// Requisito oficial do Supabase para React Native: sem isso, o timer de
+// autoRefreshToken fica sujeito à suspensão de JS em background pelo SO —
+// o refresh às vezes falha ao voltar do background, dispara SIGNED_OUT e
+// derruba pro login mesmo com sessão/refresh token válidos.
+if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+    } else {
+      supabase.auth.stopAutoRefresh();
+    }
+  });
+}
