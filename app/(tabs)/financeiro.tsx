@@ -11,6 +11,7 @@ import { colors, spacing, radius, shadows } from '../../src/theme/designSystem';
 import { formatCurrency } from '../../src/utils/formatters';
 import { generateAndShareMonthlyReport } from '../../src/services/reportService';
 import { useAuthStore } from '../../src/store/authStore';
+import { COST_PER_MINUTE } from '../../src/store/appStore';
 import {
   fetchUsageSummary,
   fetchMonthlyUsageHistory,
@@ -103,10 +104,11 @@ export default function FinanceiroScreen() {
     fetchHourBalance(userId).then(setHourBalance).catch(() => {});
   }, [session?.user?.id]);
 
-  // ── Pacotes de horas (fonte: DB gerenciado pelo Admin) ──
+  // ── Pacotes de horas (preço = taxa/min do plano atual × 60) ──
   useEffect(() => {
-    fetchHourPackages().then(setHourPackages).catch(() => {});
-  }, []);
+    const rate = COST_PER_MINUTE[profile?.plan as keyof typeof COST_PER_MINUTE] ?? COST_PER_MINUTE.START;
+    fetchHourPackages(rate).then(setHourPackages).catch(() => {});
+  }, [profile?.plan]);
 
   // ── Valores derivados (todos reais) ──
   const oliCost      = usageSummary?.totalValor   ?? 0;

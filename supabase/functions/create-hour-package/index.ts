@@ -66,10 +66,10 @@ Deno.serve(async (req: Request) => {
 
     // ── 3. Busca perfil e pacote em paralelo ─────────────────────────────────
     const [{ data: profile }, { data: pkg }] = await Promise.all([
-      supabaseAdmin.from('profiles').select('nome').eq('id', user.id).single(),
+      supabaseAdmin.from('profiles').select('nome, plan').eq('id', user.id).single(),
       supabaseAdmin
         .from('hour_packages')
-        .select('id, nome, horas, valor, validade_dias')
+        .select('id, nome, horas, validade_dias')
         .eq('horas', hours)
         .eq('ativo', true)
         .maybeSingle(),
@@ -78,8 +78,19 @@ Deno.serve(async (req: Request) => {
     if (!profile) return json({ error: 'Perfil não encontrado' }, 404);
     if (!pkg)     return json({ error: `Pacote de ${hours}h não encontrado` }, 404);
 
-    // ── 3b. Cupom (opcional) ─────────────────────────────────────────────────
-    const baseValue = Number(pkg.valor);
+    // ── 3b. Preço = taxa/min do plano do médico × 60 ─────────────────────────
+    // Determinado pelo plano no momento da compra (fonte: plans.taxa_min,
+    // mesma tabela usada na cobrança por minutagem). Fallback START se o
+    // plano não bater com nenhuma linha (ex.: VIP em standby).
+    const { data: planRow } = await supabaseAdmin
+      .from('plans')
+      .select('taxa_min')
+      .eq('name', profile.plan ?? 'START')
+      .maybeSingle();
+    const taxaMin = Number(planRow?.taxa_min ?? 2.00);
+
+    // ── 3c. Cupom (opcional) ─────────────────────────────────────────────────
+    const baseValue = Math.round(pkg.horas * 60 * taxaMin * 100) / 100;
     let chargeValue = baseValue;
     let coupon: CouponResult | null = null;
     if (couponCode) {
@@ -131,7 +142,7 @@ Deno.serve(async (req: Request) => {
       professional_id: user.id,
       title:           `Pacote de horas: ${pkg.horas}h`,
       body:            `${profile.nome} iniciou compra do pacote ${pkg.horas}h via ${billingType}`,
-      metadata:        { package_id: pkg.id, charge_id: charge.id, billing_type: billingType, value: pkg.valor },
+      metadata:        { package_id: pkg.id, charge_id: charge.id, billing_type: billingType, value: baseValue },
     }).then(() => {}).catch(() => {});
 
     // ── 7. QR Code PIX (se aplicável) ────────────────────────────────────────

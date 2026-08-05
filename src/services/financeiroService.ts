@@ -219,19 +219,25 @@ export async function fetchMonthlyUsageHistory(
 }
 
 // ─── Pacotes de horas (fonte: DB — gerenciado pelo Admin) ────────────────────
+//
+// O preço não vem mais do banco: cada plano tem sua própria taxa/min
+// (START/BASE/PRO, ver oli-plans.ts) e o pacote de horas é cobrado a essa
+// taxa × 60 — determinado pelo plano do médico no momento da compra.
+// A mesma conta é refeita no servidor (create-hour-package) na hora de
+// gerar a cobrança Asaas; aqui é só pra exibir o preço antes de comprar.
 
 import type { HourPackage } from '../models/types';
 
-export async function fetchHourPackages(): Promise<HourPackage[]> {
+export async function fetchHourPackages(ratePerMinute: number): Promise<HourPackage[]> {
   const { data, error } = await supabase
     .from('hour_packages')
-    .select('horas, valor, bonus_horas')
+    .select('horas, bonus_horas')
     .eq('ativo', true)
     .order('horas');
   if (error) throw error;
-  return ((data ?? []) as unknown as { horas: number; valor: number; bonus_horas: number }[]).map(r => ({
+  return ((data ?? []) as unknown as { horas: number; bonus_horas: number }[]).map(r => ({
     hours:      Number(r.horas),
-    price:      Number(r.valor),
+    price:      parseFloat((Number(r.horas) * 60 * ratePerMinute).toFixed(2)),
     bonusHours: Number(r.bonus_horas ?? 0),
   }));
 }
