@@ -8,7 +8,8 @@
  *   - paymentsLastMonth: total recebido no mês anterior
  *   - lastPayments: últimos 10 pagamentos confirmados
  *
- * Segurança: requer JWT válido E user_type=admin no profile.
+ * Segurança: requer JWT válido E is_admin=true no profile (independente
+ * do user_type — founder/team também têm acesso ao painel, ver §11 21/jul).
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -88,11 +89,11 @@ Deno.serve(async (req: Request) => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('user_type')
+    .select('is_admin')
     .eq('id', user.id)
     .single();
 
-  if (profile?.user_type !== 'admin') {
+  if (!profile?.is_admin) {
     return new Response(JSON.stringify({ error: 'Forbidden — admin only' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
