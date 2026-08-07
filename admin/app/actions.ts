@@ -604,6 +604,7 @@ export async function updateLead(formData: FormData) {
   const observacoes = (formData.get('observacoes') as string) || null;
   const temperatura = (formData.get('temperatura') as string) || null;
   const perfil      = (formData.get('perfil')      as string) || null;
+  const atendente_id = (formData.get('atendente_id') as string) || null;
 
   // O banco tem CHECK recusando motivo em lead que não está descartado. O select
   // do motivo fica sempre visível na tela, então limpar aqui evita que mover um
@@ -614,7 +615,7 @@ export async function updateLead(formData: FormData) {
   const supabase = await createSupabaseAdmin();
   const { error } = await supabase
     .from('leads')
-    .update({ status, observacoes, temperatura, perfil, motivo_descarte })
+    .update({ status, observacoes, temperatura, perfil, motivo_descarte, atendente_id })
     .eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/leads');

@@ -503,12 +503,14 @@ export type Database = {
       leads: {
         Row: {
           anuncio: string | null
+          atendente_id: string | null
           campanha: string | null
           conjunto: string | null
           created_at: string
           email: string
           especialidade: string | null
           external_id: string | null
+          fonte: string | null
           id: string
           motivo_descarte: string | null
           nome: string
@@ -516,20 +518,25 @@ export type Database = {
           origem: string
           perfil: string | null
           plataforma: string | null
+          rd_deal_id: string | null
+          rd_sync_em: string | null
+          rd_sync_erro: string | null
           referrer: string | null
           status: string
           temperatura: string | null
           user_agent: string | null
-          whatsapp: string
+          whatsapp: string | null
         }
         Insert: {
           anuncio?: string | null
+          atendente_id?: string | null
           campanha?: string | null
           conjunto?: string | null
           created_at?: string
           email: string
           especialidade?: string | null
           external_id?: string | null
+          fonte?: string | null
           id?: string
           motivo_descarte?: string | null
           nome: string
@@ -537,20 +544,25 @@ export type Database = {
           origem?: string
           perfil?: string | null
           plataforma?: string | null
+          rd_deal_id?: string | null
+          rd_sync_em?: string | null
+          rd_sync_erro?: string | null
           referrer?: string | null
           status?: string
           temperatura?: string | null
           user_agent?: string | null
-          whatsapp: string
+          whatsapp?: string | null
         }
         Update: {
           anuncio?: string | null
+          atendente_id?: string | null
           campanha?: string | null
           conjunto?: string | null
           created_at?: string
           email?: string
           especialidade?: string | null
           external_id?: string | null
+          fonte?: string | null
           id?: string
           motivo_descarte?: string | null
           nome?: string
@@ -558,13 +570,24 @@ export type Database = {
           origem?: string
           perfil?: string | null
           plataforma?: string | null
+          rd_deal_id?: string | null
+          rd_sync_em?: string | null
+          rd_sync_erro?: string | null
           referrer?: string | null
           status?: string
           temperatura?: string | null
           user_agent?: string | null
-          whatsapp?: string
+          whatsapp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_atendente_id_fkey"
+            columns: ["atendente_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       modules: {
         Row: {

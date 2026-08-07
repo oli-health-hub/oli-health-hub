@@ -20,6 +20,21 @@ interface Lead {
   temperatura:     string | null;
   perfil:          string | null;
   motivo_descarte: string | null;
+  rd_deal_id:      string | null;
+  rd_sync_erro:    string | null;
+  atendente_id:    string | null;
+}
+
+interface Atendente {
+  id:   string;
+  nome: string;
+}
+
+/** Primeiro nome + inicial do sobrenome: "Claudia M.". Na tabela, nome
+ *  completo empurraria as outras colunas sem acrescentar informação. */
+function nomeCurto(nome: string): string {
+  const p = nome.trim().split(/\s+/);
+  return p.length === 1 ? p[0] : `${p[0]} ${p[1][0]}.`;
 }
 
 const ORIGEM_LABEL: Record<string, string> = {
@@ -83,15 +98,53 @@ export default async function LeadsPage({
     .order('created_at', { ascending: false });
   const todos = (data ?? []) as Lead[];
 
-  // Filtro em memória, não no banco: a base é pequena (dezenas) e assim os
-  // contadores de cada situação saem da mesma consulta, sem 9 queries de count.
-  const filtro = searchParams.status ?? 'todos';
-  const leads  = filtro === 'todos' ? todos : todos.filter(l => l.status === filtro);
+  // A lista de atendentes sai de quem tem acesso ao painel — hoje Claudia, Igor
+  // e Guilherme. Incluir alguém novo é conceder acesso, sem mexer no código.
+  const { data: atendentesData } = await supabase
+    .from('profiles').select('id, nome').eq('is_admin', true).order('nome');
+  const atendentes = (atendentesData ?? []) as Atendente[];
+  const nomePorId  = new Map(atendentes.map(a => [a.id, a.nome]));
 
-  const contagem = todos.reduce<Record<string, number>>((acc, l) => {
+  // Filtro em memória, não no banco: a base é pequena (dezenas) e assim os
+  // contadores saem da mesma consulta, sem uma query de count por opção.
+  const filtro     = searchParams.status ?? 'todos';
+  const filtroAtd  = searchParams.atendente ?? 'todos';
+
+  const leads = todos.filter(l =>
+    (filtro    === 'todos' || l.status === filtro) &&
+    (filtroAtd === 'todos' ||
+      (filtroAtd === 'sem' ? l.atendente_id === null : l.atendente_id === filtroAtd)),
+  );
+
+  // Contadores respeitam o outro filtro ativo — senão o número no chip não
+  // corresponde ao que aparece na tabela depois de clicar.
+  const baseStatus = todos.filter(l =>
+    filtroAtd === 'todos' ||
+    (filtroAtd === 'sem' ? l.atendente_id === null : l.atendente_id === filtroAtd));
+  const baseAtd = todos.filter(l => filtro === 'todos' || l.status === filtro);
+
+  const contagem = baseStatus.reduce<Record<string, number>>((acc, l) => {
     acc[l.status] = (acc[l.status] ?? 0) + 1;
     return acc;
   }, {});
+
+  const contagemAtd = baseAtd.reduce<Record<string, number>>((acc, l) => {
+    const k = l.atendente_id ?? 'sem';
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  // Preserva o outro filtro ao montar cada link, senão clicar num chip
+  // descarta silenciosamente a escolha anterior.
+  const href = (p: { status?: string; atendente?: string }) => {
+    const q = new URLSearchParams();
+    const s = p.status    ?? filtro;
+    const a = p.atendente ?? filtroAtd;
+    if (s !== 'todos') q.set('status', s);
+    if (a !== 'todos') q.set('atendente', a);
+    const qs = q.toString();
+    return qs ? `/leads?${qs}` : '/leads';
+  };
 
   // Mais largo que o max-w-6xl das outras telas de propósito: esta tem 7 colunas.
   return (
@@ -103,38 +156,86 @@ export default async function LeadsPage({
 
       {/* Filtro por situação. Links, não botões: mantém a página como server
           component e deixa cada filtro com URL própria, compartilhável. */}
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href="/leads"
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-            filtro === 'todos'
-              ? 'bg-oli-green text-white border-oli-green'
-              : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-          }`}
-        >
-          Todos <span className="opacity-70">{todos.length}</span>
-        </Link>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Situação</span>
+          <Link
+            href={href({ status: 'todos' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtro === 'todos'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+            }`}
+          >
+            Todas <span className="opacity-70">{baseStatus.length}</span>
+          </Link>
 
-        {Object.entries(STATUS_LABEL).map(([valor, meta]) => {
-          const n = contagem[valor] ?? 0;
-          // Etapa sem nenhum lead não vira chip — a barra ficaria com 9 filtros
-          // mortos desde o primeiro dia.
-          if (n === 0 && filtro !== valor) return null;
-          const ativo = filtro === valor;
-          return (
-            <Link
-              key={valor}
-              href={`/leads?status=${valor}`}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                ativo
-                  ? 'bg-oli-green text-white border-oli-green'
-                  : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
-              }`}
-            >
-              {meta.label} <span className="opacity-70">{n}</span>
-            </Link>
-          );
-        })}
+          {Object.entries(STATUS_LABEL).map(([valor, meta]) => {
+            const n = contagem[valor] ?? 0;
+            // Etapa sem nenhum lead não vira chip — a barra ficaria com 9
+            // filtros mortos desde o primeiro dia.
+            if (n === 0 && filtro !== valor) return null;
+            const ativo = filtro === valor;
+            return (
+              <Link
+                key={valor}
+                href={href({ status: valor })}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  ativo
+                    ? 'bg-oli-green text-white border-oli-green'
+                    : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
+                }`}
+              >
+                {meta.label} <span className="opacity-70">{n}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Atendente</span>
+          <Link
+            href={href({ atendente: 'todos' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroAtd === 'todos'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+            }`}
+          >
+            Todos <span className="opacity-70">{baseAtd.length}</span>
+          </Link>
+
+          {atendentes.map(a => {
+            const n = contagemAtd[a.id] ?? 0;
+            const ativo = filtroAtd === a.id;
+            return (
+              <Link
+                key={a.id}
+                href={href({ atendente: a.id })}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  ativo
+                    ? 'bg-oli-green text-white border-oli-green'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-oli-green'
+                }`}
+              >
+                {nomeCurto(a.nome)} <span className="opacity-70">{n}</span>
+              </Link>
+            );
+          })}
+
+          {/* "Sem atendente" é o chip que mais importa no dia a dia: é a fila
+              de quem ainda não tem dono. Aparece mesmo zerado, de propósito. */}
+          <Link
+            href={href({ atendente: 'sem' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroAtd === 'sem'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-amber-50 text-amber-700 border-transparent hover:border-oli-green'
+            }`}
+          >
+            Sem atendente <span className="opacity-70">{contagemAtd['sem'] ?? 0}</span>
+          </Link>
+        </div>
       </div>
 
       {/* overflow-x-auto, não overflow-hidden: em tela menor a coluna de edição
@@ -156,9 +257,9 @@ export default async function LeadsPage({
           <tbody>
             {leads.length === 0 && (
               <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                {filtro === 'todos'
+                {filtro === 'todos' && filtroAtd === 'todos'
                   ? 'Nenhum lead recebido ainda.'
-                  : 'Nenhum lead nesta situação.'}
+                  : 'Nenhum lead com esses filtros.'}
               </td></tr>
             )}
             {leads.map((lead) => {
@@ -189,6 +290,15 @@ export default async function LeadsPage({
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusMeta.bg} ${statusMeta.text}`}>
                         {statusMeta.label}
                       </span>
+                      {/* Sem dono aparece em âmbar, não some: lead sem atendente
+                          é o que mais corre risco de ficar parado. */}
+                      {lead.atendente_id
+                        ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-gray-100 text-gray-600">
+                            {nomeCurto(nomePorId.get(lead.atendente_id) ?? '—')}
+                          </span>
+                        : <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-50 text-amber-700">
+                            sem atendente
+                          </span>}
                       {tempMeta && (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${tempMeta.bg} ${tempMeta.text}`}>
                           {tempMeta.label}
@@ -204,11 +314,30 @@ export default async function LeadsPage({
                           {MOTIVO_LABEL[lead.motivo_descarte] ?? lead.motivo_descarte}
                         </span>
                       )}
+                      {/* Só aparece quando algo deu errado. Sem este aviso, um lead
+                          dessincronizado da RD ficaria invisível — que é justamente
+                          o problema que a sincronização existe para evitar. */}
+                      {lead.rd_sync_erro && (
+                        <span className="text-xs text-oli-red font-semibold" title={lead.rd_sync_erro}>
+                          ⚠ não espelhado na RD
+                        </span>
+                      )}
+                      {!lead.rd_deal_id && (
+                        <span className="text-xs text-gray-400">sem negociação na RD</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 w-[330px]">
                     <form action={updateLead} className="flex flex-col gap-2">
                       <input type="hidden" name="id" value={lead.id} />
+
+                      <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">Atendente</label>
+                      <select name="atendente_id" defaultValue={lead.atendente_id ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
+                        <option value="">— sem atendente</option>
+                        {atendentes.map(a => (
+                          <option key={a.id} value={a.id}>{a.nome}</option>
+                        ))}
+                      </select>
 
                       <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">Etapa</label>
                       <select name="status" defaultValue={lead.status} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">

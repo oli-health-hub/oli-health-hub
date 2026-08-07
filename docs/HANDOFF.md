@@ -517,6 +517,16 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 ~~27. **Conferir se o item 24 já não está resolvido**~~ ✅ **Confirmado** — era mesmo a sessão 6 (paralela), commit `cc2628c` é dela. Itens 23 e 24 fechados de verdade, ver acima.
 28. **🆕 Segundo parceiro "MBS Hackathon" no banco (achado 31/jul sessão 6)** — `user_type='partner'`, código `MBS-81CCB`, 5 indicações de 28/jul (incluindo o próprio founder e o Igor). Fundador confirmou que é intencional — parceiro que só gera leads, sem comissionamento — e configurado como `comissiona=false` em `partner_commission_config`. Sem ação pendente, só registrado pra não confundir sessão futura.
 
+29. **🆕 4 edge functions no ar e fora do repo (03–05/ago)** — `rd-sync-status`, `rd-vincular-deals`, `rd-setup-webhook` e `rd-backfill` foram deployadas via MCP e **não existem em `supabase/functions/`**. Só `rd-leads-webhook` e `meta-leads-webhook` estão versionadas. Risco: perder o código-fonte se alguém redeployar por cima. Escrever os 4 arquivos no repo.
+
+30. **🆕 `rd-probe` é temporária e deve ser apagada** — função de diagnóstico usada para investigar a RD (funil, campos, o 422). O MCP do Supabase não tem tool de deletar function; apagar pelo painel.
+
+31. **🆕 Typecheck e commit atrasados (05/ago)** — o sandbox de shell das sessões de 03–05/ago ficou wedged (`useradd failed`). O último typecheck verde foi rodado pelo fundador em 04/ago; tudo de 05/ago (coluna `rd_deal_id`, `rd_sync_erro` na tela, filtro por situação, observação colapsada) **não passou por `tsc`**. Rodar `cd admin && npx tsc --noEmit` **e** `npx tsc --noEmit` na raiz antes de publicar.
+
+32. **🆕 Google Ads existe e não tinha dono conhecido (achado 04/ago)** — a distribuição de `fonte` na tabela `leads` mostrou `Busca Paga | Google` além do Facebook Ads e de `Referência | linktr.ee`. Toda a documentação anterior (§19) falava só de Meta. **Descobrir quem opera essa campanha** — os leads dela são justamente os que chegam sem telefone.
+
+33. **🆕 Planilha do Google do Meta ainda ligada em paralelo** — mantida de propósito como rede de segurança enquanto o webhook da RD provava que pega tudo. Agora que ele está confirmado funcionando (4 leads sozinhos em 05/ago), decidir se desliga.
+
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
 - **Nativo** (`app.json` android/ios, permissões, ícone, SDK, versão) → **rebuild AAB** + submit.
@@ -1019,7 +1029,9 @@ O ponto que não é óbvio: **o webhook do Meta não manda os dados da pessoa.**
 - **Códigos de resposta pensados pro retry do Meta:** 200 em sucesso, duplicado e notificação irrelevante (qualquer outra coisa faz o Meta reenviar em loop); 401 em assinatura inválida; **500 só em falha recuperável** (Graph fora, token expirado) pra ele reenviar. Lead sem campo obrigatório **não** devolve 500 — reenviar não resolveria, então loga e segue sem derrubar o resto do lote.
 - **Dupla proteção contra duplicata:** `select` antes (evita gastar chamada na Graph em reenvio) e captura do erro `23505` depois (dois webhooks do mesmo lead em corrida). O índice único parcial é a garantia final.
 
-### ⚠️ Configuração pendente — sem isso a função não faz nada
+> 🔻 **SEÇÃO SUPERADA — não executar os passos abaixo.** Horas depois desta implementação o fundador informou que **a integração do Meta já vive dentro da RD Station**, e a RD virou a fonte única (§24). A `meta-leads-webhook` continua deployada mas **inerte de propósito**, sem segredos: é o plano B caso a integração Meta→RD quebre. Os passos abaixo ficam como receita pronta para esse cenário.
+
+### ⚠️ Configuração (só executar se for reativar o caminho direto do Meta)
 
 Ela está no ar mas **nunca executou**: não há segredos configurados e o webhook não está assinado no Meta. Passos, na ordem:
 
@@ -1065,12 +1077,15 @@ Versionada em `supabase/functions/rd-leads-webhook/index.ts`. Trata **os dois ev
 
 **Autenticação:** a doc diz que a RD CRM aceita cabeçalho customizado (`auth_header`/`auth_key`), mas isso não aparece em toda versão do painel. A função aceita **os dois caminhos** — cabeçalho configurável por `RD_AUTH_HEADER` ou `?secret=` na URL — para não travar caso o campo não exista na conta.
 
-### ⚠️ Pendente do fundador
+### ✅ Configuração — tudo concluído entre 03 e 05/ago
 
-1. **Confirmar plano do CRM** — webhook exige Basic, Pro ou Advanced.
-2. **Criar os segredos** no Supabase (nunca no chat): `RD_WEBHOOK_SECRET` (valor inventado), `RD_CRM_TOKEN` (token da API da RD CRM). Opcionais: `RD_AUTH_HEADER`, `RD_CRM_API_BASE`.
-3. **Cadastrar o webhook na RD** apontando pra `https://xwcarrurjvfxisuaihid.supabase.co/functions/v1/rd-leads-webhook`, eventos `crm_contact_created` e `crm_deal_created`.
-4. **Retroativo:** o webhook só traz o que acontecer daqui pra frente. O que já está na RD hoje precisa de uma carga única pela API (`Listar contatos`) — ainda não feita.
+Esta lista era de pendências e **está toda fechada**. Mantida como registro do que foi preciso:
+
+1. ~~Confirmar plano do CRM~~ ✅ assinatura ativa, webhooks disponíveis.
+2. ~~Criar os segredos~~ ✅ `RD_WEBHOOK_SECRET` e `RD_CRM_TOKEN` criados pelo fundador. Token validado: `/token/check` respondeu `Oli Health Hub / contato@olihealthhub.com.br`.
+3. ~~Cadastrar o webhook na RD~~ ✅ feito **via API, não pelo painel** — ver §24 "Webhooks cadastrados". Confirmado funcionando: 4 leads entraram sozinhos em 05/ago.
+4. ~~Retroativo~~ ✅ `rd-backfill` executada. Base foi de 22 para 36 leads.
+5. ~~Volta do status para a RD~~ ✅ implementada em 05/ago — ver §25.
 
 **🔴 Nunca executou**, mesma ressalva do §23: sem segredos e sem cadastro na RD. `RD_CRM_API_BASE` é env-var justamente porque o path exato da API v1 (`https://crm.rdstation.com/api/v1`) não foi verificado contra a conta real.
 
@@ -1134,7 +1149,12 @@ Curiosidade a conferir se algo estranhar: a RD devolveu **`entity_type: "CONTACT
 
 **🔒 Nota de segurança:** o primeiro `RD_WEBHOOK_SECRET` gerado apareceu num print enviado no chat e foi orientado regenerar. Como o cadastro do webhook só aconteceu **depois**, o valor exposto não chegou a ser usado em lugar nenhum.
 
-## 19. Favicon do site (31/jul sessão 6)
+**Resumo de 1 linha (05/ago):** Fechado o ciclo com a RD — antes só recebia, agora **o status do painel volta para o funil da RD**. Decisão do fundador: painel é a fonte de verdade, equipe não mexe no funil, então a sincronização é de mão única e sem regra de desempate. **O funil da RD bate quase 1:1 com a esteira** (7 das 9 etapas com par exato — não é coincidência, as duas nasceram da mesma realidade comercial). **A peça que faltava era o id da NEGOCIAÇÃO:** o que estava guardado era o id do contato, e contato não anda no funil — criada a coluna `rd_deal_id` e vinculados 36 de 36 leads por e-mail, ficando com a negociação mais recente quando há mais de uma. Espelhamento por **trigger no banco**, não na server action, pra cobrir qualquer caminho que mude status (tela, SQL, importação), com `WHEN` garantindo que salvar só a observação não chame a RD; tradução etapa→etapa em **tabela editável** (`rd_stage_map`), não em código. **Achado que custaria uma tela de alerta falso permanente:** o alinhamento geral deu um HTTP 422 que **não era erro** — a RD recusa mover a negociação para a etapa em que ela já está; tratado como sucesso, confirmando pelo corpo do próprio 422 (que traz a negociação inteira) sem gastar requisição extra. Depois do fix, **36/36 sincronizados, 0 erros**. Confirmado também que **o webhook da RD está funcionando de verdade**: 4 leads entraram sozinhos em 05/ago. Falha de sincronização aparece na tela como selo vermelho — engolir o erro seria pior que não ter a feature. **Pendências:** 4 edge functions deployadas e ainda fora do repo, `rd-probe` a apagar, e typecheck do admin sem rodar (sandbox fora).
+
+## 19-b. Favicon do site (31/jul sessão 6)
+<!-- Renumerado de "19" para "19-b" em 05/ago: havia DUAS seções §19 no arquivo
+     (esta e "Leads de tráfego pago", bem acima), o que quebrava qualquer
+     referência cruzada a "§19". As referências no texto apontam para a de leads. -->
 
 **Achado:** o site **não tinha favicon nenhum** — zero `<link rel="icon">` e nenhum arquivo de ícone em `landing/`. Por isso Google e abas do navegador mostravam o ícone genérico desde sempre.
 
@@ -1172,6 +1192,83 @@ Curiosidade a conferir se algo estranhar: a RD devolveu **`entity_type: "CONTACT
 - Sem `favicon.ico` — não foi possível gerar (formato binário multi-resolução). Só afeta navegadores antigos; irrelevante pro Google, que lê a tag `rel="icon"`.
 - `favicon.png` com 59 KB é maior que o ideal pra um favicon. Quando o sandbox voltar, vale gerar versões 48/96/180 e servir por `sizes`, em vez de um 512 único.
 - **O Google pode levar dias ou semanas** pra atualizar o ícone no resultado de busca — depende do próximo rastreamento. Não é sinal de erro. Dá pra acelerar pedindo reindexação da home no Search Console.
+
+## 25. Volta da informação para a RD — status do painel espelhado no funil (05/ago)
+
+**Decisão do fundador:** "A equipe não mexe no funil lá, apenas nós aqui. Tudo o que mudarmos aqui tem que mudar lá." Ou seja, **o painel é a fonte de verdade do status** e a sincronização é de mão única, painel → RD. Isso simplifica muito: sem regra de desempate, sem conflito.
+
+### O achado que tornou isso viável
+
+Levantado o funil da RD antes de propor qualquer coisa: o "Funil Padrão" bate **quase 1:1** com a esteira do painel — 7 das 9 etapas têm par exato (Novo lead, Contato realizado, Visita agendada, Visita realizada, Proposta enviada, Contrato fechado, Perdido). Não é coincidência: a esteira do §22 foi desenhada a partir da descrição do fundador, e o funil da RD veio da mesma realidade comercial. Só `sem_resposta` e `aguardando_retorno` não têm par — são as duas que ele pediu e a RD não tem. A RD tem uma que o painel não tem: "Timing futuro".
+
+### 🔑 A peça que faltava: id da negociação, não do contato
+
+Até aqui o vínculo guardado era `external_id = rd_contact:<id>`. **Contato não anda no funil — quem anda é a negociação.** Foi preciso a coluna `rd_deal_id` e uma carga (`rd-vincular-deals`) cruzando por e-mail: **36 de 36 leads vinculados, nenhum sem negociação**. Quando a pessoa tem mais de uma negociação, fica a **mais recente** — é a que representa o momento atual dela no funil.
+
+### Como funciona
+
+- **Trigger no banco**, não na server action: `trg_lead_status_para_rd` (`after update of status`, com `when (old.status is distinct from new.status)`). Amarrar na action cobriria só a tela; no banco, **qualquer** caminho que mude o status espelha na RD — tela, SQL, código futuro, importação. O `WHEN` garante que salvar só a observação não gere chamada à RD.
+- **`rd_stage_map`**, tabela e não código: a tradução etapa→etapa é regra de negócio, muda por `UPDATE` sem deploy. Mesmo padrão de `partner_commission_config`.
+- **`rd-sync-status`** faz o `PUT /deals/{id}` movendo a etapa. Assíncrono via `pg_net`, com o resultado voltando em `leads.rd_sync_em` / `rd_sync_erro`.
+- **Falha fica visível na tela** — selo vermelho "⚠ não espelhado na RD". Lead dessincronizado em silêncio é exatamente o problema que essa feature existe pra evitar; engolir o erro seria pior que não ter a feature.
+
+### 🐛 O 422 que não era erro
+
+O alinhamento geral deu 35/36, com um **HTTP 422**. Em vez de chutar, foi capturado o corpo inteiro da resposta: a negociação **já estava na etapa de destino**, e a RD recusa mover para a etapa em que a negociação já está.
+
+Tratado como sucesso, não como falha — o destino desejado foi alcançado. E dá pra confirmar **sem gastar requisição extra**, porque o corpo do próprio 422 traz a negociação inteira, incluindo `deal_stage.id`. Sem esse tratamento, o alinhamento geral nunca convergiria e a tela viveria com alerta falso. Depois do fix: **36/36 sincronizados, 0 erros.**
+
+### Modos de operação
+
+`rd-sync-status` aceita `{leadId}` (o que o trigger usa), `{reprocessarFalhas:true}` (só quem está com erro) e `{todos:true}` (alinhamento geral — **sobrescreve a etapa na RD de todo lead**, usar com parcimônia).
+
+### ✅ Confirmações desta sessão
+
+- **O webhook da RD está funcionando de verdade:** entraram 4 leads em 05/ago sem intervenção, incluindo "Gisele Lopes Rosa", que apareceu sozinha na base. Base: **36 leads**.
+- Teste ponta a ponta: Roberta Leoni movida de `contatado` para `visita_agendada` no painel → negociação andou para "Visita agendada" na RD, `rd_sync_em` preenchido, sem erro.
+
+### 🐛 O buraco que apareceu no dia seguinte (06/ago) — lead novo não espelhava
+
+**Sintoma:** "Os leads não atualizaram no RD". E a primeira verificação, feita no dia anterior, **tinha dado 36/36 sincronizados** — porque eu conferi o lado errado.
+
+**Erro de método, vale registrar:** validei que a RD respondeu **HTTP 200** ao `PUT` e considerei sincronizado. Nunca **li de volta** da RD para confirmar que a etapa mudou de fato. `200 ≠ aplicado`. A checagem correta é comparar `leads.status` com `deal.deal_stage.id` lido da RD — foi assim que o problema real apareceu.
+
+**Causa raiz:** o webhook `crm_contact_created` entrega o **contato**, e nesse instante **a negociação pode nem existir na RD**. O lead entra sem `rd_deal_id`. O trigger de espelhamento tem `if new.rd_deal_id is null then return new` — pula **em silêncio**. A vinculação (`rd-vincular-deals`) tinha sido tratada como **carga única**, então todo lead que chegou depois ficou órfão.
+
+Números: a base foi de 36 para 43 leads; **7 chegaram pelo webhook sem `rd_deal_id`**. O fundador mudou o status deles no painel e nada foi para a RD. A RD estava com 8 em "Novo lead" quando o painel dizia 1.
+
+**Correções aplicadas:**
+1. Vinculados os 43 e empurrado o status — **confirmado lendo de volta da RD: 43/43 batem, 0 divergem** (RD: 1 "Novo lead", 42 "Contato realizado", idêntico ao painel).
+2. `rd-vincular-deals` passou a **espelhar o status logo após vincular**. Necessário porque `UPDATE` de `rd_deal_id` **não dispara o trigger** (que só escuta `update of status`) — sem isso o lead ficaria vinculado mas parado na etapa errada até alguém mexer no status de novo.
+3. **Dois cron jobs** (`pg_cron`), porque vincular tem que ser recorrente e não carga única:
+   - `rd-vincular-deals` a cada 15 min — pega quem chegou pelo webhook sem negociação.
+   - `rd-reprocessar-falhas-sync` aos minutos 7 e 37 — reprocessa quem ficou com `rd_sync_erro`. Separado de propósito: falha de rede na RD não deve travar a vinculação, e vice-versa.
+
+**Lição para a próxima integração:** trigger que sai silenciosamente num `if` (aqui, `rd_deal_id is null`) é um modo de falha invisível. Ou ele registra o motivo do pulo, ou precisa de uma rede que varra os pulados — foi o caminho escolhido.
+
+**⚠️ Pendências:** só `20260805_leads_sync_status_para_rd.sql` foi versionado; **as edge functions `rd-sync-status`, `rd-vincular-deals`, `rd-setup-webhook` e `rd-backfill` estão deployadas mas não estão no repo** — escrever em `supabase/functions/` na próxima sessão. `rd-probe` continua temporária e deve ser apagada. Typecheck do admin não rodou nesta sessão (sandbox de shell segue fora).
+
+## 26. Atendente do lead — Claudia, Igor e Guilherme (06/ago)
+
+Pedido do fundador: poder marcar quem está cuidando de cada lead.
+
+**Modelado como FK para `profiles`, não texto livre nem lista fixa em código.** Os três já existiam como perfis com acesso ao painel — Claudia Moraes (`team`), Igor Oliveira (`founder`) e Guilherme Pasquetti (`founder`), todos `is_admin = true`. O seletor lê `profiles where is_admin = true`, então **incluir uma quarta pessoa é conceder acesso ao painel, sem deploy**. Aproveita o decoupling `is_admin` × `user_type` feito em 21/jul.
+
+`on delete set null`: se o perfil sumir, o lead continua existindo sem dono. Perder o lead junto com o atendente seria muito pior que perder a atribuição.
+
+**🔍 Achado que fechou a questão do espelhamento: a RD tem UM único usuário.** `GET /users` devolveu só "Oli Health Hub" (`contato@olihealthhub.com.br`), e **as 43 negociações estão todas nele**. Não existe Claudia/Igor/Guilherme na RD. Decisão do fundador: **o atendente vive só no painel** — criar usuários lá custaria assento por pessoa. Se um dia mudarem de ideia, o caminho é `PUT /deals/{id}` com `user_id`, e aí sim faria sentido uma tabela de-para como a `rd_stage_map`.
+
+**Tela:**
+- Seletor no formulário, **primeiro campo** — antes da etapa. Definir dono vem antes de mexer no andamento.
+- Selo na coluna Situação com **nome curto** ("Claudia M.") — nome completo empurraria as outras colunas sem acrescentar informação.
+- **Sem dono aparece em âmbar, nunca some.** Lead sem atendente é o que mais corre risco de ficar parado; esconder seria o oposto do objetivo.
+- **Filtro por atendente**, em linha própria acima da tabela, com o chip "Sem atendente" **sempre visível mesmo zerado** — é a fila de trabalho.
+
+**Dois detalhes de filtro que só aparecem em uso real:**
+1. **Os contadores respeitam o outro filtro ativo.** Se você filtra por Claudia, o número no chip "Contatado" mostra quantos são da Claudia — senão o número não corresponde ao que a tabela mostra depois do clique.
+2. **Cada link preserva o outro filtro** (helper `href()`). Sem isso, clicar num chip de situação descartaria silenciosamente o atendente escolhido.
+
+**⚠️ Pendências:** migration aplicada via MCP e **ainda não versionada** em `supabase/functions`/`migrations` (junto com as outras de 05–06/ago); `database.types.ts` novamente **editado à mão** — o bloco `leads` estava defasado em 5 colunas (`fonte`, `rd_deal_id`, `rd_sync_em`, `rd_sync_erro`, `whatsapp` já nullable) e foi corrigido junto, mas regenerar de verdade quando houver shell. Typecheck não rodou.
 
 ## 13. Comandos úteis
 
