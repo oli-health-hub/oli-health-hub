@@ -51,22 +51,37 @@ export function linkWhatsApp(numeroBruto: string | null | undefined, texto: stri
     : `https://web.whatsapp.com/send?phone=${numero}&text=${msg}`;
 }
 
-/** Nome fixo da janela. É isto que faz o navegador REAPROVEITAR a aba em vez de
- *  empilhar uma nova a cada clique: `window.open` com um `target` nomeado
- *  navega a janela existente com aquele nome; só `_blank` é que abre outra
- *  sempre.
+/** Referência viva da aba do WhatsApp, guardada em memória do módulo.
  *
- *  Limite conhecido: só funciona para janelas abertas por esta própria página.
- *  Se o WhatsApp Web já estiver aberto numa aba que a pessoa abriu à mão, o
- *  navegador não deixa mirar nela — o primeiro clique vai abrir uma aba nossa,
- *  e daí em diante todos reaproveitam essa. */
-const JANELA_WHATSAPP = 'oli-whatsapp';
+ *  ⚠️ Por que NÃO dá para usar só um `target` nomeado no `window.open`:
+ *  nomear a janela ("oli-whatsapp") só reaproveita a aba enquanto ela estiver
+ *  no MESMO domínio. O painel e o web.whatsapp.com são domínios diferentes, e
+ *  os navegadores **apagam o nome da janela ao navegar entre origens** — é
+ *  proteção contra rastreamento entre sites. Resultado: a busca pelo nome
+ *  falhava e cada clique empilhava uma aba. Foi o que aconteceu na primeira
+ *  tentativa, em 07/ago.
+ *
+ *  Guardar a referência funciona porque três operações continuam permitidas
+ *  numa janela de outra origem: ler `.closed`, chamar `.focus()` e ESCREVER
+ *  em `.location.href`. Ler a URL dela, não — mas não precisamos. */
+let janelaWhats: Window | null = null;
 
-/** Abre a conversa reaproveitando a janela já aberta pelo painel. */
+/** Abre a conversa reaproveitando a aba que o painel já abriu.
+ *
+ *  Se a pessoa recarregar o painel, a referência se perde e o próximo clique
+ *  abre uma aba nova — daí em diante volta a reaproveitar. Não há como evitar:
+ *  a referência vive na memória da página. */
 export function abrirWhatsApp(numeroBruto: string | null | undefined, texto: string): void {
-  const janela = window.open(linkWhatsApp(numeroBruto, texto), JANELA_WHATSAPP);
-  // Reaproveitar a aba não a traz para a frente sozinho em todo navegador.
-  janela?.focus();
+  const url = linkWhatsApp(numeroBruto, texto);
+
+  if (janelaWhats && !janelaWhats.closed) {
+    janelaWhats.location.href = url;
+    janelaWhats.focus();
+    return;
+  }
+
+  janelaWhats = window.open(url, '_blank');
+  janelaWhats?.focus();
 }
 
 /** Primeira mensagem para um lead. Linguagem simples e sem jargão — quem lê é
