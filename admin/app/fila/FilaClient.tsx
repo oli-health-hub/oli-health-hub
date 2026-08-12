@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
 
-type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated';
+type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated' | 'lead_received';
 
 interface QueueItem {
   id:              string;
@@ -13,7 +13,7 @@ interface QueueItem {
   metadata:        Record<string, unknown>;
   created_at:      string;
   professional_id: string | null;
-  profiles:        { nome: string; crm: string | null; especialidade: string | null; plan: string | null } | null;
+  profiles:        { nome: string; crm: string | null; especialidade: string | null; plan: string | null; whatsapp: string | null } | null;
 }
 
 const TYPE_TAG: Record<NotifType, { label: string; color: string }> = {
@@ -22,6 +22,7 @@ const TYPE_TAG: Record<NotifType, { label: string; color: string }> = {
   module_activated: { label: 'Módulo ativado',   color: 'bg-yellow-50 text-yellow-700'    },
   plan_subscribed:  { label: 'Plano contratado', color: 'bg-blue-50 text-blue-700'        },
   plan_activated:   { label: 'Plano ativado',    color: 'bg-blue-50 text-blue-700'        },
+  lead_received:    { label: 'Novo lead',        color: 'bg-amber-50 text-amber-700'      },
 };
 
 function timeAgo(iso: string): string {
@@ -57,15 +58,47 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
     setItems(prev => prev.filter(n => n.id !== id));
   }
 
+  /** Monta o número no formato que o wa.me exige: só dígitos, com DDI.
+   *  Não dá pra prefixar 55 cegamente — telefone de lead vem da RD já como
+   *  "+5511950888026", e prefixar de novo geraria 555511950888026, ou seja,
+   *  abrir conversa com número inexistente.
+   *  Devolve null quando o número não dá pra confiar; nesse caso é melhor
+   *  abrir o WhatsApp sem destino do que mandar mensagem pra pessoa errada. */
+  function numeroWhatsApp(bruto: string | undefined | null): string | null {
+    if (!bruto) return null;
+    const d = bruto.replace(/\D/g, '');
+    if (d.startsWith('55') && d.length >= 12) return d;          // já tem DDI
+    if (d.length === 10 || d.length === 11)   return `55${d}`;   // DDD + número
+    return null;                                                  // incompleto
+  }
+
   function openWhatsApp(item: QueueItem) {
-    const nome = item.profiles?.nome ?? 'Médico';
-    const msg  = encodeURIComponent(`Olá, ${nome}! Sou do time OLI Health Hub. Vi que você ${item.type === 'new_signup' ? 'acabou de se cadastrar' : 'contratou um novo módulo'} e gostaria de ajudar com qualquer dúvida. 😊`);
-    const phone = (item.metadata?.phone as string | undefined) ?? '';
-    if (phone) {
-      window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
-    } else {
-      window.open(`https://wa.me/?text=${msg}`, '_blank');
-    }
+    // Lead não tem perfil no sistema — o nome vive no metadata. Sem isto o
+    // texto começava com "Olá, Médico!" na conversa com um lead.
+    const nome = item.profiles?.nome
+      ?? (item.metadata?.nome as string | undefined)
+      ?? 'tudo bem';
+
+    const texto = item.type === 'lead_received'
+      ? `Olá, ${nome}! Aqui é do OLI Health Hub. Vi que você demonstrou interesse nos nossos consultórios e queria entender melhor o que você precisa.`
+      : `Olá, ${nome}! Sou do time OLI Health Hub. Vi que você ${item.type === 'new_signup' ? 'acabou de se cadastrar' : 'contratou um novo módulo'} e gostaria de ajudar com qualquer dúvida.`;
+
+    const msg = encodeURIComponent(texto);
+
+    // Onde mora o telefone depende do tipo:
+    //   lead_received          → metadata.whatsapp (a única fonte que existe)
+    //   new_signup / módulo    → profiles.whatsapp (o metadata NUNCA teve
+    //                            telefone — 0 de 109 `new_signup` têm a chave)
+    // O código antigo lia só `metadata.phone`, chave que não existe em nenhum
+    // registro. Por isso o botão sempre caía no link genérico e abria a tela de
+    // escolher contato, em vez da conversa.
+    const numero = numeroWhatsApp(
+      (item.metadata?.whatsapp as string | undefined)
+      ?? item.profiles?.whatsapp
+      ?? (item.metadata?.phone as string | undefined),
+    );
+
+    window.open(numero ? `https://wa.me/${numero}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
   }
 
   if (items.length === 0) {

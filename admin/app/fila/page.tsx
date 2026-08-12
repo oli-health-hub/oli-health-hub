@@ -8,7 +8,10 @@ export default async function FilaPage() {
 
   const { data: notifications } = await supabase
     .from('admin_notifications')
-    .select('*, profiles(nome, crm, especialidade, plan)')
+    // `whatsapp` do perfil é o que faz o botão funcionar nas notificações de
+    // cadastro e módulo: o metadata delas nunca teve telefone (conferido — 0 de
+    // 109 `new_signup` têm a chave). Só lead traz número no próprio metadata.
+    .select('*, profiles(nome, crm, especialidade, plan, whatsapp)')
     .is('read_at', null)
     .order('created_at', { ascending: false })
     .limit(100);

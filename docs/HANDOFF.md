@@ -1268,7 +1268,35 @@ Pedido do fundador: poder marcar quem está cuidando de cada lead.
 1. **Os contadores respeitam o outro filtro ativo.** Se você filtra por Claudia, o número no chip "Contatado" mostra quantos são da Claudia — senão o número não corresponde ao que a tabela mostra depois do clique.
 2. **Cada link preserva o outro filtro** (helper `href()`). Sem isso, clicar num chip de situação descartaria silenciosamente o atendente escolhido.
 
-**⚠️ Pendências:** migration aplicada via MCP e **ainda não versionada** em `supabase/functions`/`migrations` (junto com as outras de 05–06/ago); `database.types.ts` novamente **editado à mão** — o bloco `leads` estava defasado em 5 colunas (`fonte`, `rd_deal_id`, `rd_sync_em`, `rd_sync_erro`, `whatsapp` já nullable) e foi corrigido junto, mas regenerar de verdade quando houver shell. Typecheck não rodou.
+**✅ Publicado — commit `f5f087c`, push em 07/ago.** Typecheck verde nos dois projetos (`admin` e raiz) antes do commit. Entraram as migrations de 04, 05 e 06/ago reconstituídas em arquivo, fechando o histórico do schema no repo.
+
+**⚠️ Pendências:** `database.types.ts` foi novamente **editado à mão** — o bloco `leads` estava defasado em 5 colunas (`fonte`, `rd_deal_id`, `rd_sync_em`, `rd_sync_erro`, e `whatsapp` que já era nullable); corrigido junto, mas regenerar de verdade quando houver shell. **As 5 edge functions seguem fora do repo** (item 29 do §11).
+
+**🧹 Higiene achada no commit:** `admin/tsconfig.tsbuildinfo` entrou junto — é **artefato de build do TypeScript**, regenerado a cada `tsc`. Versionado, vai sujar o diff de toda sessão e gerar conflito bobo. Adicionar ao `.gitignore` e remover do índice (`git rm --cached admin/tsconfig.tsbuildinfo`). Ficaram também soltos na raiz, não commitados: `resumo-matinal-2026-08-07.html` (artefato de brief matinal, não é do projeto), `.agents/`, `.codex/` e `AGENTS.md`.
+
+## 27. Botão do WhatsApp na Fila — nunca funcionou (07/ago)
+
+**Sintoma reportado:** o botão WhatsApp na Fila abre a tela de "escolher contato" em vez da conversa com o lead.
+
+**Causa:** `FilaClient.openWhatsApp()` lia `item.metadata.phone`. **Essa chave não existe em nenhum registro** — conferido no banco: de 159 notificações, **0 têm `phone`**. Sem número, o código caía no `https://wa.me/?text=...`, que é exatamente o link "abrir WhatsApp sem destino". Ou seja, **o botão nunca funcionou para nenhum tipo de notificação**, não só para leads — o defeito só ficou visível agora porque a Fila encheu de lead.
+
+**Onde o telefone realmente está:**
+| Tipo | Fonte do telefone |
+|---|---|
+| `lead_received` (37) | `metadata.whatsapp` |
+| `new_signup` (109), módulos, planos | `profiles.whatsapp` (join) — o metadata nunca teve |
+
+`fila/page.tsx` passou a trazer `whatsapp` no join de `profiles`; `openWhatsApp` lê `metadata.whatsapp` → `profiles.whatsapp` → `metadata.phone` (mantido por segurança).
+
+**🐛 Segundo bug, que teria trocado o defeito por outro pior:** o código montava `wa.me/55${digitos}` — prefixando o DDI **cegamente**. O telefone de lead vem da RD já como `+5511950888026`; prefixar de novo daria `555511950888026`. Consertar só a leitura da chave abriria conversa com **número inexistente** — falha mais difícil de perceber que a atual. Agora há `numeroWhatsApp()`: usa como está se já começa com 55 e tem 12+ dígitos, prefixa 55 se tiver 10-11, e **devolve nulo se não der pra confiar** — melhor abrir sem destino do que mandar mensagem para a pessoa errada.
+
+**Mais dois achados no mesmo caminho:**
+- **Título "Novo lead novo: Cintia".** A origem `rd_station` foi criada **depois** de `notify_lead_created()` e nunca entrou no `CASE`, caindo no `ELSE 'novo'`. Corrigida a função e feito `UPDATE` nos títulos já gravados.
+- **`body` da notificação virava nulo para lead sem telefone.** Era `NEW.whatsapp || ' · ' || NEW.email` — em SQL, concatenar com `NULL` zera a string inteira. Desde que `whatsapp` virou opcional (§24), lead de Google Ads gravava corpo vazio. Resolvido com `coalesce`.
+- **Texto da mensagem.** Dizia "Olá, Médico!" para lead (não há perfil ligado, então `profiles.nome` era nulo) e afirmava que a pessoa "acabou de se cadastrar". Agora lead tem texto próprio, com o nome vindo de `metadata.nome`.
+- `lead_received` entrou em `NotifType`/`TYPE_TAG` — a tag mostrava a string crua `lead_received`.
+
+**Lição:** o fallback `wa.me/?text=` mascarou o defeito por meses. Fallback silencioso que "quase funciona" esconde bug melhor do que erro na cara.
 
 ## 13. Comandos úteis
 
