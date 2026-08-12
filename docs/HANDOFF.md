@@ -1298,6 +1298,23 @@ Pedido do fundador: poder marcar quem está cuidando de cada lead.
 
 **Lição:** o fallback `wa.me/?text=` mascarou o defeito por meses. Fallback silencioso que "quase funciona" esconde bug melhor do que erro na cara.
 
+### Abrir na mesma plataforma do painel (07/ago)
+
+O fundador usa **mais de uma conta de WhatsApp no computador** e perguntou como escolher qual envia.
+
+**Não existe parâmetro de conta no link** — confirmado em pesquisa, o WhatsApp não expõe isso. O link só diz "abra conversa com este número"; quem envia é a conta da superfície que abrir. O que dá para controlar é **qual superfície abre**.
+
+Decisão dele: abrir na mesma plataforma em que o painel está sendo usado. Implementado em `linkWhatsApp()`:
+
+| Onde o painel está aberto | Link usado | Por quê |
+|---|---|---|
+| Computador | `web.whatsapp.com/send?phone=` | Abre no **mesmo navegador e mesmo perfil** do painel, então a conta é a daquele perfil. Com `wa.me`, o sistema sequestrava o link para o app desktop, possivelmente logado em outro número. |
+| Celular | `wa.me/` | Caminho certo para o aparelho abrir o app nativo. Forçar o Web ali pioraria a experiência. |
+
+Detecção simples por user agent (`Android|iPhone|iPad|iPod`) — suficiente aqui, sem biblioteca.
+
+**⚠️ Isto controla qual aplicativo abre, não qual número envia.** Quem quiser garantir que a mensagem saia do número do OLI precisa abrir o painel no perfil de navegador logado nessa conta. Foi dito ao fundador; ele optou por este caminho em vez de um seletor por pessoa, que resolveria menos (escolheria o app, não a conta) e custaria mais.
+
 ## 13. Comandos úteis
 
 ```bash

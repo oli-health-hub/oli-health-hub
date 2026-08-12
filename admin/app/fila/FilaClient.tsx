@@ -72,6 +72,31 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
     return null;                                                  // incompleto
   }
 
+  /** Abre a conversa na mesma plataforma em que o painel está sendo usado.
+   *
+   *  No COMPUTADOR usa o WhatsApp Web, de propósito: assim a conversa abre no
+   *  mesmo navegador e no mesmo perfil onde o painel está aberto — e a conta
+   *  que envia é a daquele perfil. Com `wa.me`, o sistema operacional
+   *  sequestrava o link para o aplicativo desktop, que pode estar logado em
+   *  outro número. Quem usa mais de um WhatsApp não tinha como escolher.
+   *
+   *  No CELULAR mantém `wa.me`, que é o caminho certo para o aparelho abrir o
+   *  aplicativo nativo. Forçar o Web ali daria uma experiência pior.
+   *
+   *  Ressalva honesta: isto controla QUAL APLICATIVO abre, não qual número
+   *  envia. Não existe parâmetro de conta no link — o WhatsApp não expõe isso.
+   *  O controle real vem de abrir o painel no perfil de navegador logado na
+   *  conta certa. */
+  function linkWhatsApp(numero: string | null, msg: string): string {
+    const noCelular = typeof navigator !== 'undefined'
+      && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (!numero) return noCelular ? `https://wa.me/?text=${msg}` : `https://web.whatsapp.com/send?text=${msg}`;
+    return noCelular
+      ? `https://wa.me/${numero}?text=${msg}`
+      : `https://web.whatsapp.com/send?phone=${numero}&text=${msg}`;
+  }
+
   function openWhatsApp(item: QueueItem) {
     // Lead não tem perfil no sistema — o nome vive no metadata. Sem isto o
     // texto começava com "Olá, Médico!" na conversa com um lead.
@@ -98,7 +123,7 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
       ?? (item.metadata?.phone as string | undefined),
     );
 
-    window.open(numero ? `https://wa.me/${numero}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
+    window.open(linkWhatsApp(numero, msg), '_blank');
   }
 
   if (items.length === 0) {
