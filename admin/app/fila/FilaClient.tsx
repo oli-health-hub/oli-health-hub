@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
+import { linkWhatsApp, mensagemLead } from '@/lib/whatsapp';
 
 type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated' | 'lead_received';
 
@@ -58,72 +59,28 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
     setItems(prev => prev.filter(n => n.id !== id));
   }
 
-  /** Monta o número no formato que o wa.me exige: só dígitos, com DDI.
-   *  Não dá pra prefixar 55 cegamente — telefone de lead vem da RD já como
-   *  "+5511950888026", e prefixar de novo geraria 555511950888026, ou seja,
-   *  abrir conversa com número inexistente.
-   *  Devolve null quando o número não dá pra confiar; nesse caso é melhor
-   *  abrir o WhatsApp sem destino do que mandar mensagem pra pessoa errada. */
-  function numeroWhatsApp(bruto: string | undefined | null): string | null {
-    if (!bruto) return null;
-    const d = bruto.replace(/\D/g, '');
-    if (d.startsWith('55') && d.length >= 12) return d;          // já tem DDI
-    if (d.length === 10 || d.length === 11)   return `55${d}`;   // DDD + número
-    return null;                                                  // incompleto
-  }
-
-  /** Abre a conversa na mesma plataforma em que o painel está sendo usado.
-   *
-   *  No COMPUTADOR usa o WhatsApp Web, de propósito: assim a conversa abre no
-   *  mesmo navegador e no mesmo perfil onde o painel está aberto — e a conta
-   *  que envia é a daquele perfil. Com `wa.me`, o sistema operacional
-   *  sequestrava o link para o aplicativo desktop, que pode estar logado em
-   *  outro número. Quem usa mais de um WhatsApp não tinha como escolher.
-   *
-   *  No CELULAR mantém `wa.me`, que é o caminho certo para o aparelho abrir o
-   *  aplicativo nativo. Forçar o Web ali daria uma experiência pior.
-   *
-   *  Ressalva honesta: isto controla QUAL APLICATIVO abre, não qual número
-   *  envia. Não existe parâmetro de conta no link — o WhatsApp não expõe isso.
-   *  O controle real vem de abrir o painel no perfil de navegador logado na
-   *  conta certa. */
-  function linkWhatsApp(numero: string | null, msg: string): string {
-    const noCelular = typeof navigator !== 'undefined'
-      && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (!numero) return noCelular ? `https://wa.me/?text=${msg}` : `https://web.whatsapp.com/send?text=${msg}`;
-    return noCelular
-      ? `https://wa.me/${numero}?text=${msg}`
-      : `https://web.whatsapp.com/send?phone=${numero}&text=${msg}`;
-  }
-
   function openWhatsApp(item: QueueItem) {
     // Lead não tem perfil no sistema — o nome vive no metadata. Sem isto o
     // texto começava com "Olá, Médico!" na conversa com um lead.
-    const nome = item.profiles?.nome
-      ?? (item.metadata?.nome as string | undefined)
-      ?? 'tudo bem';
+    const nome = item.profiles?.nome ?? (item.metadata?.nome as string | undefined);
 
     const texto = item.type === 'lead_received'
-      ? `Olá, ${nome}! Aqui é do OLI Health Hub. Vi que você demonstrou interesse nos nossos consultórios e queria entender melhor o que você precisa.`
-      : `Olá, ${nome}! Sou do time OLI Health Hub. Vi que você ${item.type === 'new_signup' ? 'acabou de se cadastrar' : 'contratou um novo módulo'} e gostaria de ajudar com qualquer dúvida.`;
-
-    const msg = encodeURIComponent(texto);
+      ? mensagemLead(nome)
+      : `Olá, ${nome ?? 'tudo bem'}! Sou do time OLI Health Hub. Vi que você ${item.type === 'new_signup' ? 'acabou de se cadastrar' : 'contratou um novo módulo'} e gostaria de ajudar com qualquer dúvida.`;
 
     // Onde mora o telefone depende do tipo:
-    //   lead_received          → metadata.whatsapp (a única fonte que existe)
-    //   new_signup / módulo    → profiles.whatsapp (o metadata NUNCA teve
-    //                            telefone — 0 de 109 `new_signup` têm a chave)
-    // O código antigo lia só `metadata.phone`, chave que não existe em nenhum
-    // registro. Por isso o botão sempre caía no link genérico e abria a tela de
-    // escolher contato, em vez da conversa.
-    const numero = numeroWhatsApp(
-      (item.metadata?.whatsapp as string | undefined)
+    //   lead_received       → metadata.whatsapp (a única fonte que existe)
+    //   new_signup / módulo → profiles.whatsapp (o metadata NUNCA teve
+    //                         telefone — 0 de 109 `new_signup` têm a chave)
+    // O código antigo lia só `metadata.phone`, chave inexistente em qualquer
+    // registro. Por isso o botão sempre caía no link genérico e abria a tela
+    // de escolher contato em vez da conversa.
+    const numero = (item.metadata?.whatsapp as string | undefined)
       ?? item.profiles?.whatsapp
-      ?? (item.metadata?.phone as string | undefined),
-    );
+      ?? (item.metadata?.phone as string | undefined)
+      ?? null;
 
-    window.open(linkWhatsApp(numero, msg), '_blank');
+    window.open(linkWhatsApp(numero, texto), '_blank');
   }
 
   if (items.length === 0) {

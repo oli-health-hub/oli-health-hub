@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { updateLead } from '@/app/actions';
+import BotaoWhatsApp from '@/components/BotaoWhatsApp';
+import { mensagemLead } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -275,6 +277,11 @@ export default async function LeadsPage({
                       ? <p className="text-xs text-gray-400">{lead.whatsapp}</p>
                       : <p className="text-xs text-amber-600 font-medium">sem telefone — falar por e-mail</p>}
                     <p className="text-xs text-gray-400">{lead.email}</p>
+                    {/* O botão some sozinho quando não há número utilizável —
+                        oferecer e abrir o WhatsApp sem destino pareceria defeito. */}
+                    <div className="mt-1.5">
+                      <BotaoWhatsApp numero={lead.whatsapp} texto={mensagemLead(lead.nome)} tamanho="pequeno" />
+                    </div>
                   </td>
                   <td className="px-4 py-3">{lead.especialidade ?? '—'}</td>
                   <td className="px-4 py-3">

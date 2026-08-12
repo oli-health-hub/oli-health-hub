@@ -1315,6 +1315,18 @@ Detecção simples por user agent (`Android|iPhone|iPad|iPod`) — suficiente aq
 
 **⚠️ Isto controla qual aplicativo abre, não qual número envia.** Quem quiser garantir que a mensagem saia do número do OLI precisa abrir o painel no perfil de navegador logado nessa conta. Foi dito ao fundador; ele optou por este caminho em vez de um seletor por pessoa, que resolveria menos (escolheria o app, não a conta) e custaria mais.
 
+### Botão também na tela de Leads + baixa automática na Fila (07/ago)
+
+**Lógica do WhatsApp extraída para `admin/lib/whatsapp.ts`** (`numeroWhatsApp`, `linkWhatsApp`, `mensagemLead`) + componente `admin/components/BotaoWhatsApp.tsx`. **Motivo explícito:** duplicar a lógica na tela de Leads recriaria exatamente a condição que gerou o bug de hoje — duas cópias, uma consertada e a outra não. A Fila foi migrada para a fonte única no mesmo passo.
+
+O botão **some sozinho quando não há número utilizável** (`numeroWhatsApp` devolve nulo). Oferecer o botão e abrir o WhatsApp sem destino pareceria defeito — e é o comportamento que o fundador reportou hoje de manhã.
+
+**Lead trabalhado sai da Fila.** A Fila lista `admin_notifications` com `read_at is null`; lead já contatado continuava lá e a fila só crescia — **76 itens** quando isto foi escrito. Novo trigger `trg_lead_trabalhado_sai_da_fila`: ao sair de `novo`, a notificação daquele lead é marcada como lida. Qualquer etapa dá baixa, inclusive `descartado` — descartar também é trabalhar. **Só dá baixa, nunca ressuscita:** voltar o status para `novo` não faz o item reaparecer, senão a fila vira ioiô.
+
+Feita limpeza retroativa do que já estava trabalhado. Resultado conferido: fila de **76 → 54**, sendo **16 notificações de lead abertas para exatamente 16 leads em `novo`**, e nenhuma notificação órfã (apontando para lead inexistente).
+
+**📈 Sinal de que a integração está funcionando:** a base foi de 43 para **60 leads** entre 06 e 07/ago, tudo entrando sozinho pelo webhook da RD.
+
 ## 13. Comandos úteis
 
 ```bash
