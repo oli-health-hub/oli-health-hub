@@ -1,6 +1,6 @@
 'use client';
 
-import { linkWhatsApp, numeroWhatsApp } from '@/lib/whatsapp';
+import { abrirWhatsApp, numeroWhatsApp } from '@/lib/whatsapp';
 
 /**
  * Botão que abre a conversa do WhatsApp já com o número e o texto prontos.
@@ -29,7 +29,7 @@ export default function BotaoWhatsApp({
   return (
     <button
       type="button"
-      onClick={() => window.open(linkWhatsApp(numero, texto), '_blank')}
+      onClick={() => abrirWhatsApp(numero, texto)}
       className={`bg-[#25D366] text-white font-semibold rounded-lg hover:opacity-90 transition-opacity ${classe}`}
     >
       WhatsApp

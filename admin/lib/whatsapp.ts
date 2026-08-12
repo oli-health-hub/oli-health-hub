@@ -51,6 +51,24 @@ export function linkWhatsApp(numeroBruto: string | null | undefined, texto: stri
     : `https://web.whatsapp.com/send?phone=${numero}&text=${msg}`;
 }
 
+/** Nome fixo da janela. É isto que faz o navegador REAPROVEITAR a aba em vez de
+ *  empilhar uma nova a cada clique: `window.open` com um `target` nomeado
+ *  navega a janela existente com aquele nome; só `_blank` é que abre outra
+ *  sempre.
+ *
+ *  Limite conhecido: só funciona para janelas abertas por esta própria página.
+ *  Se o WhatsApp Web já estiver aberto numa aba que a pessoa abriu à mão, o
+ *  navegador não deixa mirar nela — o primeiro clique vai abrir uma aba nossa,
+ *  e daí em diante todos reaproveitam essa. */
+const JANELA_WHATSAPP = 'oli-whatsapp';
+
+/** Abre a conversa reaproveitando a janela já aberta pelo painel. */
+export function abrirWhatsApp(numeroBruto: string | null | undefined, texto: string): void {
+  const janela = window.open(linkWhatsApp(numeroBruto, texto), JANELA_WHATSAPP);
+  // Reaproveitar a aba não a traz para a frente sozinho em todo navegador.
+  janela?.focus();
+}
+
 /** Primeira mensagem para um lead. Linguagem simples e sem jargão — quem lê é
  *  a pessoa, não a equipe. */
 export function mensagemLead(nome: string | null | undefined): string {

@@ -1327,6 +1327,10 @@ Feita limpeza retroativa do que já estava trabalhado. Resultado conferido: fila
 
 **📈 Sinal de que a integração está funcionando:** a base foi de 43 para **60 leads** entre 06 e 07/ago, tudo entrando sozinho pelo webhook da RD.
 
+**Reaproveitar a aba do WhatsApp.** Cada clique abria uma aba nova, porque `window.open(url, '_blank')` sempre cria janela. Trocado por um **`target` nomeado** (`oli-whatsapp`): o navegador navega a janela existente com aquele nome em vez de empilhar outra. Centralizado em `abrirWhatsApp()` no `lib/whatsapp.ts`, com `focus()` porque reaproveitar a aba não a traz para a frente sozinho em todo navegador.
+
+**Limite honesto, dito ao fundador:** só funciona para janelas abertas **pelo próprio painel**. Se o WhatsApp Web já estiver numa aba que a pessoa abriu à mão, o navegador não permite mirar nela — o primeiro clique abre uma aba nossa e todos os seguintes reaproveitam essa. Não existe API que permita sequestrar aba de terceiros; é restrição do navegador, não escolha de implementação.
+
 ## 13. Comandos úteis
 
 ```bash

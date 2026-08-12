@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
-import { linkWhatsApp, mensagemLead } from '@/lib/whatsapp';
+import { abrirWhatsApp, mensagemLead } from '@/lib/whatsapp';
 
 type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated' | 'lead_received';
 
@@ -80,7 +80,7 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
       ?? (item.metadata?.phone as string | undefined)
       ?? null;
 
-    window.open(linkWhatsApp(numero, texto), '_blank');
+    abrirWhatsApp(numero, texto);
   }
 
   if (items.length === 0) {
