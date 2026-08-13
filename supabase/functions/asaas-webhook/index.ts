@@ -145,19 +145,20 @@ Deno.serve(async (req: Request) => {
     if (userId && packageId) {
       const { data: pkg } = await supabase
         .from('hour_packages')
-        .select('horas, validade_dias')
+        .select('horas, bonus_horas, validade_dias')
         .eq('id', packageId)
         .maybeSingle();
 
       if (pkg) {
         const expiraEm = new Date();
         expiraEm.setDate(expiraEm.getDate() + (pkg.validade_dias ?? 365));
+        const horasTotais = pkg.horas + (pkg.bonus_horas ?? 0);
 
         await Promise.all([
           supabase.from('hour_balance').insert({
             professional_id: userId,
             package_id:      packageId,
-            minutos_total:   pkg.horas * 60,
+            minutos_total:   horasTotais * 60,
             minutos_usados:  0,
             expira_em:       expiraEm.toISOString(),
             asaas_charge_id: paymentId,
@@ -166,13 +167,13 @@ Deno.serve(async (req: Request) => {
           supabase.from('admin_notifications').insert({
             type:            'hour_package_activated',
             professional_id: userId,
-            title:           `Pacote de horas ativado: ${pkg.horas}h`,
-            body:            `Pacote de ${pkg.horas}h ativado via pagamento confirmado`,
-            metadata:        { package_id: packageId, payment_id: paymentId, horas: pkg.horas },
+            title:           `Pacote de horas ativado: ${horasTotais}h`,
+            body:            `Pacote de ${pkg.horas}h + ${pkg.bonus_horas ?? 0}h bônus ativado via pagamento confirmado`,
+            metadata:        { package_id: packageId, payment_id: paymentId, horas: pkg.horas, bonus_horas: pkg.bonus_horas ?? 0 },
           }),
         ]);
 
-        console.log(`[webhook] pacote ${packageId} ativado — profissional ${userId} — ${pkg.horas}h`);
+        console.log(`[webhook] pacote ${packageId} ativado — profissional ${userId} — ${horasTotais}h (${pkg.horas}h + ${pkg.bonus_horas ?? 0}h bônus)`);
         return new Response('ok', { status: 200 });
       }
     }
