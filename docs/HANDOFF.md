@@ -1345,9 +1345,11 @@ Cada clique empilhava uma aba, porque `window.open(url, '_blank')` sempre cria j
 
 **Diagnóstico rodado em produção** (comparando `hour_balance` × `hour_packages` onde `minutos_total == horas*60` num pacote com bônus > 0): **0 registros afetados**. Nenhum médico comprou pacote com bônus via Asaas até agora — sem necessidade de backfill.
 
-**Fix:** `select` passa a trazer `bonus_horas`; `minutos_total = (horas + bonus_horas) * 60`. Notificação admin e log também refletem o total real. Deployado direto via Supabase MCP (função v22, ACTIVE) e depois commitado/PR aberta pra registrar no git — branch de sessão (`claude/relaxed-bouman-d3f4be`) tinha sido criada a partir de um ponto de ~3 semanas atrás (mesmo commit do evento Luma co-hosted) e nunca rebasada, então precisou `git fetch` + comparar contra `origin/main` antes de confirmar o merge. PR #10.
+**Fix:** `select` passa a trazer `bonus_horas`; `minutos_total = (horas + bonus_horas) * 60`. Notificação admin e log também refletem o total real. Deployado direto via Supabase MCP (função v22, ACTIVE) e depois commitado — branch de sessão (`claude/relaxed-bouman-d3f4be`) tinha sido criada a partir de um ponto de ~3 semanas atrás (mesmo commit do evento Luma co-hosted) e nunca rebasada. **PR #10 aberta e mergeada em `main`.**
 
 **Lição:** ao editar uma edge function direto pelo MCP (comum quando a mudança é urgente), sempre commitar o arquivo local em seguida no mesmo turno — senão o git fica divergente do que está rodando em produção e a próxima sessão não sabe que o fix existe.
+
+**Lição de merge:** 1ª tentativa de merge falhou por conflito no próprio `HANDOFF.md`, mesmo o conteúdo sendo idêntico — o arquivo tinha sido atualizado via `cp` (cópia inteira da versão de main + edições) em vez de editado incrementalmente, então o git via dois diffs grandes e divergentes a partir do mesmo ancestral em vez de reconhecer que eram o mesmo texto. Resolvido com `git reset --hard origin/main` + `cherry-pick` do commit do fix (esse sim aplicou limpo, por ser mudança pequena e isolada) + reaplicação manual das duas edições no handoff (data + §28) direto em cima do conteúdo real de main, depois `push --force-with-lease`. Vale pra qualquer sessão futura que sincronizar um doc grande contra uma branch atrasada: editar incremental, nunca sobrescrever o arquivo inteiro por cópia.
 
 ## 13. Comandos úteis
 
