@@ -74,7 +74,7 @@ export default function PlanCheckoutModal({
   onSuccess?: () => void;
   planId:    string;
   planName:  string;
-  ciclo:     'MONTHLY' | 'YEARLY';
+  ciclo:     'MONTHLY' | 'SEMESTRAL' | 'YEARLY';
   value:     number;
 }) {
   const user = useAuthStore((s) => s.user);
@@ -195,7 +195,7 @@ export default function PlanCheckoutModal({
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const cicloLabel = ciclo === 'YEARLY' ? 'Anual' : 'Mensal';
+  const cicloLabel = ciclo === 'YEARLY' ? 'Anual' : ciclo === 'SEMESTRAL' ? 'Semestral (fidelidade 6 meses)' : 'Mensal';
   const valueLabel = `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   return (

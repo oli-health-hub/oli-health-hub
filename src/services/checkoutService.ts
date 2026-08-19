@@ -97,7 +97,7 @@ export async function createModuleCharge(
 /** Cria assinatura recorrente no Asaas para contratação de plano */
 export async function createPlanSubscription(
   planId:      string,
-  ciclo:       'MONTHLY' | 'YEARLY' = 'MONTHLY',
+  ciclo:       'MONTHLY' | 'SEMESTRAL' | 'YEARLY' = 'MONTHLY',
   billingType: BillingType = 'CREDIT_CARD',
   cpfCnpj?:   string,
   couponCode?: string,

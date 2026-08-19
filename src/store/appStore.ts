@@ -337,6 +337,7 @@ export const useAppStore = create<AppStore>((set, get) => {
             professionalId,
             reservationId:     target.id,
             plan:              userPlan,
+            taxaMinOverride:   useAuthStore.getState().profile?.taxa_min_congelada,
             startedAt,
             endedAt:           target.consultationEndedAt ?? now,
             scheduledEndTime:  target.endTime,   // excedente cobrado em blocos de 30 min
@@ -434,8 +435,13 @@ export function getElapsedSeconds(sessionStartTime: Date | null): number {
   return Math.floor((Date.now() - sessionStartTime.getTime()) / 1000);
 }
 
-export function getCurrentCost(plan: PlanType, sessionStartTime: Date | null): number {
-  return (getElapsedSeconds(sessionStartTime) / 60) * COST_PER_MINUTE[plan];
+export function getCurrentCost(
+  plan: PlanType,
+  sessionStartTime: Date | null,
+  rateOverride?: number | null,
+): number {
+  const taxaMin = rateOverride ?? COST_PER_MINUTE[plan];
+  return (getElapsedSeconds(sessionStartTime) / 60) * taxaMin;
 }
 
 export function getTimerPhase(

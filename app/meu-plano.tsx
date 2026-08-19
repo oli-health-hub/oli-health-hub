@@ -1,7 +1,8 @@
 /**
  * Tela: Meu Plano
  * Cards clicáveis → expande lista de benefícios (incluso / bloqueado).
- * Ciclos: START sem assinatura | BASE mensal ou anual | PRO anual | VIP em breve
+ * Ciclos: START sem assinatura | PRO mensal ou semestral (fidelidade 6 meses)
+ * BASE e VIP não aparecem aqui (desativado / em estruturação — §29, 13/ago).
  */
 
 import { useEffect, useState } from 'react';
@@ -26,17 +27,19 @@ import type { PlanType } from '../src/models/types';
 // DADOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PLAN_ORDER: PlanType[] = ['START', 'BASE', 'PRO', 'VIP'];
+// BASE e VIP não aparecem mais na vitrine (§29, 13/ago) — desativado /
+// em estruturação. PLAN_ORDER e PLANS só têm os 2 planos ativos.
+const PLAN_ORDER: PlanType[] = ['START', 'PRO'];
 
 interface PlanMeta {
   id:        string | null; // null → plano gratuito, sem checkout
   name:      PlanType;
   price:     number;         // mensalidade (0 = gratuito)
-  taxaMin:   number;         // R$/min (0 = em estruturação)
+  taxaMin:   number;         // R$/min
   color:     string;
-  hasCiclo:  boolean;        // true → BASE pode escolher mensal/anual
-  forceAnual:boolean;        // true → PRO/VIP: apenas anual
-  available: boolean;        // false → VIP em breve
+  hasCiclo:  boolean;        // true → escolhe mensal/semestral
+  precoSemestral?: number;   // valor mensal do ciclo semestral (fidelidade 6 meses)
+  available: boolean;
 }
 
 const PLANS: PlanMeta[] = [
@@ -44,41 +47,20 @@ const PLANS: PlanMeta[] = [
     id:         null,
     name:       'START',
     price:      0,
-    taxaMin:    2.00,
+    taxaMin:    1.90,
     color:      colors.oliLightGray,
     hasCiclo:   false,
-    forceAnual: false,
-    available:  true,
-  },
-  {
-    id:         'e841ade4-4616-4e27-b84f-8e79fec3d98e',
-    name:       'BASE',
-    price:      299,
-    taxaMin:    1.50,
-    color:      colors.oliGreen,
-    hasCiclo:   true,
-    forceAnual: false,
     available:  true,
   },
   {
     id:         '19fcea22-4f61-4a5f-a80e-f120144ac54e',
     name:       'PRO',
     price:      599,
-    taxaMin:    1.30,
+    taxaMin:    1.45,
     color:      colors.oliGold,
-    hasCiclo:   false,
-    forceAnual: true,
+    hasCiclo:   true,
+    precoSemestral: 499,
     available:  true,
-  },
-  {
-    id:         '3025dbde-f713-4b70-8e7d-b62c14f69748',
-    name:       'VIP',
-    price:      0,
-    taxaMin:    0,
-    color:      '#7B6EA8',
-    hasCiclo:   false,
-    forceAnual: true,
-    available:  false,   // Em estruturação
   },
 ];
 
@@ -150,23 +132,12 @@ export const FEATURES: Feature[] = [
     plans:    { START: 'no', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
   },
   {
-    label:    'Diagnóstico Convênios/Carreira — AR Soluções',
-    detail:   '1 sessão de avaliação inclusa',
-    category: 'DIAGNÓSTICOS COM PARCEIROS',
-    plans:    { START: 'no', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
-  },
-  {
     label:    'Diagnóstico Jurídico — Dra. Ana',
     detail:   '1 sessão de avaliação inclusa',
     category: 'DIAGNÓSTICOS COM PARCEIROS',
     plans:    { START: 'no', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
   },
   // ── GESTÃO PRO ──
-  {
-    label:    'CRM Communicare — Plano Básico incluso',
-    category: 'GESTÃO PRO',
-    plans:    { START: 'no', BASE: 'no', PRO: 'yes', VIP: 'yes' },
-  },
   {
     label:    'Gestão de agenda pela recepção OLI',
     category: 'GESTÃO PRO',
@@ -370,9 +341,9 @@ export default function MeuPlanoScreen() {
   const router = useRouter();
 
   const [expandedPlan, setExpandedPlan] = useState<PlanType>(userPlan);
-  // Ciclo só se aplica ao BASE
-  const [baseCiclo, setBaseCiclo] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
-  const [checkoutTarget, setCheckoutTarget] = useState<{ plan: PlanMeta; ciclo: 'MONTHLY' | 'YEARLY' } | null>(null);
+  // Ciclo só se aplica a planos com hasCiclo (hoje: PRO)
+  const [selectedCiclo, setSelectedCiclo] = useState<'MONTHLY' | 'SEMESTRAL'>('MONTHLY');
+  const [checkoutTarget, setCheckoutTarget] = useState<{ plan: PlanMeta; ciclo: 'MONTHLY' | 'SEMESTRAL'; value: number } | null>(null);
   const [trialTarget,    setTrialTarget]    = useState<PlanMeta | null>(null);
   const [trialLoading,   setTrialLoading]   = useState(false);
 
@@ -387,9 +358,15 @@ export default function MeuPlanoScreen() {
     setExpandedPlan(prev => (prev === name ? prev : name));
   };
 
+  // Preço exibido (cabeçalho + detalhe) já reflete o ciclo escolhido —
+  // evita mostrar 599 fixo com o 499 só numa nota abaixo.
+  const activePrice = (plan: PlanMeta) =>
+    plan.hasCiclo && selectedCiclo === 'SEMESTRAL' ? (plan.precoSemestral ?? plan.price) : plan.price;
+
   const handleAssinar = (plan: PlanMeta) => {
-    const ciclo = plan.forceAnual ? 'YEARLY' : baseCiclo;
-    setCheckoutTarget({ plan, ciclo });
+    const ciclo = plan.hasCiclo ? selectedCiclo : 'MONTHLY';
+    const value = activePrice(plan);
+    setCheckoutTarget({ plan, ciclo, value });
   };
 
   const handleActivateTrial = async () => {
@@ -493,9 +470,9 @@ export default function MeuPlanoScreen() {
                   {/* Preço / taxa */}
                   {plan.available ? (
                     <Text style={styles.planPriceHint}>
-                      {plan.price === 0
+                      {activePrice(plan) === 0
                         ? 'Gratuito'
-                        : `${formatCurrency(plan.price)}/mês`}
+                        : `${formatCurrency(activePrice(plan))}/mês`}
                       {' · '}
                       {taxaLabel(plan.taxaMin)}
                     </Text>
@@ -520,9 +497,9 @@ export default function MeuPlanoScreen() {
                   {/* Preço grande */}
                   <View style={styles.priceSection}>
                     <View style={styles.priceRow}>
-                      {plan.price > 0 ? (
+                      {activePrice(plan) > 0 ? (
                         <>
-                          <Text style={styles.priceValue}>{formatCurrency(plan.price)}</Text>
+                          <Text style={styles.priceValue}>{formatCurrency(activePrice(plan))}</Text>
                           <Text style={styles.pricePeriod}>/mês</Text>
                         </>
                       ) : (
@@ -532,54 +509,38 @@ export default function MeuPlanoScreen() {
 
                     <Text style={styles.taxaRow}>{taxaLabel(plan.taxaMin)}</Text>
 
-                    {/* Ciclo selector — só BASE */}
+                    {/* Ciclo selector — planos com hasCiclo (hoje: PRO) */}
                     {plan.hasCiclo && (
                       <View style={styles.cicloRow}>
                         <TouchableOpacity
-                          style={[styles.cicloBtn, baseCiclo === 'MONTHLY' && { backgroundColor: plan.color }]}
-                          onPress={() => setBaseCiclo('MONTHLY')}
+                          style={[styles.cicloBtn, selectedCiclo === 'MONTHLY' && { backgroundColor: plan.color }]}
+                          onPress={() => setSelectedCiclo('MONTHLY')}
                           accessibilityLabel="Assinatura mensal"
                         >
-                          <Text style={[styles.cicloBtnText, baseCiclo === 'MONTHLY' && styles.cicloBtnTextActive]}>
+                          <Text style={[styles.cicloBtnText, selectedCiclo === 'MONTHLY' && styles.cicloBtnTextActive]}>
                             Mensal
                           </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.cicloBtn, baseCiclo === 'YEARLY' && { backgroundColor: plan.color }]}
-                          onPress={() => setBaseCiclo('YEARLY')}
-                          accessibilityLabel="Assinatura anual — compromisso 12 meses"
-                        >
-                          <Text style={[styles.cicloBtnText, baseCiclo === 'YEARLY' && styles.cicloBtnTextActive]}>
-                            Anual
-                          </Text>
-                        </TouchableOpacity>
+                        {plan.precoSemestral != null && (
+                          <TouchableOpacity
+                            style={[styles.cicloBtn, selectedCiclo === 'SEMESTRAL' && { backgroundColor: plan.color }]}
+                            onPress={() => setSelectedCiclo('SEMESTRAL')}
+                            accessibilityLabel="Assinatura semestral — fidelidade 6 meses"
+                          >
+                            <Text style={[styles.cicloBtnText, selectedCiclo === 'SEMESTRAL' && styles.cicloBtnTextActive]}>
+                              Semestral
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     )}
 
-                    {/* Nota ciclo PRO / VIP */}
-                    {plan.forceAnual && (
+                    {/* Nota ciclo semestral */}
+                    {plan.hasCiclo && selectedCiclo === 'SEMESTRAL' && (
                       <View style={styles.commitNote}>
                         <Ionicons name="calendar-outline" size={13} color={colors.oliGold} />
-                        <Text style={styles.commitNoteText}>Comprometimento mínimo de 12 meses</Text>
+                        <Text style={styles.commitNoteText}>Fidelidade de 6 meses</Text>
                       </View>
-                    )}
-
-                    {/* Nota ciclo BASE anual */}
-                    {plan.hasCiclo && baseCiclo === 'YEARLY' && (
-                      <>
-                        <View style={styles.commitNote}>
-                          <Ionicons name="calendar-outline" size={13} color={colors.oliGold} />
-                          <Text style={styles.commitNoteText}>
-                            Cobrança de {formatCurrency(plan.price * 12)} antecipados · compromisso 12 meses
-                          </Text>
-                        </View>
-                        <View style={styles.annualBonusNote}>
-                          <Ionicons name="gift-outline" size={13} color={colors.oliGreen} />
-                          <Text style={styles.annualBonusText}>
-                            Bônus de ativação: 5 horas de crédito nos consultórios
-                          </Text>
-                        </View>
-                      </>
                     )}
                   </View>
 
@@ -702,11 +663,7 @@ export default function MeuPlanoScreen() {
           planId={checkoutTarget.plan.id!}
           planName={checkoutTarget.plan.name}
           ciclo={checkoutTarget.ciclo}
-          value={
-            checkoutTarget.ciclo === 'YEARLY'
-              ? checkoutTarget.plan.price * 12
-              : checkoutTarget.plan.price
-          }
+          value={checkoutTarget.value}
         />
       )}
 

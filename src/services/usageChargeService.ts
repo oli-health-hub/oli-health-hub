@@ -7,8 +7,10 @@
  * Fluxo:
  *   endRoomUse(id) → logUsageCharge(params) → INSERT usage_charges
  *
- * Taxa por minuto vem do COST_PER_MINUTE do store (sincronizado com a tabela
- * `plans` no Supabase quando a Fase 1 estiver completa).
+ * Taxa por minuto vem do COST_PER_MINUTE do store, a menos que o perfil tenha
+ * uma taxa congelada (profiles.taxa_min_congelada — assinantes de antes da
+ * reforma de planos de 13/ago, que não podem ser afetados pela mudança de
+ * preço do catálogo).
  */
 
 import { supabase } from './supabase';
@@ -19,6 +21,7 @@ export interface UsageChargeParams {
   professionalId:     string;
   reservationId:      string | null;
   plan:               PlanType;
+  taxaMinOverride?:   number | null; // profiles.taxa_min_congelada — null/undefined usa COST_PER_MINUTE
   startedAt:          string;   // ISO — consultationStartedAt da reserva
   endedAt:            string;   // ISO — agora (quando endRoomUse foi chamado)
   scheduledEndTime?:  string;   // ISO — end_time da reserva (para cálculo de excedente)
@@ -40,7 +43,7 @@ export interface UsageChargeSummary {
  *     Ex.: 31 min excedentes → cobra 60 min; 1 min excedente → cobra 30 min.
  */
 export function calcUsageCharge(params: UsageChargeParams): UsageChargeSummary {
-  const taxaMin   = COST_PER_MINUTE[params.plan];
+  const taxaMin   = params.taxaMinOverride ?? COST_PER_MINUTE[params.plan];
   const startMs   = new Date(params.startedAt).getTime();
   const endMs     = new Date(params.endedAt).getTime();
   const schedEnd  = params.scheduledEndTime ? new Date(params.scheduledEndTime).getTime() : null;

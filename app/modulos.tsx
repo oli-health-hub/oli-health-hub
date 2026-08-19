@@ -33,14 +33,14 @@ const PLAN_RANK: Record<PlanType, number> = { START: 0, BASE: 1, PRO: 2, VIP: 3 
 
 const CATEGORY_LABELS: Record<string, string> = {
   tecnologia: 'Tecnologia',
-  convenios:  'Convênios e Credenciamento',
   contabil:   'Contabilidade',
+  juridico:   'Jurídico',
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
   tecnologia: 'laptop-outline',
-  convenios:  'shield-checkmark-outline',
   contabil:   'calculator-outline',
+  juridico:   'briefcase-outline',
 };
 
 function formatPrice(module: OLIModule): string {
@@ -243,9 +243,9 @@ function ModuleRow({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function getCategoryForId(id: ModuleId): string {
-  if (id === 'communicare' || id === 'scribe_ia') return 'tecnologia';
-  if (id === 'contabil_mello')                     return 'contabil';
-  return 'convenios';
+  if (id === 'communicare')    return 'tecnologia';
+  if (id === 'contabil_mello') return 'contabil';
+  return 'juridico';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

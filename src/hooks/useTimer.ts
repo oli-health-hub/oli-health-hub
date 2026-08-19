@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState as RNAppState } from 'react-native';
 import { useAppStore, getCurrentCost, getTimerPhase } from '../store/appStore';
+import { useAuthStore } from '../store/authStore';
 
 export interface TimerState {
   elapsedSeconds:   number;
@@ -17,6 +18,7 @@ export interface TimerState {
  */
 export function useTimer(): TimerState {
   const { sessionStartTime, sessionEndTime, userPlan, enterBuffer, enterOvertime } = useAppStore();
+  const taxaMinCongelada = useAuthStore((s) => s.profile?.taxa_min_congelada);
   const [, setTick] = useState(0); // Força re-render a cada segundo
 
   const prevPhaseRef = useRef<'normal' | 'buffer' | 'overtime'>('normal');
@@ -40,7 +42,7 @@ export function useTimer(): TimerState {
   const elapsedSeconds   = sessionStartTime
     ? Math.floor((Date.now() - sessionStartTime.getTime()) / 1000)
     : 0;
-  const currentCost      = getCurrentCost(userPlan, sessionStartTime);
+  const currentCost      = getCurrentCost(userPlan, sessionStartTime, taxaMinCongelada);
   const { phase, remainingSeconds } = getTimerPhase(sessionEndTime);
   const isRunning        = !!sessionStartTime;
 

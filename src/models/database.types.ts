@@ -876,6 +876,7 @@ export type Database = {
           name: string
           preco_anual: number
           preco_mensal: number
+          preco_semestral: number | null
           taxa_min: number
           updated_at: string
         }
@@ -887,6 +888,7 @@ export type Database = {
           name: string
           preco_anual: number
           preco_mensal: number
+          preco_semestral?: number | null
           taxa_min: number
           updated_at?: string
         }
@@ -898,6 +900,7 @@ export type Database = {
           name?: string
           preco_anual?: number
           preco_mensal?: number
+          preco_semestral?: number | null
           taxa_min?: number
           updated_at?: string
         }
@@ -963,6 +966,8 @@ export type Database = {
           bio: string | null
           cidade_uf: string | null
           como_conheceu: string | null
+          compromisso_6_meses: boolean
+          compromisso_6_meses_em: string | null
           comunidade_ban_reason: string | null
           comunidade_banned: boolean
           consultation_duration_minutes: number
@@ -987,7 +992,7 @@ export type Database = {
           nps_score: number | null
           num_locais: string | null
           onboarding_complete: boolean
-          plan: string
+          plan: string | null
           plan_id: string | null
           possui_clt: boolean | null
           possui_funcionarios: boolean | null
@@ -1001,6 +1006,7 @@ export type Database = {
           status_changed_by: string | null
           status_reason: string | null
           subespecialidades: string[] | null
+          taxa_min_congelada: number | null
           tipo_atendimento: string | null
           tipos_atendimento: string[] | null
           tratamento: string | null
@@ -1019,6 +1025,8 @@ export type Database = {
           bio?: string | null
           cidade_uf?: string | null
           como_conheceu?: string | null
+          compromisso_6_meses?: boolean
+          compromisso_6_meses_em?: string | null
           comunidade_ban_reason?: string | null
           comunidade_banned?: boolean
           consultation_duration_minutes?: number
@@ -1043,7 +1051,7 @@ export type Database = {
           nps_score?: number | null
           num_locais?: string | null
           onboarding_complete?: boolean
-          plan?: string
+          plan?: string | null
           plan_id?: string | null
           possui_clt?: boolean | null
           possui_funcionarios?: boolean | null
@@ -1057,6 +1065,7 @@ export type Database = {
           status_changed_by?: string | null
           status_reason?: string | null
           subespecialidades?: string[] | null
+          taxa_min_congelada?: number | null
           tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
           tratamento?: string | null
@@ -1075,6 +1084,8 @@ export type Database = {
           bio?: string | null
           cidade_uf?: string | null
           como_conheceu?: string | null
+          compromisso_6_meses?: boolean
+          compromisso_6_meses_em?: string | null
           comunidade_ban_reason?: string | null
           comunidade_banned?: boolean
           consultation_duration_minutes?: number
@@ -1099,7 +1110,7 @@ export type Database = {
           nps_score?: number | null
           num_locais?: string | null
           onboarding_complete?: boolean
-          plan?: string
+          plan?: string | null
           plan_id?: string | null
           possui_clt?: boolean | null
           possui_funcionarios?: boolean | null
@@ -1113,6 +1124,7 @@ export type Database = {
           status_changed_by?: string | null
           status_reason?: string | null
           subespecialidades?: string[] | null
+          taxa_min_congelada?: number | null
           tipo_atendimento?: string | null
           tipos_atendimento?: string[] | null
           tratamento?: string | null
@@ -1203,6 +1215,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rd_stage_map: {
+        Row: {
+          observacao: string | null
+          rd_stage_id: string
+          rd_stage_nome: string
+          status: string
+        }
+        Insert: {
+          observacao?: string | null
+          rd_stage_id: string
+          rd_stage_nome: string
+          status: string
+        }
+        Update: {
+          observacao?: string | null
+          rd_stage_id?: string
+          rd_stage_nome?: string
+          status?: string
+        }
+        Relationships: []
       }
       referrals: {
         Row: {
@@ -1341,6 +1374,7 @@ export type Database = {
           ciclo: string
           created_at: string
           ends_at: string | null
+          fidelidade_ate: string | null
           id: string
           plan_id: string
           professional_id: string
@@ -1356,6 +1390,7 @@ export type Database = {
           ciclo: string
           created_at?: string
           ends_at?: string | null
+          fidelidade_ate?: string | null
           id?: string
           plan_id: string
           professional_id: string
@@ -1371,6 +1406,7 @@ export type Database = {
           ciclo?: string
           created_at?: string
           ends_at?: string | null
+          fidelidade_ate?: string | null
           id?: string
           plan_id?: string
           professional_id?: string
@@ -1647,6 +1683,10 @@ export type Database = {
       }
       accept_invite: {
         Args: { p_is_health_professional?: boolean }
+        Returns: undefined
+      }
+      activate_start_plan: {
+        Args: { p_wants_commitment?: boolean }
         Returns: undefined
       }
       apply_referral_benefit: {

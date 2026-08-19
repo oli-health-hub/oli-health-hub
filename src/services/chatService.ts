@@ -8,11 +8,10 @@ export interface ChatTurn {
 }
 
 export async function sendChatMessage(
-  persona:  string,
   history:  ChatTurn[],
 ): Promise<string> {
   const { data, error } = await supabase.functions.invoke('chat', {
-    body: { persona, messages: history },
+    body: { messages: history },
   });
 
   if (error) throw new Error(error.message ?? 'Erro ao chamar o assistente');

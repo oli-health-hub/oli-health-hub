@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 3. Busca perfil e pacote em paralelo ─────────────────────────────────
     const [{ data: profile }, { data: pkg }] = await Promise.all([
-      supabaseAdmin.from('profiles').select('nome, plan').eq('id', user.id).single(),
+      supabaseAdmin.from('profiles').select('nome, plan, taxa_min_congelada').eq('id', user.id).single(),
       supabaseAdmin
         .from('hour_packages')
         .select('id, nome, horas, validade_dias')
@@ -79,15 +79,19 @@ Deno.serve(async (req: Request) => {
     if (!pkg)     return json({ error: `Pacote de ${hours}h não encontrado` }, 404);
 
     // ── 3b. Preço = taxa/min do plano do médico × 60 ─────────────────────────
-    // Determinado pelo plano no momento da compra (fonte: plans.taxa_min,
-    // mesma tabela usada na cobrança por minutagem). Fallback START se o
-    // plano não bater com nenhuma linha (ex.: VIP em standby).
-    const { data: planRow } = await supabaseAdmin
-      .from('plans')
-      .select('taxa_min')
-      .eq('name', profile.plan ?? 'START')
-      .maybeSingle();
-    const taxaMin = Number(planRow?.taxa_min ?? 2.00);
+    // Prioridade: taxa congelada do perfil (assinante de antes da reforma de
+    // 13/ago — não pode ser afetado pela mudança de preço do catálogo) →
+    // plans.taxa_min ao vivo → fallback START se o plano não bater com
+    // nenhuma linha (ex.: VIP em standby).
+    let taxaMin = Number(profile.taxa_min_congelada ?? 0) || null;
+    if (!taxaMin) {
+      const { data: planRow } = await supabaseAdmin
+        .from('plans')
+        .select('taxa_min')
+        .eq('name', profile.plan ?? 'START')
+        .maybeSingle();
+      taxaMin = Number(planRow?.taxa_min ?? 1.90);
+    }
 
     // ── 3c. Cupom (opcional) ─────────────────────────────────────────────────
     const baseValue = Math.round(pkg.horas * 60 * taxaMin * 100) / 100;

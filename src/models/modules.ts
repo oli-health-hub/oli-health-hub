@@ -20,11 +20,8 @@ import { PlanType } from './types';
 
 export type ModuleId =
   | 'communicare'
-  | 'ar_credenciamento'
-  | 'ar_gestao_mensal'
-  | 'ar_operadora_adicional'
   | 'contabil_mello'
-  | 'scribe_ia';
+  | 'juridico';
 
 /** Como o módulo é ativado após a decisão de contratar */
 export type ActivationType =
@@ -147,103 +144,30 @@ export const MODULE_CATALOG: Record<ModuleId, OLIModule> = {
     },
   },
 
-  // ── AR Credenciamento ────────────────────────────────────────────────────────
-  ar_credenciamento: {
-    id: 'ar_credenciamento',
-    name: 'Credenciamento em Convênios',
-    provider: 'AR Consultoria',
-    tagline: 'Credenciamento completo nos principais planos de saúde',
+  // ── Jurídico ─────────────────────────────────────────────────────────────────
+  juridico: {
+    id: 'juridico',
+    name: 'Consultoria Jurídica',
+    provider: 'Ana (sócia)',
+    tagline: 'Direito médico: CFM, LGPD, contratos e ética médica',
     description:
-      'A AR Consultoria cuida de todo o processo de credenciamento junto aos ' +
-      'convênios: análise de documentação, envio, acompanhamento e aprovação. ' +
-      'Serviço único — sem mensalidade. Incluso no plano VIP.',
+      'Assessoria jurídica especializada em medicina: ética médica e normas do ' +
+      'CFM, LGPD aplicada à saúde, contratos com clínicas e hospitais, ' +
+      'publicidade médica e responsabilidade civil.',
     pricing: {
-      amount: 2500,
-      period: 'one_time',
+      period: 'tbd',
       currency: 'BRL',
-      displayLabel: 'R$ 2.500 único',
+      displayLabel: 'Consultar',
     },
-    requiredPlan: 'PRO',
-    activationType: 'in_app_form',
-    activationLayer: 'oli_config',
-    salesWhatsapp: process.env.EXPO_PUBLIC_OLI_SALES_PHONE,
-    status: 'available',
-    includedInPlans: ['VIP'],
-    featuresByPlan: {
-      PRO: [
-        'ar.credenciamento_analise',
-        'ar.credenciamento_acompanhamento',
-        'ar.credenciamento_aprovacao',
-      ],
-      VIP: [
-        'ar.credenciamento_analise',
-        'ar.credenciamento_acompanhamento',
-        'ar.credenciamento_aprovacao',
-        'ar.credenciamento_prioridade',
-      ],
-    },
-  },
-
-  // ── AR Gestão Mensal ─────────────────────────────────────────────────────────
-  ar_gestao_mensal: {
-    id: 'ar_gestao_mensal',
-    name: 'Gestão de Convênios',
-    provider: 'AR Consultoria',
-    tagline: 'Gestão contínua das operadoras: glosas, TISS e faturamento',
-    description:
-      'Acompanhamento mensal das suas operadoras: auditoria de glosas, envio ' +
-      'de guias TISS, faturamento e relatórios. A AR assume a operação para ' +
-      'você focar no atendimento.',
-    pricing: {
-      amount: 1000,
-      period: 'monthly',
-      currency: 'BRL',
-      displayLabel: 'R$ 1.000/mês',
-    },
-    requiredPlan: 'PRO',
+    requiredPlan: 'BASE',
     activationType: 'contact_sales',
     activationLayer: 'oli_config',
     salesWhatsapp: process.env.EXPO_PUBLIC_OLI_SALES_PHONE,
-    status: 'coming_soon',
-    featuresByPlan: {
-      PRO: [
-        'ar.gestao_glosas',
-        'ar.faturamento_tiss',
-        'ar.relatorio_mensal',
-      ],
-      VIP: [
-        'ar.gestao_glosas',
-        'ar.faturamento_tiss',
-        'ar.relatorio_mensal',
-        'ar.gestao_prioritaria',
-        'ar.consultoria_estrategica',
-      ],
-    },
-  },
-
-  // ── AR Operadora Adicional ───────────────────────────────────────────────────
-  ar_operadora_adicional: {
-    id: 'ar_operadora_adicional',
-    name: 'Operadora Adicional',
-    provider: 'AR Consultoria',
-    tagline: 'Adicione uma operadora extra ao seu pacote de gestão',
-    description:
-      'Já tem Gestão de Convênios ativo? Expanda para mais operadoras por um ' +
-      'valor fixo por operadora adicional.',
-    pricing: {
-      amount: 150,
-      period: 'per_unit',
-      currency: 'BRL',
-      displayLabel: 'R$ 150',
-      unitLabel: 'por operadora/mês',
-    },
-    requiredPlan: 'PRO',
-    activationType: 'in_app_form',
-    activationLayer: 'self_service',
     status: 'available',
     featuresByPlan: {
-      PRO: ['ar.operadora_adicional'],
-      VIP: ['ar.operadora_adicional'],
+      BASE: ['juridico.consulta'],
+      PRO: ['juridico.consulta', 'juridico.contratos'],
+      VIP: ['juridico.consulta', 'juridico.contratos', 'juridico.assessoria_continua'],
     },
   },
 
@@ -282,41 +206,6 @@ export const MODULE_CATALOG: Record<ModuleId, OLIModule> = {
         'contabil.planejamento_tributario',
         'contabil.assessoria_continua',
         'contabil.emissao_nf',
-      ],
-    },
-  },
-
-  // ── Scribe IA ────────────────────────────────────────────────────────────────
-  scribe_ia: {
-    id: 'scribe_ia',
-    name: 'Scribe IA',
-    provider: 'OLI Health Hub',
-    tagline: 'Transcrição automática de consultas com IA',
-    description:
-      'Grave a consulta, o Scribe transcreve, estrutura em SOAP e sugere CID-10. ' +
-      'Integra com o Communicare para preencher o prontuário automaticamente.',
-    pricing: {
-      period: 'tbd',
-      currency: 'BRL',
-      displayLabel: 'A definir',
-    },
-    requiredPlan: 'PRO',
-    activationType: 'auto',
-    activationLayer: 'oli_config',
-    status: 'coming_soon',
-    includedInPlans: ['VIP'],
-    featuresByPlan: {
-      PRO: [
-        'scribe.transcricao',
-        'scribe.soap',
-        'scribe.cid10',
-      ],
-      VIP: [
-        'scribe.transcricao',
-        'scribe.soap',
-        'scribe.cid10',
-        'scribe.integracao_communicare',
-        'scribe.sugestao_conduta',
       ],
     },
   },

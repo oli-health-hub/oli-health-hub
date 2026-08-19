@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Image,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +18,7 @@ import { ScrollMoreIndicator } from '../../src/components/ScrollMoreIndicator';
 // plano atual desbloqueia em relação ao tier anterior, em vez de repetir uma
 // lista fixa que não respeita o plano real do médico.
 
-const PLAN_TIER_ORDER: PlanType[] = ['START', 'BASE', 'PRO', 'VIP'];
+const PLAN_TIER_ORDER: PlanType[] = ['START', 'PRO'];
 
 function getPlanHighlights(userPlan: PlanType): Feature[] {
   const tierIdx = PLAN_TIER_ORDER.indexOf(userPlan);
@@ -41,16 +41,6 @@ const PLAN_COLOR: Record<PlanType, string> = {
   PRO:   colors.oliGold,
   VIP:   colors.oliPurple,
 };
-
-// ─── Especialistas OLI (todos "em breve" — preview compacto) ──────────────────
-
-const AGENTS = [
-  { title: 'Ana Luiza', avatar: 'A', photo: require('../../assets/images/agentes/ana-luiza.jpg'), color: colors.oliGreen },
-  { title: 'Isabella',  avatar: 'I', photo: require('../../assets/images/agentes/isabella.jpg'),   color: colors.oliGold },
-  { title: 'Amanda',    avatar: 'A', photo: undefined, color: colors.oliCoral },
-  { title: 'Ronaldo',   avatar: 'R', photo: undefined, color: colors.oliPurple },
-  { title: 'Olivia',    avatar: 'O', photo: undefined, color: '#7B9E82' },
-] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -102,9 +92,7 @@ export default function EcossistemaScreen() {
             >
               <Ionicons name="arrow-up-circle-outline" size={15} color={PLAN_COLOR[userPlan]} />
               <Text style={[styles.upgradeBtnText, { color: PLAN_COLOR[userPlan] }]}>
-                {userPlan === 'START' ? 'Fazer Upgrade para BASE ou PRO' :
-                 userPlan === 'BASE'  ? 'Fazer Upgrade para PRO' :
-                                        'Ver Plano VIP (em breve)'}
+                Fazer Upgrade para PRO
               </Text>
             </TouchableOpacity>
           )}
@@ -179,8 +167,8 @@ export default function EcossistemaScreen() {
             <Ionicons name="grid-outline" size={20} color={colors.oliGold} />
           </View>
           <Text style={styles.planDesc}>
-            Communicare, Contabilidade Médica, Scribe IA e mais — add-ons que potencializam
-            seu plano, contratados individualmente.
+            Communicare, Contabilidade Médica e Consultoria Jurídica — add-ons que
+            potencializam seu plano, contratados individualmente.
           </Text>
           <TouchableOpacity
             style={styles.modulesBtn}
@@ -192,37 +180,23 @@ export default function EcossistemaScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Especialistas OLI ── */}
-        <View style={[styles.card, shadows.card]}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Especialistas OLI</Text>
-            <View style={agentPreviewStyles.soonBadge}>
-              <Ionicons name="time-outline" size={12} color={colors.oliGold} />
-              <Text style={agentPreviewStyles.soonText}>Em breve</Text>
-            </View>
+        {/* ── Tire suas dúvidas (chatbot Olivia) ── */}
+        <TouchableOpacity
+          style={[styles.card, shadows.card, styles.referralCard]}
+          onPress={() => router.push('/chatbot')}
+          accessibilityLabel="Tire suas dúvidas com a Olivia, assistente virtual do OLI"
+        >
+          <View style={styles.referralIconWrap}>
+            <Ionicons name="chatbubble-ellipses" size={22} color={colors.oliGreen} />
           </View>
-          <Text style={styles.planDesc}>
-            5 especialistas de IA — jurídico, contábil, convênios, carreira e OLI — para tirar
-            dúvidas direto pelo app.
-          </Text>
-          <View style={agentPreviewStyles.strip}>
-            {AGENTS.map((a, i) => (
-              <View
-                key={a.title}
-                style={[
-                  agentPreviewStyles.avatar,
-                  { backgroundColor: a.color, marginLeft: i === 0 ? 0 : -12, zIndex: AGENTS.length - i },
-                ]}
-              >
-                {a.photo ? (
-                  <Image source={a.photo} style={agentPreviewStyles.avatarImg} />
-                ) : (
-                  <Text style={agentPreviewStyles.avatarText}>{a.avatar}</Text>
-                )}
-              </View>
-            ))}
+          <View style={styles.referralInfo}>
+            <Text style={styles.sectionTitle}>Tire suas dúvidas</Text>
+            <Text style={styles.planDesc}>
+              Fale com a Olivia, assistente virtual do OLI, sobre salas, planos, reservas e o app.
+            </Text>
           </View>
-        </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.oliLightGray} />
+        </TouchableOpacity>
 
       </ScrollView>
 
@@ -233,15 +207,6 @@ export default function EcossistemaScreen() {
 }
 
 // ── Especialistas OLI (preview) — Styles ────────────────────────────────────────
-
-const agentPreviewStyles = StyleSheet.create({
-  soonBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.oliGold}18`, borderRadius: radius.full, paddingHorizontal: 9, paddingVertical: 4 },
-  soonText:   { fontSize: 11, fontWeight: '700', color: colors.oliGold },
-  strip:      { flexDirection: 'row', marginTop: spacing.sm },
-  avatar:     { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.white, overflow: 'hidden' },
-  avatarImg:  { width: 40, height: 40, borderRadius: 20 },
-  avatarText: { color: colors.white, fontSize: 15, fontWeight: '700' },
-});
 
 // ── Benefícios do Plano — Styles (linhas com check, reaproveitado do antigo "Serviços Inclusos") ──
 

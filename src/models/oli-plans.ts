@@ -80,7 +80,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: 'START',
     status: 'active',
     monthlyPrice: 0,
-    ratePerMinute: 2.00,
+    ratePerMinute: 1.90,
     minuteDiscount: 0,
     supportLevel: 'essencial',
     highlighted: false,
@@ -140,8 +140,8 @@ export const PLANS: Record<PlanId, Plan> = {
     name: 'PRO',
     status: 'active',
     monthlyPrice: 599.00,
-    ratePerMinute: 1.30,
-    minuteDiscount: 0.35, // −35% vs START
+    ratePerMinute: 1.45,
+    minuteDiscount: 0.24, // −24% vs START (13/ago: 1,45 vs 1,90)
     supportLevel: 'profissional',
     highlighted: true,
     badge: 'Mais popular',
@@ -153,9 +153,9 @@ export const PLANS: Record<PlanId, Plan> = {
       feature_app_agenda_propria: true,
       feature_app_pacientes: true,
       feature_diag_contabil: true,
-      feature_diag_ar_solucoes: true,
+      feature_diag_ar_solucoes: false, // AR Soluções saiu de vez (§29, standby)
       feature_diag_juridico: true,
-      feature_crm_communicare: true,
+      feature_crm_communicare: false, // Communicare não é mais incluso — só módulo pago à parte
       feature_gestao_agenda_oli: true,
       feature_emissao_notas_oli: true,
       feature_ar_solucoes_pleno: false,
@@ -246,10 +246,20 @@ export interface HourPackage {
   totalHours: number;
 }
 
-/** Tabela de bônus por pacote. */
+/** Tabela de bônus por pacote.
+ *
+ *  ⚠️ A FONTE DE VERDADE EM RUNTIME É A TABELA `hour_packages` no Supabase —
+ *  a compra lê de lá. Esta constante existe só para referência e cálculo em
+ *  código; manter as duas iguais.
+ *
+ *  Corrigida em 07/ago: dizia `20h → +3` enquanto o banco tinha `+2`, e não
+ *  listava o pacote de 40h que existe no banco. O padrão real é **10% de
+ *  horas de bônus** em todos os pacotes. */
 export const HOUR_PACKAGES: HourPackage[] = [
-  { paidHours: 10, bonusHours: 1,  totalHours: 11 },
-  { paidHours: 20, bonusHours: 3,  totalHours: 23 },
+  { paidHours: 1,  bonusHours: 0, totalHours: 1  },  // avulso, sem bônus
+  { paidHours: 10, bonusHours: 1, totalHours: 11 },
+  { paidHours: 20, bonusHours: 2, totalHours: 22 },
+  { paidHours: 40, bonusHours: 4, totalHours: 44 },
 ];
 
 /**

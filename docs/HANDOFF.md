@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 02/Agosto/2026.
+> Última atualização: 13/Agosto/2026.
 
 ---
 
@@ -526,6 +526,12 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 32. **🆕 Google Ads existe e não tinha dono conhecido (achado 04/ago)** — a distribuição de `fonte` na tabela `leads` mostrou `Busca Paga | Google` além do Facebook Ads e de `Referência | linktr.ee`. Toda a documentação anterior (§19) falava só de Meta. **Descobrir quem opera essa campanha** — os leads dela são justamente os que chegam sem telefone.
 
 33. **🆕 Planilha do Google do Meta ainda ligada em paralelo** — mantida de propósito como rede de segurança enquanto o webhook da RD provava que pega tudo. Agora que ele está confirmado funcionando (4 leads sozinhos em 05/ago), decidir se desliga.
+
+34. **🆕 `hour_packages.valor` é dado morto e enganoso (achado 07/ago)** — a coluna guarda R$120/h fixo, mas a cobrança calcula `horas × 60 × plans.taxa_min` e **ignora esse campo**. Coincide com o START, o que mascarou o problema. Corrigir o valor por plano ou remover a coluna, antes que alguém a use como fonte. Ver §28.
+
+35. **🆕 Peças comerciais por plano (07/ago)** — feita a do PRO (`iCloud/OLI - HH/OLI_Plano_PRO.svg`, 1080×1350). **Regra que vale para as próximas: o cliente vê um plano por vez**, então nada de "35% mais barato" ou "o mais completo" — número relativo sem comparação não significa nada, e "compensa a partir de 25h" lido isolado vira objeção. Formato é ficha de serviço, não anúncio. Faltam START e BASE no mesmo padrão.
+
+36. **🆕 Reformulação de planos aprovada, nada implementado (13/ago)** — dois planos (START sem mensalidade a R$ 1,90/min · PRO R$ 599 mensal / R$ 499 semestral a R$ 1,45/min), BASE desativado, pacotes de 20h e 40h removidos, estado novo "cadastrado sem plano". **Banco, app, admin e site seguem com o modelo antigo.** Escopo, números conferidos e as 4 decisões que faltam estão na §29.
 
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
@@ -1339,6 +1345,210 @@ Cada clique empilhava uma aba, porque `window.open(url, '_blank')` sempre cria j
 - Recarregar o painel perde a referência (ela vive na memória da página) — o clique seguinte abre uma aba nova e daí em diante volta a reaproveitar.
 - Aba que a pessoa abriu **à mão** não pode ser alvo. Não existe API para mirar em aba de terceiros; é restrição do navegador, não escolha de implementação.
 
+**Resumo de 1 linha (07/ago):** Dia de **três bugs achados por verificação, não por sintoma**. (1) O botão WhatsApp da Fila **nunca funcionou para ninguém** — lia `metadata.phone`, chave inexistente em todas as 159 notificações; o fallback `wa.me/?text=` mascarou isso por meses, e consertar só a leitura teria trocado o defeito por um pior, porque o código prefixava `55` cegamente num telefone que já vinha com DDI. Lógica extraída para `lib/whatsapp.ts` + `BotaoWhatsApp`, agora usada também na tela de Leads — duplicar seria recriar a causa. Reuso da aba exigiu **duas tentativas**: `target` nomeado não funciona entre origens (navegadores apagam o nome da janela como anti-rastreamento), então guarda-se a referência e escreve-se em `.location.href`. (2) Lead trabalhado agora **sai da Fila** por trigger; com a limpeza retroativa a fila caiu de **76 para 54**. (3) 🔴 **Os pacotes de horas não tinham benefício nenhum**: o `asaas-webhook` ignorava `bonus_horas` e o preço é calculado pela taxa do plano, então comprar pacote era pagar adiantado o mesmo valor da hora avulsa e ainda ganhar validade — comprovado no banco (Starter 10h creditou 600 min em vez de 660). Corrigido o webhook, **creditado retroativamente o único cliente afetado**, alinhada a constante `HOUR_PACKAGES` (dizia 20h→+3, banco dizia +2) e corrigido o descritivo que já estava com o fundador anunciando bônus inexistente. Descoberto que o padrão real é **10% de horas de bônus em todo pacote**, o que virou a mensagem central do material. Também nesta sessão: seletor e filtro de **atendente** ligados aos perfis com acesso ao painel, e a peça do plano PRO refeita **duas vezes** — primeiro para tirar todo comparativo (o cliente vê um plano por vez), depois para virar ficha de serviço em vez de anúncio.
+
+## 28. Pacotes de horas — o bônus nunca era creditado (07/ago)
+
+Pedido de um material comercial sobre os pacotes. Ao conferir os números antes de escrever, **os pacotes não tinham benefício nenhum** — e isso estava em produção.
+
+### Três problemas, um deles comprovado em dado real
+
+**1. 🔴 O bônus nunca chegava ao médico.** O `asaas-webhook` lia `hour_packages` com `.select('horas, validade_dias')` — **sem `bonus_horas`** — e creditava `pkg.horas * 60`. Comprovado: a única compra real de pacote (Starter 10h) tinha `minutos_total = 600`, não 660. O bônus estava cadastrado no banco, anunciado no material comercial, e **nunca entregue**.
+
+**2. `hour_packages.valor` é coluna morta.** A cobrança (`create-hour-package`) ignora esse campo e calcula `horas × 60 × plans.taxa_min` do plano do médico. A coluna guarda R$120/h fixo — que por coincidência bate com o START e mascarou o problema. **Não usar `valor` para nada; corrigir ou remover.**
+
+**3. Três fontes discordando:**
+| | `oli-plans.ts` | tabela `hour_packages` | entregue de fato |
+|---|---|---|---|
+| Bônus 10h | +1 | +1 | **0** |
+| Bônus 20h | **+3** | **+2** | **0** |
+| Pacote 40h | não existia | +4 | **0** |
+
+**Somando 1 e 2: comprar pacote era pagar adiantado exatamente o mesmo preço da hora avulsa, e ainda ganhar prazo de validade.** Estritamente pior que não comprar.
+
+### Decisão e correções
+
+Fundador escolheu **corrigir o sistema e passar a entregar o bônus** (em vez de trocar por desconto ou remover os pacotes).
+
+- **`asaas-webhook` v23:** passa a ler `bonus_horas` e credita `(horas + bonus) × 60`. A notificação do admin também discrimina o bônus.
+- **Crédito retroativo:** o cliente que já havia comprado foi de 600 para 660 minutos. Ele pagou por 11h e usou 10 desde a compra.
+- **`oli-plans.ts`:** `HOUR_PACKAGES` alinhada ao banco (20h corrigido de +3 para +2, adicionados 1h e 40h) + comentário deixando explícito que **a fonte de verdade em runtime é a tabela**, não a constante.
+- **`OLI_Descritivo_Planos.html`** (material que já estava com o fundador): dizia "20h → 23 horas" e não tinha o pacote de 40h. Corrigido.
+
+### 🔑 O padrão que simplificou o material
+
+Com os valores do banco, **todo pacote dá exatamente 10% de horas a mais** (10→11, 20→22, 40→44). A hora efetiva cai 10% em qualquer tamanho: **R$ 109 no START, R$ 82 no BASE, R$ 71 no PRO**. Isso substitui uma tabela de três linhas por uma frase — e foi o que virou a mensagem central da peça.
+
+**Preços reais cobrados hoje** (`horas × 60 × taxa do plano`):
+| Pacote | START | BASE | PRO | Validade |
+|---|---|---|---|---|
+| 1h | 120 | 90 | 78 | 30 dias |
+| 10h | 1.200 | 900 | 780 | 60 dias |
+| 20h | 2.400 | 1.800 | 1.560 | 90 dias |
+| 40h | 4.800 | 3.600 | 3.120 | 90 dias |
+
+**Lição:** o pedido era "escrever um material". Escrever sem conferir teria produzido uma peça bonita anunciando um benefício inexistente — que é exatamente o que o descritivo de 03/ago já estava fazendo havia quatro dias. **Conferir o número contra o que o sistema entrega, não contra o que a documentação diz.**
+
+**⚠️ Pendências:** typecheck e commit (mexeu em `src/models/oli-plans.ts`); `hour_packages.valor` continua como dado morto e enganoso; a peça em SVG do plano PRO (`iCloud/OLI - HH/OLI_Plano_PRO.svg`) foi feita como ficha de serviço, sem comparativo — o cliente vê só um plano por vez.
+
+## 29. Reformulação de planos — dois planos, START sem mensalidade (13/ago)
+
+**Nada disso foi implementado.** Sessão de decisão comercial: os números estão fechados, o escopo está definido, e o único entregável concluído é o material de venda em PDF. Banco, app, admin e site continuam com o modelo antigo, esperando autorização explícita do fundador.
+
+### A decisão
+
+O OLI passa a ter **dois planos**: START e PRO. O BASE é **desativado, não apagado** (`plans.ativo = false`), para preservar histórico. O VIP fica como está, inativo.
+
+**O que tornou a decisão barata:** ninguém assinava o BASE. Levantamento no banco em 13/ago — 22 perfis no START, 1 no PRO, 24 assinaturas ativas **todas apontando para o START**, nenhuma no BASE. Zero cliente migra.
+
+### Números fechados
+
+| | Mensalidade | Por minuto | Hora cheia |
+|---|---|---|---|
+| **START** | **sem mensalidade** | R$ 1,90 | R$ 114 |
+| **PRO** | R$ 599/mês · **R$ 499/mês no semestral** | R$ 1,45 | R$ 87 |
+
+**Viradas:** START → PRO **22,2h/mês** no mensal (material diz "a partir de 23h") e **18,5h/mês** no semestral ("a partir de 19h", ~4h30 por semana). Até 18h/mês o START é o mais econômico.
+
+> ⚠️ **Houve uma versão intermediária, descartada no mesmo dia:** START a **R$ 97/mês** e PRO semestral a **R$ 449**. Se aparecer material ou conversa com esses números, está velho. A versão válida é a da tabela acima.
+
+### Três estados de usuário, não dois planos
+
+O cadastro **deixa de receber START automático**. Passam a existir:
+
+1. **Cadastrado sem plano** — entra no app e vê **só a tela de planos**. Não reserva, não vê comunidade, não acessa pacientes nem financeiro. **A conta não expira.**
+2. **START** — reserva, compra horas, conforto médico, app e comunidade completos.
+3. **PRO** — tudo.
+
+Consequência aceita conscientemente: **o app deixa de ser ferramenta de retenção para quem não paga.** Comunidade, Olicoins e a régua de nurturing de julho ficam invisíveis nesse estado, e a conversão passa a acontecer inteira no comercial (visita e WhatsApp). Vários gatilhos de push precisarão ser silenciados para esse estado antes do primeiro cadastro novo de verdade.
+
+### Serviços por plano
+
+- **START:** sala equipada · comunidade e eventos · app (agenda, controle do tempo de sala, cadastro de pacientes).
+- **START com compromisso de 6 meses:** ganha diagnóstico contábil e jurídico como **cortesia única na contratação** (não renova a cada semestre), sem custo adicional.
+- **PRO:** tudo do START · impressão · prontuário e agenda pela internet · **recepção cuidando do agendamento, da cobrança e do retorno dos pacientes** · emissão de nota fiscal · os dois diagnósticos.
+
+O **diagnóstico de convênios (AR Soluções) sai de vez** — não aparece em nenhuma das duas listas, coerente com o standby da parceria já registrado no item 23 do §11.
+
+### Pacotes de horas: sobram 1h e 10h
+
+Ficam **só a hora avulsa e o pacote de 10h**. Os de 20h e 40h foram removidos por um motivo simples que ninguém tinha notado: **o bônus é 10% fixo em qualquer tamanho**, então comprar 4 pacotes de 10h dá exatamente as mesmas 44 horas pelo mesmo preço do antigo pacote de 40h. O pacote maior não entregava vantagem nenhuma — só travava mais dinheiro do cliente de uma vez.
+
+| Compra | Recebe | START | PRO | Validade |
+|---|---|---|---|---|
+| 1 hora | 1 hora | R$ 114 | R$ 87 | 30 dias |
+| 10 horas | **11 horas** | R$ 1.140 | R$ 870 | 60 dias |
+
+- Efeito colateral: **a validade máxima cai de 90 para 60 dias.** Quem antes comprava 40h tinha um trimestre; agora são quatro janelas de 60 dias, cada uma começando na compra.
+- Isso **facilita fechar o item 34 do §11** (`hour_packages.valor` é dado morto guardando R$ 120/h fixo) — com só dois pacotes, corrigir ou remover a coluna fica trivial.
+
+### 🔴 O diagnóstico que mudou a conversa: o gargalo não é o plano
+
+Levantado no meio da sessão, com dados do banco:
+
+| | Número |
+|---|---|
+| Leads na base | 66 (30 na semana de 03/08, 10 na de 10/08) |
+| Contatados | 50 |
+| Chegaram a visita | **4** (3 agendadas, 1 realizada) |
+| Propostas enviadas / convertidos | **0 / 0** |
+| Reservas em toda a história do produto | **5** |
+| Sessões efetivamente cobradas | **1** |
+| Cadastrados no START | 22 — **3** já reservaram alguma vez |
+
+**50 contatos viraram 4 visitas (8%) e nenhuma proposta.** E os 50 estão parados em "contatado", sem `temperatura`, sem `perfil` e sem `motivo_descarte` preenchidos — os campos existem na tela desde 03/ago e ninguém usou. **A informação mais barata e mais valiosa disponível hoje é classificar esses 50**, porque ela decide se preço faz alguma diferença.
+
+O fundador confirmou: **a base atual é teste e parceiro, não cliente pagante — o OLI não fatura nada.** Composição real: 18 `subscriber`, 2 `founder`, 2 `partner`, 1 `team`; dos 18, 11 completaram onboarding.
+
+### Break-even recalculado (custo fixo R$ 50.000, ~2% Asaas)
+
+| Cenário | Pagantes para empatar |
+|---|---|
+| Todos a 20h/mês | ~22 |
+| Mix realista: 60% START a 8h + 40% PRO a 25h | ~30 |
+| Conservador: 70% START a 6h + 30% PRO semestral a 25h | ~38 |
+
+Projeção até dezembro (20 semanas, ~30 leads/semana → ~600 leads): com o funil atual (6% visita) a receita de dezembro fica em ~16% do custo fixo; a 10%/30% chega a 41%; **só o cenário de 15% de visita e 35% de fechamento chega a 85%**. Ou seja, equilibrar até dezembro depende de **triplicar a taxa de visita**, não de mexer em preço. Se isso não parecer alcançável, a conversa passa a ser reduzir o custo fixo ou abrir receita que não dependa de captação — as salas de evento/conferência por bloco (§8 do `OLI_BASE.md`, preço nunca validado) são a única fonte já mapeada.
+
+### ⚠️ Nada muda para quem já está no sistema
+
+Decisão explícita do fundador: **o modelo novo vale só para quem entrar de agora em diante.**
+
+**Isso não é trabalho zero.** Hoje a assinatura lê o preço direto da tabela `plans` — no instante em que o START mudar, os 24 cadastros atuais são afetados. Preservar os atuais exige **congelar as condições na própria assinatura** (coluna de snapshot + ajuste no checkout). Proposta registrada: marcar na assinatura, **não** criar um plano "START Legado", para não aparecer um terceiro plano na interface.
+
+### Escopo definido
+
+**Agora:** material comercial · site · banco (BASE desativado, preços, ciclo semestral, pacotes 20h/40h desativados, congelamento dos atuais) · estado sem plano · app · checkout do START · documentação.
+
+**Depois:** comissão de parceiro com tier único PRO · recalibrar `push_sugestao_upgrade_plano` (hoje aponta o BASE e dispara em 10h) e silenciar os pushes de comunidade/perfil para quem está sem plano · mecanismo de liberação da cortesia dos diagnósticos (hoje é agendamento manual, não precisa de software) · Communicare completo · salas de evento por bloco.
+
+### Armadilhas e lacunas registradas
+
+- **O ciclo semestral não existe no sistema.** `subscriptions.ciclo` só aceita `mensal` e `anual`; `plans` só tem `preco_mensal` e `preco_anual`. Precisa existir antes de qualquer venda semestral.
+- **"Sem fidelidade" deixou de valer para o OLI inteiro.** É o H1 do site desde 31/jul ("Sem aluguel e sem fidelidade") e agora só vale para o PRO mensal.
+- **O START deixa de ser o padrão gratuito do cadastro.** A cobrança continua por Asaas, fora da loja, com o mesmo argumento 3.1.5(b) (serviço físico) que a Apple já aceitou para o PRO — não é risco novo.
+- **`user_type='pending'` já existe** (criado em 17/jul para convites) e é candidato natural a modelar o estado sem plano, em vez de inventar coisa nova.
+- **A ferramenta de copiar arquivo da máquina do fundador para a sessão falhou a sessão inteira** (`device_stage_files` com erro de validação de schema; `device_bash` idem). O mapa de arquivos do app e do site nesta seção vem da leitura deste handoff, **não** de inspeção arquivo a arquivo — conferir antes de editar. No fim da sessão a ponte caiu por completo, então **nem o PDF foi salvo no iCloud nem esta seção foi escrita direto no arquivo**.
+
+### Entregue
+
+**Material comercial em PDF, 2 páginas A4** — comparativo START × PRO, regras de cobrança, tabela de quanto sai o mês em 5/10/15/20/25/40h nas três opções com a mais econômica destacada, os três pontos de virada, a compra de horas e o exemplo da consulta de 50 minutos (R$ 95 no START, R$ 72,50 no PRO).
+
+- Gerado por HTML + Chromium headless (`--print-to-pdf`), não por reportlab — dá controle de layout de peça de marca. Fontes: **Poppins**, que existe no sandbox; **Google Fonts está bloqueado (403)** neste ambiente, não tentar de novo.
+- **Todos os valores conferidos por script contra as taxas**, não contra a documentação: as 18 células da tabela, as duas viradas, os pacotes e o exemplo da consulta. Foi a lição da §28 aplicada — conferir o número contra o que o sistema entrega.
+- Foram três versões no mesmo dia (R$ 97 → sem mensalidade → pacotes enxutos). **A válida é a terceira.**
+- Regras de copy respeitadas: nenhum parceiro nomeado ("uma conversa com contador e uma com advogado", "prontuário e agenda pela internet"), sem jargão, sem VIP, sem check-in, "do OLI" nunca "da OLI".
+- **Fecha parcialmente o item 35 do §11** (peças comerciais por plano): este é o comparativo; as fichas individuais de START e PRO continuam pendentes, e a peça do PRO em SVG está com os números velhos.
+
+### Em aberto (decisões do fundador)
+
+1. O ciclo anual (R$ 5.990) morre ou convive com o semestral? *(proposta: morre)*
+2. O semestral é cobrado à vista (R$ 2.994) ou R$ 499/mês com fidelidade de 6 meses? *(proposta: mensal com fidelidade — é o que trava a montagem no Asaas)*
+3. "Communicare completo" no lugar do Plano Básico de hoje — tem custo novo com o Heitor?
+4. A cortesia dos diagnósticos é liberada na assinatura ou só depois da primeira sessão de sala usada?
+
+## 30. Reforma de planos — implementada (19/ago)
+
+Fundador respondeu os 4 itens em aberto do §29: **ciclo anual mantém por enquanto** (bônus fica pra pensar depois, não implementado); **semestral cobrado mês a mês** (R$499/mês, fidelidade 6 meses, não à vista); **Communicare sai de vez dos benefícios do PRO** — só módulo pago à parte; **cortesia dos diagnósticos libera na assinatura**, agendamento manual do fundador.
+
+**Achado que mudou o escopo técnico:** a cobrança por minuto da sessão (`usage_charges`) nunca leu o banco — vem de `COST_PER_MINUTE` em `src/store/appStore.ts`, derivado de constante hardcoded em `src/models/oli-plans.ts`. Trocar a taxa do catálogo afetaria os 24 assinantes START + 1 PRO já dentro, instantaneamente, sem distinção — "nada muda pra quem já está no sistema" (exigência do fundador) não era automático. Implementado congelamento: `profiles.taxa_min_congelada` (nullable, `NULL` = usa taxa viva), backfilado pra 2,00 (START) / 1,30 (PRO) nos 25 perfis existentes **antes** de mudar o catálogo. Também achado e corrigido de brinde: `create-subscription` gravava `ciclo`/`status` em inglês (`'MONTHLY'`/`'pending_payment'`) num INSERT que **nunca teria passado** pelo CHECK do banco (só aceita `'mensal'/'anual'/'semestral'` e `'pending'/'active'/...`) — erro nunca checado, falhava em silêncio. Nunca foi pego porque **zero assinaturas pagas reais foram concluídas até hoje** (as 24 START são grátis/automáticas, o 1 PRO foi upgrade manual do admin). Corrigido: mapeia ciclo pra português antes de gravar, usa `'pending'`, e agora lança erro se o insert falhar.
+
+**Banco (`plans`):** START `taxa_min` 2,00→1,90; PRO `taxa_min` 1,30→1,45; BASE `ativo=false` (não apagado, zero assinantes); coluna nova `preco_semestral` (PRO=499). `subscriptions_ciclo_check` ganhou `'semestral'`; coluna nova `fidelidade_ate` (só rastreio, sem bloqueio automático de cancelamento — não existe padrão de multa de fidelidade em nenhum lugar do código). `hour_packages` 20h/40h `ativo=false` (`fetchHourPackages()` já filtra por `ativo`, zero mudança de app necessária). Cadastro **parou de dar START automático**: `profiles.plan` ficou nullable sem default, e `_create_profile_and_subscription()` (trigger `on_auth_user_created`) não cria mais a assinatura START — perfil nasce com `plan=NULL`. Verificado com transação de teste (INSERT em `auth.users` + SELECT + `ROLLBACK`, sem deixar resíduo): perfil novo sai com `plan=null, plan_id=null, subscriptions_count=0`, exatamente como projetado.
+
+**App:** novo gate em `app/_layout.tsx` — sessão + onboarding completo + `!profile.plan` → `/escolher-plano` (tela nova, sem chrome de navegação, mesmo padrão do `conta-bloqueada`). Tela lista START (ativação direta, grátis, toggle "compromisso 6 meses") e PRO (mensal/semestral, abre `PlanCheckoutModal`). `meu-plano.tsx` e `ecossistema.tsx`: **BASE e VIP removidos de vez da vitrine** (não é só `available:false`/dimmed — as entradas somem de `PLANS`/`PLAN_ORDER`/`PLAN_TIER_ORDER`, decisão do fundador nesta sessão); linha "AR Soluções" removida da matriz de benefícios (parceria em standby, §29); linha "CRM Communicare" removida (não é mais benefício incluso). **Ciclo anual do PRO removido também** (fundador decidiu não manter por enquanto, ao contrário do que a §29 tinha deixado em aberto) — só mensal/semestral.
+
+**Congelamento propagado em 4 pontos** (todos liam `COST_PER_MINUTE[plan]` direto, sem noção de per-usuário): `usageChargeService.ts` (cobrança final da sessão), `appStore.getCurrentCost()` + `useTimer.ts` (contador ao vivo durante a sessão — sem isso o número mostrado na tela durante o atendimento destoaria do valor cobrado no fim), `financeiro.tsx` (estimativa de preço do pacote de horas — sem isso mostraria a taxa nova enquanto a cobrança real na edge function usa a congelada) e `create-hour-package` edge function (cobrança real do pacote).
+
+**🔴 Segundo bug achado só ao testar ao vivo (não pego pelo `tsc` nem pela transação de teste no banco):** `subscriptions` só tem RLS de `SELECT` própria + `ALL` admin — nunca teve `INSERT` liberado pro client, de propósito (evita usuário forjar `status='active'` num plano pago sem passar pela Asaas). A primeira versão de `escolher-plano.tsx` fazia `supabase.from('subscriptions').insert(...)` direto do client pra ativar o START — RLS bloqueava com 403 silencioso, o profile virava `plan='START'` mas **sem assinatura nenhuma**. Corrigido com RPC novo `activate_start_plan(p_wants_commitment)` (`SECURITY DEFINER`, atualiza profile + insere subscription atomicamente, mesmo padrão de `_create_profile_and_subscription`). **Só foi encontrado porque a sessão testou de ponta a ponta num usuário descartável real** (criado via SQL em `auth.users`, logado no app via `expo start --web`, ativado START, conferido no banco, depois apagado) — reforça a lição do §28: testar contra o sistema, não contra a lógica no papel.
+
+**✅ Testado ao vivo nesta sessão** (`app-web` — config já existente em `.claude/launch.json` — não o app nativo): cadastro sem plano → gate `/escolher-plano` → PRO nos 2 ciclos (mensal R$599, semestral R$499 com nota de fidelidade) → START com toggle de compromisso → RPC ativa corretamente → dashboard libera. Web, não device/simulador nativo — módulos nativos (câmera, biometria) não passaram por este teste.
+
+**Ajuste de UX pós-teste (feedback do fundador):** em `meu-plano.tsx` o preço grande do card PRO ficava fixo em R$599 ao trocar de ciclo — só uma notinha embaixo dizia "R$499/mês". Corrigido: `activePrice(plan)` calcula o preço do ciclo selecionado e alimenta tanto o preço grande expandido quanto o resumo do card fechado; a nota de semestral virou só "Fidelidade de 6 meses" (não repete mais o valor). Testado ao vivo de novo com 3º usuário descartável (plan='PRO' direto via SQL, sem passar pelo gate) — confirmado visualmente: clicar Mensal/Semestral muda o preço grande na hora, nos dois estados do card.
+
+**⚠️ Pendências:**
+- **Site institucional e admin não tocados** — pedido desta sessão foi só "atualizar os planos no app". `admin/app/planos/page.tsx` hoje só lista, não edita `plans`/`hour_packages` (gap pré-existente, não criado nesta sessão).
+- **Ciclo anual do PRO**: continua existindo no banco (`plans.preco_anual`) e no Asaas (`create-subscription` ainda aceita `ciclo='YEARLY'`) — só a UI parou de oferecer. Se for pra matar de vez, falta limpar o backend também.
+- **Nada testado em device/simulador nativo** (iOS/Android) — só web local + banco. Rodar num device antes de qualquer OTA.
+- ~~Nada commitado~~ — commitado e publicado na sessão seguinte (mesmo dia, ver §31).
+
+## 31. Chatbot vira assistente único (Olivia) + catálogo de módulos consolidado (19/ago sessão 2)
+
+**Especialistas OLI reduzidos a 1 assistente geral.** Os 5 personas do chatbot (Ana Luiza/jurídico, Isabella/contábil, Amanda/convênios, Ronaldo/carreira, Olivia/geral) nunca tiveram ponto de entrada ativo no app — o card "Especialistas OLI" em `ecossistema.tsx` já era só uma prévia "Em breve", sem clique. Decisão do fundador: parar de rotear por persona, deixar só a Olivia como assistente geral de dúvidas do app/espaço, sem a parte de agendamento de consulta com parceiro humano (Calendly) que cada persona tinha.
+
+- **`supabase/functions/chat/index.ts`**: `SYSTEM_PROMPTS` (6 personas incluindo `bpo`/Miriam, que nunca tinha sido cabeada no front) trocado por um único `SYSTEM_PROMPT` da Olivia, escopo em salas/planos/reservas/módulos/eventos/comunidade/indicação/app; fora disso orienta a procurar assessoria própria ou a recepção via WhatsApp. Contrato da function simplificado: não recebe mais `persona` no body.
+- **`src/services/chatService.ts`**: `sendChatMessage()` perdeu o parâmetro `persona`.
+- **`app/chatbot.tsx`**: reescrito sem o tipo `Persona`/`PERSONAS`, sem modal de agendamento Calendly, sem CTA "Falar diretamente com [especialista]" nas respostas fora de escopo. Vira uma tela única com a Olivia.
+- **`ecossistema.tsx`**: card "Especialistas OLI" (5 avatares, badge "Em breve", sem clique) virou card "Tire suas dúvidas" clicável, abre `/chatbot` direto.
+
+**Catálogo de módulos (`src/models/modules.ts`, tela `/modulos`) reduzido de 6 para 3 itens.** Fundador: credenciamento em convênios está pendente — tirar a categoria inteira (`ar_credenciamento`, `ar_gestao_mensal`, `ar_operadora_adicional`) do catálogo, sem deixar rastro na tela (nem "Em breve"). No lugar, novo módulo **Jurídico** — não existia como módulo pago antes, só como persona de chatbot gratuita (Ana Luiza) — criado no mesmo padrão do Contábil Mello (`pricing.period:'tbd'`, `displayLabel:'Consultar'`, `activationType:'contact_sales'`); provider `'Ana (sócia)'` reaproveitado de `oli-plans.ts` (`ADDONS.addon_juridico_*`), única referência real já existente no repo pra essa identidade. Depois, no mesmo pedido, **Scribe IA também saiu** (não tinha data prevista, `status:'coming_soon'` desde sempre). Catálogo final: Communicare Connect, Contabilidade Médica, Consultoria Jurídica — categorias na tela viraram Tecnologia/Contabilidade/Jurídico.
+
+- `app/modulos.tsx`: `CATEGORY_LABELS`/`CATEGORY_ICONS`/`getCategoryForId` atualizados (categoria `convenios` removida, `juridico` nova).
+- Menções de copy à Scribe IA limpas em `ecossistema.tsx` (texto do card "Módulos e Soluções") e `olicoinsService.ts` (descrição da missão "Ativar um módulo").
+- **Banco (`modules`):** `ar_credenciamento`/`ar_gestao_mensal`/`ar_operadora_adicional`/`scribe_ia` → `ativo=false` (linhas preservadas, não deletadas — histórico de `user_modules` que referencie essas linhas continua íntegro). Nova linha `juridico` (categoria `juridico`, `tipo='mensal'`, `valor=0.00`, `ativo=true`) — mesmo padrão do `contabil_mello` (valor 0 = "a definir", `fetchModulePricing()`/admin filtram por `ativo`, mas o app hoje não lê o preço do banco pra módulos — a fonte real em runtime segue sendo o `MODULE_CATALOG` estático; a atualização do banco é só pra manter o admin `/catalogo` consistente).
+- `tsc --noEmit` limpo depois de cada rodada de mudança.
+
+**Publicado nesta sessão:** commit direto em `main` (sem branch de sessão) + edge function `chat` redeployada + OTA nos dois canais — ver resumo de 1 linha ao final do documento pros IDs.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -1412,3 +1622,7 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (03/ago sessão 5):** Fecha a última pendência do §20 — lead de anúncio deixa de depender de importação manual. Nova edge function **`meta-leads-webhook`** (deployada, v1 ACTIVE, `verify_jwt:false`, versionada em `supabase/functions/`): recebe o `leadgen` do Meta, valida a assinatura HMAC do **corpo cru** (reserializar o JSON invalidaria toda requisição legítima), **volta na Graph API pra buscar os dados** — o webhook do Meta manda só o `leadgen_id`, nunca os dados da pessoa, e é por isso que precisa de token de Página — e grava em `leads`; daí o trigger `trg_notify_lead_created` que já existia dispara a notificação e ela chega no feed do admin **por realtime, sem recarregar**. `external_id` gravado como `l:<leadgen_id>` de propósito, com o mesmo prefixo que a integração Meta→Planilha usa, senão um lead que viesse pelos dois caminhos duplicaria. Códigos de resposta desenhados pro retry do Meta: 200 em duplicado e em notificação irrelevante (outro código faz reenvio em loop), 500 **só** em falha recuperável; lead sem campo obrigatório loga e segue sem derrubar o lote. **A função nunca executou** — sem segredos configurados e a URL não foi alcançável do ambiente da sessão. **Falta o fundador fazer:** criar os 3 segredos, assinar o webhook no campo `leadgen` do objeto Page e **assinar a Página ao app** (esquecer esse último é o erro clássico: verificação passa e lead nunca chega). Ponto mais provável de falha é a versão da Graph — default `v23.0`, trocável pelo segredo `META_GRAPH_VERSION` sem tocar em código. A planilha do Google segue recebendo em paralelo de propósito, como rede de segurança até o webhook provar que está pegando tudo.
 
 **Resumo de 1 linha (03/ago sessão 6):** Carga retroativa da RD executada — base foi de **22 para 32 leads**. A descoberta que salvou a carga: **`GET /contacts` devolve `job_title` vazio em 100% dos 40 contatos e telefone em menos da metade, mas `GET /deals` embute o contato com `title` (o cargo) e `phones` preenchidos** — ler só o endpoint óbvio descartaria 19 de 40 e perderia a especialidade de todos; cruzar as duas fontes derrubou o descarte pra 11, dos quais **8 eram lixo de teste da configuração, incluindo o próprio fundador**. Sobraram 3 pessoas reais só com e-mail, o que motivou tornar `whatsapp` opcional no banco (com CHECK novo exigindo e-mail **ou** telefone, pra coluna nula não virar porta pra linha sem canal nenhum). Criada coluna **`fonte`** em vez de sobrescrever `campanha` — a RD traz o canal, o Meta traz o criativo, e sobrescrever apagaria a atribuição de criativo dos 22 já importados; enriquecimento só preenche campo vazio. **🆕 Achado sem registro anterior no projeto: existe Google Ads rodando** — `Busca Paga | Facebook Ads 26 · Busca Paga | Google 3 · Desconhecido 2 · Referência | linktr.ee 1`; toda a documentação até aqui (§19) falava só de Meta, e as 3 do Google são justamente as sem telefone. Telefone malformado **não é chutado**: `922222799` (sem DDD) entra nulo com observação pedindo confirmação, porque inventar DDD manda WhatsApp pra pessoa errada. Tudo rodado por `pg_net` a partir do SQL com `service_role_key` do Vault, então nada dependeu do fundador executar comando. **Pendências:** apagar a função temporária `rd-probe` pelo painel (o MCP não deleta function), e **cadastrar o webhook no painel da RD** — a carga trouxe o histórico, mas lead novo só entra sozinho depois disso.
+
+**Resumo de 1 linha (13/ago):** Sessão **de decisão comercial, sem uma linha de código publicada**. O OLI passa a ter **dois planos** — o BASE é desativado (ninguém assinava: 22 perfis no START, 1 no PRO, zero no BASE), o **START perde a mensalidade** e fica em R$ 1,90/min, e o **PRO vai a R$ 599 mensal / R$ 499 semestral** com R$ 1,45/min, o que põe a virada em 19h/mês no semestral e 23h no mensal. Aparece um terceiro estado que não existia — **cadastrado sem plano**, que vê só a tela de planos e não reserva —, o que tira o checkout do onboarding e o joga para o momento do uso. Os **pacotes de 20h e 40h foram removidos** depois de notar que o bônus é 10% fixo em qualquer tamanho: comprar 4 pacotes de 10h dá as mesmas 44 horas pelo mesmo preço, então o pacote grande só travava dinheiro do cliente. **O achado da sessão foi de funil, não de preço:** 66 leads, 50 contatados, **4 visitas, 0 propostas, 0 conversões** — e 5 reservas em toda a história do produto, com 1 sessão cobrada; os 50 contatados estão parados sem `temperatura`, `perfil` nem `motivo_descarte`, campos que existem desde 03/ago. Com esse funil, equilibrar até dezembro só fecha triplicando a taxa de visita — preço é a alavanca menos importante hoje. Fundador confirmou que **a base atual é teste e parceiro e o OLI não fatura nada**, mas decidiu que **nada muda para quem já está dentro**, o que exige congelar as condições na própria assinatura (a assinatura hoje lê o preço direto de `plans`). Entregue o **comparativo em PDF de 2 páginas** com os valores conferidos por script contra as taxas; ficou registrado que o **ciclo semestral não existe no schema** e que **"sem fidelidade", H1 do site, deixou de ser verdade**. **Pendências:** as 4 decisões listadas na §29, e nada tocado em banco, app, admin ou site — tudo esperando autorização.
+
+**Resumo de 1 linha (19/ago):** Sessão de **implementação** da reforma de planos decidida na §29 — fundador respondeu as 4 decisões em aberto (ver §30) e autorizou construir. Achado que mudou o escopo: a cobrança por minuto nunca lia o banco (constante hardcoded em `oli-plans.ts`), então mudar a taxa do START afetaria os 24 assinantes já dentro instantaneamente — implementado congelamento (`profiles.taxa_min_congelada`) propagado nos 4 pontos que calculam custo (cobrança final, contador ao vivo da sessão, estimativa de pacote de horas, compra de pacote). Achado e corrigido de brinde: `create-subscription` gravava ciclo/status em inglês num INSERT que sempre falharia contra o CHECK do banco, silenciosamente — nunca foi pego porque zero assinaturas pagas reais existem até hoje. Banco: START 1,90/min, PRO 1,45/min, BASE desativado, ciclo `semestral` novo (R$499/mês, fidelidade 6 meses), pacotes 20h/40h desativados, cadastro parou de dar START automático. App: novo gate `/escolher-plano` pra quem se cadastra sem plano, `meu-plano.tsx` e `ecossistema.tsx` atualizados (BASE fora, Communicare fora dos benefícios do PRO, AR Soluções removido). Verificado via `tsc --noEmit` (limpo) e transação de teste no Supabase (trigger de cadastro confirmado, sem resíduo). **Pendências:** nada testado em device real, nada commitado, site/admin não tocados (fora do pedido desta sessão).

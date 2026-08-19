@@ -116,7 +116,7 @@ export const ACTION_OBJECTIVES: ActionObjective[] = [
   {
     id: 'modulo_ativo', evento: 'modulo_ativo', pontos: 10,
     titulo: 'Ativar um módulo do ecossistema',
-    descricao: 'Vá na aba Ecossistema e ative um módulo (Communicare, Scribe IA...).',
+    descricao: 'Vá na aba Ecossistema e ative um módulo (Communicare, Contábil...).',
     check: hasModuloAtivo,
   },
   {

@@ -146,6 +146,18 @@ export default function RootLayout() {
       // Gate 2: onboarding pendente
       const onboardingDone = profile?.onboarding_complete ?? false;
       if (!onboardingDone && !inBlocked) { router.replace('/onboarding'); return; }
+
+      // Gate 3: sem plano escolhido (cadastro não recebe mais START automático)
+      const inEscolherPlano = (segments[0] as string) === 'escolher-plano';
+      const hasPlan = !!(profile as { plan?: string | null } | null)?.plan;
+      if (onboardingDone && !hasPlan && !inBlocked && !inEscolherPlano) {
+        router.replace('/escolher-plano' as never);
+        return;
+      }
+      if (hasPlan && inEscolherPlano) {
+        router.replace('/');
+        return;
+      }
     }
   }, [session, isLoading, profile, profileLoaded, segments]);
 

@@ -105,10 +105,15 @@ export default function FinanceiroScreen() {
   }, [session?.user?.id]);
 
   // ── Pacotes de horas (preço = taxa/min do plano atual × 60) ──
+  // Prioriza a taxa congelada do perfil (assinante de antes da reforma de
+  // planos de 13/ago) — senão a estimativa mostrada aqui destoa do valor
+  // realmente cobrado pela edge function create-hour-package.
   useEffect(() => {
-    const rate = COST_PER_MINUTE[profile?.plan as keyof typeof COST_PER_MINUTE] ?? COST_PER_MINUTE.START;
+    const rate = profile?.taxa_min_congelada
+      ?? COST_PER_MINUTE[profile?.plan as keyof typeof COST_PER_MINUTE]
+      ?? COST_PER_MINUTE.START;
     fetchHourPackages(rate).then(setHourPackages).catch(() => {});
-  }, [profile?.plan]);
+  }, [profile?.plan, profile?.taxa_min_congelada]);
 
   // ── Valores derivados (todos reais) ──
   const oliCost      = usageSummary?.totalValor   ?? 0;

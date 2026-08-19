@@ -4,7 +4,12 @@
  * Cria uma assinatura recorrente no Asaas para contratação de plano BASE/PRO/VIP.
  * Chamado pelo app quando o médico confirma um plano no fluxo de upgrade.
  *
- * Body: { planId: string, ciclo: 'MONTHLY' | 'YEARLY', billingType?: 'PIX' | 'BOLETO_BANCARIO', cpfCnpj?: string }
+ * Body: { planId: string, ciclo: 'MONTHLY' | 'SEMESTRAL' | 'YEARLY', billingType?: 'PIX' | 'BOLETO_BANCARIO', cpfCnpj?: string }
+ *
+ * ciclo 'SEMESTRAL': cobrança MENSAL (R$/mês) com fidelidade de 6 meses —
+ * não é cobrança semestral à vista. O `cycle` enviado à Asaas é sempre
+ * 'MONTHLY' nesse caso; `fidelidade_ate` é gravado só pra rastreio interno,
+ * sem bloqueio automático de cancelamento.
  *
  * Retorno:
  *   - subscriptionId (Asaas), status, value
@@ -58,7 +63,7 @@ Deno.serve(async (req: Request) => {
       couponCode,
     } = await req.json() as {
       planId:       string;
-      ciclo?:       'MONTHLY' | 'YEARLY';
+      ciclo?:       'MONTHLY' | 'SEMESTRAL' | 'YEARLY';
       billingType?: 'CREDIT_CARD' | 'PIX' | 'BOLETO_BANCARIO';
       cpfCnpj?:     string;
       couponCode?:  string;
@@ -69,13 +74,16 @@ Deno.serve(async (req: Request) => {
     // ── 3. Busca perfil e plano em paralelo ──────────────────────────────────
     const [{ data: profile }, { data: plan }] = await Promise.all([
       supabaseAdmin.from('profiles').select('nome').eq('id', user.id).single(),
-      supabaseAdmin.from('plans').select('id, name, preco_mensal, preco_anual').eq('id', planId).eq('ativo', true).single(),
+      supabaseAdmin.from('plans').select('id, name, preco_mensal, preco_semestral, preco_anual').eq('id', planId).eq('ativo', true).single(),
     ]);
 
     if (!profile) return json({ error: 'Perfil não encontrado' }, 404);
     if (!plan)    return json({ error: 'Plano não encontrado ou inativo' }, 404);
 
-    const value = ciclo === 'YEARLY' ? plan.preco_anual : plan.preco_mensal;
+    const value = ciclo === 'YEARLY' ? plan.preco_anual
+      : ciclo === 'SEMESTRAL' ? plan.preco_semestral
+      : plan.preco_mensal;
+    if (value == null) return json({ error: `Plano ${plan.name} não oferece ciclo ${ciclo}` }, 400);
 
     // ── 3b. Cupom (opcional) ─────────────────────────────────────────────────
     // planoRecorrente: desconto em todas as faturas (subscription.value menor).
@@ -96,6 +104,10 @@ Deno.serve(async (req: Request) => {
     nextDueDate.setDate(nextDueDate.getDate() + 1);
     const nextDueDateStr = nextDueDate.toISOString().split('T')[0];
 
+    // Asaas não tem ciclo "semestral cobrado mensalmente" — semestral é
+    // cobrança MONTHLY na Asaas, com fidelidade rastreada só no nosso banco.
+    const asaasCycle = ciclo === 'YEARLY' ? 'YEARLY' : 'MONTHLY';
+
     const subRes = await fetch(`${asaasBase()}/subscriptions`, {
       method: 'POST',
       headers: asaasHeaders(),
@@ -104,44 +116,57 @@ Deno.serve(async (req: Request) => {
         billingType,
         value:             subValue,
         nextDueDate:       nextDueDateStr,
-        cycle:             ciclo,           // 'MONTHLY' | 'YEARLY' — Asaas aceita direto
-        description:       `OLI Health Hub — Plano ${plan.name} (${ciclo === 'YEARLY' ? 'Anual' : 'Mensal'})`,
+        cycle:             asaasCycle,
+        description:       `OLI Health Hub — Plano ${plan.name} (${ciclo === 'YEARLY' ? 'Anual' : ciclo === 'SEMESTRAL' ? 'Semestral' : 'Mensal'})`,
         externalReference: `subscription::${user.id}::${planId}::${ciclo}`,
       }),
     });
     const subscription = await subRes.json();
     if (!subscription.id) throw new Error(`Asaas: falha na assinatura — ${JSON.stringify(subscription)}`);
 
-    // ── 6. Registra em subscriptions com status pending_payment ──────────────
+    // ── 6. Registra em subscriptions com status pending ──────────────────────
+    // ciclo/status gravados nos valores em português aceitos pelo CHECK do banco
+    // (subscriptions_ciclo_check / subscriptions_status_check) — não os valores
+    // em inglês que vêm do app/Asaas.
+    const cicloDb: 'mensal' | 'semestral' | 'anual' =
+      ciclo === 'YEARLY' ? 'anual' : ciclo === 'SEMESTRAL' ? 'semestral' : 'mensal';
     const endsAt = ciclo === 'YEARLY'
       ? new Date(Date.now() + 366 * 24 * 60 * 60 * 1000).toISOString()
       : new Date(Date.now() +  31 * 24 * 60 * 60 * 1000).toISOString();
+    const fidelidadeAte = ciclo === 'SEMESTRAL'
+      ? new Date(Date.now() + 183 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      : null;
 
     // Hash do ID Asaas para lookup no webhook (trigger zera asaas_id_plain)
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(subscription.id));
     const asaasIdHash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-    const { data: newSub } = await supabaseAdmin
+    const { data: newSub, error: insertSubError } = await supabaseAdmin
       .from('subscriptions')
       .insert({
         professional_id: user.id,
         plan_id:         planId,
-        ciclo,
-        status:          'pending_payment',
+        ciclo:           cicloDb,
+        status:          'pending',
         starts_at:       new Date().toISOString(),
         ends_at:         endsAt,
+        fidelidade_ate:  fidelidadeAte,
         asaas_id_plain:  subscription.id,
         asaas_id_hash:   asaasIdHash,
       })
       .select('id')
       .single();
+    if (insertSubError) {
+      console.error('create-subscription: falha ao registrar subscription', insertSubError);
+      throw new Error('Falha ao registrar assinatura no banco. A cobrança na Asaas foi criada — contate o suporte.');
+    }
 
     // Notificação admin: plano contratado
     supabaseAdmin.from('admin_notifications').insert({
       type:            'plan_subscribed',
       professional_id: user.id,
       title:           `Plano contratado: ${plan.name}`,
-      body:            `${profile.nome} contratou o plano ${plan.name} (${ciclo === 'YEARLY' ? 'Anual' : 'Mensal'}) via ${billingType}`,
+      body:            `${profile.nome} contratou o plano ${plan.name} (${ciclo === 'YEARLY' ? 'Anual' : ciclo === 'SEMESTRAL' ? 'Semestral' : 'Mensal'}) via ${billingType}`,
       metadata:        { plan_id: planId, plan_name: plan.name, ciclo, billing_type: billingType, value },
     }).then(() => {}).catch(() => {}); // fire-and-forget
 
