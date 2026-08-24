@@ -1600,6 +1600,17 @@ O erro genérico da UI do Business Manager nunca deu o motivo real. Registrado v
 5. Limpar as WABAs duplicadas no portfólio.
 6. Nada testado em device/simulador nativo, nada commitado.
 
+### ✅ RESOLVIDO (24/ago, mesma sessão) — fluxo webhook → IA → WhatsApp testado de ponta a ponta
+
+Com o número registrado, testado o caminho completo de lead: mensagem real do celular do fundador pro número oficial → `whatsapp-webhook` recebe e grava em `conversations`/`messages` → IA (Claude Haiku) gera resposta → `enviarTexto` manda de volta → status `entregue` confirmado.
+
+- **Achado no meio do teste:** primeira tentativa falhou silenciosamente — `enviarTexto` lançava `WHATSAPP_PHONE_NUMBER_ID ou WHATSAPP_ACCESS_TOKEN ausente`, capturado pelo catch de `processarMensagem` e caindo no fallback de notificação, sem nenhum aviso visível pro usuário (mensagem "sumia" sem erro nenhum no WhatsApp). Causa: `WHATSAPP_PHONE_NUMBER_ID` nunca tinha sido criado como secret de verdade no Supabase — só o valor (`1231524036718791`) estava documentado aqui no handoff. Fundador criou o secret faltante, teste refeito, funcionou.
+- **Teste isolou a causa antes de mexer:** chamada direta em `test-lead-ai` (mesmo prompt, sem depender do WhatsApp) confirmou que a geração de IA e o `ANTHROPIC_API_KEY` estavam OK — o problema era só no envio de volta pela Graph API, não na IA.
+- Metodologia de teste sem sujar dado real: lead sintético criado por SQL (telefone do fundador), conversa reclassificada de `nao_classificada` pra `lead`/`status=ia`, testado, **tudo apagado depois** (lead, conversa, mensagens, notificações órfãs) — zero resíduo confirmado.
+- **⚠️ Achado, não corrigido:** a resposta da IA nessa rodada saiu com `**negrito duplo**` no corpo salvo em `messages` (bug que o prompt já proíbe explicitamente desde a sessão anterior) — o WhatsApp tolerou e renderizou em negrito mesmo assim, mas não é garantia pra sempre. Vale observar em testes futuros se o modelo volta a usar `**` e, se persistir, considerar um passo de sanitização (`.replace(/\*\*/g, '*')`) antes de `enviarTexto`, já que instrução no prompt sozinha não bloqueou 100% dessa vez.
+- **Ferramenta que ficou fora do ar durante o diagnóstico:** `query_logs` do MCP do Supabase (unified logs) devolveu `Backend error` em toda tentativa — diagnóstico teve que ser feito lendo o log direto no Dashboard (Edge Functions → função → Logs), não pelo MCP. Se acontecer de novo, esse é o caminho.
+- Confirma: `whatsapp-webhook` está de fato operante em produção — próximo passo real agora é submeter os templates pra aprovação (item 4 acima), pra cobrir o caso comum (recepção iniciando contato fora da janela de 24h).
+
 ## 13. Comandos úteis
 
 ```bash
