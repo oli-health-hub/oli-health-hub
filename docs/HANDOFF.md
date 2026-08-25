@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 13/Agosto/2026.
+> Última atualização: 24/Agosto/2026.
 
 ---
 
@@ -1611,6 +1611,79 @@ Com o número registrado, testado o caminho completo de lead: mensagem real do c
 - **Ferramenta que ficou fora do ar durante o diagnóstico:** `query_logs` do MCP do Supabase (unified logs) devolveu `Backend error` em toda tentativa — diagnóstico teve que ser feito lendo o log direto no Dashboard (Edge Functions → função → Logs), não pelo MCP. Se acontecer de novo, esse é o caminho.
 - Confirma: `whatsapp-webhook` está de fato operante em produção — próximo passo real agora é submeter os templates pra aprovação (item 4 acima), pra cobrir o caso comum (recepção iniciando contato fora da janela de 24h).
 
+## 34. IA do WhatsApp vira vendedora + todo contato é atendido + inbox corrigido (24/ago, mesma sessão)
+
+Pedido do fundador depois do teste ponta-a-ponta acima: a IA precisava (1) atender **todo** contato, não só quem já veio de campanha/site; (2) identificar quem é a pessoa e coletar dado sem ser invasiva; (3) ter abordagem **100% comercial**, com quebra de objeção de verdade, soar humana; (4) mandar foto por especialidade; (5) reengajar lead que some no meio da conversa; (6) ter autonomia de agendar visita. Tudo isso com "manual de boas práticas" pra cumprir rigorosamente — criado **`docs/IA_ATENDIMENTO_WHATSAPP.md`**, documento-âncora do comportamento da IA (o prompt em código implementa o manual, não o contrário).
+
+### Todo contato vira lead automaticamente
+
+Antes, número desconhecido (sem casar com `patients` nem `leads`) virava `kind='nao_classificada'`, só gerava notificação, **sem resposta**. Isso fechava a porta pra contato orgânico/direto. Agora `resolveConversa` (`whatsapp-webhook/index.ts`) cria um lead na hora (`origem='whatsapp'`, nome placeholder "Contato via WhatsApp") pra qualquer número que não seja paciente cadastrado — a IA sempre responde, e classifica quem é a pessoa **durante** a conversa. `kind='nao_classificada'` continua existindo no schema (não é breaking change), só não é mais produzido por este caminho.
+
+- Migration `leads_email_nullable_whatsapp_origin`: `email` deixou de ser `NOT NULL` — lead criado só a partir do WhatsApp não tem e-mail no início. O CHECK `leads_tem_algum_contato` (email OU whatsapp) já previa esse caso, só a coluna que não acompanhava.
+
+### Tag técnica `[META: ...]` — um mecanismo só pra tudo
+
+O antigo `[HANDOFF]`/`[HANDOFF: motivo]` virou um formato único e extensível, sempre na última linha da resposta (nunca vista pela pessoa):
+```
+[META: nome=...; especialidade=...; resumo=...; imagem=...; aviso=...; handoff=...]
+```
+- `nome`/`especialidade`/`resumo` → `UPDATE leads` (parcial, só os campos presentes).
+- `imagem` → dispara `enviarImagem()` com uma foto real de um mapa fechado (ver abaixo) — a IA nunca inventa URL.
+- `handoff` → transferência **dura**: `status='humano'`, IA para de responder, notificação "Lead pediu atendimento humano".
+- `aviso` → notificação **informativa**, sem tirar a IA da conversa (usado no agendamento de visita — ver abaixo). `handoff` e `aviso` nunca aparecem juntos.
+
+`test-lead-ai` foi reescrita em espelho exato pra continuar servindo de bancada de teste sem tocar WhatsApp real.
+
+### Persona vira vendedora — e um bug de matemática pego no teste
+
+Prompt reescrito do zero: a IA deixou de ser "central de dúvidas" e virou a responsável comercial — descoberta antes de argumento, traduz fato em benefício no contexto de quem pergunta, quebra objeção validando antes de reenquadrar, fechamento suave pra visita, proibição explícita de soar como robô ("estou aqui para ajudar no que precisar" banido).
+
+**🔴 Achado direto no teste, antes de ir pro WhatsApp real:** pedida pra calcular o custo mensal de um volume de sessões (3 pacientes/semana), a IA **errou a conta** — respondeu "R$ 870 no total (R$ 599 + R$ 871)", números que não fecham entre si nem batem com `1,45 × 600min = 870`. Mesmo com a regra "nunca invente número" já no prompt, contas de várias etapas o modelo erra. Fix: a IA **não calcula mais nada em tempo real** — só pode citar 2 exemplos fixos já certos (sessão de 50 min: R$ 95 no START, R$ 72,50 no PRO); qualquer conta de volume/mês/duração diferente, ela diz que vai confirmar com a equipe. **Lição:** "não invente" no prompt não impede erro de aritmética de um LLM pequeno — números que importam de verdade (dinheiro, pra decisão do lead) devem ser pré-calculados e fixos, nunca computados on-the-fly pelo modelo.
+
+Também reforçado: nunca citar valor de aluguel de mercado/concorrente pra contrastar objeção de preço — só o CONCEITO de não ter custo fixo, sem inventar número de comparação.
+
+### Rebrand: "coworking médico" → "hub para profissionais da saúde"
+
+Só no prompt da IA (não mudou no app/site/CLAUDE.md — decisão registrada como divergência conhecida, não decisão de rebrand geral da marca). Endereço físico real confirmado por pesquisa em código (`landing/index.html`) e incluído como fato: Rua Marquês de Paranaguá, 348, Edifício Ralph Center, Consolação, São Paulo/SP.
+
+### Fotos por especialidade
+
+Mapa `rooms.specialties` confirmado **direto no banco** (`select id, specialties from rooms`), não por comentário informal: 1 Vídeo Conferência · 2 Psicologia · 3/5/6/7 Clínica Geral · 4 Audio Visual · 8 Ginecologia+Estética · 9 Eventos — fundador confirmou a ordem. Fotos reais e já públicas (mesmas do site, `landing/fotos/`) mapeadas por especialidade, chave fechada (`psicologia`, `ginecologia`, `estetica`, `clinica_geral`, `eventos`, `estrutura`) — a IA só pode citar uma dessas chaves, nunca uma URL livre. `enviarImagem()` nova em `_shared/whatsapp.ts` (mensagem tipo `image`, `link` público).
+
+### Agendamento com autonomia (Calendly)
+
+Link real confirmado em `src/components/CalendlyVisitBadge.tsx` — `calendly.com/olihealthhub/atendimento-presencial`. A IA agora manda esse link direto quando a pessoa quer visitar, **sem transferir pra humano** (usa `aviso`, não `handoff`) — decisão do fundador, diferente da versão anterior do prompt que tratava intenção de visita como gatilho de transferência dura.
+
+### Reengajamento de lead silencioso — só dentro da janela de 24h
+
+Pergunta do fundador sobre reengajar depois de 24h esbarrou na regra da Meta: mensagem de negócio fora da janela **exige template aprovado**, e nenhum template foi submetido ainda (mesma pendência do item 4 do §33). Decisão: implementar **só o caso seguro agora** (dentro de 24h) e deixar o caso de template pra quando o fundador submeter.
+
+- Nova função `whatsapp-nudge-silencio` (`verify_jwt:true`, chamada por cron): acha conversas `kind='lead'`/`status='ia'` com `last_inbound_at` entre 2h e 22h atrás (silêncio real, sem chegar perto do limite de 24h) e sem reengajamento já tentado pra esse silêncio específico (`last_nudge_at`). IA gera 1 mensagem curta de retomada (prompt separado, `SYSTEM_PROMPT_NUDGE`) ou responde `SILENCIO` se a conversa já tinha fim natural (despedida, já transferida, pedido de não contato) — nesse caso não manda nada, só marca a tentativa.
+- Migration `conversations_last_nudge_at`: coluna nova, garante **1 reengajamento por silêncio** (não fica insistindo a cada execução do cron).
+- Cron `whatsapp-nudge-silencio`: a cada 30 min, só 9h-19h BRT (`*/30 12-21 * * *` UTC) — mesmo padrão `pg_net`+Vault dos crons já existentes (`rd-vincular-deals` etc.).
+- **Reengajamento além de 24h fica pendente** de template aprovado pela Meta (fundador vai submeter templates amanhã, junto com `confirmacao_consulta`/`lembrete_vespera` do §33) — depois de aprovado, a reativação da IA quando o lead responder já é automática, não precisa de código novo (o webhook trata a resposta como mensagem normal de conversa existente).
+
+### 🐛 Bug achado em uso real — Fila abria WhatsApp sem destino em vez da conversa
+
+Fundador testou o handoff com o sócio (pediu falar com humano) e, ao clicar na notificação na Fila do admin, abria o WhatsApp genérico (tela de escolher contato) em vez de `/conversas` com o histórico. Causa: `FilaClient.tsx` nunca foi atualizado pra esse tipo de notificação novo — `openWhatsApp()` rodava incondicionalmente pra qualquer tipo, incluindo `whatsapp_message_received`, tentando achar telefone em chaves (`metadata.whatsapp`/`metadata.phone`) que esse tipo nunca teve (o metadata dele é só `{conversation_id, kind}`) — caía no fallback `wa.me/?text=`, exatamente o bug do §27 (mas em contexto novo). `NotifType` local nem incluía o tipo, então a tag mostrava a string crua.
+
+- Fix: `FilaClient.tsx` ganha branch — pra `whatsapp_message_received` com `conversation_id`, mostra botão **"Ver conversa"** (`Link` pro `/conversas?id=...`) em vez do botão WhatsApp.
+- `/conversas` não tinha rota dinâmica (`ConversasClient.tsx` guardava a conversa selecionada só em `useState`, sem ler URL) — `page.tsx` passou a ler `searchParams.id` (Next 14.2.29, objeto simples) e repassar como `initialId` pro client component, que usa isso (ou a mais recente, como antes) pra selecionar a conversa inicial.
+- `TYPE_TAG`/`NotifType` de `FilaClient.tsx` ganharam a entrada faltante.
+- `tsc --noEmit` limpo nos dois projetos (`admin` e raiz) depois do fix.
+
+### Publicado
+
+**Commit `832a90a`**, push direto pra `main` (Vercel redeploya o admin sozinho). Empacota nesse commit todo o trabalho que já estava pronto e não commitado de sessões anteriores (schema/edge functions do §33 — cobrança de paciente via Asaas, `conversations`/`messages`, `/conversas`, card Asaas em `/medicos/[id]`) **junto** com o trabalho desta sessão (IA vendedora, lead automático, fotos, Calendly, reengajamento, fix da Fila) — estava tudo interligado no mesmo `actions.ts`/schema, não dava pra separar sem quebrar o build. `admin/tsconfig.tsbuildinfo` (artefato de build) deixado de fora do commit de propósito, igual à lição já registrada no §26.
+
+**⚠️ Pendências desta sessão:**
+1. Templates de WhatsApp (`confirmacao_consulta`, `lembrete_vespera`, e agora também um de **reengajamento pós-24h**) — fundador submete amanhã.
+2. Limpar as 3 WABAs duplicadas no portfólio (pendência antiga do §33, ainda não feita).
+3. `asaas-create-subaccount`/`create-patient-charge` seguem não deployados (taxa OLI + produto de subconta).
+4. Fundador precisa confirmar ao vivo que o fix da Fila resolveu (reabrir a notificação do teste com o sócio e clicar "Ver conversa").
+5. Nada testado em device/simulador nativo.
+6. `docs/IA_ATENDIMENTO_WHATSAPP.md` e o prompt devem ser revisados juntos na próxima mudança de comportamento — não editar um sem o outro (regra que o próprio documento estabelece).
+
 ## 13. Comandos úteis
 
 ```bash
@@ -1694,3 +1767,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (19/ago sessão 2):** Chatbot dos 5 especialistas (nenhum tinha ponto de entrada ativo no app) vira 1 assistente geral, a Olivia, sem agendamento Calendly com parceiro humano — `supabase/functions/chat/index.ts` perde o roteamento por `persona`. Catálogo de módulos (`/modulos`) perde a categoria de convênios inteira (credenciamento, gestão mensal, operadora adicional — pendente por tempo indeterminado) e ganha módulo **Jurídico** (mesmo padrão do Contábil Mello, "Consultar"); Scribe IA também sai. Ver §32. Sessão fechou publicando tudo: commit direto em `main`, merge com 4 commits que tinham avançado em paralelo em `origin/main` (fix de bônus de horas do PR #10, §29 — conflito só em `HANDOFF.md`, resolvido preservando as duas narrativas e renumerando §29–§32), edge function `chat` redeployada (v24), banco atualizado (`modules.ativo` + linha nova `juridico`) e OTA nos dois canais (prod `c933c1a3` / preview `61064b96`).
 
 **Resumo de 1 linha (19-21/ago):** Dois pedidos novos — cobrança de paciente via subconta Asaas (OLI não intermediária) e mensageria WhatsApp (IA ostensiva pra lead, recepção-driven pra paciente). Ver §33. **Fase 1 (schema) implementada e em produção**: `patient_id`/`valor_consulta` em `reservations`, `professional_asaas_accounts`, `patient_charges`, `conversations`/`messages`, `whatsapp_templates` — tudo com RLS, `tsc` limpo. **Fase 2**: `whatsapp-webhook`/`send-patient-trigger`/`send-whatsapp-reply` deployados (inertes sem secrets do Meta); `asaas-create-subaccount`/`create-patient-charge` só escritos, não deployados (falta decisão de taxa da OLI + confirmação do produto de subconta). Admin ganhou `/conversas` (inbox realtime), card Asaas em `medicos/[id]`, vínculo paciente+cobrança nas reservas concluídas. `test-lead-ai` (function de teste temporária) achou e corrigiu 2 bugs reais no prompt da IA antes de qualquer mensagem real: negrito incompatível com WhatsApp (`**duplo**` → `*simples*`) e alucinação de regra de preço inexistente — prompt corrigido com valores reais e proibição explícita de inventar. Decisão registrada em memória: número comercial `(11) 97223-3745` fica no app comum, número novo dedicado à API. **A maior parte da sessão foi configuração no Meta, e travou no fim**: App "OLI WPP" criado, webhook validado de verdade por `curl` (200 + challenge), número de teste registrado, número oficial (`11939429453`) reivindicado de uma WABA de terceiro via SMS mas trava com "Falha na inscrição" ao finalizar registro — mesmo erro em 2 contas diferentes (descarta teoria de conta nova, que **era** a causa real do bloqueio de criar Usuário do Sistema, resolvido separadamente com o Igor). Token permanente gerado com sucesso. **Pendências:** chamado de suporte Meta preparado mas não enviado; testar fluxo completo com número de teste enquanto isso; taxa Asaas e produto de subconta seguem sem decisão do fundador; templates ainda não submetidos à Meta; 3 WABAs duplicadas no portfólio, não limpas; nada commitado.
+
+**Resumo de 1 linha (24/ago):** Sessão de fechamento do bloco WhatsApp. Resolvido o registro do número (era só faltar `POST /register`, nunca chamado pela UI do Meta — ver §33) e confirmado o fluxo webhook→IA→WhatsApp funcionando de ponta a ponta. Depois, redesenho grande a pedido do fundador: **todo contato agora vira lead automaticamente** (antes, número sem campanha/site prévios caía em silêncio); IA reescrita como **vendedora de verdade** (descoberta, quebra de objeção, fechamento suave) com um **bug de matemática pego no teste** (a IA errou uma conta de custo mensal — fix: só pode citar 2 exemplos de preço já calculados, nunca computar total novo); rebrand pra "hub para profissionais da saúde" (só no prompt); **fotos por especialidade** (mapa sala↔especialidade confirmado no banco, não em comentário); **agendamento com autonomia** via link real do Calendly, sem precisar transferir pra humano; **reengajamento de lead silencioso** só dentro da janela de 24h (cron novo, `whatsapp-nudge-silencio`) — reengajar depois de 24h fica pendente de template aprovado pela Meta. Tudo documentado em `docs/IA_ATENDIMENTO_WHATSAPP.md`, manual-âncora que o prompt implementa. **Bug achado em uso real**: clicar na notificação de handoff na Fila abria o WhatsApp genérico em vez de `/conversas` com histórico — `FilaClient.tsx` nunca tratava esse tipo de notificação; fix rotea pra `/conversas?id=`, que ganhou suporte a abrir direto numa conversa via URL. **Publicado**: commit `832a90a`, push direto pra `main` — empacota também todo o trabalho do §33 que estava pronto e nunca tinha sido commitado (schema Asaas paciente, `/conversas`, edge functions). `tsc --noEmit` limpo nos dois projetos. **Pendências:** submeter os 3 templates de WhatsApp pra Meta (inclui um novo, de reengajamento pós-24h); limpar 3 WABAs duplicadas; `asaas-create-subaccount`/`create-patient-charge` sem decisão de taxa/produto; confirmar com o fundador que o fix da Fila resolveu; nada testado em device nativo.
