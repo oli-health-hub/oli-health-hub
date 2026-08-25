@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 24/Agosto/2026.
+> Última atualização: 25/Agosto/2026.
 
 ---
 
@@ -1683,6 +1683,20 @@ Fundador testou o handoff com o sócio (pediu falar com humano) e, ao clicar na 
 4. Fundador precisa confirmar ao vivo que o fix da Fila resolveu (reabrir a notificação do teste com o sócio e clicar "Ver conversa").
 5. Nada testado em device/simulador nativo.
 6. `docs/IA_ATENDIMENTO_WHATSAPP.md` e o prompt devem ser revisados juntos na próxima mudança de comportamento — não editar um sem o outro (regra que o próprio documento estabelece).
+
+## 35. Ajuste de tom e coleta da IA do WhatsApp + fix de vazamento de didascália (25/ago)
+
+Feedback do fundador depois de usar o §34 em produção: a IA estava convergindo forte demais pra "agendar visita" em quase toda resposta, e às vezes vazava texto de didascália pro lead (ex.: `[enviando foto]` aparecendo na mensagem visível). Também pediu que nome e especialidade do lead virassem prioridade explícita de coleta, não "aos poucos" sem ordem. Revisão feita em `docs/IA_ATENDIMENTO_WHATSAPP.md` primeiro (virou 1.1, com log de revisões novo em §11), prompt em `whatsapp-webhook/index.ts` e `test-lead-ai/index.ts` implementando as mesmas regras (conferido por diff que os dois ficaram idênticos, como o manual exige).
+
+**Quatro mudanças de comportamento:**
+1. **Nome e especialidade priorizados** — assim que a IA percebe que fala com profissional de saúde interessado, essas duas entram nas próximas perguntas naturais (ainda uma de cada vez), antes de "como conheceu o OLI" e do resto da venda.
+2. **Sentir a intenção antes de responder** — nova instrução explícita pra IA identificar o que a pessoa pediu de verdade (preço, dúvida pontual, objeção, resposta curta) e responder exatamente isso, de forma direta, em vez de devolver o discurso de venda padrão por cima de uma pergunta específica.
+3. **Visita deixa de ser o gancho de toda resposta** — cada resposta pode ter um complemento, mas o tipo varia (pergunta de descoberta, informação extra, foto, ou convite pra visita); o convite só entra quando a pessoa sinaliza que quer o próximo passo, ou no máximo a cada 3-4 respostas sem sinal nenhum.
+4. **🐛 Vazamento de didascália corrigido em duas camadas.** Causa provável: `extraiMeta()` só captura a tag `[META: ...]` ancorada no *fim* da resposta — se o modelo escrevesse um colchete de narração no meio do texto (ex.: `[enviando foto]`, hábito comum de modelo pequeno tentando narrar uma ação como se fosse tool call), ele não batia no regex e vazava pro lead como texto normal. Prompt ganhou proibição explícita ("NUNCA NARRE UMA AÇÃO ENTRE COLCHETES..."), e o código ganhou `sanitizaResposta()` (roda depois de `extraiMeta`) como rede de segurança: converte `**negrito**` residual pra `*simples*`, remove cabeçalho markdown (`#`) e apaga qualquer colchete de até 80 caracteres que tenha sobrado no texto — mesmo padrão de defesa em duas camadas (prompt + código) que o `**negrito**` duplo já tinha deixado como pendência registrada no §33.
+
+**Não mexido nesta sessão:** fatos que a IA pode afirmar (§7 do manual), regras de transferência para humano (§6), formato da tag META, chaves de foto por especialidade, agendamento via Calendly (segue autônomo, só a frequência do convite mudou).
+
+**⚠️ Pendências:** nada testado em WhatsApp real ainda — só revisão de prompt e código; `tsc --noEmit` não roda sobre `supabase/functions` (fora do `tsconfig.json` raiz, Deno sem `deno check` disponível neste ambiente) — validação foi leitura manual + diff dos dois prompts confirmando que ficaram idênticos. Recomendado testar via `test-lead-ai` (ou WhatsApp real) antes de considerar fechado, e observar se o padrão de convergência pra visita ficou no ponto certo — ajustar a frequência (hoje "3-4 respostas sem sinal") se ainda parecer alto ou baixo demais na prática. Nada commitado ainda.
 
 ## 13. Comandos úteis
 
