@@ -1,9 +1,11 @@
 import { createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase-server';
-import { changePlan, addHours } from '@/app/actions';
+import { changePlan, addHours, linkPatientToReservation, generatePatientCharge, triggerPatientMessage } from '@/app/actions';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MedicoManagementCard } from './MedicoManagementCard';
 import { DocumentsCard } from './DocumentsCard';
+import { AsaasAccountCard } from './AsaasAccountCard';
+import { ReservaBillingActions } from './ReservaBillingActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -180,10 +182,29 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
   // Reservas recentes
   const { data: reservations } = await supabase
     .from('reservations')
-    .select('id, room_name, start_time, end_time, status, arrived_at')
+    .select('id, room_name, start_time, end_time, status, arrived_at, patient_id, valor_consulta')
     .eq('professional_id', params.id)
     .order('start_time', { ascending: false })
     .limit(20);
+
+  // Pacientes do médico (pra vincular a uma reserva) + subconta Asaas + cobranças já geradas
+  const { data: patientsList } = await supabase
+    .from('patients')
+    .select('id, nome')
+    .eq('professional_id', params.id)
+    .order('nome', { ascending: true });
+
+  const { data: asaasAccount } = await supabase
+    .from('professional_asaas_accounts')
+    .select('tipo_pessoa, nome_completo, email, telefone, status, status_reason')
+    .eq('professional_id', params.id)
+    .maybeSingle();
+
+  const { data: patientCharges } = await supabase
+    .from('patient_charges')
+    .select('reservation_id, status')
+    .eq('professional_id', params.id);
+  const chargeByReservation = new Map((patientCharges ?? []).map(c => [c.reservation_id, c.status]));
 
   // NPS
   const { data: npsResponses } = await supabase
@@ -408,6 +429,8 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
             </form>
           </Section>
 
+          <AsaasAccountCard professionalId={p.id} account={asaasAccount ?? null} />
+
         </div>
 
         {/* ── Coluna direita: dados ── */}
@@ -598,6 +621,31 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </Section>
+          )}
+
+          {/* Cobrança e mensagens de paciente — só reservas concluídas */}
+          {(reservations ?? []).some(r => r.status === 'concluido') && (
+            <Section title="Cobrança e mensagens (consultas concluídas)">
+              <div className="space-y-4">
+                {(reservations ?? []).filter(r => r.status === 'concluido').map(r => (
+                  <div key={r.id} className="py-3 border-b border-oli-border last:border-0">
+                    <p className="text-xs text-oli-lgray mb-2">
+                      {r.room_name} · {new Date(r.start_time).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </p>
+                    <ReservaBillingActions
+                      reservationId={r.id}
+                      professionalId={p.id}
+                      patients={patientsList ?? []}
+                      currentPatientId={r.patient_id}
+                      currentPatientNome={r.patient_id ? (patientsList ?? []).find(pt => pt.id === r.patient_id)?.nome ?? null : null}
+                      currentValor={r.valor_consulta}
+                      chargeStatus={chargeByReservation.get(r.id) ?? null}
+                      asaasApproved={asaasAccount?.status === 'aprovada'}
+                    />
+                  </div>
+                ))}
               </div>
             </Section>
           )}

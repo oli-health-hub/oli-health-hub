@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
 import { abrirWhatsApp, mensagemLead } from '@/lib/whatsapp';
 
-type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated' | 'lead_received';
+type NotifType = 'new_signup' | 'module_purchased' | 'module_activated' | 'plan_subscribed' | 'plan_activated' | 'lead_received' | 'whatsapp_message_received';
 
 interface QueueItem {
   id:              string;
@@ -24,6 +25,7 @@ const TYPE_TAG: Record<NotifType, { label: string; color: string }> = {
   plan_subscribed:  { label: 'Plano contratado', color: 'bg-blue-50 text-blue-700'        },
   plan_activated:   { label: 'Plano ativado',    color: 'bg-blue-50 text-blue-700'        },
   lead_received:    { label: 'Novo lead',        color: 'bg-amber-50 text-amber-700'      },
+  whatsapp_message_received: { label: 'WhatsApp', color: 'bg-emerald-50 text-emerald-700' },
 };
 
 function timeAgo(iso: string): string {
@@ -113,12 +115,21 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
               </div>
             </div>
             <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => openWhatsApp(item)}
-                className="bg-[#25D366] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-              >
-                WhatsApp
-              </button>
+              {item.type === 'whatsapp_message_received' && item.metadata?.conversation_id ? (
+                <Link
+                  href={`/conversas?id=${String(item.metadata.conversation_id)}`}
+                  className="bg-oli-green text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Ver conversa
+                </Link>
+              ) : (
+                <button
+                  onClick={() => openWhatsApp(item)}
+                  className="bg-[#25D366] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  WhatsApp
+                </button>
+              )}
               <button
                 onClick={() => dismiss(item.id)}
                 className="border border-oli-border text-oli-gray text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-stone-50 transition-colors"

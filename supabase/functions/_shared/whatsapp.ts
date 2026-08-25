@@ -1,0 +1,109 @@
+/**
+ * Utilitários compartilhados para integração com o WhatsApp Business Cloud API
+ * (Meta), número único da OLI. Usado por whatsapp-webhook, send-patient-trigger
+ * e send-whatsapp-reply.
+ *
+ * Segredos necessários (Supabase → Edge Functions → Secrets):
+ *   WHATSAPP_PHONE_NUMBER_ID — ID do número comercial no Meta Business Manager.
+ *   WHATSAPP_ACCESS_TOKEN    — token de acesso do WhatsApp Business Account.
+ *   META_APP_SECRET          — já existe (usado por meta-leads-webhook), o
+ *                              mesmo App do Meta cobre os dois produtos.
+ *   WHATSAPP_VERIFY_TOKEN    — string inventada por nós para o handshake do
+ *                              webhook de mensagens (separado do
+ *                              META_VERIFY_TOKEN do webhook de leads).
+ */
+
+const GRAPH_VERSION = Deno.env.get('META_GRAPH_VERSION') ?? 'v23.0';
+
+/** HMAC-SHA256 do corpo cru — mesmo mecanismo do meta-leads-webhook. */
+export async function assinaturaConfere(corpoCru: string, header: string | null, segredo: string): Promise<boolean> {
+  if (!header?.startsWith('sha256=')) return false;
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(segredo),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(corpoCru));
+  const esperado = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const recebido = header.slice('sha256='.length);
+
+  if (esperado.length !== recebido.length) return false;
+  let diff = 0;
+  for (let i = 0; i < esperado.length; i++) diff |= esperado.charCodeAt(i) ^ recebido.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Normaliza telefone para o formato que o Graph API usa (E.164 sem '+').
+ *  Assume Brasil (55) quando o número não vier com código de país. */
+export function normalizaTelefone(raw: string): string {
+  const digitos = raw.replace(/\D/g, '');
+  if (digitos.startsWith('55') && digitos.length >= 12) return digitos;
+  return `55${digitos}`;
+}
+
+async function chamarGraphMessages(payload: Record<string, unknown>): Promise<{ wamid: string }> {
+  const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+  const accessToken    = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
+  if (!phoneNumberId || !accessToken) {
+    throw new Error('WHATSAPP_PHONE_NUMBER_ID ou WHATSAPP_ACCESS_TOKEN ausente — mensageria ainda não configurada');
+  }
+
+  const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(`WhatsApp Graph API falhou: ${res.status} ${JSON.stringify(data)}`);
+
+  const wamid = data.messages?.[0]?.id as string | undefined;
+  if (!wamid) throw new Error(`WhatsApp Graph API respondeu sem message id: ${JSON.stringify(data)}`);
+  return { wamid };
+}
+
+/** Mensagem de texto livre — só aceita pela Meta dentro da janela de 24h
+ *  desde a última mensagem recebida do destinatário. */
+export async function enviarTexto(opts: { to: string; body: string }): Promise<{ wamid: string }> {
+  return chamarGraphMessages({
+    messaging_product: 'whatsapp',
+    to: opts.to,
+    type: 'text',
+    text: { body: opts.body },
+  });
+}
+
+/** Mensagem de imagem por link público (mesma janela de 24h do texto livre). */
+export async function enviarImagem(opts: { to: string; link: string; caption?: string }): Promise<{ wamid: string }> {
+  return chamarGraphMessages({
+    messaging_product: 'whatsapp',
+    to: opts.to,
+    type: 'image',
+    image: { link: opts.link, caption: opts.caption },
+  });
+}
+
+/** Mensagem via template pré-aprovado — única forma de iniciar conversa fora
+ *  da janela de 24h. `variaveis` preenche {{1}}, {{2}}... na ordem. */
+export async function enviarTemplate(opts: {
+  to: string; templateName: string; idioma: string; variaveis: string[];
+}): Promise<{ wamid: string }> {
+  return chamarGraphMessages({
+    messaging_product: 'whatsapp',
+    to: opts.to,
+    type: 'template',
+    template: {
+      name: opts.templateName,
+      language: { code: opts.idioma },
+      components: opts.variaveis.length > 0
+        ? [{ type: 'body', parameters: opts.variaveis.map(v => ({ type: 'text', text: v })) }]
+        : undefined,
+    },
+  });
+}

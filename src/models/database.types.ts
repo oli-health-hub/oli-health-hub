@@ -253,6 +253,83 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          assigned_to: string | null
+          channel: string
+          created_at: string
+          id: string
+          kind: string
+          last_inbound_at: string | null
+          last_message_at: string | null
+          lead_id: string | null
+          patient_id: string | null
+          phone_e164: string
+          professional_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel?: string
+          created_at?: string
+          id?: string
+          kind: string
+          last_inbound_at?: string | null
+          last_message_at?: string | null
+          lead_id?: string | null
+          patient_id?: string | null
+          phone_e164: string
+          professional_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          channel?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          last_inbound_at?: string | null
+          last_message_at?: string | null
+          lead_id?: string | null
+          patient_id?: string | null
+          phone_e164?: string
+          professional_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_redemptions: {
         Row: {
           asaas_id: string | null
@@ -589,6 +666,50 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          body: string | null
+          conversation_id: string
+          created_at: string
+          direction: string
+          id: string
+          sender_type: string
+          status: string
+          template_name: string | null
+          wamid: string | null
+        }
+        Insert: {
+          body?: string | null
+          conversation_id: string
+          created_at?: string
+          direction: string
+          id?: string
+          sender_type: string
+          status?: string
+          template_name?: string | null
+          wamid?: string | null
+        }
+        Update: {
+          body?: string | null
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          sender_type?: string
+          status?: string
+          template_name?: string | null
+          wamid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modules: {
         Row: {
           ativo: boolean
@@ -802,6 +923,80 @@ export type Database = {
           },
         ]
       }
+      patient_charges: {
+        Row: {
+          asaas_payment_id_enc: string | null
+          asaas_payment_id_plain: string | null
+          billing_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          paid_at: string | null
+          patient_id: string
+          professional_id: string
+          reservation_id: string
+          status: string
+          valor: number
+        }
+        Insert: {
+          asaas_payment_id_enc?: string | null
+          asaas_payment_id_plain?: string | null
+          billing_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string | null
+          patient_id: string
+          professional_id: string
+          reservation_id: string
+          status?: string
+          valor: number
+        }
+        Update: {
+          asaas_payment_id_enc?: string | null
+          asaas_payment_id_plain?: string | null
+          billing_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_at?: string | null
+          patient_id?: string
+          professional_id?: string
+          reservation_id?: string
+          status?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_charges_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_charges_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_charges_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_charges_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: true
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           communicare_id: string | null
@@ -905,6 +1100,77 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      professional_asaas_accounts: {
+        Row: {
+          approved_at: string | null
+          asaas_account_id: string | null
+          asaas_api_key_enc: string | null
+          asaas_api_key_plain: string | null
+          asaas_wallet_id: string | null
+          cpf_cnpj_hash: string | null
+          created_at: string
+          email: string | null
+          endereco: Json | null
+          id: string
+          nome_completo: string | null
+          professional_id: string
+          status: string
+          status_reason: string | null
+          submitted_at: string | null
+          telefone: string | null
+          tipo_pessoa: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          asaas_account_id?: string | null
+          asaas_api_key_enc?: string | null
+          asaas_api_key_plain?: string | null
+          asaas_wallet_id?: string | null
+          cpf_cnpj_hash?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: Json | null
+          id?: string
+          nome_completo?: string | null
+          professional_id: string
+          status?: string
+          status_reason?: string | null
+          submitted_at?: string | null
+          telefone?: string | null
+          tipo_pessoa: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          asaas_account_id?: string | null
+          asaas_api_key_enc?: string | null
+          asaas_api_key_plain?: string | null
+          asaas_wallet_id?: string | null
+          cpf_cnpj_hash?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: Json | null
+          id?: string
+          nome_completo?: string | null
+          professional_id?: string
+          status?: string
+          status_reason?: string | null
+          submitted_at?: string | null
+          telefone?: string | null
+          tipo_pessoa?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_asaas_accounts_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       professional_documents: {
         Row: {
@@ -1290,11 +1556,13 @@ export type Database = {
           created_at: string
           end_time: string
           id: string
+          patient_id: string | null
           professional_id: string
           room_name: string
           start_time: string
           status: string
           updated_at: string
+          valor_consulta: number | null
         }
         Insert: {
           arrived_at?: string | null
@@ -1303,11 +1571,13 @@ export type Database = {
           created_at?: string
           end_time: string
           id?: string
+          patient_id?: string | null
           professional_id: string
           room_name: string
           start_time: string
           status?: string
           updated_at?: string
+          valor_consulta?: number | null
         }
         Update: {
           arrived_at?: string | null
@@ -1316,13 +1586,22 @@ export type Database = {
           created_at?: string
           end_time?: string
           id?: string
+          patient_id?: string | null
           professional_id?: string
           room_name?: string
           start_time?: string
           status?: string
           updated_at?: string
+          valor_consulta?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reservations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reservations_professional_id_fkey"
             columns: ["professional_id"]
@@ -1610,6 +1889,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_templates: {
+        Row: {
+          corpo: string
+          created_at: string
+          id: string
+          idioma: string
+          meta_template_name: string
+          status_aprovacao: string
+          trigger_type: string
+          updated_at: string
+          variaveis: Json
+        }
+        Insert: {
+          corpo: string
+          created_at?: string
+          id?: string
+          idioma?: string
+          meta_template_name: string
+          status_aprovacao?: string
+          trigger_type: string
+          updated_at?: string
+          variaveis?: Json
+        }
+        Update: {
+          corpo?: string
+          created_at?: string
+          id?: string
+          idioma?: string
+          meta_template_name?: string
+          status_aprovacao?: string
+          trigger_type?: string
+          updated_at?: string
+          variaveis?: Json
+        }
+        Relationships: []
       }
     }
     Views: {

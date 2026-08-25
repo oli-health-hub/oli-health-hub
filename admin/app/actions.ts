@@ -351,6 +351,77 @@ export async function hardDeleteUser(formData: FormData) {
   revalidatePath('/equipe');
 }
 
+// ─── Cobrança de paciente via subconta Asaas ───────────────────────────────────
+
+/** Salva/atualiza os dados de onboarding da subconta Asaas de um médico.
+ *  Status fica 'rascunho' — o envio real pra Asaas (asaas-create-subaccount)
+ *  ainda não está deployado, depende de confirmação do produto de subconta
+ *  com o comercial deles. CPF/CNPJ não é coletado aqui de propósito: só
+ *  trafega na hora do envio real, nunca fica guardado em texto puro. */
+export async function saveAsaasAccountDraft(formData: FormData) {
+  const professionalId = formData.get('professional_id') as string;
+  const tipoPessoa       = formData.get('tipo_pessoa')     as string;
+  const nomeCompleto      = (formData.get('nome_completo') as string ?? '').trim();
+  const email              = (formData.get('email')         as string ?? '').trim();
+  const telefone            = (formData.get('telefone')     as string ?? '').trim();
+
+  if (!nomeCompleto || !email) throw new Error('Nome completo e e-mail são obrigatórios.');
+  if (!['pf', 'pj'].includes(tipoPessoa)) throw new Error('Tipo de pessoa inválido.');
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('professional_asaas_accounts').upsert({
+    professional_id: professionalId,
+    tipo_pessoa:      tipoPessoa,
+    nome_completo:    nomeCompleto,
+    email,
+    telefone,
+    status:           'rascunho',
+  }, { onConflict: 'professional_id' });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/medicos/${professionalId}`);
+}
+
+/** Vincula um paciente + valor a uma reserva concluída — pré-requisito pra
+ *  gerar cobrança. */
+export async function linkPatientToReservation(formData: FormData) {
+  const reservationId  = formData.get('reservation_id')  as string;
+  const professionalId = formData.get('professional_id') as string;
+  const patientId       = formData.get('patient_id')      as string;
+  const valor            = parseFloat(formData.get('valor_consulta') as string);
+
+  if (!patientId) throw new Error('Selecione um paciente.');
+  if (isNaN(valor) || valor <= 0) throw new Error('Valor da consulta deve ser maior que zero.');
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase
+    .from('reservations')
+    .update({ patient_id: patientId, valor_consulta: valor })
+    .eq('id', reservationId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/medicos/${professionalId}`);
+}
+
+/** Gera a cobrança na subconta Asaas do médico. Só funciona depois que
+ *  create-patient-charge for deployado (pendente de decisão de taxa/produto
+ *  — ver docs/HANDOFF.md) e a subconta estiver com status 'aprovada'. */
+export async function generatePatientCharge(formData: FormData) {
+  const reservationId  = formData.get('reservation_id')  as string;
+  const professionalId = formData.get('professional_id') as string;
+  const cpfPaciente      = (formData.get('cpf_paciente') as string ?? '').replace(/\D/g, '');
+  const billingType       = formData.get('billing_type') as string;
+
+  if (!cpfPaciente) throw new Error('CPF do paciente é obrigatório para gerar a cobrança.');
+
+  const supabase = await createSupabaseAdmin();
+  const { data, error } = await supabase.functions.invoke('create-patient-charge', {
+    body: { reservationId, cpfPaciente, billingType },
+  });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+
+  revalidatePath(`/medicos/${professionalId}`);
+}
+
 /** Adiciona documento ao prontuário do médico (URL já no Storage) */
 export async function addProfessionalDocument(formData: FormData) {
   const userId    = formData.get('user_id')   as string;
@@ -670,6 +741,57 @@ export async function updatePartnerCommissionConfig(formData: FormData) {
 
   revalidatePath('/parceiros');
   revalidatePath(`/equipe/${partnerId}`);
+}
+
+// ─── Conversas WhatsApp (leads + pacientes, número único da OLI) ──────────────
+
+/** Resposta manual da recepção numa conversa — texto livre, só funciona
+ *  dentro da janela de 24h (a Edge Function recusa fora disso). */
+export async function sendConversationReply(formData: FormData) {
+  const conversationId = formData.get('conversation_id') as string;
+  const texto           = (formData.get('texto') as string ?? '').trim();
+  if (!texto) throw new Error('Mensagem vazia.');
+
+  const supabase = await createSupabaseAdmin();
+  const { data, error } = await supabase.functions.invoke('send-whatsapp-reply', {
+    body: { conversationId, texto },
+  });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+
+  revalidatePath('/conversas');
+}
+
+/** Alterna uma conversa de lead entre IA e humano. Conversa de paciente nunca
+ *  aceita 'ia' — o CHECK do banco (chk_patient_never_ia) barra isso mesmo que
+ *  esta action seja chamada errado. */
+export async function toggleConversationMode(formData: FormData) {
+  const conversationId = formData.get('conversation_id') as string;
+  const novoStatus       = formData.get('novo_status') as string;
+  if (!['ia', 'humano'].includes(novoStatus)) throw new Error('Status inválido.');
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase.from('conversations').update({ status: novoStatus }).eq('id', conversationId);
+  if (error) throw new Error(error.message);
+  revalidatePath('/conversas');
+}
+
+/** Dispara mensagem de template pro paciente (confirmação/lembrete) a partir
+ *  de uma reserva já vinculada a paciente + valor. */
+export async function triggerPatientMessage(formData: FormData) {
+  const reservationId  = formData.get('reservation_id')  as string;
+  const professionalId = formData.get('professional_id') as string;
+  const triggerType     = formData.get('trigger_type')    as string;
+
+  const supabase = await createSupabaseAdmin();
+  const { data, error } = await supabase.functions.invoke('send-patient-trigger', {
+    body: { reservationId, triggerType },
+  });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+
+  revalidatePath(`/medicos/${professionalId}`);
+  revalidatePath('/conversas');
 }
 
 /** Gera o código de indicação de um parceiro que ainda não tem (fallback pra

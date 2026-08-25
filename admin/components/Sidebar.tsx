@@ -195,6 +195,7 @@ const NAV = [
       { href: '/comunidade', label: 'Comunidade', Icon: IconChat,     badge: false },
       { href: '/notificacoes', label: 'Notificações', Icon: IconBell, badge: false },
       { href: '/leads',      label: 'Leads',      Icon: IconInbox,    badge: false },
+      { href: '/conversas',  label: 'Conversas',  Icon: IconChat,     badge: false },
       { href: '/equipe',     label: 'Equipe',     Icon: IconStar,     badge: false },
     ],
   },
