@@ -1702,6 +1702,8 @@ Feedback do fundador depois de usar o §34 em produção: a IA estava convergind
 
 **⚠️ Pendências:** nada testado em WhatsApp real ainda (só via `test-lead-ai`, que não é o mesmo runtime — não valida `enviarTexto`/`enviarImagem` de verdade contra a Graph API); observar em uso real se o padrão de convergência pra visita ficou no ponto certo — ajustar a frequência (hoje "3-4 respostas sem sinal") se ainda parecer alto ou baixo demais na prática. Commitado (`1fdc5c5`) e deployado; branch `claude/handoff-leitura-7cwj08` ainda não mergeada em `main`.
 
+**Achado no teste real, mesmo dia — reforço de clareza (manual vira 1.2).** O fundador testou pelo WhatsApp de verdade (número resetado antes do teste — ver conversa) e achou dois problemas novos na mesma resposta: (1) a IA emendou vários fatos numa frase só cheia de parênteses/travessão ("O OLI é um hub para profissionais da saúde — reunimos salas equipadas (cobradas por minuto de uso, sem aluguel fixo) e um app de gestão (agenda, financeiro, cadastro de pacientes) tudo num só lugar."); (2) fechou a mesma mensagem com **duas perguntas** emendadas ("O que te interessa saber mais? Você atua na área de saúde ou está pesquisando para outra coisa?"), violando a regra de "uma pergunta por vez" que já existia mas não era explícita o bastante pra cobrir pergunta-que-parece-detalhe-da-outra. Prompt ganhou dois blocos novos: "CLAREZA — FRASES CURTAS, UMA IDEIA POR VEZ" (frases curtas, uma ideia cada, mesma informação sem perder detalhe) e "NUNCA DUAS PERGUNTAS NA MESMA RESPOSTA" (reforço explícito, com o exemplo real do teste). Testado via `test-lead-ai` depois do deploy — ver resultado abaixo.
+
 ## 13. Comandos úteis
 
 ```bash

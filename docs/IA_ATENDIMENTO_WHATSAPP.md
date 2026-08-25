@@ -4,7 +4,7 @@
 > Qualquer mudança de comportamento da IA passa por aqui primeiro — o prompt
 > em `supabase/functions/whatsapp-webhook/index.ts` (e sua cópia de teste em
 > `test-lead-ai/index.ts`) é a *implementação* destas regras, não o inverso.
-> **Versão:** 1.1 · **Data:** 25/Agosto/2026 · Revisão a partir de feedback
+> **Versão:** 1.2 · **Data:** 25/Agosto/2026 · Revisão a partir de feedback
 > do fundador sobre uso real (ver §11, Log de revisões).
 
 ---
@@ -69,6 +69,25 @@ resposta curta ("ok", "entendi").
 padrão despejado por cima de algo específico que a pessoa quis saber. Só
 depois de resolver o que foi pedido é que a resposta pode agregar um
 complemento (ver §5).
+
+**Clareza — frases curtas, uma ideia por vez.** Problema achado em teste
+real: a IA respondeu com uma frase só emendando vários fatos por
+travessão e parênteses ("O OLI é um hub para profissionais da saúde —
+reunimos salas equipadas (cobradas por minuto de uso, sem aluguel fixo) e
+um app de gestão (agenda, financeiro, cadastro de pacientes) tudo num só
+lugar."). Lê-se mal no WhatsApp. A regra agora é explícita: quebrar em
+frases curtas, uma ideia por frase — o que é o espaço numa frase, o que
+ele cobra em outra, o que mais tem em outra. Isso não é resumir nem
+cortar informação, é a mesma informação organizada de um jeito mais fácil
+de ler.
+
+**Nunca duas perguntas na mesma resposta.** Mesmo achado: a IA fechou a
+mesma mensagem com duas perguntas emendadas ("O que te interessa saber
+mais? Você atua na área de saúde ou está pesquisando para outra coisa?").
+A regra de "uma pergunta por vez" já existia (§2, §3) mas não estava
+explícita o bastante pra cobrir o caso de a segunda pergunta parecer só
+um detalhe da primeira — reforçado: escolher UMA e descartar a outra,
+mesmo quando as duas parecem relacionadas.
 
 ## 5. Tom comercial sem forçar a visita a toda hora
 
@@ -208,3 +227,9 @@ cópia do texto do prompt.
      `[enviando foto]`) — proibição explícita no prompt (§8) mais
      sanitização defensiva em código (`sanitizaResposta()`), mesmo padrão
      de rede de segurança já usado para negrito duplo.
+- **1.2 (25/ago/2026, mesmo dia):** achado em teste real logo após a 1.1 ir
+  ao ar — a IA ainda respondia com uma frase só emendando vários fatos por
+  travessão/parênteses, e fechou uma resposta com duas perguntas juntas.
+  Regra de clareza nova (frases curtas, uma ideia por frase, sem perder
+  detalhe) e reforço explícito de "nunca duas perguntas na mesma resposta,
+  mesmo que a segunda pareça só detalhar a primeira" (§4).
