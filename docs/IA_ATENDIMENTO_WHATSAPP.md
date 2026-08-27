@@ -4,7 +4,7 @@
 > Qualquer mudança de comportamento da IA passa por aqui primeiro — o prompt
 > em `supabase/functions/whatsapp-webhook/index.ts` (e sua cópia de teste em
 > `test-lead-ai/index.ts`) é a *implementação* destas regras, não o inverso.
-> **Versão:** 1.5 · **Data:** 26/Agosto/2026 · Revisão a partir de feedback
+> **Versão:** 1.6 · **Data:** 26/Agosto/2026 · Revisão a partir de feedback
 > do fundador sobre uso real (ver §11, Log de revisões).
 
 ---
@@ -44,6 +44,53 @@ pessoa do time faria ao começar uma conversa — a Olivia não diz "sou uma
 IA" ou "sou uma assistente virtual", só diz quem ela é. Depois da primeira
 mensagem, o nome não se repete — apresentação é coisa de abertura de
 conversa, não de toda resposta.
+
+**Retomando uma conversa parada, não continuando como se nada tivesse
+acontecido (achado 26/ago, feedback direto do fundador).** O fundador
+notou que, ao retomar um contato de um dia anterior, a Olivia respondeu
+como se a conversa estivesse fluindo sem interrupção — sem reconhecer o
+hiato, sem dar um gancho de retomada, como se poucos minutos tivessem
+passado entre as mensagens. Pedido: quando a conversa fica parada por um
+tempo, a resposta precisa abrir reconhecendo isso ("percebi que você
+demorou pra responder, talvez não tenha sido um bom momento, quer retomar
+nossa conversa?"), não simplesmente continuar de onde parou.
+
+- **Mecanismo:** o código (`whatsapp-webhook/index.ts`) compara o
+  `created_at` da mensagem mais recente da pessoa com o da mensagem
+  anterior na mesma conversa. Se o hiato passa de `GAP_REATIVACAO_MS`
+  (3h, valor inicial ajustável conforme uso real — constante isolada no
+  código para facilitar o ajuste), o código prefixa a mensagem enviada à
+  IA (só na chamada à API, nunca no que fica salvo no banco) com uma nota
+  técnica entre colchetes: `[SISTEMA: já se passaram aproximadamente X
+  horas desde a última mensagem desta conversa. Comece sua resposta
+  reconhecendo essa pausa antes de responder ao que a pessoa disse.]`. O
+  prompt instrui a IA a tratar essa nota como instrução obrigatória para
+  aquela resposta, nunca repeti-la literalmente pra pessoa, e sempre abrir
+  a primeira frase reconhecendo a pausa antes de responder ao conteúdo.
+- **Por que prefixar a mensagem do usuário, e não só acrescentar ao
+  system prompt:** a primeira tentativa anexou a nota como um parágrafo a
+  mais no fim do system prompt (que já tem ~300 linhas) — testes
+  mostraram que o modelo ignorava a nota na maioria das vezes, provável
+  efeito de estar "enterrada" longe do que o modelo está prestes a
+  responder. Mover a nota pra logo antes da mensagem mais recente da
+  pessoa (mais perto, na prática, do texto que o modelo gera em seguida)
+  melhorou a taxa de acerto, e reforçar a linguagem do prompt pra deixar
+  claro que é uma instrução obrigatória pra "primeira frase" ajudou mais
+  ainda.
+- **Rede de segurança:** não existe (nem é fácil ter uma) — validar que
+  uma resposta "reconheceu a pausa" exigiria outra chamada de IA ou
+  heurística frágil. Diferente do travessão/gerúndio, aqui a defesa é só
+  a instrução no prompt.
+- **Confiabilidade observada em teste:** mesmo depois do reforço, a
+  regra não pega 100% das vezes com o modelo pequeno (em torno de 3 em 4
+  tentativas no teste feito nesta revisão) — mesma limitação já conhecida
+  de instrução-de-prompt-sozinha com Haiku, documentada em outros achados
+  deste manual. Vale observar em uso real se a taxa é aceitável ou se
+  precisa de mais reforço.
+- **`test-lead-ai`** ganhou um parâmetro opcional `gapHoras` no corpo da
+  requisição pra simular o hiato manualmente (não tem timestamp real de
+  banco, então não pode calcular o gap sozinho) — mesmo mecanismo de
+  prefixar a última mensagem antes de mandar pra API.
 
 ## 3. Coleta de informação — precisa, não invasiva
 
@@ -389,3 +436,26 @@ cópia do texto do prompt.
   Testado via `test-lead-ai` (whatsapp-webhook v18, test-lead-ai v19) em
   conversa de múltiplos turnos, incluindo o cenário exato que gerou o bug
   do item 2 — reproduzido e confirmado corrigido no reteste.
+- **1.6 (26/ago/2026, mesmo dia):** feedback do fundador sobre uso real —
+  ao retomar um contato de um dia anterior, a Olivia respondeu como se a
+  conversa estivesse fluindo sem interrupção nenhuma, sem reconhecer que
+  a pessoa tinha demorado a responder. Pedido: um gancho de retomada
+  ("percebi que você demorou pra responder, talvez não tenha sido um bom
+  momento, quer retomar nossa conversa?"), não uma continuação direta.
+  Regra nova "retomando uma conversa parada" (§2): código compara o
+  timestamp da mensagem mais recente com o da anterior e, se o hiato
+  passa de 3h (`GAP_REATIVACAO_MS`, ajustável), prefixa a mensagem
+  enviada à IA (só na chamada à API, nunca no que fica salvo no banco)
+  com uma nota técnica instruindo a IA a abrir a resposta reconhecendo a
+  pausa. Duas iterações até funcionar de forma aceitável: a primeira
+  tentativa anexou a nota ao fim do system prompt e o modelo ignorava na
+  maioria das vezes (achado no teste próprio); mover a nota pra logo
+  antes da última mensagem da pessoa, e reforçar que é instrução
+  obrigatória pra "primeira frase" da resposta, melhorou a taxa de
+  acerto pra cerca de 3 em 4 tentativas no teste. Sem rede de segurança
+  em código (não dá pra validar heuristicamente se uma resposta
+  "reconheceu a pausa"), mesma limitação de instrução-sozinha-com-Haiku
+  já documentada em outros achados — vale observar em uso real se a taxa
+  é suficiente. `test-lead-ai` ganhou parâmetro opcional `gapHoras` no
+  corpo da requisição pra simular o hiato manualmente. Deploy:
+  `whatsapp-webhook` v24, `test-lead-ai` v23.

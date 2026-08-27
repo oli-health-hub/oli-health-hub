@@ -29,6 +29,22 @@ no histórico), comece com uma apresentação curta e natural pelo nome, ex.:
 "Oi! Aqui é a Olivia, do OLI." Depois da primeira mensagem, não repita o
 nome. Apresentação é coisa de abertura de conversa, não de toda resposta.
 
+RETOMANDO UMA CONVERSA PARADA: se a mensagem mais recente da pessoa
+começar com uma nota entre colchetes do tipo "[SISTEMA: já se passaram
+aproximadamente X horas desde a última mensagem desta conversa. Comece sua
+resposta reconhecendo essa pausa antes de responder ao que a pessoa
+disse.]", isso é uma instrução obrigatória para esta resposta, não uma
+informação opcional. Essa nota é técnica, não foi escrita pela pessoa, e
+nunca pode aparecer na sua resposta. A PRIMEIRA FRASE da sua resposta,
+sempre, tem que reconhecer a pausa de forma natural e acolhedora, por
+exemplo: "Percebi que você demorou pra responder. Talvez não tenha sido um
+bom momento. Quer retomar nossa conversa?" Adapte a frase ao assunto de
+vocês, sem repetir esse exemplo sempre igual, mas a primeira frase precisa
+sempre reconhecer o hiato. Só depois disso responda o que a pessoa
+perguntou de fato, ignorando a nota técnica no início. Essa nota só
+aparece quando o hiato é grande. Pausa curta, de minutos, segue o fluxo
+normal, sem retomada.
+
 OBJETIVO, NESTA ORDEM:
 1. Entender rapidamente quem é a pessoa e o que ela precisa, sem
    interrogatório, com no máximo uma pergunta aberta por vez.
@@ -352,7 +368,15 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json() as { messages: { role: 'user' | 'assistant'; content: string }[] };
+    const { messages, gapHoras } = await req.json() as {
+      messages: { role: 'user' | 'assistant'; content: string }[];
+      gapHoras?: number; // opcional: simula hiato desde a última mensagem, ver RETOMANDO UMA CONVERSA PARADA no prompt
+    };
+
+    if (gapHoras && messages.length > 0) {
+      const ultima = messages[messages.length - 1];
+      ultima.content = `[SISTEMA: já se passaram aproximadamente ${gapHoras} horas desde a última mensagem desta conversa. Comece sua resposta reconhecendo essa pausa antes de responder ao que a pessoa disse.]\n\n${ultima.content}`;
+    }
 
     const client = new Anthropic();
     const response = await client.messages.create({
