@@ -37,6 +37,21 @@ const KIND_BG: Record<Conversa['kind'], string> = {
 };
 const STATUS_LABEL: Record<Conversa['status'], string> = { ia: 'IA', humano: 'Humano', fechada: 'Fechada' };
 
+const LS_KEY = 'oli_conversas_lidas_v1';
+
+function carregarLidas(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEY) ?? '{}');
+  } catch {
+    return {};
+  }
+}
+function salvarLidas(lidas: Record<string, string>) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(lidas));
+  } catch { /* localStorage indisponível — segue sem persistir */ }
+}
+
 function nomeContato(c: Conversa): string {
   return c.leads?.nome ?? c.patients?.nome ?? c.phone_e164;
 }
@@ -60,9 +75,33 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [lidas, setLidas] = useState<Record<string, string>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const conv = conversas.find(c => c.id === selecionada) ?? null;
+
+  // Carrega o registro de leitura (por navegador) só no client, pra não
+  // divergir da marcação vinda do servidor na primeira renderização.
+  useEffect(() => {
+    setLidas(carregarLidas());
+  }, []);
+
+  // Marca a conversa aberta como lida sempre que ela é selecionada ou
+  // recebe mensagem nova (last_message_at avança) enquanto está aberta.
+  useEffect(() => {
+    if (!conv?.last_message_at) return;
+    setLidas(prev => {
+      if ((prev[conv.id] ?? '') >= conv.last_message_at!) return prev;
+      const atualizado = { ...prev, [conv.id]: conv.last_message_at! };
+      salvarLidas(atualizado);
+      return atualizado;
+    });
+  }, [conv?.id, conv?.last_message_at]);
+
+  function isNaoLida(c: Conversa): boolean {
+    if (!c.last_message_at) return false;
+    return (lidas[c.id] ?? '') < c.last_message_at;
+  }
 
   const loadMensagens = useCallback(async (conversationId: string) => {
     const { data } = await getSupabaseBrowser()
@@ -144,22 +183,34 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
         {conversas.length === 0 && (
           <p className="text-sm text-oli-lgray p-5">Nenhuma conversa ainda.</p>
         )}
-        {conversas.map(c => (
-          <button
-            key={c.id}
-            onClick={() => setSelecionada(c.id)}
-            className={`w-full text-left px-4 py-3 border-b border-oli-border/60 hover:bg-stone-50 transition-colors ${selecionada === c.id ? 'bg-stone-50' : ''}`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-oli-dark truncate">{nomeContato(c)}</span>
-              <span className="text-[10px] text-oli-lgray shrink-0">{timeAgo(c.last_message_at)}</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${KIND_BG[c.kind]}`}>{KIND_LABEL[c.kind]}</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{STATUS_LABEL[c.status]}</span>
-            </div>
-          </button>
-        ))}
+        {conversas.map(c => {
+          const selecionadaAgora = selecionada === c.id;
+          const naoLida = !selecionadaAgora && isNaoLida(c);
+          return (
+            <button
+              key={c.id}
+              onClick={() => setSelecionada(c.id)}
+              aria-current={selecionadaAgora ? 'true' : undefined}
+              className={`w-full text-left px-4 py-3 border-b border-l-[3px] border-oli-border/60 hover:bg-stone-50 transition-colors ${
+                selecionadaAgora ? 'bg-oli-green/[0.06] border-l-oli-green' : 'border-l-transparent'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 min-w-0">
+                  {naoLida && <span className="w-1.5 h-1.5 rounded-full bg-oli-green shrink-0" aria-label="Não lida" />}
+                  <span className={`text-sm truncate ${naoLida ? 'font-bold text-oli-dark' : selecionadaAgora ? 'font-semibold text-oli-dark' : 'font-medium text-oli-lgray'}`}>
+                    {nomeContato(c)}
+                  </span>
+                </span>
+                <span className="text-[10px] text-oli-lgray shrink-0">{timeAgo(c.last_message_at)}</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${KIND_BG[c.kind]}`}>{KIND_LABEL[c.kind]}</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{STATUS_LABEL[c.status]}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Thread */}
