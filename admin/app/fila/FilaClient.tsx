@@ -28,6 +28,24 @@ const TYPE_TAG: Record<NotifType, { label: string; color: string }> = {
   whatsapp_message_received: { label: 'WhatsApp', color: 'bg-emerald-50 text-emerald-700' },
 };
 
+// Origem só existe em metadata de `lead_received` — RD Station, formulário do
+// site, captação via WhatsApp, etc. É o que diferencia "lead do RD" de "lead
+// do WhatsApp" dentro da própria seção de leads.
+const ORIGEM_TAG: Record<string, { label: string; color: string }> = {
+  site:       { label: 'Site',        color: 'bg-gray-100 text-gray-600'   },
+  rd_station: { label: 'RD Station',  color: 'bg-indigo-50 text-indigo-700' },
+  meta_ads:   { label: 'Meta Ads',    color: 'bg-blue-50 text-blue-700'    },
+  whatsapp:   { label: 'WhatsApp',    color: 'bg-emerald-50 text-emerald-700' },
+  indicacao:  { label: 'Indicação',   color: 'bg-purple-50 text-purple-700' },
+  evento:     { label: 'Evento',      color: 'bg-pink-50 text-pink-700'    },
+};
+
+const SECOES: { titulo: string; tipos: NotifType[] }[] = [
+  { titulo: 'Leads para atender',     tipos: ['lead_received'] },
+  { titulo: 'Mensagens no WhatsApp',  tipos: ['whatsapp_message_received'] },
+  { titulo: 'Cadastros e assinaturas', tipos: ['new_signup', 'module_purchased', 'module_activated', 'plan_subscribed', 'plan_activated'] },
+];
+
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
@@ -95,47 +113,63 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-oli-border divide-y divide-oli-border overflow-hidden">
-      {items.map(item => {
-        const tag = TYPE_TAG[item.type] ?? { label: item.type, color: 'bg-gray-50 text-gray-600' };
+    <div className="space-y-6">
+      {SECOES.map(secao => {
+        const itensSecao = items.filter(i => secao.tipos.includes(i.type));
+        if (itensSecao.length === 0) return null;
         return (
-          <div key={item.id} className="p-5">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div>
-                <p className="font-semibold text-oli-dark text-sm">
-                  {item.profiles?.nome ?? item.title}
-                </p>
-                <p className="text-xs text-oli-gray mt-0.5">{item.body}</p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tag.color}`}>
-                  {tag.label}
-                </span>
-                <span className="text-[10px] text-oli-lgray">{timeAgo(item.created_at)}</span>
-              </div>
+          <div key={secao.titulo}>
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <h2 className="text-xs font-bold text-oli-lgray uppercase tracking-wide">{secao.titulo}</h2>
+              <span className="text-[10px] font-bold text-oli-lgray bg-gray-100 rounded-full px-1.5 py-0.5">{itensSecao.length}</span>
             </div>
-            <div className="flex gap-2 mt-3">
-              {item.type === 'whatsapp_message_received' && item.metadata?.conversation_id ? (
-                <Link
-                  href={`/conversas?id=${String(item.metadata.conversation_id)}`}
-                  className="bg-oli-green text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Ver conversa
-                </Link>
-              ) : (
-                <button
-                  onClick={() => openWhatsApp(item)}
-                  className="bg-[#25D366] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  WhatsApp
-                </button>
-              )}
-              <button
-                onClick={() => dismiss(item.id)}
-                className="border border-oli-border text-oli-gray text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-stone-50 transition-colors"
-              >
-                Dispensar
-              </button>
+            <div className="bg-white rounded-2xl border border-oli-border divide-y divide-oli-border overflow-hidden">
+              {itensSecao.map(item => {
+                const tag = TYPE_TAG[item.type] ?? { label: item.type, color: 'bg-gray-50 text-gray-600' };
+                const origem = item.type === 'lead_received' ? (item.metadata?.origem as string | undefined) : undefined;
+                const origemTag = origem ? ORIGEM_TAG[origem] : undefined;
+                return (
+                  <div key={item.id} className="p-5">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <p className="font-semibold text-oli-dark text-sm">
+                          {item.profiles?.nome ?? (item.metadata?.nome as string | undefined) ?? item.title}
+                        </p>
+                        <p className="text-xs text-oli-gray mt-0.5">{item.body}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${origemTag?.color ?? tag.color}`}>
+                          {origemTag?.label ?? tag.label}
+                        </span>
+                        <span className="text-[10px] text-oli-lgray">{timeAgo(item.created_at)}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      {item.type === 'whatsapp_message_received' && item.metadata?.conversation_id ? (
+                        <Link
+                          href={`/conversas?id=${String(item.metadata.conversation_id)}`}
+                          className="bg-oli-green text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                        >
+                          Ver conversa
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => openWhatsApp(item)}
+                          className="bg-[#25D366] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                        >
+                          WhatsApp
+                        </button>
+                      )}
+                      <button
+                        onClick={() => dismiss(item.id)}
+                        className="border border-oli-border text-oli-gray text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-stone-50 transition-colors"
+                      >
+                        Dispensar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
