@@ -87,6 +87,8 @@ export function abrirWhatsApp(numeroBruto: string | null | undefined, texto: str
 /** Primeira mensagem para um lead. Linguagem simples e sem jargão — quem lê é
  *  a pessoa, não a equipe. */
 export function mensagemLead(nome: string | null | undefined): string {
-  const primeiro = (nome ?? '').trim().split(/\s+/)[0] || 'tudo bem';
-  return `Olá, ${primeiro}! Aqui é do OLI Health Hub. Vi que você demonstrou interesse nos nossos consultórios e queria entender melhor o que você precisa.`;
+  const primeiro = (nome ?? '').trim().split(/\s+/)[0];
+  const saudacao = primeiro ? `Olá, ${primeiro}!` : 'Olá!';
+
+  return `${saudacao} Aqui é o Guilherme, do OLI Health Hub. Recebi seu contato pelo formulário sobre nossos consultórios. Você procura um espaço para atendimentos pontuais ou recorrentes?`;
 }

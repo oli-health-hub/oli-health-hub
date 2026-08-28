@@ -693,6 +693,105 @@ export async function updateLead(formData: FormData) {
   revalidatePath('/leads');
 }
 
+/** Registra o opt-in de WhatsApp do lead e agenda o primeiro contato da régua
+ *  de nutrição comercial (docs/WHATSAPP_NUTRICAO_COMERCIAL.md). Sem opt-in
+ *  não existe etapa — este é o único lugar do admin que cria a primeira. */
+export async function optInLeadWhatsapp(formData: FormData) {
+  const id     = formData.get('id')     as string;
+  const source = formData.get('source') as string;
+  if (!source) throw new Error('Origem do opt-in é obrigatória.');
+
+  const supabase = await createSupabaseAdmin();
+  const { error: leadError } = await supabase
+    .from('leads')
+    .update({ whatsapp_opt_in_at: new Date().toISOString(), whatsapp_opt_in_source: source })
+    .eq('id', id);
+  if (leadError) throw new Error(leadError.message);
+
+  // ON CONFLICT (lead_id, etapa) — se por algum motivo já existir a etapa
+  // (reenvio do form), não duplica nem reagenda.
+  const { error: etapaError } = await supabase
+    .from('whatsapp_nutricao_etapas')
+    .insert({ lead_id: id, etapa: 'primeiro_contato', status: 'agendada', data_prevista: new Date().toISOString() });
+  if (etapaError && etapaError.code !== '23505') throw new Error(etapaError.message);
+
+  revalidatePath('/leads');
+}
+
+/** Pausa a régua: marca opt-out e cancela toda etapa ainda não enviada.
+ *  Não desfaz o que já saiu — só impede os próximos disparos. */
+export async function pauseLeadWhatsappNutricao(formData: FormData) {
+  const id = formData.get('id') as string;
+  const supabase = await createSupabaseAdmin();
+
+  const { error: leadError } = await supabase
+    .from('leads').update({ whatsapp_opt_out_at: new Date().toISOString() }).eq('id', id);
+  if (leadError) throw new Error(leadError.message);
+
+  const { error: etapaError } = await supabase
+    .from('whatsapp_nutricao_etapas')
+    .update({ status: 'cancelada', erro: 'pausado manualmente no admin' })
+    .eq('lead_id', id).eq('status', 'agendada');
+  if (etapaError) throw new Error(etapaError.message);
+
+  revalidatePath('/leads');
+}
+
+/* Mesma sequência de PROXIMA_ETAPA da edge function whatsapp-nutricao-comercial
+   — pequena demais (4 entradas) pra justificar um módulo compartilhado entre
+   Next.js e Deno. Mudar uma implica mudar a outra. */
+const PROXIMA_ETAPA_NUTRICAO: Record<string, { etapa: string; deltaDias: number } | null> = {
+  primeiro_contato: { etapa: 'd3',  deltaDias: 3  },
+  d3:                { etapa: 'd10', deltaDias: 10 },
+  d10:               { etapa: 'd24', deltaDias: 24 },
+  d24:               { etapa: 'd45', deltaDias: 45 },
+  d45:               null,
+};
+
+/** Retoma a régua depois de uma pausa: limpa o opt-out e reativa (ou cria) a
+ *  próxima etapa elegível, sempre pra "agora" — não faz o lead esperar o
+ *  resto do intervalo original. Nunca substitui um opt-in ausente: sem
+ *  `whatsapp_opt_in_at`, não há o que retomar. */
+export async function resumeLeadWhatsappNutricao(formData: FormData) {
+  const id = formData.get('id') as string;
+  const supabase = await createSupabaseAdmin();
+
+  const { data: lead } = await supabase.from('leads').select('whatsapp_opt_in_at').eq('id', id).maybeSingle();
+  if (!lead?.whatsapp_opt_in_at) throw new Error('Lead sem opt-in registrado — não há régua para retomar.');
+
+  const { error: leadError } = await supabase.from('leads').update({ whatsapp_opt_out_at: null }).eq('id', id);
+  if (leadError) throw new Error(leadError.message);
+
+  const { data: ultimaEtapa } = await supabase
+    .from('whatsapp_nutricao_etapas')
+    .select('id, etapa, status')
+    .eq('lead_id', id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const agora = new Date().toISOString();
+
+  if (!ultimaEtapa) {
+    await supabase.from('whatsapp_nutricao_etapas')
+      .insert({ lead_id: id, etapa: 'primeiro_contato', status: 'agendada', data_prevista: agora });
+  } else if (ultimaEtapa.status === 'cancelada' || ultimaEtapa.status === 'falhou') {
+    await supabase.from('whatsapp_nutricao_etapas')
+      .update({ status: 'agendada', data_prevista: agora, erro: null })
+      .eq('id', ultimaEtapa.id);
+  } else if (ultimaEtapa.status === 'enviada') {
+    const proxima = PROXIMA_ETAPA_NUTRICAO[ultimaEtapa.etapa];
+    if (proxima) {
+      const { error } = await supabase.from('whatsapp_nutricao_etapas')
+        .insert({ lead_id: id, etapa: proxima.etapa, status: 'agendada', data_prevista: agora });
+      if (error && error.code !== '23505') throw new Error(error.message);
+    }
+  }
+  // status 'agendada': já está no lugar certo, retomar só limpou o opt-out.
+
+  revalidatePath('/leads');
+}
+
 /** Registra o pagamento de uma comissão de parceiro (Programa de Indicação de
  *  Parceiros Externos). O valor devido é calculado em runtime na página —
  *  aqui só grava que aquela comissão específica (por indicado + tipo) foi paga. */

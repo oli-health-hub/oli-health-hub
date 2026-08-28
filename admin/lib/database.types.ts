@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -262,6 +262,7 @@ export type Database = {
           kind: string
           last_inbound_at: string | null
           last_message_at: string | null
+          last_nudge_at: string | null
           lead_id: string | null
           patient_id: string | null
           phone_e164: string
@@ -277,6 +278,7 @@ export type Database = {
           kind: string
           last_inbound_at?: string | null
           last_message_at?: string | null
+          last_nudge_at?: string | null
           lead_id?: string | null
           patient_id?: string | null
           phone_e164: string
@@ -292,6 +294,7 @@ export type Database = {
           kind?: string
           last_inbound_at?: string | null
           last_message_at?: string | null
+          last_nudge_at?: string | null
           lead_id?: string | null
           patient_id?: string | null
           phone_e164?: string
@@ -582,9 +585,10 @@ export type Database = {
           anuncio: string | null
           atendente_id: string | null
           campanha: string | null
+          canal_primeiro_contato: string | null
           conjunto: string | null
           created_at: string
-          email: string
+          email: string | null
           especialidade: string | null
           external_id: string | null
           fonte: string | null
@@ -603,14 +607,18 @@ export type Database = {
           temperatura: string | null
           user_agent: string | null
           whatsapp: string | null
+          whatsapp_opt_in_at: string | null
+          whatsapp_opt_in_source: string | null
+          whatsapp_opt_out_at: string | null
         }
         Insert: {
           anuncio?: string | null
           atendente_id?: string | null
           campanha?: string | null
+          canal_primeiro_contato?: string | null
           conjunto?: string | null
           created_at?: string
-          email: string
+          email?: string | null
           especialidade?: string | null
           external_id?: string | null
           fonte?: string | null
@@ -629,14 +637,18 @@ export type Database = {
           temperatura?: string | null
           user_agent?: string | null
           whatsapp?: string | null
+          whatsapp_opt_in_at?: string | null
+          whatsapp_opt_in_source?: string | null
+          whatsapp_opt_out_at?: string | null
         }
         Update: {
           anuncio?: string | null
           atendente_id?: string | null
           campanha?: string | null
+          canal_primeiro_contato?: string | null
           conjunto?: string | null
           created_at?: string
-          email?: string
+          email?: string | null
           especialidade?: string | null
           external_id?: string | null
           fonte?: string | null
@@ -655,6 +667,9 @@ export type Database = {
           temperatura?: string | null
           user_agent?: string | null
           whatsapp?: string | null
+          whatsapp_opt_in_at?: string | null
+          whatsapp_opt_in_source?: string | null
+          whatsapp_opt_out_at?: string | null
         }
         Relationships: [
           {
@@ -1890,6 +1905,47 @@ export type Database = {
           },
         ]
       }
+      whatsapp_nutricao_etapas: {
+        Row: {
+          created_at: string
+          data_prevista: string
+          enviado_em: string | null
+          erro: string | null
+          etapa: string
+          id: string
+          lead_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          data_prevista: string
+          enviado_em?: string | null
+          erro?: string | null
+          etapa: string
+          id?: string
+          lead_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          data_prevista?: string
+          enviado_em?: string | null
+          erro?: string | null
+          etapa?: string
+          id?: string
+          lead_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_nutricao_etapas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_templates: {
         Row: {
           corpo: string
@@ -2101,6 +2157,7 @@ export type Database = {
         | "plan_activated"
         | "reservation_created"
         | "lead_received"
+        | "whatsapp_message_received"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2236,6 +2293,7 @@ export const Constants = {
         "plan_activated",
         "reservation_created",
         "lead_received",
+        "whatsapp_message_received",
       ],
     },
   },

@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 27/Agosto/2026.
+> Última atualização: 28/Agosto/2026.
 
 ---
 
@@ -1693,6 +1693,23 @@ Fundador testou o handoff com o sócio (pediu falar com humano) e, ao clicar na 
 - **Estado (26/ago):** `OPENAI_API_KEY` já foi configurado nos secrets do Supabase e `whatsapp-webhook` foi deployada com sucesso após autenticação da CLI (`Deployed Functions`). Falta somente testar com um áudio comercial curto antes de considerar o fluxo liberado. A verificação posterior `deno check` passou; `npx tsc --noEmit` e `git diff --check` também passaram.
 - **Correção de copy (27/ago):** o prompt de produção e a cópia de teste agora deixam explícito que uma transcrição bem-sucedida deve ser respondida como texto normal. Olivia não pode alegar que não consegue ouvir/processar áudio nem mencionar transcrição ou limitação técnica. `whatsapp-webhook` foi republicada com a correção (`Deployed Functions`).
 
+### 🆕 Qualidade das respostas comerciais (28/ago)
+
+- **Evidência:** revisão anonimizada das 15 conversas de lead mais recentes. Sete terminaram logo após a primeira resposta da Olivia. O padrão dominante era pedir contexto diante da abertura padrão do anúncio, em vez de entregar informação útil. Também apareceram repetição do que o lead acabara de dizer, perguntas já respondidas, duas perguntas no mesmo turno, suposições sobre concorrentes/cidade e despedidas repetidas após reação ou encerramento.
+- **Caso mais claro:** uma profissional informou duas vezes que trabalhava com massagem e procurava sala; Olivia repetiu a informação e voltou a perguntar o que ela já havia respondido. A pessoa escreveu “Esquece” e “Meu Deus acabei de fala”, evidenciando falha de interpretação do histórico.
+- **Prompt corrigido:** antes de responder, Olivia identifica silenciosamente pedido atual, fatos já informados e único próximo passo útil. Responde o assunto primeiro; no máximo uma pergunta que altere o próximo passo; não repete/parafraseia a fala; não chama abertura de anúncio de vaga; recupera correções do lead; não supõe características de concorrentes; limita normalmente a três blocos curtos.
+- **Abertura de anúncio:** “Olá! Posso ter mais informações sobre isso?” agora é tratada como interesse comercial. Olivia dá uma visão útil do OLI em uma frase e pergunta somente a especialidade.
+- **Nudge endurecido:** não reengaja abertura padrão sem continuidade, mídia/reação sem conteúdo interpretável, recusa, despedida ou encerramento. Quando elegível, envia somente uma frase ligada a um próximo passo concreto, sem resumo ou pergunta repetida.
+- **Publicado:** `whatsapp-webhook` e `whatsapp-nudge-silencio` foram deployadas com sucesso em 28/ago (`Deployed Functions`). Falta acompanhar as próximas conversas reais para comparar resposta à abertura e continuidade após o segundo turno.
+
+### 🆕 Primeiro contato manual pelo Admin (28/ago)
+
+- **Decisão de canal e identidade:** esta abertura não é enviada pela Olivia. É uma abordagem humana do Guilherme para leads que chegaram por formulário do Meta/RD, antes ou fora da conversa automatizada da IA.
+- **Copy aprovada:** “Olá, `{primeiroNome}`! Aqui é o Guilherme, do OLI Health Hub. Recebi seu contato pelo formulário sobre nossos consultórios. Você procura um espaço para atendimentos pontuais ou recorrentes?” A mensagem se identifica, explica de onde veio o contato e termina com uma única pergunta fácil de responder; não repete genericamente que a pessoa “demonstrou interesse”.
+- **Implementação local:** `admin/lib/whatsapp.ts`, função compartilhada `mensagemLead()`. A troca alcança os dois pontos pedidos sem duplicar texto: botão de WhatsApp da notificação `lead_received` em `/fila` e botão de contato no cadastro em `/leads`. Se o nome estiver ausente, a saudação vira somente “Olá!”.
+- **Escopo atual:** como os dois botões usam o mesmo helper sem filtrar a origem, a nova mensagem aparece para qualquer lead acionado por eles, embora a copy cite formulário. Se outros canais passarem a usar esses botões com frequência, tornar o texto condicional a `origem` (`rd_station`/`meta_ads`).
+- **Verificação:** `admin` passou em `npx tsc --noEmit` e `git diff --check`. **Ainda não publicado:** a alteração está somente no worktree; falta commit/push para a Vercel atualizar o Admin.
+
 **⚠️ Pendências desta sessão:**
 1. Templates de WhatsApp de paciente (`confirmacao_consulta`, `lembrete_vespera`) continuam fora do escopo imediato. Para o comercial, `handoff_comercial_v1` e os cinco modelos de Marketing (`primeiro_contato_comercial_v1`, `nutricao_comercial_d3_v1`, `nutricao_comercial_d10_v1`, `nutricao_comercial_d24_v1`, `nutricao_comercial_d45_v1`) foram enviados para análise na Meta em 26/ago. A régua está em `docs/WHATSAPP_NUTRICAO_COMERCIAL.md`. Antes de automatizar, implementar opt-in/opt-out persistidos e agenda de etapas; sem consentimento registrado, não há disparo.
 2. Limpar as 3 WABAs duplicadas no portfólio (pendência antiga do §33, ainda não feita).
@@ -1700,6 +1717,7 @@ Fundador testou o handoff com o sócio (pediu falar com humano) e, ao clicar na 
 4. Fundador precisa confirmar ao vivo que o fix da Fila resolveu (reabrir a notificação do teste com o sócio e clicar "Ver conversa").
 5. Nada testado em device/simulador nativo.
 6. `docs/IA_ATENDIMENTO_WHATSAPP.md` e o prompt devem ser revisados juntos na próxima mudança de comportamento — não editar um sem o outro (regra que o próprio documento estabelece).
+7. Publicar a nova copy de primeiro contato do Admin (`admin/lib/whatsapp.ts`) por commit/push; depois conferir uma abertura pela `/fila` e outra pela `/leads`.
 
 ## 35. Limpeza dos leads de engano + IA para de responder duas vezes (26/ago sessão 2)
 

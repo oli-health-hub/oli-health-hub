@@ -17,22 +17,30 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { enviarTexto } from '../_shared/whatsapp.ts';
 
-const SYSTEM_PROMPT_NUDGE = `Você é a assistente do WhatsApp do OLI Health Hub. A conversa abaixo parou
-no meio — a pessoa não respondeu à última mensagem. Escreva UMA mensagem
-curta e gentil pra retomar, sem parecer insistente ou vendedora — não
-repita a pergunta anterior literalmente, e não invente informação nova
-que não esteja na conversa.
+const SYSTEM_PROMPT_NUDGE = `Você é a responsável comercial do WhatsApp do OLI Health Hub. Avalie se há
+um assunto comercial concreto que ficou genuinamente aberto. Só nesse caso
+escreva UMA frase curta que facilite o próximo passo, sem saudação, resumo ou
+repetição do que a pessoa já disse. Não refaça a pergunta anterior e não abra
+um assunto novo.
 
 Se a conversa já tinha chegado a um fim natural (a pessoa se despediu,
 agradeceu e encerrou, já foi transferida pra equipe, ou pediu explicitamente
-pra não ser mais contatada), responda só com a palavra SILENCIO, sem mais
-nada — nesse caso não deve reengajar.
+pra não ser mais contatada), se houve apenas a abertura padrão de anúncio, se
+a última entrada é mídia/reação sem conteúdo interpretável, ou se não existe
+um próximo passo específico, responda só com a palavra SILENCIO, sem mais nada.
+Nunca mencione conversa, histórico, transcrição, formato de mensagem ou
+limitação técnica.
 
 Formatação do WhatsApp: negrito é *um asterisco*, nunca **dois**. Português
 formal, sem gírias ou contrações informais.`;
 
 const JANELA_MIN_MS = 2  * 60 * 60 * 1000; // silêncio mínimo antes de cutucar
 const JANELA_MAX_MS = 22 * 60 * 60 * 1000; // não passa perto da janela de 24h
+
+const ABERTURA_PADRAO_ANUNCIO = /^olá!?\s*posso ter mais informações sobre isso\??$/i;
+const MARCADOR_SEM_CONTEUDO = /^\[(?:mensagem tipo|áudio recebido)/i;
+const ENCERRAMENTO_EXPLICITO = /\b(?:não,?\s*tudo bem|agora não|não faz sentido|obrigad[oa](?: pela atenção)?|pode encerrar|não tenho interesse)\b/i;
+const DESPEDIDA_DA_OLIVIA = /\b(?:é só chamar|fica(?:mos)? por aqui|sucesso com|abraços|até mais|qualquer coisa)\b/i;
 
 Deno.serve(async (_req: Request) => {
   const supabase = createClient(
@@ -77,6 +85,19 @@ Deno.serve(async (_req: Request) => {
         .map(m => ({ role: m.direction === 'inbound' ? 'user' as const : 'assistant' as const, content: m.body as string }));
 
       if (mensagens.length === 0) {
+        await supabase.from('conversations').update({ last_nudge_at: new Date().toISOString() }).eq('id', conv.id);
+        continue;
+      }
+
+      const inbound = (historico ?? []).filter(m => m.direction === 'inbound' && m.body).map(m => (m.body as string).trim());
+      const ultimaInbound = inbound.at(-1) ?? '';
+      const ultimaMensagem = (historico ?? []).at(-1);
+      const semContextoUtil = MARCADOR_SEM_CONTEUDO.test(ultimaInbound)
+        || ENCERRAMENTO_EXPLICITO.test(ultimaInbound)
+        || (inbound.length === 1 && ABERTURA_PADRAO_ANUNCIO.test(ultimaInbound))
+        || (ultimaMensagem?.direction === 'outbound' && DESPEDIDA_DA_OLIVIA.test(ultimaMensagem.body ?? ''));
+
+      if (semContextoUtil) {
         await supabase.from('conversations').update({ last_nudge_at: new Date().toISOString() }).eq('id', conv.id);
         continue;
       }

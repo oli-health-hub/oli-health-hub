@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
-import { updateLead } from '@/app/actions';
+import { updateLead, optInLeadWhatsapp, pauseLeadWhatsappNutricao, resumeLeadWhatsappNutricao } from '@/app/actions';
 import BotaoWhatsApp from '@/components/BotaoWhatsApp';
 import { mensagemLead } from '@/lib/whatsapp';
 
@@ -26,11 +26,22 @@ interface Lead {
   rd_sync_erro:    string | null;
   atendente_id:    string | null;
   canal_primeiro_contato: string | null;
+  whatsapp_opt_in_at:     string | null;
+  whatsapp_opt_in_source: string | null;
+  whatsapp_opt_out_at:    string | null;
 }
 
 interface Atendente {
   id:   string;
   nome: string;
+}
+
+interface EtapaNutricao {
+  lead_id:       string;
+  etapa:         string;
+  status:        string;
+  data_prevista: string;
+  enviado_em:    string | null;
 }
 
 /** Primeiro nome + inicial do sobrenome: "Claudia M.". Na tabela, nome
@@ -94,6 +105,24 @@ const CANAL_LABEL: Record<string, string> = {
   email:    'E-mail',
 };
 
+/* Régua de nutrição comercial (docs/WHATSAPP_NUTRICAO_COMERCIAL.md). Origem
+   do opt-in — de onde veio o consentimento pra falar por WhatsApp, não de
+   onde veio o lead (isso já é `origem`). */
+const OPT_IN_SOURCE_LABEL: Record<string, string> = {
+  formulario_rd:   'Formulário RD',
+  formulario_site: 'Formulário do site',
+  anuncio_meta:    'Anúncio Meta',
+  manual:          'Registrado manualmente',
+};
+
+const ETAPA_NUTRICAO_LABEL: Record<string, string> = {
+  primeiro_contato: 'Primeiro contato',
+  d3:  'Retomada D+3',
+  d10: 'Retomada D+10',
+  d24: 'Retomada D+24',
+  d45: 'Encerramento D+45',
+};
+
 function formatData(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
@@ -116,6 +145,48 @@ export default async function LeadsPage({
     .from('profiles').select('id, nome').eq('is_admin', true).order('nome');
   const atendentes = (atendentesData ?? []) as Atendente[];
   const nomePorId  = new Map(atendentes.map(a => [a.id, a.nome]));
+
+  // Etapas da régua de nutrição, uma consulta à parte: a maioria dos leads
+  // não tem nenhuma (sem opt-in), então não vale a pena carregar num join
+  // sempre presente.
+  const leadIds = todos.map(l => l.id);
+  const { data: etapasData } = leadIds.length > 0
+    ? await supabase.from('whatsapp_nutricao_etapas')
+        .select('lead_id, etapa, status, data_prevista, enviado_em')
+        .in('lead_id', leadIds)
+    : { data: [] as EtapaNutricao[] };
+  const etapasPorLead = new Map<string, EtapaNutricao[]>();
+  for (const e of (etapasData ?? []) as EtapaNutricao[]) {
+    const arr = etapasPorLead.get(e.lead_id) ?? [];
+    arr.push(e);
+    etapasPorLead.set(e.lead_id, arr);
+  }
+
+  /** Uma linha de resumo por lead: a próxima etapa agendada tem prioridade
+   *  sobre o histórico — é o que importa pra saber se falta algo acontecer. */
+  function resumoNutricao(lead: Lead): { label: string; bg: string; text: string } | null {
+    if (!lead.whatsapp_opt_in_at) return null;
+    if (lead.whatsapp_opt_out_at) return { label: 'Nutrição pausada', bg: 'bg-gray-100', text: 'text-gray-500' };
+
+    const etapas = etapasPorLead.get(lead.id) ?? [];
+    const agendada = etapas.find(e => e.status === 'agendada');
+    if (agendada) {
+      return {
+        label: `Próxima: ${ETAPA_NUTRICAO_LABEL[agendada.etapa] ?? agendada.etapa} em ${formatData(agendada.data_prevista)}`,
+        bg: 'bg-sky-50', text: 'text-sky-700',
+      };
+    }
+
+    const ultima = [...etapas].sort((a, b) => (b.enviado_em ?? b.data_prevista).localeCompare(a.enviado_em ?? a.data_prevista))[0];
+    if (!ultima) return { label: 'Opt-in registrado — sem etapa', bg: 'bg-gray-100', text: 'text-gray-400' };
+    if (ultima.status === 'enviada' && ultima.etapa === 'd45') {
+      return { label: 'Régua encerrada (D+45)', bg: 'bg-gray-100', text: 'text-gray-500' };
+    }
+    return {
+      label: `${ETAPA_NUTRICAO_LABEL[ultima.etapa] ?? ultima.etapa}: ${ultima.status}`,
+      bg: 'bg-amber-50', text: 'text-amber-700',
+    };
+  }
 
   // Filtro em memória, não no banco: a base é pequena (dezenas) e assim os
   // contadores saem da mesma consulta, sem uma query de count por opção.
@@ -401,9 +472,10 @@ export default async function LeadsPage({
               </td></tr>
             )}
             {leads.map((lead) => {
-              const statusMeta = STATUS_LABEL[lead.status] ?? { label: lead.status, bg: 'bg-gray-100', text: 'text-gray-500' };
-              const tempMeta   = lead.temperatura ? TEMPERATURA_LABEL[lead.temperatura] : null;
-              const perfilMeta = lead.perfil      ? PERFIL_LABEL[lead.perfil]           : null;
+              const statusMeta   = STATUS_LABEL[lead.status] ?? { label: lead.status, bg: 'bg-gray-100', text: 'text-gray-500' };
+              const tempMeta     = lead.temperatura ? TEMPERATURA_LABEL[lead.temperatura] : null;
+              const perfilMeta   = lead.perfil      ? PERFIL_LABEL[lead.perfil]           : null;
+              const nutricaoMeta = resumoNutricao(lead);
               return (
                 <tr key={lead.id} className="border-t border-gray-50 align-top">
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatData(lead.created_at)}</td>
@@ -445,6 +517,13 @@ export default async function LeadsPage({
                       {lead.canal_primeiro_contato && (
                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-sky-50 text-sky-700">
                           1º contato: {CANAL_LABEL[lead.canal_primeiro_contato] ?? lead.canal_primeiro_contato}
+                        </span>
+                      )}
+                      {/* Régua de nutrição comercial — só aparece com opt-in
+                          registrado. Sem isso, não existe disparo automático. */}
+                      {nutricaoMeta && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${nutricaoMeta.bg} ${nutricaoMeta.text}`}>
+                          {nutricaoMeta.label}
                         </span>
                       )}
                       {tempMeta && (
@@ -567,6 +646,40 @@ export default async function LeadsPage({
                         Salvar
                       </button>
                     </form>
+
+                    {/* Formulário à parte — HTML não aceita <form> aninhado.
+                        Régua de nutrição comercial: inerte até os 5 templates
+                        estarem aprovados na Meta (ver whatsapp_templates). */}
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      {!lead.whatsapp_opt_in_at ? (
+                        <form action={optInLeadWhatsapp} className="flex items-center gap-1.5">
+                          <input type="hidden" name="id" value={lead.id} />
+                          <select name="source" defaultValue="" required className="border border-gray-200 rounded-lg px-1.5 py-1 text-[11px] flex-1">
+                            <option value="" disabled>Opt-in WhatsApp por…</option>
+                            {Object.entries(OPT_IN_SOURCE_LABEL).map(([v, l]) => (
+                              <option key={v} value={v}>{l}</option>
+                            ))}
+                          </select>
+                          <button type="submit" className="text-[11px] text-oli-green font-semibold underline whitespace-nowrap">
+                            Registrar
+                          </button>
+                        </form>
+                      ) : lead.whatsapp_opt_out_at ? (
+                        <form action={resumeLeadWhatsappNutricao}>
+                          <input type="hidden" name="id" value={lead.id} />
+                          <button type="submit" className="text-[11px] text-oli-green font-semibold underline">
+                            Retomar nutrição
+                          </button>
+                        </form>
+                      ) : (
+                        <form action={pauseLeadWhatsappNutricao}>
+                          <input type="hidden" name="id" value={lead.id} />
+                          <button type="submit" className="text-[11px] text-gray-500 font-semibold underline">
+                            Pausar nutrição
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
