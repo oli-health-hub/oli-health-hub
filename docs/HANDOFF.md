@@ -53,12 +53,20 @@
 
 ## 4. Planos e preços (ATUAL — sem VIP por enquanto)
 
+> ⚠️ Tabela corrigida em 28/ago — estava com os valores de antes da reforma de
+> preços do §30/§31 (13-19/ago), nunca atualizada apesar de o resto do doc já
+> refletir a mudança há duas semanas.
+
 | Plano | Mensalidade | R$/min | Status |
 |---|---|---|---|
-| START | R$ 0 | R$ 2,00 | default no signup |
-| BASE | R$ 299 | R$ 1,50 | ativo |
-| PRO | R$ 599 | R$ 1,30 | ativo |
+| START | sem mensalidade | R$ 1,90 | default no signup (§36) |
+| BASE | R$ 299 | R$ 1,50 | **desativado** (`ativo=false`), zero assinantes — preservado só por histórico, não vender |
+| PRO | R$ 599/mês (R$ 499/mês no semestral, fidelidade 6 meses) | R$ 1,45 | ativo |
 | VIP | — | — | standby (não projetar ainda) |
+
+⚠️ `src/models/oli-plans.ts` e o `CLAUDE.md` ainda citam os valores velhos
+(START 2,00 / BASE 1,50 / PRO 1,30) — pendência aberta desde §36, sem decisão
+do fundador sobre atualizar o catálogo de código.
 
 **Módulos avulsos (tabela `modules` no Supabase):**
 - Communicare Connect — **R$ 239/mês**
@@ -1711,13 +1719,13 @@ Fundador testou o handoff com o sócio (pediu falar com humano) e, ao clicar na 
 - **Verificação:** `admin` passou em `npx tsc --noEmit` e `git diff --check`. **Ainda não publicado:** a alteração está somente no worktree; falta commit/push para a Vercel atualizar o Admin.
 
 **⚠️ Pendências desta sessão:**
-1. Templates de WhatsApp de paciente (`confirmacao_consulta`, `lembrete_vespera`) continuam fora do escopo imediato. Para o comercial, `handoff_comercial_v1` e os cinco modelos de Marketing (`primeiro_contato_comercial_v1`, `nutricao_comercial_d3_v1`, `nutricao_comercial_d10_v1`, `nutricao_comercial_d24_v1`, `nutricao_comercial_d45_v1`) foram enviados para análise na Meta em 26/ago. A régua está em `docs/WHATSAPP_NUTRICAO_COMERCIAL.md`. Antes de automatizar, implementar opt-in/opt-out persistidos e agenda de etapas; sem consentimento registrado, não há disparo.
+1. ~~Templates de WhatsApp de paciente... implementar opt-in/opt-out persistidos e agenda de etapas~~ ✅ infra construída em 28/ago — ver §37. Os templates seguem `pendente` de aprovação na Meta (fora do nosso controle).
 2. Limpar as 3 WABAs duplicadas no portfólio (pendência antiga do §33, ainda não feita).
 3. `asaas-create-subaccount`/`create-patient-charge` seguem não deployados (taxa OLI + produto de subconta).
 4. Fundador precisa confirmar ao vivo que o fix da Fila resolveu (reabrir a notificação do teste com o sócio e clicar "Ver conversa").
 5. Nada testado em device/simulador nativo.
 6. `docs/IA_ATENDIMENTO_WHATSAPP.md` e o prompt devem ser revisados juntos na próxima mudança de comportamento — não editar um sem o outro (regra que o próprio documento estabelece).
-7. Publicar a nova copy de primeiro contato do Admin (`admin/lib/whatsapp.ts`) por commit/push; depois conferir uma abertura pela `/fila` e outra pela `/leads`.
+7. ~~Publicar a nova copy de primeiro contato do Admin... por commit/push~~ ✅ commitada e publicada em 28/ago (ver §37).
 
 ## 35. Limpeza dos leads de engano + IA para de responder duas vezes (26/ago sessão 2)
 
@@ -1929,6 +1937,103 @@ do projeto).
 4. Vale conferir se algum push/nudge assumia o estado "sem plano". A régua
    de silenciamento prevista na §30 nunca foi implementada, então
    provavelmente não há nada a desfazer, mas não foi auditado.
+
+## 37. Reorganização de `/leads` + infra da régua de nutrição comercial (28/ago)
+
+Duas perguntas do fundador abriram a sessão: a tela de leads estava confusa
+(de onde vem cada um, quem já foi atendido, sem busca) e — depois de
+confirmar que a Central de Leads do Meta é só o painel próprio do Meta, sem
+relação com o funil da OLI (o fluxo real é Meta → RD Station →
+`rd-leads-webhook` → `leads`, já automático desde §24) — se dava pra Olivia
+iniciar contato pelos leads que chegam pela RD, direto.
+
+### `/leads` reorganizado
+
+Commit `e6e90ed`. Coluna nova `canal_primeiro_contato` (migration
+`20260828_lead_canal_primeiro_contato`) — eixo separado de `origem`/`fonte`:
+registra **como a equipe abordou** o lead (WhatsApp/ligação/e-mail), não de
+onde ele veio. Na tela: busca por nome/e-mail/WhatsApp; chip macro
+**Atendimento** (Todos/Falta atender/Já atendido, atalho pra
+`status='novo'`, ao lado da esteira detalhada, sem substituí-la); chips de
+**Origem** com contador, no mesmo padrão de Situação/Atendente; badge e
+select de canal do 1º contato por lead. Todos os filtros se combinam e se
+preservam entre si nos links.
+
+### Por que a Olivia não pode simplesmente iniciar contato hoje
+
+Não é lacuna de código: a Cloud API do WhatsApp **exige template aprovado
+pela Meta** pra qualquer mensagem que abre conversa (a pessoa nunca escreveu
+pro número antes) — nem texto livre manual, nem automático. O template
+`primeiro_contato_comercial_v1` foi enviado pra análise em 26/ago (§33/§34) e
+segue sem aprovação confirmada. Quando o lead responde primeiro, a Olivia já
+assume normalmente — `resolveConversa` já casa o telefone com `leads.whatsapp`
+existente, incluindo os que vieram da RD.
+
+### Infra da régua de nutrição — construída e inerte
+
+Fecha a pendência 1 do §34 e a seção "ainda precisa de implementação" de
+`docs/WHATSAPP_NUTRICAO_COMERCIAL.md`. **Nada dispara até os templates
+virarem `aprovado`** — zero risco de mensagem sair sem aprovação da Meta.
+
+- **Migration `20260828_whatsapp_nutricao_comercial`:** `leads` ganha
+  `whatsapp_opt_in_at`/`whatsapp_opt_in_source`/`whatsapp_opt_out_at`; tabela
+  nova `whatsapp_nutricao_etapas` (uma linha por etapa por lead —
+  `primeiro_contato`/`d3`/`d10`/`d24`/`d45` —, `unique(lead_id, etapa)`
+  impede duplicidade em reexecução do cron); os 5 templates de
+  `docs/WHATSAPP_NUTRICAO_COMERCIAL.md` cadastrados em `whatsapp_templates`
+  com `status_aprovacao='pendente'` — **reaproveita o mesmo gate que
+  `send-patient-trigger` já usa** pros templates de paciente, em vez de
+  inventar uma env var de liga/desliga; cron `whatsapp-nutricao-comercial`
+  a cada 30 min, 9h-19h BRT (mesmo horário do `whatsapp-nudge-silencio`).
+- **Edge function `whatsapp-nutricao-comercial`:** processa etapas
+  `agendada` vencidas; cancela se o lead saiu de elegibilidade (opt-out,
+  convertido/descartado, sem WhatsApp, conversa em atendimento humano); se o
+  template da etapa não está aprovado, **não é erro** — só espera e tenta de
+  novo no próximo ciclo, sozinha, assim que alguém aprovar; ao enviar,
+  encadeia a etapa seguinte (D+3→D+10→D+24→D+45, cada intervalo contado a
+  partir do envio da etapa anterior, não de D0 absoluto — como o documento
+  da régua especifica).
+- **`whatsapp-webhook`:** qualquer resposta do lead cancela a régua pendente
+  em tempo real (a etapa seguinte nunca é criada por engano); o cron reforça
+  isso defensivamente por corrida rara.
+- **Admin (`/leads`):** três ações novas —
+  `optInLeadWhatsapp`/`pauseLeadWhatsappNutricao`/`resumeLeadWhatsappNutricao`
+  — registram opt-in com origem, pausam (cancela etapas agendadas) e retomam
+  (reativa a etapa parada ou agenda a próxima, sempre pra "agora"). Badge de
+  próxima etapa/status por lead.
+- **Não implementado** (item 4 do plano original do doc, fora do escopo
+  desta sessão): cancelar a régua também em "conversão do lead" via ação
+  explícita do admin e em "agendamento de visita" — hoje só opt-out manual e
+  resposta do lead cancelam. `lead.status='convertido'` já é checado pela
+  edge function antes de enviar, então o pior caso é uma etapa ficar
+  `cancelada` por essa checagem no próprio disparo, não uma mensagem indevida
+  saindo.
+- `admin/lib/database.types.ts` regenerado via Supabase MCP depois das
+  migrations (nunca editar à mão — CLAUDE.md).
+
+### Trabalho de sessão paralela, mesmo working tree
+
+Havia outra sessão mexendo nos mesmos arquivos ao mesmo tempo (evidência:
+`whatsapp-nudge-silencio` chegou à v3 em produção sem eu ter tocado nela) —
+o commit `a45a0af` junta os dois: a reforma de qualidade do
+`SYSTEM_PROMPT_LEAD` (28/ago, ver §34) mais o meu hook de cancelamento de
+etapa no `whatsapp-webhook` estão no mesmo arquivo, deployado junto (v28,
+combinado). A copy de "primeiro contato manual" (`admin/lib/whatsapp.ts`,
+§34) também foi publicada nesse commit.
+
+### Correção de doc
+
+§4 (Planos e preços) estava com a tabela de antes da reforma do §30/§31 —
+corrigida nesta sessão (ver nota no próprio §4).
+
+**⚠️ Pendências:**
+1. Os 5 templates de Marketing da régua seguem `pendente` na Meta — sem
+   controle nosso, só esperar.
+2. Cancelamento por conversão/visita agendada (item 4 do doc original) não
+   implementado — ver nota acima.
+3. Nada testado em device/simulador nativo.
+4. Commits `e6e90ed`/`a45a0af`, push feito pro `main` — Vercel/Supabase já
+   refletem.
 
 ## 13. Comandos úteis
 
