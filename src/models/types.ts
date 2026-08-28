@@ -25,6 +25,9 @@ export type TipoAtendimento = 'presencial' | 'telemedicina' | 'ambos';
 /** Título de tratamento do profissional */
 export type Tratamento = 'Dr.' | 'Dra.';
 
+/** Intenção declarada de uso do OLI, capturada no onboarding */
+export type ObjetivoOli = 'migrar_rotina' | 'espaco_avulso' | 'so_conhecer';
+
 /** Q6: Quantidade de locais de atuação */
 export type NumLocais = '1' | '2_3' | '4_6' | 'mais_6';
 

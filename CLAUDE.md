@@ -25,7 +25,7 @@ Desenvolvido com React Native + Expo para publicação simultânea na App Store 
 app/                          # Expo Router (screens — arquivo = rota)
   _layout.tsx                 # Stack root: auth gate, onboarding gate, AppLock
   login.tsx                   # Login e cadastro com rate limiting
-  onboarding.tsx              # Questionário fiscal (contábil Mello)
+  onboarding.tsx               # WhatsApp, especialidade, cidade/UF, tipo de atendimento, objetivo
   chatbot.tsx                 # Modal de IA com 5 personas especializadas
   perfil.tsx                  # Perfil do médico + biometria + conta
   mfa-setup.tsx               # Configuração de MFA

@@ -2267,6 +2267,26 @@ Pedido do fundador: a Fila estava poluída — `lead_received` e `whatsapp_messa
 
 `cd admin && npx tsc --noEmit` limpo. Verificação visual da Fila não feita (preview local pede login de admin, sem credencial disponível neste ambiente) — confirmar no ar depois do deploy.
 
+## 48. Onboarding passa a coletar identidade + intenção do médico (28/ago, sessão seguinte à §47)
+
+Pedido do fundador, motivado pelo plano de régua de ativação (adiado, ver pendência abaixo): o onboarding enxuto (§8/15, cortado de 5 telas pra 1 em julho) não estava gerando dado nenhum. Conferido no banco antes de mexer: **30 cadastros, só 15 concluíram onboarding**, e desses só 5-9 preencheram especialidade/cidade/tipo de atendimento/CRM — tudo isso virou missão opcional em `completar-perfil.tsx` sem prazo, e "opcional sem prazo" na prática não é preenchido. Fundador decidiu que a aquisição não é mais só divulgação direta pro app store, fricção deixou de ser a prioridade, e pediu os dados obrigatórios mesmo assim mantendo o crédito de Olicoins.
+
+**Campos novos obrigatórios em `app/onboarding.tsx`** (WhatsApp já era): Especialidade (texto livre), Cidade/UF (2 `TextInput`, sem picker de estado — decisão consciente de não extrair o `SelectRow`/`ESTADOS` de `perfil.tsx`, que é local ao arquivo e estilizado pra edição pós-cadastro, não pra tela enxuta), Tipo de atendimento (`presencial`/`telemedicina`/`ambos`, já existia como coluna e tipo `TipoAtendimento`, só não era coletado em lugar nenhum). `OptionCard` (antes fixo em `Tratamento`) virou genérico `<T extends string>` pra reaproveitar nos 3 grupos de escolha única da tela.
+
+**Campo novo — intenção declarada:** não existia nada parecido no schema (confirmado em pesquisa: nem os "11 objetivos de ação" nem as "10 seções de perfil" da gamificação capturam intenção, só ação completada). Nova coluna `profiles.objetivo_oli` (migration `20260828_profiles_objetivo_oli.sql`), enum de 1 toque: `migrar_rotina` / `espaco_avulso` / `so_conhecer`.
+
+**Bug achado de brinde:** `admin/app/medicos/[id]/page.tsx` consultava e exibia `tipos_atendimento` (plural) — coluna morta, nunca escrita por nenhum código do app desde sempre (a coluna viva é `tipo_atendimento`, singular). O campo "Tipos de atendimento" no admin sempre apareceu vazio. Corrigido pra `tipo_atendimento` no mesmo passo, já que o objetivo aqui é o fundador *ver* o dado; ganhou também `Field` novo pra `objetivo_oli`.
+
+Olicoins sem nenhuma mudança de lógica: `cadastro_completo` (10 coins) já credita ao terminar o onboarding, incondicional — continua valendo. A seção "atividade_local" (10 coins) ainda exige `local_atuacao`+`num_locais`, que seguem opcionais/pós-cadastro — o médico ainda tem o que completar depois.
+
+`especialidade`/`atividade_exercida` seguem espelhadas no save (mesmo padrão já usado em `perfil.tsx`) pra não quebrar a checagem da seção de perfil que depende de `atividade_exercida`.
+
+**Testado ponta a ponta** com conta sintética (mesma metodologia de leads/parceiros de sessões anteriores): cadastro via `expo start --web`, e-mail confirmado manualmente via SQL (`auth.users.email_confirmed_at`, gate normal do Supabase Auth bloqueando o teste headless), onboarding preenchido e submetido, conferido no banco que os 5 campos novos salvaram certo (`especialidade`, `atividade_exercida`, `cidade_uf`, `tipo_atendimento`, `objetivo_oli`). Conta de teste apagada ao final (`auth.users` cascade → `profiles`). Página `/medicos/[id]` do admin **não** verificada visualmente (sem credencial de admin neste ambiente) — só confirmado que a rota não quebra (redireciona pro login normalmente) e que `tsc` está limpo.
+
+`npx tsc --noEmit` (raiz) e `cd admin && npx tsc --noEmit` limpos. `database.types.ts` regenerado nos dois projetos. `CLAUDE.md` corrigido (linha da árvore de pastas descrevia `onboarding.tsx` como "questionário fiscal Mello", desatualizada há tempo).
+
+**Pendência:** a régua de ativação por WhatsApp pro médico pós-cadastro (desenhada nesta sessão, plano em espera) volta à mesa agora que o onboarding novo está pronto — pode inclusive usar `especialidade`/`objetivo_oli` pra segmentar a mensagem.
+
 ## 13. Comandos úteis
 
 ```bash

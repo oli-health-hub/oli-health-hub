@@ -11,20 +11,20 @@ import { useAuthStore } from '../src/store/authStore';
 import { colors, spacing, radius } from '../src/theme/designSystem';
 import { getPendingReferralCode, clearPendingReferralCode } from '../src/utils/referral';
 import { creditOlicoins } from '../src/services/olicoinsService';
-import type { Tratamento } from '../src/models/types';
+import type { Tratamento, TipoAtendimento, ObjetivoOli } from '../src/models/types';
 
 // ─── Onboarding enxuto ────────────────────────────────────────────────────────
 // Só o essencial pra identificar o profissional no Admin. O resto (atendimento,
 // situação fiscal, financeiro, como conheceu...) vira missão gamificada dentro
 // do app — ver app/completar-perfil.tsx e src/utils/profileSections.ts.
 
-function OptionCard({
+function OptionCard<T extends string>({
   label, value, selected, onPress,
 }: {
   label: string;
-  value: Tratamento;
+  value: T;
   selected: boolean;
-  onPress: (v: Tratamento) => void;
+  onPress: (v: T) => void;
 }) {
   return (
     <TouchableOpacity
@@ -48,6 +48,11 @@ export default function OnboardingScreen() {
   const [tratamento, setTratamento] = useState<Tratamento | null>(null);
   const [crm,        setCrm]        = useState('');
   const [whatsapp,   setWhatsapp]   = useState('');
+  const [especialidade,   setEspecialidade]   = useState('');
+  const [cidade,          setCidade]          = useState('');
+  const [uf,              setUf]              = useState('');
+  const [tipoAtendimento, setTipoAtendimento] = useState<TipoAtendimento | null>(null);
+  const [objetivoOli,     setObjetivoOli]     = useState<ObjetivoOli | null>(null);
 
   // Indicação (referral) capturada silenciosamente via deep link — sem UI,
   // sem perguntar nada ao profissional. Resolve em background se houver
@@ -107,7 +112,12 @@ export default function OnboardingScreen() {
   };
 
   const whatsappDigits = whatsapp.replace(/\D/g, '');
-  const isValid = whatsappDigits.length >= 10;
+  const isValid = whatsappDigits.length >= 10
+    && especialidade.trim().length > 0
+    && cidade.trim().length > 0
+    && uf.trim().length === 2
+    && tipoAtendimento !== null
+    && objetivoOli !== null;
 
   const handleFinish = async () => {
     if (!profile?.id) {
@@ -116,7 +126,7 @@ export default function OnboardingScreen() {
       return;
     }
     if (!isValid) {
-      Alert.alert('WhatsApp obrigatório', 'Informe um número de WhatsApp válido com DDD.');
+      Alert.alert('Faltam informações', 'Preencha WhatsApp, especialidade, cidade/UF, tipo de atendimento e o que te traz ao OLI.');
       return;
     }
     setLoading(true);
@@ -124,6 +134,8 @@ export default function OnboardingScreen() {
       // Se o nome já vem com "Dr"/"Dra", não duplica o tratamento (evita "Dr. Dr. João").
       const nomeJaTemTratamento = /^\s*dra?\.?\s/i.test(profile.nome ?? '');
       const tratamentoFinal = nomeJaTemTratamento ? null : tratamento;
+
+      const especialidadeTrim = especialidade.trim() || null;
 
       const { data, error } = await supabase
         .from('profiles')
@@ -134,6 +146,11 @@ export default function OnboardingScreen() {
           whatsapp:            whatsapp.trim(),
           como_conheceu:       comoConheceu,
           referido_por:        referidoPorId,
+          especialidade:       especialidadeTrim,
+          atividade_exercida:  especialidadeTrim,
+          cidade_uf:           cidade.trim() && uf.trim() ? `${cidade.trim()} / ${uf.trim().toUpperCase()}` : null,
+          tipo_atendimento:    tipoAtendimento,
+          objetivo_oli:        objetivoOli,
         })
         .eq('id', profile.id)
         .select()
@@ -205,6 +222,56 @@ export default function OnboardingScreen() {
             autoCapitalize="characters"
             accessibilityLabel="Conselho de classe"
           />
+
+          {/* Especialidade — obrigatório */}
+          <Text style={[styles.question, styles.questionSpacing]}>Especialidade</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Ex: Cardiologia"
+            placeholderTextColor={colors.gray}
+            value={especialidade}
+            onChangeText={setEspecialidade}
+            accessibilityLabel="Especialidade"
+          />
+
+          {/* Cidade/UF — obrigatório */}
+          <Text style={[styles.question, styles.questionSpacing]}>Cidade / UF</Text>
+          <View style={styles.cityRow}>
+            <TextInput
+              style={[styles.textInput, styles.cityInput]}
+              placeholder="Ex: São Paulo"
+              placeholderTextColor={colors.gray}
+              value={cidade}
+              onChangeText={setCidade}
+              accessibilityLabel="Cidade"
+            />
+            <TextInput
+              style={[styles.textInput, styles.ufInput]}
+              placeholder="UF"
+              placeholderTextColor={colors.gray}
+              value={uf}
+              onChangeText={t => setUf(t.toUpperCase().slice(0, 2))}
+              autoCapitalize="characters"
+              maxLength={2}
+              accessibilityLabel="UF"
+            />
+          </View>
+
+          {/* Tipo de atendimento — obrigatório */}
+          <Text style={[styles.question, styles.questionSpacing]}>Tipo de atendimento</Text>
+          <View style={styles.boolRow}>
+            <OptionCard<TipoAtendimento> value="presencial"   label="Presencial"    selected={tipoAtendimento === 'presencial'}   onPress={setTipoAtendimento} />
+            <OptionCard<TipoAtendimento> value="telemedicina" label="Telemedicina"  selected={tipoAtendimento === 'telemedicina'} onPress={setTipoAtendimento} />
+            <OptionCard<TipoAtendimento> value="ambos"        label="Ambos"         selected={tipoAtendimento === 'ambos'}        onPress={setTipoAtendimento} />
+          </View>
+
+          {/* Objetivo com o OLI — obrigatório */}
+          <Text style={[styles.question, styles.questionSpacing]}>O que te traz ao OLI?</Text>
+          <View style={styles.objetivoCol}>
+            <OptionCard<ObjetivoOli> value="migrar_rotina" label="Quero migrar minha rotina pro OLI" selected={objetivoOli === 'migrar_rotina'} onPress={setObjetivoOli} />
+            <OptionCard<ObjetivoOli> value="espaco_avulso" label="Quero um espaço avulso, uso pontual" selected={objetivoOli === 'espaco_avulso'} onPress={setObjetivoOli} />
+            <OptionCard<ObjetivoOli> value="so_conhecer"   label="Só quero conhecer por enquanto"     selected={objetivoOli === 'so_conhecer'}   onPress={setObjetivoOli} />
+          </View>
 
           {/* Indicação — resolvida em silêncio via deep link; fallback manual aqui */}
           {referidoPorId ? (
@@ -298,6 +365,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15,
     color: colors.oliDarkGray, backgroundColor: colors.white,
   },
+
+  cityRow:   { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  cityInput: { flex: 3 },
+  ufInput:   { flex: 1, textAlign: 'center' },
+  objetivoCol: { gap: spacing.sm, marginTop: spacing.sm },
 
   refToggleText: { fontSize: 13, color: colors.oliGreen, fontWeight: '600', textDecorationLine: 'underline' },
   refWrap: { gap: spacing.xs },

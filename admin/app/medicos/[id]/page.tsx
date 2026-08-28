@@ -41,6 +41,16 @@ const NOTAS_FISCAIS: Record<string, string> = {
   '21_50':     '21 a 50 / mês',
   'acima_50':  'Mais de 50 / mês',
 };
+const TIPO_ATENDIMENTO: Record<string, string> = {
+  presencial:   'Presencial',
+  telemedicina: 'Telemedicina',
+  ambos:        'Presencial + telemedicina',
+};
+const OBJETIVO_OLI: Record<string, string> = {
+  migrar_rotina: 'Migrar a rotina pro OLI',
+  espaco_avulso: 'Espaço avulso, uso pontual',
+  so_conhecer:   'Só quer conhecer por enquanto',
+};
 const COMO_CONHECEU: Record<string, string> = {
   membro_oli:    'Indicação de membro OLI',
   amigo:         'Indicação de amigo',
@@ -123,7 +133,7 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
       situacao_juridica, faturamento_range, atividade_exercida, possui_clt,
       local_atuacao, num_locais, cidade_uf, notas_fiscais_range,
       possui_funcionarios, previsao_contratacao, possui_socios, pre_paid_ok,
-      tipos_atendimento, convenios, como_conheceu, referido_por,
+      tipo_atendimento, objetivo_oli, convenios, como_conheceu, referido_por,
       account_status, status_reason, comunidade_banned, comunidade_ban_reason,
       contract_start_date, contract_end_date, contract_doc_url, admin_notes,
       deleted_at
@@ -443,9 +453,8 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
             <Field label="CRM"                 value={p.crm} />
             <Field label="Duração consulta"    value={p.consultation_duration_minutes ? `${p.consultation_duration_minutes} min` : null} />
             {p.bio && <Field label="Bio"        value={p.bio} />}
-            {(p.tipos_atendimento as string[] | null)?.length ? (
-              <Field label="Tipos de atendimento" value={(p.tipos_atendimento as string[]).join(', ')} />
-            ) : null}
+            <Field label="Tipo de atendimento" value={label(TIPO_ATENDIMENTO, p.tipo_atendimento)} />
+            <Field label="O que busca no OLI"  value={label(OBJETIVO_OLI, p.objetivo_oli)} />
             {(p.convenios as string[] | null)?.length ? (
               <Field label="Convênios" value={(p.convenios as string[]).join(', ')} />
             ) : null}
