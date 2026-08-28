@@ -2216,6 +2216,8 @@ O lead tocou o botão "Quero conhecer" da mensagem de primeiro contato e não re
 
 O botão (§37/§40) existia, mas em texto pequeno (11px, sublinhado) no fim de uma coluna estreita cheia de outros campos de edição — o fundador não conseguiu achar. Movido pra coluna **Contato**, ao lado do WhatsApp normal: botão sólido verde, primeira coisa visível na linha do lead. A origem do opt-in deixou de exigir escolha numa lista — é derivada automaticamente de `leads.origem` (`rd_station`→`formulario_rd`, `site`→`formulario_site`, `meta_ads`→`anuncio_meta`, resto→`manual`). Um clique só. `admin/app/leads/page.tsx`; `OPT_IN_SOURCE_LABEL` (não usado mais) removido.
 
+**✅ Confirmado em produção (28/ago).** Depois do push, a página `/leads` demorou a refletir — sem erro de build na Vercel, só o tempo normal de deploy/cache; hard refresh resolveu. **Não** era o bug recorrente do item 26 do §11 (push sem disparar deployment/alias preso) — vale checar isso primeiro numa próxima vez, mas não assumir de cara.
+
 ### Preparado, não ativado: cabeçalho de imagem em template
 
 Pedido do fundador: adicionar foto na mensagem de primeiro contato. `enviarTemplate()` (`_shared/whatsapp.ts`) ganhou `headerImageUrl` opcional — monta o componente `header` do tipo imagem quando presente. **Inerte**: nenhum template hoje tem `header_image_url` preenchido. Passo que falta, manual, só o fundador pode fazer: criar `primeiro_contato_comercial_v2` no Meta com cabeçalho Imagem (mesmo corpo, foto sugerida: `estrutura` — `https://olihealthhub.com.br/fotos/lounge.jpg`, já pública), mandar pra aprovação; quando aprovar, trocar `meta_template_name`/`header_image_url` na linha `primeiro_contato` de `whatsapp_templates`.
