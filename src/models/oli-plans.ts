@@ -409,18 +409,19 @@ export const ADDONS: Record<AddonId, Addon> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// COMMUNICARE (CRM — integração PRO)
+// COMMUNICARE (CRM — prontuário, módulo à parte)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Plano Básico do Communicare — incluído no plano PRO da OLI.
- * Acesso liberado via feature_crm_communicare.
+ * Plano Básico do Communicare (prontuário) — NÃO incluído em nenhum plano da
+ * OLI (28/ago, §43 do handoff). Vendido à parte via módulo `communicare`
+ * (tabela `modules`), R$ 239/mês, mesmo preço já usado pelo módulo.
  * Integração: a definir com Heitor (API ou acesso direto).
  */
 export const COMMUNICARE_PRO_PLAN = {
   planName: 'Plano Básico',
   partner: 'Heitor',
-  includedInOliPlan: 'plan_pro' as PlanId,
+  monthlyPrice: 239,
   features: [
     'Prontuário eletrônico multiprofissional',
     'Agendamento com confirmação por e-mail e WhatsApp (one-click)',
@@ -439,7 +440,6 @@ export const COMMUNICARE_PRO_PLAN = {
   optionalModules: [
     { name: 'Teleconsulta', pricePerProfessional: 97 },
     { name: 'Scribe IA', pricePerProfessional: 149 },
-    { name: 'Communicare Connect', pricePerProfessional: 239 },
     {
       name: 'Chat Omnichannel Digisac',
       basePrice: 197,        // até 2 atendentes/mês

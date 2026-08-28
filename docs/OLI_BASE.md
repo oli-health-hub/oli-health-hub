@@ -60,7 +60,7 @@ Receita composta por **5 fontes**:
 4. **Assessorias especializadas** — contábil (Mello), jurídica (Ana), convênios e carreira (AR Soluções).
 5. **Assistentes de IA** — 5 personas especializadas (ver §9).
 6. **Comunidade + eventos** — feed Luma real (workshops/eventos OLI).
-7. **CRM clínico Communicare** (plano PRO) — prontuário, agenda online, pagamento integrado *(integração em andamento — ver §10)*.
+7. **CRM clínico Communicare** (módulo pago à parte, qualquer plano) — prontuário, agenda online, pagamento integrado *(integração em andamento — ver §10)*.
 
 ---
 
@@ -84,12 +84,13 @@ Receita composta por **5 fontes**:
 | Conforto médico (infra premium) | — | ✅ | ✅ |
 | Impressão | — | — | ✅ |
 | Diagnóstico contábil / convênios / jurídico (sessão única) | — | ✅ | ✅ |
-| CRM Communicare (Plano Básico) | — | — | ✅ |
 | Gestão de agenda pela recepção OLI | — | — | ✅ |
 | Emissão de NF gerenciada pela OLI | — | — | ✅ |
 | Nível de suporte | Essencial | Essencial | Profissional |
 
 > Serviços "plenos" (gestão contínua AR, jurídico contínuo, contabilidade inclusa, gestão de carreira) ficam reservados ao **VIP** quando lançado.
+>
+> CRM Communicare (prontuário) não é benefício de nenhum plano — é módulo pago à parte, R$ 239/mês, para quem contratar (ver §7/§10).
 
 ### Break-even entre planos
 Calculado sobre a diferença de minutagem, não sobre o valor cheio da mensalidade.
@@ -100,7 +101,7 @@ Calculado sobre a diferença de minutagem, não sobre o valor cheio da mensalida
 | START → PRO | **~14h** | R$ 599 ÷ (R$ 0,70 × 60) |
 | BASE → PRO | **25h** (exatos) | (R$ 599 − R$ 299) ÷ (R$ 0,20 × 60) |
 
-Abaixo de 10h/mês o START é o mais econômico. Em 25h/mês BASE e PRO custam o mesmo (R$ 2.549); acima disso o PRO fica mais barato **e** inclui agenda, NF e prontuário.
+Abaixo de 10h/mês o START é o mais econômico. Em 25h/mês BASE e PRO custam o mesmo (R$ 2.549); acima disso o PRO fica mais barato **e** inclui agenda e NF pela recepção OLI.
 
 > ⚠️ Este bloco dizia **~17h** até 03/ago, com a conta `R$ 299 ÷ (R$ 0,30 × 60)` — a diferença de R$ 0,30/min é de uma tabela de preços antiga. A diferença real START→BASE é **R$ 0,50/min**. O site e a função `calcBreakevenHours()` sempre estiveram certos (~10h); só a documentação e o comentário no código é que estavam velhos.
 
@@ -131,13 +132,13 @@ Custo calculado pela minutagem do plano ativo, **só sobre as horas pagas** (bô
 | Otimização de Carreira Médica | AR Soluções | a definir | Preço pendente |
 | Consulta Jurídica Avulsa | Ana (sócia) | a definir | Preço pendente |
 | Consultoria Jurídica Contratual | Ana (sócia) | a definir | Preço pendente |
+| CRM Communicare (Plano Básico / prontuário) | Communicare (Heitor) | **R$ 239/mês** | Ativo *(inerte até token — ver §10)* |
 
 > Regra AR/Jurídico: preço avulso = valor de referência VIP × 1,15 (aplicar após validação com parceiros). Add-ons marcados `includedInVip` entram no VIP sem cobrança à parte quando lançado.
 
-### Módulos Communicare (opcionais, à parte do PRO)
+### Módulos Communicare (opcionais, além do Plano Básico)
 - Teleconsulta — **R$ 97**/profissional
 - Scribe IA — **R$ 149**/profissional
-- Communicare Connect — **R$ 239**/profissional
 - Chat Omnichannel Digisac — R$ 197 base (até 2 atendentes) + R$ 30/atendente extra *(contratação direta com Digisac, não passa pela OLI)*
 
 ---
@@ -170,9 +171,11 @@ Novo tipo de sala, cobrança **por bloco/hora** (não minutagem — evento é pl
 
 ---
 
-## 10. Communicare (CRM clínico — incluído no PRO)
+## 10. Communicare (CRM clínico — módulo pago à parte)
 
-Plano Básico do Communicare incluso no PRO: prontuário eletrônico, agenda online, lembretes, pagamento integrado via Asaas (split clínica × profissional), NF automática, dashboards (NPS, carteira), modelos clínicos, logins administrativos ilimitados.
+> ⚠️ Até 28/ago este Plano Básico era descrito como incluso no PRO — contradição com o preço à parte já cobrado pelo módulo `communicare` desde 22/jul. Resolvido pelo lado do "é à parte": nenhum plano inclui prontuário.
+
+Plano Básico do Communicare, **R$ 239/mês, contratado à parte de qualquer plano**: prontuário eletrônico, agenda online, lembretes, pagamento integrado via Asaas (split clínica × profissional), NF automática, dashboards (NPS, carteira), modelos clínicos, logins administrativos ilimitados.
 
 **Estado:** integração técnica construída no app mas **inerte** (aguardando token + endpoints do parceiro Heitor). Sync invisível de decisão, visível de status (badges ✓ Sincronizado / Pendente). Master de cadastro = Communicare; mapa de salas continua na OLI.
 
