@@ -75,8 +75,10 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
   }
 
   function openWhatsApp(item: QueueItem) {
-    const nome = item.profiles?.nome;
-    const texto = `Olá, ${nome ?? 'tudo bem'}! Sou do time OLI Health Hub. Vi que você ${ACAO_TEXTO[item.type]} e gostaria de ajudar com qualquer dúvida.`;
+    const nome = item.profiles?.nome ?? 'tudo bem';
+    const texto = item.type === 'new_signup'
+      ? `Olá, ${nome}! Aqui é do time OLI Health Hub. Vimos que você baixou o app e concluiu o cadastro — passando para saber se está tudo certo, se conseguiu conferir os detalhes por lá e se ficou com alguma dúvida. Qualquer coisa, é só chamar por aqui.`
+      : `Olá, ${nome}! Sou do time OLI Health Hub. Vi que você ${ACAO_TEXTO[item.type]} e gostaria de ajudar com qualquer dúvida.`;
     abrirWhatsApp(item.profiles?.whatsapp ?? null, texto);
   }
 
