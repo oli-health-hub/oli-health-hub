@@ -724,6 +724,7 @@ export async function optInLeadWhatsapp(formData: FormData) {
   if (invokeError) throw new Error(invokeError.message);
 
   revalidatePath('/leads');
+  revalidatePath('/conversas');
 }
 
 /** Pausa a régua: marca opt-out e cancela toda etapa ainda não enviada.
