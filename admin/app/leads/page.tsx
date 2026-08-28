@@ -648,8 +648,8 @@ export default async function LeadsPage({
                     </form>
 
                     {/* Formulário à parte — HTML não aceita <form> aninhado.
-                        Régua de nutrição comercial: inerte até os 5 templates
-                        estarem aprovados na Meta (ver whatsapp_templates). */}
+                        O primeiro contato sai pelo número da Olivia somente
+                        com opt-in e template aprovado na Meta. */}
                     <div className="mt-2 pt-2 border-t border-gray-100">
                       {!lead.whatsapp_opt_in_at ? (
                         <form action={optInLeadWhatsapp} className="flex items-center gap-1.5">
@@ -661,7 +661,7 @@ export default async function LeadsPage({
                             ))}
                           </select>
                           <button type="submit" className="text-[11px] text-oli-green font-semibold underline whitespace-nowrap">
-                            Registrar
+                            Iniciar com Olivia
                           </button>
                         </form>
                       ) : lead.whatsapp_opt_out_at ? (

@@ -4,7 +4,8 @@
  * Dispara a régua de nutrição comercial (docs/WHATSAPP_NUTRICAO_COMERCIAL.md)
  * pra leads com opt-in registrado — primeiro contato + 4 etapas de retomada
  * (D+3, D+10, D+24, D+45, cada uma contada a partir do envio da anterior).
- * Chamada por cron via pg_net, não pelo Meta — `verify_jwt: true`.
+ * Chamada pelo cron via pg_net e pelo Admin para iniciar um lead específico,
+ * nunca pelo Meta — `verify_jwt: true`.
  *
  * INERTE por padrão: só envia quando o template da etapa está com
  * `whatsapp_templates.status_aprovacao = 'aprovado'` — mesmo gate que
@@ -51,18 +52,32 @@ async function cancela(supabase: SupabaseClient, etapaId: string, motivo: string
     .eq('id', etapaId);
 }
 
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  const { data: devidas, error } = await supabase
+  // O Admin envia { leadId } para tentar o primeiro contato imediatamente.
+  // Cron e demais chamadas sem body processam a fila normal de até 20 etapas.
+  let leadId: string | null = null;
+  if (req.method === 'POST') {
+    try {
+      const body = await req.json();
+      if (typeof body?.leadId === 'string' && body.leadId.trim()) leadId = body.leadId;
+    } catch {
+      // pg_net pode enviar body vazio; nesse caso segue para a fila normal.
+    }
+  }
+
+  let query = supabase
     .from('whatsapp_nutricao_etapas')
     .select('id, lead_id, etapa, created_at')
     .eq('status', 'agendada')
-    .lte('data_prevista', new Date().toISOString())
-    .limit(20);
+    .lte('data_prevista', new Date().toISOString());
+
+  if (leadId) query = query.eq('lead_id', leadId);
+  const { data: devidas, error } = await query.limit(leadId ? 1 : 20);
 
   if (error) {
     console.error('[whatsapp-nutricao] erro ao buscar etapas devidas:', error);

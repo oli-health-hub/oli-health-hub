@@ -155,26 +155,29 @@ variáveis na ordem: telefone, nome, resumo e motivo do handoff.
 
 ## Configuração no Supabase e no Admin
 
-Esta parte deve ser feita antes de ligar os disparos. Ela ainda precisa de
-implementação no projeto, pois a tabela de leads não registra hoje o opt-in de
-WhatsApp com timestamp nem possui uma agenda persistente para as etapas D+3 a
-D+45.
+Esta infraestrutura está implementada. Para iniciar o primeiro contato pelo
+número da Olivia, a equipe abre o lead em `/leads`, seleciona a origem do
+opt-in e clica em **Iniciar com Olivia**. A ação persiste o opt-in, agenda a
+etapa `primeiro_contato` e invoca a função para aquele lead imediatamente -
+sem processar a fila inteira nem esperar o cron de 30 minutos.
 
-1. Adicionar ao lead: `whatsapp_opt_in_at`, `whatsapp_opt_in_source`,
-   `whatsapp_opt_out_at` e, se necessário, a evidência de consentimento. Sem
-   `whatsapp_opt_in_at`, o lead é inelegível.
-2. Criar uma agenda persistente de nutrição por lead, com etapa, data prevista,
-   status (`agendada`, `cancelada`, `enviada`, `falhou`) e `template_name`.
-   O histórico precisa impedir duplicidade em reexecuções do cron.
-3. Criar um job que execute em horário comercial, busque somente etapas
-   elegíveis e envie o template pelo helper `enviarTemplate()`.
-4. Cancelar etapas futuras em qualquer mensagem inbound, mudança da conversa
-   para `humano`, conversão do lead, agendamento de visita ou opt-out.
-5. Na tela de leads, mostrar consentimento, próxima etapa e uma ação explícita
-   de pausar/retomar. A ação de retomar nunca substitui um opt-in ausente.
-6. Configurar os nomes aprovados como variáveis de ambiente, sem hardcode,
-   por exemplo `WHATSAPP_TEMPLATE_NUTRICAO_D3`.
-7. Testar com um número autorizado: primeiro contato, resposta que cancela a
+Se o template ainda não estiver aprovado na Meta, nada é enviado: a etapa fica
+agendada e o cron a tenta novamente após a aprovação. Quando o lead responde,
+o `whatsapp-webhook` identifica o telefone, associa a conversa ao lead da RD e
+a Olivia continua o fluxo comercial automaticamente.
+
+1. O lead registra `whatsapp_opt_in_at`, `whatsapp_opt_in_source` e
+   `whatsapp_opt_out_at`. Sem `whatsapp_opt_in_at`, ele é inelegível.
+2. A agenda persistente guarda etapa, data prevista, status
+   (`agendada`, `cancelada`, `enviada`, `falhou`) e impede duplicidade.
+3. O cron executa em horário comercial e envia somente etapas elegíveis pelo
+   helper `enviarTemplate()`; a ação manual processa apenas o lead escolhido.
+4. Mensagem inbound, conversa humana, conversão, agendamento de visita ou
+   opt-out devem cancelar etapas futuras. Mensagem inbound e opt-out já estão
+   implementados; conversão e visita continuam como pendência.
+5. A tela de leads mostra consentimento, próxima etapa e ações para
+   iniciar, pausar e retomar. Retomar nunca substitui um opt-in ausente.
+6. Testar com um número autorizado: primeiro contato, resposta que cancela a
    agenda, silêncio que agenda a etapa seguinte, opt-out e handoff humano.
 
 ## Critérios para ativação

@@ -2096,6 +2096,34 @@ especialidade, objeções/perguntas frequentes e guia de condução. Renderizado
 revisado visualmente; os dois prompts passaram em `deno check`. O PDF é
 material operacional local, não artefato versionado no repositório.
 
+## 40. Primeiro contato ativo pelo número da Olivia (28/ago)
+
+Os leads da RD já entram em `leads` com nome e WhatsApp. O problema de usar o
+botão manual antigo era de canal: ele abre o WhatsApp comercial da equipe; a
+resposta volta para aquele app e a Olivia não a vê. A solução implementada é
+**Iniciar com Olivia** na linha do lead em `/leads`.
+
+1. A equipe registra a origem do opt-in (por exemplo, formulário RD) e clica
+   no botão.
+2. `optInLeadWhatsapp()` persiste o consentimento, agenda
+   `primeiro_contato` e invoca `whatsapp-nutricao-comercial` para **somente
+   aquele lead**, sem esperar o cron e sem processar a fila inteira.
+3. A Edge Function envia o template aprovado pelo número da Olivia, cria a
+   conversa como `status='ia'` e grava a mensagem no histórico.
+4. Ao responder, o webhook associa o telefone ao lead RD e a Olivia segue o
+   fluxo comercial de planos/especialidade/foto ou visita.
+
+**Gate obrigatório:** sem opt-in válido ou com o template
+`primeiro_contato_comercial_v1` ainda pendente/rejeitado, não há envio. A
+etapa permanece agendada até a Meta aprovar; isso protege o contato ativo fora
+da janela de 24 horas. O botão vale para qualquer lead elegível, mas o uso
+imediato pedido é para os leads de origem RD.
+
+Arquivos: `admin/app/actions.ts`, `admin/app/leads/page.tsx`,
+`supabase/functions/whatsapp-nutricao-comercial/index.ts` e
+`docs/WHATSAPP_NUTRICAO_COMERCIAL.md`. `deno check`, `admin npx tsc --noEmit`
+e `git diff --check` passaram antes da publicação.
+
 ## 13. Comandos úteis
 
 ```bash

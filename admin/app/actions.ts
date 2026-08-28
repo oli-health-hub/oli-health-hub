@@ -693,9 +693,10 @@ export async function updateLead(formData: FormData) {
   revalidatePath('/leads');
 }
 
-/** Registra o opt-in de WhatsApp do lead e agenda o primeiro contato da régua
- *  de nutrição comercial (docs/WHATSAPP_NUTRICAO_COMERCIAL.md). Sem opt-in
- *  não existe etapa — este é o único lugar do admin que cria a primeira. */
+/** Registra o opt-in de WhatsApp do lead e inicia a régua comercial pela
+ *  Olivia (docs/WHATSAPP_NUTRICAO_COMERCIAL.md). Sem opt-in não existe etapa.
+ *  A function é chamada para este lead em particular: se o template ainda não
+ *  foi aprovado pela Meta, ela preserva a etapa agendada e não envia nada. */
 export async function optInLeadWhatsapp(formData: FormData) {
   const id     = formData.get('id')     as string;
   const source = formData.get('source') as string;
@@ -714,6 +715,13 @@ export async function optInLeadWhatsapp(formData: FormData) {
     .from('whatsapp_nutricao_etapas')
     .insert({ lead_id: id, etapa: 'primeiro_contato', status: 'agendada', data_prevista: new Date().toISOString() });
   if (etapaError && etapaError.code !== '23505') throw new Error(etapaError.message);
+
+  // Não processa a fila inteira aqui. O cron continua responsável pelas
+  // retomadas; este invoke tenta somente o primeiro contato deste lead agora.
+  const { error: invokeError } = await supabase.functions.invoke('whatsapp-nutricao-comercial', {
+    body: { leadId: id },
+  });
+  if (invokeError) throw new Error(invokeError.message);
 
   revalidatePath('/leads');
 }
