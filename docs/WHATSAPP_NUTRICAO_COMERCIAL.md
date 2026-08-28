@@ -53,12 +53,13 @@ ao comercial, o lead pediu para não receber mensagens ou não há um assunto
 comercial pendente. O job existente `whatsapp-nudge-silencio` já aplica uma
 única retomada por silêncio entre 2h e 22h.
 
-## Templates enviados para análise na Meta
+## Templates ativos na Meta
 
-Os cinco modelos de Marketing abaixo foram enviados para análise em
-26/Agosto/2026. Manter nomes, idioma, variáveis e botões descritos aqui como
-referência até a decisão da Meta; não ativar a régua enquanto o status não for
-**Aprovado**.
+Em 28/Agosto/2026, os cinco modelos de Marketing abaixo foram confirmados como
+**Ativo — Qualidade pendente** no Gerenciador do WhatsApp. Esse status permite
+o envio: a qualidade ainda não recebeu classificação por falta de volume. Os
+cinco registros correspondentes também foram liberados no Supabase com o status
+interno `aprovado`, que é o gate usado pela régua.
 
 Todos os cinco modelos abaixo são de **Marketing**, idioma **Português
 (Brasil)**, e usam cabeçalho de texto opcional. O conteúdo não deve mencionar
@@ -148,21 +149,21 @@ variáveis na ordem: telefone, nome, resumo e motivo do handoff.
 5. Adicione apenas os botões indicados no roteiro. No modelo D+24, cadastre a
    URL estática oficial do Calendly; nos demais, use respostas rápidas.
 6. Em **Enviar para análise**, confirme a categoria e aguarde o status
-   **Aprovado**. Não ative automações enquanto qualquer modelo estiver em
-   revisão, pausado ou rejeitado.
+   **Ativo**. Não ative automações enquanto qualquer modelo estiver em revisão,
+   pausado ou rejeitado.
 7. Registre para cada modelo aprovado: nome Meta, idioma `pt_BR`, categoria,
    status, versão, data de aprovação e o texto efetivamente aprovado.
 
 ## Configuração no Supabase e no Admin
 
-Esta infraestrutura está implementada. Para iniciar o primeiro contato pelo
+Esta infraestrutura está implementada e ativa. Para iniciar o primeiro contato pelo
 número da Olivia, a equipe abre o lead em `/leads`, seleciona a origem do
 opt-in e clica em **Iniciar com Olivia**. A ação persiste o opt-in, agenda a
 etapa `primeiro_contato` e invoca a função para aquele lead imediatamente -
 sem processar a fila inteira nem esperar o cron de 30 minutos.
 
-Se o template ainda não estiver aprovado na Meta, nada é enviado: a etapa fica
-agendada e o cron a tenta novamente após a aprovação. Quando o lead responde,
+Se algum modelo vier a ser pausado ou rejeitado, nada é enviado: a etapa fica
+agendada e o cron a tenta novamente quando estiver ativo. Quando o lead responde,
 o `whatsapp-webhook` identifica o telefone, associa a conversa ao lead da RD e
 a Olivia continua o fluxo comercial automaticamente.
 
@@ -180,10 +181,11 @@ a Olivia continua o fluxo comercial automaticamente.
 6. Testar com um número autorizado: primeiro contato, resposta que cancela a
    agenda, silêncio que agenda a etapa seguinte, opt-out e handoff humano.
 
-## Critérios para ativação
+## Condições operacionais
 
-- Os cinco templates de Marketing estão aprovados pela Meta.
-- O `handoff_comercial_v1` está aprovado e configurado no ambiente.
+- Os cinco templates de Marketing estão ativos na Meta e aprovados internamente.
+- O `handoff_comercial_v1` está configurado no ambiente para avisar o WhatsApp
+  comercial quando a Olivia transferir um atendimento.
 - O opt-in e o opt-out são persistidos antes do primeiro disparo.
 - Não existe envio automático para lead sem nome ou sem consentimento.
 - As mensagens não incluem informação de saúde, preço não confirmado ou PII

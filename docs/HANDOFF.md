@@ -2113,16 +2113,37 @@ resposta volta para aquele app e a Olivia não a vê. A solução implementada �
 4. Ao responder, o webhook associa o telefone ao lead RD e a Olivia segue o
    fluxo comercial de planos/especialidade/foto ou visita.
 
-**Gate obrigatório:** sem opt-in válido ou com o template
-`primeiro_contato_comercial_v1` ainda pendente/rejeitado, não há envio. A
-etapa permanece agendada até a Meta aprovar; isso protege o contato ativo fora
-da janela de 24 horas. O botão vale para qualquer lead elegível, mas o uso
-imediato pedido é para os leads de origem RD.
+**Gate obrigatório:** sem opt-in válido, não há envio. Se algum template for
+pausado ou rejeitado pela Meta, a etapa permanece agendada até voltar a ficar
+ativo; isso protege o contato ativo fora da janela de 24 horas. O botão vale
+para qualquer lead elegível, mas o uso imediato pedido é para os leads de
+origem RD.
 
 Arquivos: `admin/app/actions.ts`, `admin/app/leads/page.tsx`,
 `supabase/functions/whatsapp-nutricao-comercial/index.ts` e
 `docs/WHATSAPP_NUTRICAO_COMERCIAL.md`. `deno check`, `admin npx tsc --noEmit`
 e `git diff --check` passaram antes da publicação.
+
+## 41. Ativação dos modelos comerciais e handoff da Olivia (28/ago)
+
+Os cinco templates de Marketing foram conferidos no Meta como **Ativo —
+Qualidade pendente**. Isso é um estado enviável: a qualidade ainda não tem
+volume suficiente para receber classificação. A migration
+`20260828_activate_commercial_whatsapp_templates.sql` promoveu os cinco
+registros correspondentes em `whatsapp_templates` para `status_aprovacao =
+'aprovado'`, liberando o gate interno da régua.
+
+O alerta de transferência para humano também foi configurado no ambiente:
+quando a Olivia identifica necessidade de handoff, ela mantém a notificação no
+Admin e envia o template de Utilidade `handoff_comercial_v1` ao WhatsApp
+comercial. Nenhum lead foi contatado durante essa ativação: não havia etapa de
+primeiro contato agendada no momento da liberação.
+
+**Operação pronta:** em `/leads`, registrar a origem do opt-in e clicar em
+**Iniciar com Olivia**. O template inicial sai imediatamente pelo número da
+Olivia; a resposta do lead volta para o mesmo canal e a Olivia continua o
+atendimento com o histórico completo. Ainda falta apenas o teste real com um
+lead autorizado para comprovar a entrega ponta a ponta.
 
 ## 13. Comandos úteis
 
