@@ -502,7 +502,7 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 5. ~~**Play Store produção**~~ ✅ **RESOLVIDO 13/jul** — app publicado em produção na Google Play Store. Ver §10.1.
 6. ~~**`oli_encrypt`/`oli_decrypt`**~~ ✅ **RESOLVIDO 23/jun** — EXECUTE revogado de `authenticated`.
 7. **Communicare**: aguardar token + endpoint LISTA + status + webhook. Depois remontar card da agenda.
-8. **VIP** preço; **Cron** auto-desativar START 30d sem reserva; **expo-blur** lock screen (rebuild nativo).
+8. ~~**VIP** preço~~ obsoleto — VIP virou "standby, não projetar" (§4/CLAUDE.md), item não faz mais sentido como escrito. **Cron auto-desativar START 30d sem reserva**: nunca construído — existe só um push de reengajamento por inatividade de login (`push_reacao_inatividade`, 14/30d), que é outra coisa; questionável se ainda faz sentido, já que o START não tem mensalidade pra "proteger" desde o §30/§31. **expo-blur** lock screen (rebuild nativo) — status não reconfirmado nesta auditoria.
 9. ~~**🔒 Gate de reserva server-side**~~ ✅ **RESOLVIDO 23/jun** — trigger `trg_check_reservation_credit` BEFORE INSERT.
 10. **🆕 Salas de Evento + Conferência (roadmap)** — cobrança por bloco/hora (NÃO minutagem). Conferência R$150/h (mín 1h); Eventos R$280/h ou 4h R$960. Impl: `room_type` + `hourly_rate` + `min_duration`. Validar preço com fundador.
 ~~11. **🍎 App Store Connect**~~ ✅ **RESOLVIDO** — argumento 3.1.5(b) (serviço físico) **aceito pela Apple**. App **publicado** na App Store.
@@ -525,9 +525,9 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 ~~27. **Conferir se o item 24 já não está resolvido**~~ ✅ **Confirmado** — era mesmo a sessão 6 (paralela), commit `cc2628c` é dela. Itens 23 e 24 fechados de verdade, ver acima.
 28. **🆕 Segundo parceiro "MBS Hackathon" no banco (achado 31/jul sessão 6)** — `user_type='partner'`, código `MBS-81CCB`, 5 indicações de 28/jul (incluindo o próprio founder e o Igor). Fundador confirmou que é intencional — parceiro que só gera leads, sem comissionamento — e configurado como `comissiona=false` em `partner_commission_config`. Sem ação pendente, só registrado pra não confundir sessão futura.
 
-29. **🆕 4 edge functions no ar e fora do repo (03–05/ago)** — `rd-sync-status`, `rd-vincular-deals`, `rd-setup-webhook` e `rd-backfill` foram deployadas via MCP e **não existem em `supabase/functions/`**. Só `rd-leads-webhook` e `meta-leads-webhook` estão versionadas. Risco: perder o código-fonte se alguém redeployar por cima. Escrever os 4 arquivos no repo.
+29. **🆕 4 edge functions no ar e fora do repo (03–05/ago)** — `rd-sync-status`, `rd-vincular-deals`, `rd-setup-webhook` e `rd-backfill` foram deployadas via MCP e **não existem em `supabase/functions/`**. Só `rd-leads-webhook` e `meta-leads-webhook` estão versionadas. Risco: perder o código-fonte se alguém redeployar por cima. Escrever os 4 arquivos no repo. **⚠️ Confirmado ainda aberto em 28/ago** — as 4 seguem deployadas (via `list_edge_functions`) e ausentes do repo local.
 
-30. **🆕 `rd-probe` é temporária e deve ser apagada** — função de diagnóstico usada para investigar a RD (funil, campos, o 422). O MCP do Supabase não tem tool de deletar function; apagar pelo painel.
+30. **🆕 `rd-probe` é temporária e deve ser apagada** — função de diagnóstico usada para investigar a RD (funil, campos, o 422). O MCP do Supabase não tem tool de deletar function; apagar pelo painel. **⚠️ Confirmado ainda aberto em 28/ago** — `rd-probe` segue ACTIVE em produção (v11). Só o fundador consegue apagar, pelo painel do Supabase.
 
 31. **🆕 Typecheck e commit atrasados (05/ago)** — o sandbox de shell das sessões de 03–05/ago ficou wedged (`useradd failed`). O último typecheck verde foi rodado pelo fundador em 04/ago; tudo de 05/ago (coluna `rd_deal_id`, `rd_sync_erro` na tela, filtro por situação, observação colapsada) **não passou por `tsc`**. Rodar `cd admin && npx tsc --noEmit` **e** `npx tsc --noEmit` na raiz antes de publicar.
 
@@ -535,11 +535,11 @@ Tabela lucro (custo fixo 50k, ~R$2.100/médico): 20 méd = −8k · 24 = ~0 · 3
 
 33. **🆕 Planilha do Google do Meta ainda ligada em paralelo** — mantida de propósito como rede de segurança enquanto o webhook da RD provava que pega tudo. Agora que ele está confirmado funcionando (4 leads sozinhos em 05/ago), decidir se desliga.
 
-34. **🆕 `hour_packages.valor` é dado morto e enganoso (achado 07/ago)** — a coluna guarda R$120/h fixo, mas a cobrança calcula `horas × 60 × plans.taxa_min` e **ignora esse campo**. Coincide com o START, o que mascarou o problema. Corrigir o valor por plano ou remover a coluna, antes que alguém a use como fonte. Ver §28.
+34. **🆕 `hour_packages.valor` é dado morto e enganoso (achado 07/ago)** — a coluna guarda R$120/h fixo, mas a cobrança calcula `horas × 60 × plans.taxa_min` e **ignora esse campo**. Coincide com o START, o que mascarou o problema. Corrigir o valor por plano ou remover a coluna, antes que alguém a use como fonte. Ver §28. **⚠️ Confirmado ainda aberto em 28/ago** — consultado direto no banco: `Avulso 1h` = R$120 (correto pelo §4 seria R$114), `Starter 10h` = R$1.200 (correto seria R$1.140). Nunca corrigido apesar de o §30 ter dito que ficaria "trivial" com só 2 pacotes.
 
 35. **🆕 Peças comerciais por plano (07/ago)** — feita a do PRO (`iCloud/OLI - HH/OLI_Plano_PRO.svg`, 1080×1350). **Regra que vale para as próximas: o cliente vê um plano por vez**, então nada de "35% mais barato" ou "o mais completo" — número relativo sem comparação não significa nada, e "compensa a partir de 25h" lido isolado vira objeção. Formato é ficha de serviço, não anúncio. Faltam START e BASE no mesmo padrão.
 
-36. **🆕 Reformulação de planos aprovada, nada implementado (13/ago)** — dois planos (START sem mensalidade a R$ 1,90/min · PRO R$ 599 mensal / R$ 499 semestral a R$ 1,45/min), BASE desativado, pacotes de 20h e 40h removidos, estado novo "cadastrado sem plano". **Banco, app, admin e site seguem com o modelo antigo.** Escopo, números conferidos e as 4 decisões que faltam estão na §30.
+~~36. **🆕 Reformulação de planos aprovada, nada implementado (13/ago)**~~ ✅ **RESOLVIDO (19/ago)** — implementado no §31 (banco, app; site e admin ficaram de fora do escopo daquela sessão, ver pendência do próprio §31). Nunca tinha sido marcado aqui — só corrigido nesta auditoria de 28/ago.
 
 ### Regra de atualização (importante)
 - **JS/assets** (telas, lógica, fotos via require, Luma, reset) → **OTA** (`eas update` nos 2 canais). Sem loja.
