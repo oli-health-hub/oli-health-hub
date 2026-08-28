@@ -25,6 +25,7 @@ interface Lead {
   rd_deal_id:      string | null;
   rd_sync_erro:    string | null;
   atendente_id:    string | null;
+  canal_primeiro_contato: string | null;
 }
 
 interface Atendente {
@@ -85,6 +86,14 @@ const MOTIVO_LABEL: Record<string, string> = {
   engano_numero:    'Errou o número',
 };
 
+/* Canal usado pela equipe pra ABORDAR o lead — eixo diferente de origem/fonte,
+   que é de onde o lead VEIO. Um lead do site pode ser abordado por ligação. */
+const CANAL_LABEL: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  ligacao:  'Ligação',
+  email:    'E-mail',
+};
+
 function formatData(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
@@ -110,21 +119,42 @@ export default async function LeadsPage({
 
   // Filtro em memória, não no banco: a base é pequena (dezenas) e assim os
   // contadores saem da mesma consulta, sem uma query de count por opção.
-  const filtro     = searchParams.status ?? 'todos';
-  const filtroAtd  = searchParams.atendente ?? 'todos';
+  const filtro      = searchParams.status      ?? 'todos';
+  const filtroAtd   = searchParams.atendente   ?? 'todos';
+  const filtroOrig  = searchParams.origem      ?? 'todos';
+  // Eixo macro (pendente/atendido) coexiste com a etapa detalhada de propósito:
+  // "pendente" é só um atalho pra status==='novo', não substitui a esteira.
+  const filtroAtend = searchParams.atendimento ?? 'todos';
+  const buscaCrua   = (searchParams.q ?? '').trim().toLowerCase();
 
-  const leads = todos.filter(l =>
-    (filtro    === 'todos' || l.status === filtro) &&
-    (filtroAtd === 'todos' ||
-      (filtroAtd === 'sem' ? l.atendente_id === null : l.atendente_id === filtroAtd)),
-  );
+  const bate = (l: Lead, excluir?: 'status' | 'atendente' | 'origem' | 'atendimento'): boolean => {
+    if (buscaCrua) {
+      const alvo = `${l.nome} ${l.email ?? ''} ${l.whatsapp ?? ''}`.toLowerCase();
+      if (!alvo.includes(buscaCrua)) return false;
+    }
+    if (excluir !== 'status' && filtro !== 'todos' && l.status !== filtro) return false;
+    if (excluir !== 'origem' && filtroOrig !== 'todos' && l.origem !== filtroOrig) return false;
+    if (excluir !== 'atendente' && filtroAtd !== 'todos') {
+      const bateAtd = filtroAtd === 'sem' ? l.atendente_id === null : l.atendente_id === filtroAtd;
+      if (!bateAtd) return false;
+    }
+    if (excluir !== 'atendimento' && filtroAtend !== 'todos') {
+      const pendente = l.status === 'novo';
+      if (filtroAtend === 'pendente' && !pendente) return false;
+      if (filtroAtend === 'atendido' && pendente) return false;
+    }
+    return true;
+  };
 
-  // Contadores respeitam o outro filtro ativo — senão o número no chip não
-  // corresponde ao que aparece na tabela depois de clicar.
-  const baseStatus = todos.filter(l =>
-    filtroAtd === 'todos' ||
-    (filtroAtd === 'sem' ? l.atendente_id === null : l.atendente_id === filtroAtd));
-  const baseAtd = todos.filter(l => filtro === 'todos' || l.status === filtro);
+  const leads = todos.filter(l => bate(l));
+
+  // Cada contador respeita todos os OUTROS filtros ativos, exceto o próprio
+  // eixo — senão o número no chip não corresponde ao que aparece na tabela
+  // depois de clicar.
+  const baseStatus = todos.filter(l => bate(l, 'status'));
+  const baseAtd    = todos.filter(l => bate(l, 'atendente'));
+  const baseOrig   = todos.filter(l => bate(l, 'origem'));
+  const baseAtend  = todos.filter(l => bate(l, 'atendimento'));
 
   const contagem = baseStatus.reduce<Record<string, number>>((acc, l) => {
     acc[l.status] = (acc[l.status] ?? 0) + 1;
@@ -137,15 +167,32 @@ export default async function LeadsPage({
     return acc;
   }, {});
 
-  // Preserva o outro filtro ao montar cada link, senão clicar num chip
-  // descarta silenciosamente a escolha anterior.
-  const href = (p: { status?: string; atendente?: string }) => {
-    const q = new URLSearchParams();
-    const s = p.status    ?? filtro;
-    const a = p.atendente ?? filtroAtd;
-    if (s !== 'todos') q.set('status', s);
-    if (a !== 'todos') q.set('atendente', a);
-    const qs = q.toString();
+  const contagemOrig = baseOrig.reduce<Record<string, number>>((acc, l) => {
+    acc[l.origem] = (acc[l.origem] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const contagemAtend = baseAtend.reduce<Record<string, number>>((acc, l) => {
+    const k = l.status === 'novo' ? 'pendente' : 'atendido';
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  // Preserva os outros filtros ao montar cada link, senão clicar num chip
+  // descarta silenciosamente as escolhas anteriores.
+  const href = (p: { status?: string; atendente?: string; origem?: string; atendimento?: string; q?: string }) => {
+    const query = new URLSearchParams();
+    const s  = p.status      ?? filtro;
+    const a  = p.atendente   ?? filtroAtd;
+    const o  = p.origem      ?? filtroOrig;
+    const at = p.atendimento ?? filtroAtend;
+    const b  = p.q           ?? searchParams.q ?? '';
+    if (s  !== 'todos') query.set('status', s);
+    if (a  !== 'todos') query.set('atendente', a);
+    if (o  !== 'todos') query.set('origem', o);
+    if (at !== 'todos') query.set('atendimento', at);
+    if (b)              query.set('q', b);
+    const qs = query.toString();
     return qs ? `/leads?${qs}` : '/leads';
   };
 
@@ -157,9 +204,97 @@ export default async function LeadsPage({
         <p className="text-sm text-gray-500">Contatos do site, dos anúncios e da RD Station.</p>
       </div>
 
+      {/* Busca livre. GET nativo, não client component: o navegador monta a
+          URL sozinho e a página server component faz o resto — mesmo padrão
+          dos chips abaixo. Campos ocultos preservam os outros filtros
+          ativos, senão buscar reseta a situação/atendente/origem escolhidos. */}
+      <form action="/leads" method="get" className="flex items-center gap-2">
+        <input type="hidden" name="status" value={filtro} />
+        <input type="hidden" name="atendente" value={filtroAtd} />
+        <input type="hidden" name="origem" value={filtroOrig} />
+        <input type="hidden" name="atendimento" value={filtroAtend} />
+        <input
+          type="search"
+          name="q"
+          defaultValue={searchParams.q ?? ''}
+          placeholder="Buscar por nome, e-mail ou WhatsApp…"
+          className="w-full max-w-sm border border-gray-200 rounded-lg px-3 py-2 text-sm"
+        />
+        <button type="submit" className="text-xs text-oli-green font-semibold underline">Buscar</button>
+        {buscaCrua && (
+          <Link href={href({ q: '' })} className="text-xs text-gray-400 hover:text-gray-600">limpar</Link>
+        )}
+      </form>
+
       {/* Filtro por situação. Links, não botões: mantém a página como server
           component e deixa cada filtro com URL própria, compartilhável. */}
       <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Atendimento</span>
+          <Link
+            href={href({ atendimento: 'todos' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroAtend === 'todos'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+            }`}
+          >
+            Todos <span className="opacity-70">{baseAtend.length}</span>
+          </Link>
+          <Link
+            href={href({ atendimento: 'pendente' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroAtend === 'pendente'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-amber-50 text-amber-700 border-transparent hover:border-oli-green'
+            }`}
+          >
+            Falta atender <span className="opacity-70">{contagemAtend['pendente'] ?? 0}</span>
+          </Link>
+          <Link
+            href={href({ atendimento: 'atendido' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroAtend === 'atendido'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-green-50 text-oli-green border-transparent hover:border-oli-green'
+            }`}
+          >
+            Já atendido <span className="opacity-70">{contagemAtend['atendido'] ?? 0}</span>
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Origem</span>
+          <Link
+            href={href({ origem: 'todos' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroOrig === 'todos'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+            }`}
+          >
+            Todas <span className="opacity-70">{baseOrig.length}</span>
+          </Link>
+          {Object.entries(ORIGEM_LABEL).map(([valor, label]) => {
+            const n = contagemOrig[valor] ?? 0;
+            if (n === 0 && filtroOrig !== valor) return null;
+            const ativo = filtroOrig === valor;
+            return (
+              <Link
+                key={valor}
+                href={href({ origem: valor })}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  ativo
+                    ? 'bg-oli-green text-white border-oli-green'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-oli-green'
+                }`}
+              >
+                {label} <span className="opacity-70">{n}</span>
+              </Link>
+            );
+          })}
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Situação</span>
           <Link
@@ -260,7 +395,7 @@ export default async function LeadsPage({
           <tbody>
             {leads.length === 0 && (
               <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                {filtro === 'todos' && filtroAtd === 'todos'
+                {filtro === 'todos' && filtroAtd === 'todos' && filtroOrig === 'todos' && filtroAtend === 'todos' && !buscaCrua
                   ? 'Nenhum lead recebido ainda.'
                   : 'Nenhum lead com esses filtros.'}
               </td></tr>
@@ -307,6 +442,11 @@ export default async function LeadsPage({
                         : <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-50 text-amber-700">
                             sem atendente
                           </span>}
+                      {lead.canal_primeiro_contato && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-sky-50 text-sky-700">
+                          1º contato: {CANAL_LABEL[lead.canal_primeiro_contato] ?? lead.canal_primeiro_contato}
+                        </span>
+                      )}
                       {tempMeta && (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${tempMeta.bg} ${tempMeta.text}`}>
                           {tempMeta.label}
@@ -351,6 +491,14 @@ export default async function LeadsPage({
                       <select name="status" defaultValue={lead.status} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
                         {Object.entries(STATUS_LABEL).map(([value, meta]) => (
                           <option key={value} value={value}>{meta.label}</option>
+                        ))}
+                      </select>
+
+                      <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">1º contato foi por</label>
+                      <select name="canal_primeiro_contato" defaultValue={lead.canal_primeiro_contato ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
+                        <option value="">— não registrado</option>
+                        {Object.entries(CANAL_LABEL).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
                         ))}
                       </select>
 
