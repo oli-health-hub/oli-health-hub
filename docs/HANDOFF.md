@@ -2069,6 +2069,33 @@ apenas um detalhe.
 em `deno check`, foram deployadas no Supabase e o commit `4030729`
 (`feat(whatsapp): orienta explicação de planos`) foi enviado ao `main`.
 
+## 39. Fluxo curto após o primeiro contato + material de apoio (28/ago)
+
+Feedback do fundador sobre a primeira versão do roteiro: a explicação dos
+planos ainda estava longa demais para WhatsApp. A Olivia agora não abre os dois
+planos de uma vez. Depois que a equipe pergunta se o lead busca atendimentos
+pontuais ou recorrentes, ela segue uma das duas saídas curtas:
+
+- **Pontuais:** recomenda START (sem mensalidade, R$ 1,90/minuto, compra de
+  horas e reserva a partir de 30 minutos) e pergunta a especialidade.
+- **Recorrentes:** recomenda PRO (R$ 599/mês ou R$ 499/mês com fidelidade de
+  seis meses, R$ 1,45/minuto, prontuário/agenda, nota fiscal e recepção) e
+  pergunta a especialidade.
+- **Após a especialidade:** informa que há salas preparadas e pergunta apenas
+  se prefere foto real ou visita; foto usa o META existente e visita usa o
+  Calendly. Uma pergunta por mensagem.
+
+O bloco `PLANOS` foi simplificado nos dois prompts
+(`whatsapp-webhook` e `test-lead-ai`) e no manual
+`docs/IA_ATENDIMENTO_WHATSAPP.md`. A restrição sobre preços foi alinhada para
+permitir explicar a mecânica das horas sem prometer valores personalizados.
+
+**Material entregue:** `output/pdf/fluxo-atendimento-olivia.pdf`, PDF A4 de
+três páginas com mensagem inicial, os dois caminhos, sequência após a
+especialidade, objeções/perguntas frequentes e guia de condução. Renderizado e
+revisado visualmente; os dois prompts passaram em `deno check`. O PDF é
+material operacional local, não artefato versionado no repositório.
+
 ## 13. Comandos úteis
 
 ```bash
