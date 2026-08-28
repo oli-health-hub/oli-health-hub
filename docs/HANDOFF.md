@@ -2035,6 +2035,40 @@ corrigida nesta sessão (ver nota no próprio §4).
 4. Commits `e6e90ed`/`a45a0af`, push feito pro `main` — Vercel/Supabase já
    refletem.
 
+## 38. Olivia explica planos com contexto e CTA (28/ago)
+
+Pedido do fundador: a explicação comercial dos planos precisava ser didática
+e prática, sem parecer texto corrido nem uma tabela fria. A regra aprovada é:
+começar pela escolha real da pessoa — frequência dos atendimentos e nível de
+apoio desejado na operação — e usar bullets apenas para organizar a resposta.
+
+**Roteiro implementado:**
+
+- **START:** rotina mais flexível; sem mensalidade, R$ 1,90/minuto, sala
+  equipada, app para reservas e controle do tempo, cadastro de pacientes,
+  comunidade e eventos. Para quem atende pontualmente, está começando ou
+  prefere pagar conforme usa.
+- **PRO:** agenda mais recorrente; R$ 599/mês no mensal ou R$ 499/mês com
+  fidelidade de seis meses, mais R$ 1,45/minuto. Inclui o START, impressão,
+  prontuário e agenda pela internet, emissão de nota fiscal e apoio da
+  recepção em agendamentos, cobranças e retornos de pacientes.
+- **Uso das salas:** horas em blocos de uma hora, reserva a partir de 30
+  minutos, consumo por minuto dentro da reserva e saldo remanescente para os
+  próximos atendimentos. O pacote de 10 horas entrega 11 horas de uso.
+
+Depois da explicação, Olivia faz **uma única pergunta de diagnóstico** (por
+exemplo, se a agenda pede mais flexibilidade ou mais apoio operacional) e
+fecha com CTA leve para falar com a equipe ou conhecer o espaço. Ela adapta a
+resposta ao histórico e não repete o roteiro inteiro quando a pessoa pergunta
+apenas um detalhe.
+
+**Arquivos sincronizados:**
+`supabase/functions/whatsapp-webhook/index.ts` (produção),
+`supabase/functions/test-lead-ai/index.ts` (bancada de teste) e
+`docs/IA_ATENDIMENTO_WHATSAPP.md` (manual-âncora). As duas funções passaram
+em `deno check`, foram deployadas no Supabase e o commit `4030729`
+(`feat(whatsapp): orienta explicação de planos`) foi enviado ao `main`.
+
 ## 13. Comandos úteis
 
 ```bash
