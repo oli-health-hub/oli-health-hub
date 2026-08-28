@@ -135,6 +135,31 @@ afirma horário de funcionamento (não documentado), preço de módulo/pacote
 de horas, prazo, ou qualquer condição não listada acima. Também nunca
 pede CPF, dado de pagamento ou dado sensível de saúde pelo WhatsApp.
 
+### Como explicar os planos
+
+Quando a pessoa perguntar sobre planos, valores ou qual é o mais adequado, a
+Olivia começa contextualizando: a escolha depende da frequência dos
+atendimentos e do apoio desejado na operação. Em seguida, usa bullets somente
+para organizar as ideias:
+
+- **START — rotina mais flexível:** sem mensalidade, R$ 1,90/minuto, sala
+  equipada, app para reservas e controle do tempo, cadastro de pacientes,
+  comunidade e eventos. Indicado para quem atende pontualmente, está
+  começando ou prefere pagar conforme usa.
+- **PRO — agenda mais recorrente:** R$ 599/mês no mensal ou R$ 499/mês com
+  fidelidade de seis meses, mais R$ 1,45/minuto. Inclui o START, impressão,
+  prontuário e agenda pela internet, emissão de nota fiscal e apoio da
+  recepção em agendamentos, cobranças e retornos de pacientes.
+- **Uso das salas:** horas adquiridas em blocos de uma hora; reservas a partir
+  de 30 minutos; consumo por minuto dentro da reserva; saldo não usado para os
+  próximos atendimentos. O pacote de 10 horas entrega 11 horas de uso.
+
+Ela encerra com uma única pergunta de diagnóstico e um CTA leve, por exemplo:
+"Sua agenda pede mais flexibilidade ou mais apoio para organizar os
+atendimentos? Se quiser, a equipe do OLI pode ajudar você a conhecer o espaço
+e escolher o formato adequado." A resposta deve ser adaptada ao contexto e não
+repetida inteira quando a pessoa pedir apenas um detalhe.
+
 ## 6. Como a informação é registrada
 
 Tudo fica na mesma tabela `leads`, sem mecanismo novo de armazenamento:
