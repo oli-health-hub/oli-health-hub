@@ -703,9 +703,22 @@ export async function optInLeadWhatsapp(formData: FormData) {
   if (!source) throw new Error('Origem do opt-in é obrigatória.');
 
   const supabase = await createSupabaseAdmin();
+
+  // Olivia funciona como um atendente a mais — clicar o botão já classifica
+  // o lead como contatado por ela (atendido_por_ia) e tira da esteira de
+  // "novo", sem depender do webhook confirmar entrega antes. Só avança quem
+  // ainda estava em 'novo': se o lead já passou disso, não retrocede etapa.
+  const { data: leadAtual } = await supabase
+    .from('leads').select('status').eq('id', id).single();
+
   const { error: leadError } = await supabase
     .from('leads')
-    .update({ whatsapp_opt_in_at: new Date().toISOString(), whatsapp_opt_in_source: source })
+    .update({
+      whatsapp_opt_in_at: new Date().toISOString(),
+      whatsapp_opt_in_source: source,
+      atendido_por_ia: true,
+      ...(leadAtual?.status === 'novo' ? { status: 'contatado' } : {}),
+    })
     .eq('id', id);
   if (leadError) throw new Error(leadError.message);
 

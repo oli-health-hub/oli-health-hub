@@ -25,6 +25,7 @@ interface Lead {
   rd_deal_id:      string | null;
   rd_sync_erro:    string | null;
   atendente_id:    string | null;
+  atendido_por_ia: boolean;
   canal_primeiro_contato: string | null;
   whatsapp_opt_in_at:     string | null;
   whatsapp_opt_in_source: string | null;
@@ -205,8 +206,11 @@ export default async function LeadsPage({
     if (excluir !== 'status' && filtro !== 'todos' && l.status !== filtro) return false;
     if (excluir !== 'origem' && filtroOrig !== 'todos' && l.origem !== filtroOrig) return false;
     if (excluir !== 'atendente' && filtroAtd !== 'todos') {
-      const bateAtd = filtroAtd === 'sem' ? l.atendente_id === null : l.atendente_id === filtroAtd;
-      if (!bateAtd) return false;
+      // Olivia é seu próprio balde, tem prioridade sobre atendente_id/sem —
+      // um lead que ela contatou não some do balde "sem atendente" nem
+      // aparece contado em dobro num atendente humano.
+      const bucket = l.atendido_por_ia ? 'olivia' : (l.atendente_id ?? 'sem');
+      if (bucket !== filtroAtd) return false;
     }
     if (excluir !== 'atendimento' && filtroAtend !== 'todos') {
       const pendente = l.status === 'novo';
@@ -232,7 +236,7 @@ export default async function LeadsPage({
   }, {});
 
   const contagemAtd = baseAtd.reduce<Record<string, number>>((acc, l) => {
-    const k = l.atendente_id ?? 'sem';
+    const k = l.atendido_por_ia ? 'olivia' : (l.atendente_id ?? 'sem');
     acc[k] = (acc[k] ?? 0) + 1;
     return acc;
   }, {});
@@ -413,6 +417,20 @@ export default async function LeadsPage({
             Todos <span className="opacity-70">{baseAtd.length}</span>
           </Link>
 
+          {/* Olivia não é um profile com acesso ao painel — é a IA da régua
+              comercial (§40 do handoff), mas conta como atendente pra quem
+              está filtrando quem já foi contatado e por quem. */}
+          <Link
+            href={href({ atendente: 'olivia' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroAtd === 'olivia'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-blue-50 text-blue-700 border-transparent hover:border-oli-green'
+            }`}
+          >
+            Olivia (IA) <span className="opacity-70">{contagemAtd['olivia'] ?? 0}</span>
+          </Link>
+
           {atendentes.map(a => {
             const n = contagemAtd[a.id] ?? 0;
             const ativo = filtroAtd === a.id;
@@ -522,14 +540,19 @@ export default async function LeadsPage({
                         {statusMeta.label}
                       </span>
                       {/* Sem dono aparece em âmbar, não some: lead sem atendente
-                          é o que mais corre risco de ficar parado. */}
-                      {lead.atendente_id
-                        ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-gray-100 text-gray-600">
-                            {nomeCurto(nomePorId.get(lead.atendente_id) ?? '—')}
+                          é o que mais corre risco de ficar parado. Olivia tem
+                          prioridade de exibição — é o mesmo balde do filtro. */}
+                      {lead.atendido_por_ia
+                        ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-blue-50 text-blue-700">
+                            Olivia (IA)
                           </span>
-                        : <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-50 text-amber-700">
-                            sem atendente
-                          </span>}
+                        : lead.atendente_id
+                          ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-gray-100 text-gray-600">
+                              {nomeCurto(nomePorId.get(lead.atendente_id) ?? '—')}
+                            </span>
+                          : <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-50 text-amber-700">
+                              sem atendente
+                            </span>}
                       {lead.canal_primeiro_contato && (
                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-sky-50 text-sky-700">
                           1º contato: {CANAL_LABEL[lead.canal_primeiro_contato] ?? lead.canal_primeiro_contato}
