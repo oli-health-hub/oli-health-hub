@@ -23,11 +23,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     );
   }
 
-  // Conta notificações não lidas para badge da sidebar
+  // Conta notificações não lidas para badge da sidebar (Fila) — mesmo
+  // critério da página /fila: lead e whatsapp já têm badge próprio em
+  // /leads e /conversas, não contam aqui.
   const { count: unreadCount } = await supabase
     .from('admin_notifications')
     .select('*', { count: 'exact', head: true })
-    .is('read_at', null);
+    .is('read_at', null)
+    .in('type', [
+      'new_signup',
+      'reservation_created',
+      'plan_subscribed',
+      'plan_activated',
+      'module_purchased',
+      'module_activated',
+      'hour_package_purchased',
+      'hour_package_activated',
+    ]);
 
   const email = user.email ?? '';
 

@@ -2255,6 +2255,18 @@ Pedido do fundador: a Olivia deveria contar como um atendente a mais no funil �
 
 `database.types.ts` regenerado nos dois projetos via Supabase MCP — pegou de brinde uma defasagem que já existia em `src/models/database.types.ts` (fora de sincronia havia um tempo: faltavam `whatsapp_nutricao_etapas`, `last_nudge_at` em `conversations`, `whatsapp_message_received` no enum de notificação, `email` de lead virou nullable). `tsc --noEmit` limpo nos dois. **Publicado:** commit `f3cee76`, push direto pra `main`.
 
+## 47. Fila de Trabalho para de duplicar `/leads` e `/conversas` (28/ago, sessão seguinte à §46)
+
+Pedido do fundador: a Fila estava poluída — `lead_received` e `whatsapp_message_received` já têm tela própria (`/leads`, `/conversas`) e inflavam a Fila sem necessidade. Checado no banco antes de mexer: **67 itens pendentes**, sendo **60** desses dois tipos vs. só **7** de trabalho real (`new_signup` 4, `reservation_created` 3).
+
+**Fix:** `admin/app/fila/page.tsx` e o badge da sidebar (`admin/app/layout.tsx`) passaram a filtrar por whitelist explícita — só entra o que é ação sobre médico já cadastrado: `new_signup`, `reservation_created`, `plan_subscribed`/`plan_activated`, `module_purchased`/`module_activated`, `hour_package_purchased`/`hour_package_activated`. `FilaClient.tsx` perdeu o código específico de lead/whatsapp (link "Ver conversa", mensagem via `mensagemLead`) e ganhou tag+texto próprios pros tipos que não tinham (`reservation_created` caía no rótulo cinza genérico antes). O listener realtime de INSERT também passou a filtrar pelo mesmo critério, senão um lead novo continuaria pulando pro topo da Fila em tempo real.
+
+**Bug achado no meio do check:** o enum `notification_type` no Postgres nunca teve `hour_package_purchased`/`hour_package_activated` — os inserts em `create-hour-package` e `asaas-webhook` são fire-and-forget (`.then(() => {}).catch(() => {})`) e vinham falhando em silêncio desde que foram escritos. Ou seja, compra/ativação de pacote de horas **nunca apareceu** na Fila. Corrigido com `ALTER TYPE ... ADD VALUE` (migration `20260828_hour_package_notification_types.sql`, aplicada via Supabase MCP) + `database.types.ts` regenerado nos dois projetos.
+
+`lead_received` já tinha baixa automática (trigger de `20260807_fila_leads.sql`, sai da fila quando o lead muda de status) — continua intocado, só não aparece mais *nesta* tela. `whatsapp_message_received` não tem (nem tinha) nenhum mecanismo de leitura fora da Fila — ficará com `read_at` sempre nulo daqui pra frente, mas sem consequência: nenhuma outra tela lê esse campo pra esse tipo (`/leads` e `/conversas` não têm badge). `NotificationFeed.tsx` (sino da topbar) é outro consumidor de `admin_notifications`, mostra os 50 mais recentes sem filtrar por tipo nem por lido — é log geral, não fila de trabalho, deixado como está de propósito.
+
+`cd admin && npx tsc --noEmit` limpo. Verificação visual da Fila não feita (preview local pede login de admin, sem credencial disponível neste ambiente) — confirmar no ar depois do deploy.
+
 ## 13. Comandos úteis
 
 ```bash

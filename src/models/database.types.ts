@@ -2161,6 +2161,8 @@ export type Database = {
         | "reservation_created"
         | "lead_received"
         | "whatsapp_message_received"
+        | "hour_package_purchased"
+        | "hour_package_activated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2297,6 +2299,8 @@ export const Constants = {
         "reservation_created",
         "lead_received",
         "whatsapp_message_received",
+        "hour_package_purchased",
+        "hour_package_activated",
       ],
     },
   },

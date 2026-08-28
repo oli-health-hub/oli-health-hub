@@ -8,11 +8,24 @@ export default async function FilaPage() {
 
   const { data: notifications } = await supabase
     .from('admin_notifications')
-    // `whatsapp` do perfil é o que faz o botão funcionar nas notificações de
-    // cadastro e módulo: o metadata delas nunca teve telefone (conferido — 0 de
-    // 109 `new_signup` têm a chave). Só lead traz número no próprio metadata.
+    // `whatsapp` do perfil é o que faz o botão funcionar — todo tipo aqui tem
+    // professional_id (nenhum é lead sem cadastro).
     .select('*, profiles(nome, crm, especialidade, plan, whatsapp)')
     .is('read_at', null)
+    // Fila = ação operacional sobre médico já cadastrado (cadastro, reserva,
+    // plano, módulo, pacote de horas). `lead_received` e
+    // `whatsapp_message_received` já vivem em /leads e /conversas — incluir
+    // aqui duplicava a mesma coisa em dois lugares.
+    .in('type', [
+      'new_signup',
+      'reservation_created',
+      'plan_subscribed',
+      'plan_activated',
+      'module_purchased',
+      'module_activated',
+      'hour_package_purchased',
+      'hour_package_activated',
+    ])
     .order('created_at', { ascending: false })
     .limit(100);
 
