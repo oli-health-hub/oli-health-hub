@@ -2145,6 +2145,23 @@ Olivia; a resposta do lead volta para o mesmo canal e a Olivia continua o
 atendimento com o histórico completo. Ainda falta apenas o teste real com um
 lead autorizado para comprovar a entrega ponta a ponta.
 
+## 42. Regra de entrada por canal (28/ago)
+
+Há dois caminhos independentes de entrada comercial:
+
+1. **Lead RD/formulário:** como o contato é ativo, a equipe precisa registrar
+   o opt-in e clicar em **Iniciar com Olivia** no Admin. Isso envia o primeiro
+   template pelo número da Olivia; as respostas seguintes seguem
+   automaticamente com ela.
+2. **Lead que escreve diretamente para o WhatsApp da Olivia:** não exige ação
+   no Admin. O `whatsapp-webhook` cria ou associa o lead e a Olivia continua o
+   atendimento automático normalmente, dentro da janela de atendimento aberta
+   pela própria mensagem do lead.
+
+Não usar o botão manual que abre o WhatsApp comercial da equipe para iniciar
+um fluxo que deverá ser conduzido pela Olivia: a resposta retornaria por outro
+canal e não chegaria ao webhook dela.
+
 ## 13. Comandos úteis
 
 ```bash
