@@ -82,6 +82,7 @@ const MOTIVO_LABEL: Record<string, string> = {
   contato_invalido: 'Contato não funciona',
   sumiu:            'Sumiu / parou de responder',
   sem_interesse:    'Sem interesse',
+  engano_numero:    'Errou o número',
 };
 
 function formatData(iso: string): string {

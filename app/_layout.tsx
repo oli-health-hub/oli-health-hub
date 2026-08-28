@@ -147,17 +147,10 @@ export default function RootLayout() {
       const onboardingDone = profile?.onboarding_complete ?? false;
       if (!onboardingDone && !inBlocked) { router.replace('/onboarding'); return; }
 
-      // Gate 3: sem plano escolhido (cadastro não recebe mais START automático)
-      const inEscolherPlano = (segments[0] as string) === 'escolher-plano';
-      const hasPlan = !!(profile as { plan?: string | null } | null)?.plan;
-      if (onboardingDone && !hasPlan && !inBlocked && !inEscolherPlano) {
-        router.replace('/escolher-plano' as never);
-        return;
-      }
-      if (hasPlan && inEscolherPlano) {
-        router.replace('/');
-        return;
-      }
+      // Gate 3 (removido em 26/ago): o cadastro voltou a nascer no START, então
+      // não existe mais estado "sem plano" pra barrar — decisão do fundador,
+      // revertendo a de 19/ago (§31). A tela /escolher-plano continua existindo,
+      // mas só como upgrade pro PRO, acessível por vontade do usuário.
     }
   }, [session, isLoading, profile, profileLoaded, segments]);
 

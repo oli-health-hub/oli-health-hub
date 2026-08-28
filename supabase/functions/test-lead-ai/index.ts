@@ -90,6 +90,12 @@ FATOS QUE VOCÊ PODE AFIRMAR (nada além disso sem confirmar com a equipe):
 • Agendamento de visita: link direto para marcar —
   https://calendly.com/olihealthhub/atendimento-presencial
 
+ÁUDIOS RECEBIDOS: quando a mensagem vier de áudio, você receberá a transcrição
+já concluída no contexto. Trate o conteúdo exatamente como trataria uma
+mensagem de texto: responda ao que a pessoa disse de forma natural. Nunca diga
+que não consegue ouvir, reproduzir ou processar áudio; nunca mencione
+transcrição, áudio, ferramenta ou limitação técnica.
+
 O QUE VOCÊ NÃO FAZ:
 • Não afirma horário de funcionamento do espaço, não negocia desconto, não
   promete prazo de resposta, e não informa preço de módulo, pacote de horas
@@ -119,6 +125,17 @@ destes valores exatos, nunca outro: psicologia, ginecologia, estetica,
 clinica_geral, eventos, estrutura (estrutura = foto geral do espaço, use
 se ainda não souber a especialidade mas a pessoa quiser ver algo).
 
+QUANDO ENCERRAR POR ENGANO DE NÚMERO (não é transferência — não envolve
+a equipe): este número atende só quem procura o OLI. Se ficar claro que a
+pessoa errou o número, procura outro comércio ou serviço, ou está brincando
+sem nenhuma intenção real, encerre educadamente em UMA resposta curta —
+diga o que é o OLI em uma frase e se despeça. Não faça piada, não puxe
+conversa, não pergunte de novo se a pessoa tem interesse, não ofereça
+ajuda. Nessa mesma resposta inclua a chave descarte no META (ver abaixo).
+Depois disso a conversa se encerra: você não responde mais esse número.
+Na dúvida entre engano e alguém que só escreveu pouco, NÃO use descarte —
+faça uma pergunta e espere a resposta.
+
 QUANDO TRANSFERIR PARA UM HUMANO (na mesma resposta em que perceber, sem
 tentar resolver sozinha primeiro):
 • A pessoa pede para falar com alguém, explícita ou implicitamente ("quero
@@ -144,16 +161,18 @@ das mensagens não tem nada aqui, e tudo bem não incluir):
 Se aprendeu ou confirmou nome, especialidade, ou um resumo de quem é a
 pessoa e o que quer, e/ou decidiu transferir ou avisar algo, adicione uma
 última linha sozinha no formato:
-[META: nome=Nome se souber; especialidade=Especialidade se souber; resumo=frase curta de quem é e o que quer; imagem=chave se for mandar foto; aviso=resumo curto se for um aviso informativo; handoff=motivo se for transferir para humano]
+[META: nome=Nome se souber; especialidade=Especialidade se souber; resumo=frase curta de quem é e o que quer; imagem=chave se for mandar foto; aviso=resumo curto se for um aviso informativo; handoff=motivo se for transferir para humano; descarte=engano se a pessoa errou o número ou não tem relação com o OLI]
 Inclua só as chaves com informação nova — pode ser uma só, várias, ou
 nenhuma linha. Essa linha nunca é vista pela pessoa, é só para a equipe.
 **Toda resposta que decide transferir tem que ter a chave handoff — sem
-exceção. handoff e aviso não aparecem juntos — é uma coisa ou outra.**
+exceção. handoff, aviso e descarte nunca aparecem juntos — é uma coisa ou
+outra. A chave descarte aceita um único valor: engano.**
 Exemplo transferência: "[META: nome=Ana Paula; especialidade=Nutrição;
 resumo=quer falar com humano, dúvida fora do escopo; handoff=dúvida sobre
 convênio, fora do que posso afirmar]". Exemplo agendamento: "[META:
 especialidade=Nutrição; imagem=clinica_geral; aviso=enviou link de
-agendamento para Ana Paula, nutricionista]".
+agendamento para Ana Paula, nutricionista]". Exemplo engano de número:
+"[META: descarte=engano]".
 
 FORMATAÇÃO DO WHATSAPP (importante, é diferente de markdown normal):
 • Negrito é *um asterisco de cada lado*, nunca **dois**. Antes de responder,
@@ -168,10 +187,10 @@ não escreva parágrafos longos.`;
 
 type MetaTag = {
   nome?: string; especialidade?: string; resumo?: string;
-  imagem?: string; aviso?: string; handoff?: string;
+  imagem?: string; aviso?: string; handoff?: string; descarte?: string;
 };
 
-const CHAVES_META = ['nome', 'especialidade', 'resumo', 'imagem', 'aviso', 'handoff'] as const;
+const CHAVES_META = ['nome', 'especialidade', 'resumo', 'imagem', 'aviso', 'handoff', 'descarte'] as const;
 
 function extraiMeta(reply: string): { texto: string; meta: MetaTag | null } {
   const m = reply.match(/\[META:\s*([^\]]*)\]\s*$/i);

@@ -44,6 +44,31 @@ export function normalizaTelefone(raw: string): string {
   return `55${digitos}`;
 }
 
+/** Baixa uma mídia recebida pelo webhook do WhatsApp. A URL temporária da
+ * Meta nunca é persistida; o chamador descarta o Blob após processá-lo. */
+export async function baixarMidiaWhatsApp(mediaId: string): Promise<{ arquivo: Blob; mimeType: string }> {
+  const accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
+  if (!accessToken) throw new Error('WHATSAPP_ACCESS_TOKEN ausente — mensageria ainda não configurada');
+
+  const metadataResponse = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${mediaId}`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+  const metadata = await metadataResponse.json() as { url?: string; mime_type?: string };
+  if (!metadataResponse.ok || !metadata.url) {
+    throw new Error(`Meta não retornou a mídia ${mediaId}: ${metadataResponse.status}`);
+  }
+
+  const mediaResponse = await fetch(metadata.url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+  if (!mediaResponse.ok) throw new Error(`Falha ao baixar mídia do WhatsApp: ${mediaResponse.status}`);
+
+  return {
+    arquivo: new Blob([await mediaResponse.arrayBuffer()], { type: metadata.mime_type ?? 'audio/ogg' }),
+    mimeType: metadata.mime_type ?? 'audio/ogg',
+  };
+}
+
 async function chamarGraphMessages(payload: Record<string, unknown>): Promise<{ wamid: string }> {
   const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
   const accessToken    = Deno.env.get('WHATSAPP_ACCESS_TOKEN');

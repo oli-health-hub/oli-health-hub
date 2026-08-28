@@ -14,12 +14,12 @@
  * Segredos necessários: WHATSAPP_VERIFY_TOKEN, WHATSAPP_APP_SECRET (App do
  * Meta dedicado ao WhatsApp — "OLI WPP", diferente do App usado pelo
  * meta-leads-webhook), WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN,
- * ANTHROPIC_API_KEY.
+ * ANTHROPIC_API_KEY, OPENAI_API_KEY (transcrição efêmera de áudio de leads).
  */
 
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import Anthropic from 'npm:@anthropic-ai/sdk';
-import { assinaturaConfere, enviarTexto, enviarImagem } from '../_shared/whatsapp.ts';
+import { assinaturaConfere, baixarMidiaWhatsApp, enviarTexto, enviarImagem, enviarTemplate } from '../_shared/whatsapp.ts';
 
 // Implementa docs/IA_ATENDIMENTO_WHATSAPP.md — qualquer mudança de
 // comportamento passa pelo manual primeiro, este prompt é a aplicação dele.
@@ -97,6 +97,12 @@ FATOS QUE VOCÊ PODE AFIRMAR (nada além disso sem confirmar com a equipe):
 • Agendamento de visita: link direto para marcar —
   https://calendly.com/olihealthhub/atendimento-presencial
 
+ÁUDIOS RECEBIDOS: quando a mensagem vier de áudio, você receberá a transcrição
+já concluída no contexto. Trate o conteúdo exatamente como trataria uma
+mensagem de texto: responda ao que a pessoa disse de forma natural. Nunca diga
+que não consegue ouvir, reproduzir ou processar áudio; nunca mencione
+transcrição, áudio, ferramenta ou limitação técnica.
+
 O QUE VOCÊ NÃO FAZ:
 • Não afirma horário de funcionamento do espaço, não negocia desconto, não
   promete prazo de resposta, e não informa preço de módulo, pacote de horas
@@ -126,6 +132,17 @@ destes valores exatos, nunca outro: psicologia, ginecologia, estetica,
 clinica_geral, eventos, estrutura (estrutura = foto geral do espaço, use
 se ainda não souber a especialidade mas a pessoa quiser ver algo).
 
+QUANDO ENCERRAR POR ENGANO DE NÚMERO (não é transferência — não envolve
+a equipe): este número atende só quem procura o OLI. Se ficar claro que a
+pessoa errou o número, procura outro comércio ou serviço, ou está brincando
+sem nenhuma intenção real, encerre educadamente em UMA resposta curta —
+diga o que é o OLI em uma frase e se despeça. Não faça piada, não puxe
+conversa, não pergunte de novo se a pessoa tem interesse, não ofereça
+ajuda. Nessa mesma resposta inclua a chave descarte no META (ver abaixo).
+Depois disso a conversa se encerra: você não responde mais esse número.
+Na dúvida entre engano e alguém que só escreveu pouco, NÃO use descarte —
+faça uma pergunta e espere a resposta.
+
 QUANDO TRANSFERIR PARA UM HUMANO (na mesma resposta em que perceber, sem
 tentar resolver sozinha primeiro):
 • A pessoa pede para falar com alguém, explícita ou implicitamente ("quero
@@ -151,16 +168,18 @@ das mensagens não tem nada aqui, e tudo bem não incluir):
 Se aprendeu ou confirmou nome, especialidade, ou um resumo de quem é a
 pessoa e o que quer, e/ou decidiu transferir ou avisar algo, adicione uma
 última linha sozinha no formato:
-[META: nome=Nome se souber; especialidade=Especialidade se souber; resumo=frase curta de quem é e o que quer; imagem=chave se for mandar foto; aviso=resumo curto se for um aviso informativo; handoff=motivo se for transferir para humano]
+[META: nome=Nome se souber; especialidade=Especialidade se souber; resumo=frase curta de quem é e o que quer; imagem=chave se for mandar foto; aviso=resumo curto se for um aviso informativo; handoff=motivo se for transferir para humano; descarte=engano se a pessoa errou o número ou não tem relação com o OLI]
 Inclua só as chaves com informação nova — pode ser uma só, várias, ou
 nenhuma linha. Essa linha nunca é vista pela pessoa, é só para a equipe.
 **Toda resposta que decide transferir tem que ter a chave handoff — sem
-exceção. handoff e aviso não aparecem juntos — é uma coisa ou outra.**
+exceção. handoff, aviso e descarte nunca aparecem juntos — é uma coisa ou
+outra. A chave descarte aceita um único valor: engano.**
 Exemplo transferência: "[META: nome=Ana Paula; especialidade=Nutrição;
 resumo=quer falar com humano, dúvida fora do escopo; handoff=dúvida sobre
 convênio, fora do que posso afirmar]". Exemplo agendamento: "[META:
 especialidade=Nutrição; imagem=clinica_geral; aviso=enviou link de
-agendamento para Ana Paula, nutricionista]".
+agendamento para Ana Paula, nutricionista]". Exemplo engano de número:
+"[META: descarte=engano]".
 
 FORMATAÇÃO DO WHATSAPP (importante, é diferente de markdown normal):
 • Negrito é *um asterisco de cada lado*, nunca **dois**. Antes de responder,
@@ -223,10 +242,10 @@ async function resolveConversa(supabase: SupabaseClient, phone: string): Promise
 
 type MetaTag = {
   nome?: string; especialidade?: string; resumo?: string;
-  imagem?: string; aviso?: string; handoff?: string;
+  imagem?: string; aviso?: string; handoff?: string; descarte?: string;
 };
 
-const CHAVES_META = ['nome', 'especialidade', 'resumo', 'imagem', 'aviso', 'handoff'] as const;
+const CHAVES_META = ['nome', 'especialidade', 'resumo', 'imagem', 'aviso', 'handoff', 'descarte'] as const;
 
 /** Fotos reais e públicas (mesmas do site) por especialidade — chave fechada
  *  de propósito, a IA nunca inventa URL. Mapa sala→especialidade confirmado
@@ -260,7 +279,35 @@ function extraiMeta(reply: string): { texto: string; meta: MetaTag | null } {
   return { texto: reply.slice(0, m.index).trim(), meta };
 }
 
-async function responderComIA(supabase: SupabaseClient, conv: ConversaRow) {
+async function transcreverAudio(audioId: string): Promise<string> {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY ausente — transcrição de áudio não configurada');
+
+  const { arquivo, mimeType } = await baixarMidiaWhatsApp(audioId);
+  const extensao = mimeType.includes('ogg') ? 'ogg'
+    : mimeType.includes('mpeg') ? 'mp3'
+    : mimeType.includes('mp4') ? 'mp4'
+    : mimeType.includes('wav') ? 'wav'
+    : 'webm';
+  const form = new FormData();
+  form.append('file', arquivo, `audio.${extensao}`);
+  form.append('model', 'gpt-4o-mini-transcribe');
+  form.append('language', 'pt');
+  form.append('prompt', 'Transcrição em português do Brasil. Contexto: atendimento comercial do OLI Health Hub.');
+
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    body: form,
+  });
+  const data = await response.json() as { text?: string; error?: { message?: string } };
+  if (!response.ok || !data.text?.trim()) {
+    throw new Error(`Falha na transcrição: ${data.error?.message ?? response.status}`);
+  }
+  return data.text.trim();
+}
+
+async function responderComIA(supabase: SupabaseClient, conv: ConversaRow, mensagemAtual?: string) {
   const { data: historico } = await supabase
     .from('messages')
     .select('direction, body')
@@ -269,8 +316,10 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow) {
     .limit(40);
 
   const mensagens = (historico ?? [])
-    .filter(m => m.body)
+    .filter(m => m.body && !m.body.startsWith('[Áudio recebido'))
     .map(m => ({ role: m.direction === 'inbound' ? 'user' as const : 'assistant' as const, content: m.body as string }));
+
+  if (mensagemAtual) mensagens.push({ role: 'user', content: mensagemAtual });
 
   if (mensagens.length === 0) return;
 
@@ -292,6 +341,21 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow) {
     conversation_id: conv.id, direction: 'outbound', sender_type: 'ia',
     body: reply, wamid, status: 'enviada',
   });
+
+  if (meta?.descarte === 'engano') {
+    // Engano de número: encerra a conversa (status 'fechada' faz a IA parar
+    // de responder este número) e tira o lead do funil. O registro não é
+    // apagado — fica descartado com motivo, para não sumir do histórico nem
+    // contaminar a taxa de conversão. Não notifica ninguém: não há nada
+    // para a equipe fazer com um engano.
+    await supabase.from('conversations').update({ status: 'fechada' }).eq('id', conv.id);
+    if (conv.lead_id) {
+      await supabase.from('leads')
+        .update({ status: 'descartado', motivo_descarte: 'engano_numero' })
+        .eq('id', conv.lead_id);
+    }
+    return;
+  }
 
   if (conv.lead_id && (meta?.nome || meta?.especialidade || meta?.resumo)) {
     const campos: Record<string, string> = {};
@@ -325,6 +389,29 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow) {
       body: meta.handoff,
       metadata: { conversation_id: conv.id, kind: 'lead' },
     });
+
+    const commercialPhone = Deno.env.get('WHATSAPP_COMMERCIAL_PHONE');
+    const handoffTemplate = Deno.env.get('WHATSAPP_HANDOFF_TEMPLATE_NAME');
+    if (!commercialPhone || !handoffTemplate) {
+      console.warn('[whatsapp-webhook] alerta comercial não configurado — faltam WHATSAPP_COMMERCIAL_PHONE ou WHATSAPP_HANDOFF_TEMPLATE_NAME');
+    } else {
+      try {
+        await enviarTemplate({
+          to: commercialPhone,
+          templateName: handoffTemplate,
+          idioma: 'pt_BR',
+          variaveis: [
+            conv.phone_e164,
+            meta.nome ?? 'Não informado',
+            meta.resumo ?? 'Sem resumo adicional',
+            meta.handoff,
+          ],
+        });
+      } catch (err) {
+        // O alerta complementar não pode impedir a transferência para a equipe.
+        console.error('[whatsapp-webhook] falha ao enviar alerta comercial:', err);
+      }
+    }
   } else if (meta?.aviso) {
     // Aviso informativo — não tira a IA da conversa, só avisa a recepção.
     await supabase.from('admin_notifications').insert({
@@ -336,12 +423,62 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow) {
   }
 }
 
+/** Janela curta de agrupamento de mensagens.
+ *
+ *  Quem manda "Oi" e logo em seguida "Boa tarde" gera um POST do Meta por
+ *  mensagem, e cada execução respondia por conta própria, sem saber da
+ *  outra — a pessoa recebia duas saudações seguidas, ligeiramente
+ *  diferentes, o que denuncia robô logo no primeiro contato.
+ *
+ *  Cada execução espera esta janela e só responde se a sua mensagem ainda
+ *  for a última recebida na conversa: a execução mais recente responde por
+ *  todas, já com o histórico completo no banco. Não precisa de lock — o
+ *  próprio banco é o desempate.
+ *
+ *  A espera aumenta o tempo de resposta ao Meta; reentrega do webhook por
+ *  timeout continua protegida pela unicidade de `wamid` (23505 abaixo). */
+const JANELA_AGRUPAMENTO_MS = 5000;
+
+/** Depois da janela: a mensagem ainda é a última, e a conversa continua com
+ *  a IA? (a execução vizinha pode ter transferido ou encerrado no meio). */
+async function aindaCabeResponder(
+  supabase: SupabaseClient, conv: ConversaRow, wamid: string,
+): Promise<boolean> {
+  const { data: ultima } = await supabase
+    .from('messages')
+    .select('wamid')
+    .eq('conversation_id', conv.id)
+    .eq('direction', 'inbound')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (ultima?.wamid && ultima.wamid !== wamid) return false;
+
+  const { data: atual } = await supabase
+    .from('conversations').select('status').eq('id', conv.id).maybeSingle();
+  return atual?.status === 'ia';
+}
+
 async function processarMensagem(
   supabase: SupabaseClient,
-  msg: { id: string; from: string; type: string; text?: { body: string } },
+  msg: { id: string; from: string; type: string; text?: { body: string }; audio?: { id: string } },
 ) {
   const conv = await resolveConversa(supabase, msg.from);
-  const body = msg.type === 'text' ? (msg.text?.body ?? '') : `[mensagem tipo ${msg.type} não suportada ainda]`;
+  let body = msg.type === 'text' ? (msg.text?.body ?? '') : `[mensagem tipo ${msg.type} não suportada ainda]`;
+  let mensagemAtual: string | undefined;
+  let audioTranscrito = false;
+
+  if (msg.type === 'audio' && msg.audio?.id && conv.kind === 'lead' && conv.status === 'ia') {
+    try {
+      const transcricao = await transcreverAudio(msg.audio.id);
+      body = '[Áudio recebido — conteúdo não retido]';
+      mensagemAtual = `O cliente enviou este áudio. Use a transcrição apenas para responder a esta mensagem, sem citá-la: ${transcricao}`;
+      audioTranscrito = true;
+    } catch (err) {
+      body = '[Áudio recebido — não foi possível processar automaticamente]';
+      console.error('[whatsapp-webhook] falha na transcrição de áudio:', err);
+    }
+  }
   const senderType = conv.kind === 'lead' ? 'lead' : conv.kind === 'patient' ? 'patient' : 'unknown';
 
   const { error: insertErr } = await supabase.from('messages').insert({
@@ -356,10 +493,15 @@ async function processarMensagem(
     throw new Error(insertErr.message);
   }
 
-  const iaResponde = conv.kind === 'lead' && conv.status === 'ia' && msg.type === 'text';
+  const iaResponde = conv.kind === 'lead' && conv.status === 'ia' && (msg.type === 'text' || audioTranscrito);
   if (iaResponde) {
+    await new Promise(resolve => setTimeout(resolve, JANELA_AGRUPAMENTO_MS));
+    if (!await aindaCabeResponder(supabase, conv, msg.id)) {
+      console.log(`[whatsapp-webhook] ${msg.id} agrupada — outra execução responde por esta conversa`);
+      return;
+    }
     try {
-      await responderComIA(supabase, conv);
+      await responderComIA(supabase, conv, mensagemAtual);
       return;
     } catch (err) {
       // Falha na IA não deve perder a mensagem — cai pra notificação humana.
@@ -417,7 +559,7 @@ Deno.serve(async (req: Request) => {
 
   let payload: {
     entry?: Array<{ changes?: Array<{ field?: string; value?: {
-      messages?: Array<{ id: string; from: string; type: string; text?: { body: string } }>;
+      messages?: Array<{ id: string; from: string; type: string; text?: { body: string }; audio?: { id: string } }>;
       statuses?: Array<{ id: string; status: string }>;
     } }> }>;
   };

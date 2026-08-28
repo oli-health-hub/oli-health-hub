@@ -84,7 +84,10 @@ export default async function MedicosPage() {
             </thead>
             <tbody className="divide-y divide-oli-border">
               {(medicos ?? []).map(m => {
-                const plan        = m.plan ?? 'BASE';
+                // Fallback no START, não no BASE: o BASE está desativado desde
+                // 19/ago e o cadastro voltou a nascer no START em 26/ago, então
+                // perfil sem plano é sobra antiga, não plano intermediário.
+                const plan        = m.plan ?? 'START';
                 const planColor   = PLAN_COLOR[plan] ?? 'bg-gray-100 text-gray-600';
                 const moduleCount = moduleCountMap[m.id] ?? 0;
                 const date        = new Date(m.created_at).toLocaleDateString('pt-BR');

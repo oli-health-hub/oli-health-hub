@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 24/Agosto/2026.
+> Última atualização: 27/Agosto/2026.
 
 ---
 
@@ -1676,13 +1676,241 @@ Fundador testou o handoff com o sócio (pediu falar com humano) e, ao clicar na 
 
 **Commit `832a90a`**, push direto pra `main` (Vercel redeploya o admin sozinho). Empacota nesse commit todo o trabalho que já estava pronto e não commitado de sessões anteriores (schema/edge functions do §33 — cobrança de paciente via Asaas, `conversations`/`messages`, `/conversas`, card Asaas em `/medicos/[id]`) **junto** com o trabalho desta sessão (IA vendedora, lead automático, fotos, Calendly, reengajamento, fix da Fila) — estava tudo interligado no mesmo `actions.ts`/schema, não dava pra separar sem quebrar o build. `admin/tsconfig.tsbuildinfo` (artefato de build) deixado de fora do commit de propósito, igual à lição já registrada no §26.
 
+### 🆕 Alerta de handoff no WhatsApp comercial (26/ago)
+
+- **Decisão:** uma transferência da IA para atendimento humano não deve depender só da notificação no Admin. Cada `handoff` também alerta o WhatsApp comercial, para a equipe agir no canal que já acompanha.
+- **Implementação local pronta:** `whatsapp-webhook` mantém a transição da conversa para `status='humano'` e a notificação do Admin; em seguida, chama `enviarTemplate()` com telefone, nome, resumo e motivo. A falha desse alerta é isolada — não desfaz nem impede o handoff.
+- **Template Meta:** `handoff_comercial_v1`, categoria **Utilidade → Padrão**, com 4 variáveis (telefone, nome, resumo, motivo), foi criado e **enviado para análise** em 26/ago. Sem header, rodapé ou botões.
+- **Ativação pendente:** quando a Meta aprovar, configurar nos secrets da Edge Function `WHATSAPP_COMMERCIAL_PHONE` (número comercial confirmado) e `WHATSAPP_HANDOFF_TEMPLATE_NAME=handoff_comercial_v1`. A `whatsapp-webhook` já está publicada; até os secrets existirem, o comportamento em produção permanece somente a notificação no Admin.
+- O manual `docs/IA_ATENDIMENTO_WHATSAPP.md` foi atualizado junto com o código; os dois devem continuar sincronizados.
+
+### 🆕 Olivia responde a áudios de leads sem retenção (26/ago)
+
+- **Decisão:** OpenAI entra somente como módulo de transcrição; Olivia, prompt comercial, classificação de leads, handoff e resposta continuam integralmente na Anthropic.
+- **Escopo e proteção:** só conversa `kind='lead'` em `status='ia'` entra no fluxo; paciente identificado continua exclusivamente com a equipe humana. O áudio é baixado temporariamente da Meta, enviado por HTTPS à OpenAI para transcrição e descartado após a resposta. O banco guarda apenas o marcador `[Áudio recebido — conteúdo não retido]` e a resposta da Olivia; a transcrição nunca é persistida nem reaproveitada em turnos futuros.
+- **Falha segura:** erro de download/transcrição não gera resposta inventada; cria a notificação humana já existente. Nenhum arquivo de áudio é salvo pelo OLI.
+- **Implementação local pronta:** `baixarMidiaWhatsApp()` em `supabase/functions/_shared/whatsapp.ts` obtém a mídia temporária da Meta; `whatsapp-webhook` chama `gpt-4o-mini-transcribe` e passa o texto só em memória para a Olivia responder pela Anthropic.
+- **Estado (26/ago):** `OPENAI_API_KEY` já foi configurado nos secrets do Supabase e `whatsapp-webhook` foi deployada com sucesso após autenticação da CLI (`Deployed Functions`). Falta somente testar com um áudio comercial curto antes de considerar o fluxo liberado. A verificação posterior `deno check` passou; `npx tsc --noEmit` e `git diff --check` também passaram.
+- **Correção de copy (27/ago):** o prompt de produção e a cópia de teste agora deixam explícito que uma transcrição bem-sucedida deve ser respondida como texto normal. Olivia não pode alegar que não consegue ouvir/processar áudio nem mencionar transcrição ou limitação técnica. `whatsapp-webhook` foi republicada com a correção (`Deployed Functions`).
+
 **⚠️ Pendências desta sessão:**
-1. Templates de WhatsApp (`confirmacao_consulta`, `lembrete_vespera`, e agora também um de **reengajamento pós-24h**) — fundador submete amanhã.
+1. Templates de WhatsApp de paciente (`confirmacao_consulta`, `lembrete_vespera`) continuam fora do escopo imediato. Para o comercial, `handoff_comercial_v1` e os cinco modelos de Marketing (`primeiro_contato_comercial_v1`, `nutricao_comercial_d3_v1`, `nutricao_comercial_d10_v1`, `nutricao_comercial_d24_v1`, `nutricao_comercial_d45_v1`) foram enviados para análise na Meta em 26/ago. A régua está em `docs/WHATSAPP_NUTRICAO_COMERCIAL.md`. Antes de automatizar, implementar opt-in/opt-out persistidos e agenda de etapas; sem consentimento registrado, não há disparo.
 2. Limpar as 3 WABAs duplicadas no portfólio (pendência antiga do §33, ainda não feita).
 3. `asaas-create-subaccount`/`create-patient-charge` seguem não deployados (taxa OLI + produto de subconta).
 4. Fundador precisa confirmar ao vivo que o fix da Fila resolveu (reabrir a notificação do teste com o sócio e clicar "Ver conversa").
 5. Nada testado em device/simulador nativo.
 6. `docs/IA_ATENDIMENTO_WHATSAPP.md` e o prompt devem ser revisados juntos na próxima mudança de comportamento — não editar um sem o outro (regra que o próprio documento estabelece).
+
+## 35. Limpeza dos leads de engano + IA para de responder duas vezes (26/ago sessão 2)
+
+Pergunta do fundador que abriu a sessão: *por que os últimos leads estão
+entrando sem nome e sem especialidade, só com o título "WhatsApp"?*
+
+### O diagnóstico: não era falha de captura
+
+O lead nasce na **primeira** mensagem recebida, antes de qualquer
+qualificação, com o nome placeholder "Contato via WhatsApp"; nome e
+especialidade só entram depois, via a tag `[META:]` da IA. O mecanismo
+estava funcionando — o único lead preenchido da leva (Guilherme /
+Ginecologia) veio exatamente por esse caminho. **O que faltava era gente se
+identificando.** As conversas tinham de 2 a 6 mensagens e o conteúdo era:
+
+- "Oii boa noite / Tudo bem? / **Tem pastel?**"
+- "Boa noite / **Quero pastel** / Kkkk"
+- um áudio perguntando sobre **panela de pressão e freezer**
+
+Causa provável, coerente com o §33: o número `11939429453` veio
+**pré-registrado numa WABA de terceiro** — é um chip com dono anterior, e
+pelo padrão das mensagens o dono era uma pastelaria. Trote e engano vão
+continuar chegando; não confundir com falha de captação.
+
+### Decisão nova do fundador: o número é só comercial
+
+`11939429453` fica atrelado a **campanhas e canais de divulgação** e
+**nunca será usado para paciente**. Na prática o caminho de paciente nesse
+número deixa de existir: todo contato que chega ali é comercial. A trava
+`chk_patient_never_ia` continua no banco como proteção (não remover), mas
+não guia mais o desenho do fluxo. Os templates de paciente
+(`confirmacao_consulta`, `lembrete_vespera`) precisam de outro número ou de
+decisão nova antes de irem ao ar.
+
+### Limpeza executada
+
+Backup completo em JSON antes de qualquer `DELETE` (25 leads, 29 conversas,
+203 mensagens) — entregue ao fundador no chat, não versionado.
+
+- **25 leads `origem='whatsapp'` apagados** (base voltou de 126 para 101).
+- **25 conversas de engano apagadas** com suas mensagens e notificações.
+- **4 conversas preservadas** (os testes reais: Michelle/Dermatologia,
+  Cardiologista, Fisioterapia Neurológica e o do fundador) — ficaram com
+  `lead_id = NULL` para continuarem legíveis em `/conversas` sem contar
+  como lead no funil. `conversations.lead_id` é `NO ACTION`, então a ordem
+  importa: nulificar as preservadas **antes** de apagar os leads, senão a
+  FK barra o `DELETE`.
+- Conferido depois: 0 leads de WhatsApp, 0 notificações órfãs (as 8
+  restantes apontam para as 4 conversas preservadas).
+
+### Fix 1 — a IA respondia duas vezes
+
+Cada mensagem recebida vira um POST separado do Meta. Quem escrevia "Oi" e
+logo "Boa tarde" recebia **duas respostas seguidas**, ligeiramente
+diferentes, porque cada execução gerava resposta sem saber da outra —
+observado em 4 conversas reais de 25-26/ago, com 0,2s a 2,3s entre as
+mensagens. É o sinal mais óbvio de robô, e acontecia logo no primeiro
+contato.
+
+`processarMensagem` agora espera **5 segundos** (`JANELA_AGRUPAMENTO_MS`) e
+só responde se aquela mensagem ainda for a última recebida na conversa
+(`aindaCabeResponder`, que também confere se a conversa continua em
+`status='ia'`). A execução mais recente responde por todas, já com o
+histórico completo no banco. **Não precisa de lock — o banco é o
+desempate.** Reentrega do webhook por timeout do Meta continua protegida
+pela unicidade de `wamid` (o `23505` que já existia).
+
+⚠️ Efeito colateral conhecido: se um áudio chegar e for seguido de um texto
+dentro da janela, a transcrição daquele áudio se perde (o corpo salvo é só
+o marcador `[Áudio recebido…]`, filtrado do histórico). Raro e aceito.
+
+### Fix 2 — engano de número sai do funil sozinho
+
+Chave nova `descarte` na tag `[META:]`, valor único `engano`. Quando a IA
+identifica que a pessoa errou o número:
+
+- encerra em **uma** resposta curta (o prompt proíbe explicitamente fazer
+  piada, puxar conversa ou insistir perguntando se há interesse — era o que
+  ela vinha fazendo);
+- `conversations.status = 'fechada'` → a IA para de responder aquele número;
+- `leads.status = 'descartado'` + `motivo_descarte = 'engano_numero'`;
+- **não notifica ninguém** — não há o que a equipe fazer com um engano.
+
+Motivo de descarte **próprio**, criado na migration
+`20260826_lead_motivo_engano.sql`: reaproveitar `sem_perfil` ou
+`contato_invalido` misturaria engano com lead de verdade que não fechou e
+estragaria a leitura do funil. `MOTIVO_LABEL` em `admin/app/leads/page.tsx`
+ganhou a entrada correspondente ("Errou o número") — sem isso o valor novo
+apareceria cru na tela e não existiria no `select` de descarte.
+
+O prompt também instrui o contrário explicitamente: **na dúvida entre
+engano e alguém que só escreveu pouco, não usar `descarte`** — errar para o
+lado de continuar custa uma mensagem, errar para o lado de descartar perde
+um lead.
+
+### Verificação
+
+- **`deno check` rodou de verdade nesta sessão** — limpo em
+  `whatsapp-webhook/index.ts` e `test-lead-ai/index.ts`. O §34 registrou que
+  não dava pra rodar por falta do binário; instalar Deno no ambiente da
+  sessão (`npm i -g deno@2`) resolveu, e é bem mais útil que `tsc` para
+  edge function, porque enxerga os imports `npm:` e o namespace `Deno`.
+- Migration aplicada e conferida em produção (`pg_get_constraintdef`).
+- `whatsapp-webhook` deployada (**v21**) e o conteúdo publicado conferido
+  **byte a byte** contra o arquivo local — não por inspeção visual.
+
+**⚠️ Pendências desta sessão:**
+1. **Teste ao vivo pelo celular, que só o fundador pode fazer:** mandar duas
+   mensagens rápidas seguidas para o número (tem que vir **uma** resposta
+   só) e, de outro número, um "quero pastel" (tem que encerrar em uma
+   resposta e o lead aparecer descartado como "Errou o número").
+2. **Nada commitado e `test-lead-ai` não redeployada** — a ponte com a
+   máquina do fundador (`device_bash`) ficou fora do ar a sessão inteira,
+   igual ao que o §30 já tinha registrado; os arquivos foram gravados no
+   disco, mas `git` e `supabase functions deploy` não puderam rodar daqui.
+   O arquivo de `test-lead-ai` está em sincronia com o prompt no disco, só
+   falta publicar.
+3. **Divergência no manual, não corrigida:** o `docs/IA_ATENDIMENTO_WHATSAPP.md`
+   §4 ainda diz que a IA "nunca marca visita nem envia link de agenda" e o
+   §5 chama o OLI de "coworking médico" — os dois foram superados pelo §34
+   (autonomia de Calendly, rebrand para "hub para profissionais da saúde")
+   e nunca foram atualizados. Não mexi porque é decisão de conteúdo, não de
+   código.
+4. As pendências antigas do §34 seguem abertas (aprovação dos templates de
+   Marketing, 3 WABAs duplicadas, `asaas-create-subaccount`/`create-patient-charge`,
+   nada testado em device nativo). A divergência do manual citada no item 3
+   foi corrigida nesta sessão: Calendly é autonomia da Olivia e o OLI é
+   descrito como hub para profissionais da saúde.
+
+## 36. "Sem plano" some — cadastro volta a nascer no START (26/ago sessão 3)
+
+O fundador viu cadastros aparecendo como **BASE** no admin e pediu
+verificação. Duas coisas saíram daí: um bug de exibição e uma reversão de
+decisão de produto.
+
+### O BASE que aparecia não existia no banco
+
+Levantamento: 26 perfis — 24 START, 1 PRO, 1 sem plano. **Zero BASE**, e o
+plano BASE segue `ativo=false` com zero assinaturas, como a §31 deixou.
+
+A origem era `admin/app/medicos/page.tsx`, linha 87: `const plan = m.plan ??
+'BASE'`. Escrita quando `plan` nunca era nulo (todo cadastro nascia com
+plano), a linha era um seguro que nunca disparava. Depois de 19/ago o
+cadastro passou a nascer com `plan = NULL` de propósito, e o seguro virou o
+bug: **quem não tinha escolhido plano aparecia como BASE**, num plano
+desativado, com preço e taxa velhos. Uma pessoa só estava nesse estado —
+Priscila Leal, cadastrada em 19/ago, com onboarding incompleto. A tela de
+detalhe do médico não tinha o problema (mostra `p.plan` cru), e o app
+também não — lá o BASE só sobrou nas matrizes de benefício, com
+`PLAN_ORDER` já reduzido a START e PRO.
+
+### 🔴 Reversão: não existe mais "cadastrado sem plano"
+
+Decisão do fundador nesta sessão: **"quem está sem plano é START, não
+existe um cadastro sem plano"** — o oposto do que a §30 decidiu e a §31
+implementou em 19/ago. Foi confirmado explicitamente depois de a sessão
+apontar o conflito e a consequência: com START automático, todo cadastro
+volta a ter comunidade, agenda e app completos sem passar por conversa
+comercial, que é exatamente o cenário que produziu a base atual (24 START,
+3 com alguma reserva). Ele confirmou mesmo assim.
+
+**Banco** (migration `20260826_cadastro_volta_a_nascer_start.sql`,
+aplicada): `_create_profile_and_subscription()` volta a gravar
+`plan='START'` + `plan_id` e a criar a assinatura START ativa;
+`profiles.plan` recupera o `default 'START'` como rede para qualquer INSERT
+que não passe pela função. Duas diferenças em relação à versão pré-19/ago:
+o `plan_id` é buscado por `name='START' and ativo` (não hardcoded), e a
+criação da assinatura é **idempotente** (`not exists`) — a versão antiga
+não tinha essa guarda, e é por isso que a Claudia Moraes ficou com duas
+linhas de assinatura.
+
+`taxa_min_congelada` continua nascendo `NULL` de propósito: perfil novo usa
+a taxa viva (R$ 1,90), o congelamento é só para quem já estava dentro antes
+da reforma.
+
+**App:** o Gate 3 de `app/_layout.tsx` (sessão + onboarding completo +
+`!profile.plan` → `/escolher-plano`) foi removido. A tela
+`escolher-plano.tsx` **continua existindo**, só deixou de ser portão — vale
+como upgrade pro PRO. O RPC `activate_start_plan` também fica.
+
+**Admin:** o fallback virou `?? 'START'`, com comentário explicando por quê.
+`PLAN_COLOR` mantém a entrada BASE (cosmética, para linha legada).
+
+**Priscila Leal:** colocada no START com assinatura ativa
+(`plan='START'`, `plan_id`, `subscriptions` mensal/active), `taxa_min_congelada`
+deixada em NULL — ela entrou depois da reforma, então paga R$ 1,90. Feito
+por SQL direto, não pelo RPC, porque `activate_start_plan` usa `auth.uid()`
+e roda no contexto do próprio usuário.
+
+### Verificação
+
+Cadastro novo testado com **transação revertida** (INSERT em `auth.users` →
+SELECT → `ROLLBACK`), mesma metodologia da §31: perfil sai com
+`plan='START'`, `plan_id` preenchido, `taxa_min_congelada=null` e **1**
+assinatura `START/active/mensal`. Resíduo conferido depois: zero. Os três
+arquivos editados passaram por `tsc` em modo transpile (sem `node_modules`
+no ambiente da sessão, então é checagem de sintaxe/estrutura, não de tipos
+do projeto).
+
+**⚠️ Pendências:**
+1. **OTA não enviada** — a mudança do `_layout.tsx` só chega no celular
+   depois de `eas update` nos dois canais. Não deu pra rodar daqui (ver
+   item 3).
+2. **Nada commitado** — mesma causa da §35: `device_bash` fora do ar.
+   Arquivos gravados no disco do fundador, `git` não pôde rodar.
+3. `src/models/oli-plans.ts` segue com `plan_base` marcado `status:
+   'active'` e preços velhos (R$ 299 / R$ 1,50). Apontado ao fundador, sem
+   decisão até o fim da sessão — **não mexido**.
+4. Vale conferir se algum push/nudge assumia o estado "sem plano". A régua
+   de silenciamento prevista na §30 nunca foi implementada, então
+   provavelmente não há nada a desfazer, mas não foi auditado.
 
 ## 13. Comandos úteis
 
@@ -1769,3 +1997,7 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (19-21/ago):** Dois pedidos novos — cobrança de paciente via subconta Asaas (OLI não intermediária) e mensageria WhatsApp (IA ostensiva pra lead, recepção-driven pra paciente). Ver §33. **Fase 1 (schema) implementada e em produção**: `patient_id`/`valor_consulta` em `reservations`, `professional_asaas_accounts`, `patient_charges`, `conversations`/`messages`, `whatsapp_templates` — tudo com RLS, `tsc` limpo. **Fase 2**: `whatsapp-webhook`/`send-patient-trigger`/`send-whatsapp-reply` deployados (inertes sem secrets do Meta); `asaas-create-subaccount`/`create-patient-charge` só escritos, não deployados (falta decisão de taxa da OLI + confirmação do produto de subconta). Admin ganhou `/conversas` (inbox realtime), card Asaas em `medicos/[id]`, vínculo paciente+cobrança nas reservas concluídas. `test-lead-ai` (function de teste temporária) achou e corrigiu 2 bugs reais no prompt da IA antes de qualquer mensagem real: negrito incompatível com WhatsApp (`**duplo**` → `*simples*`) e alucinação de regra de preço inexistente — prompt corrigido com valores reais e proibição explícita de inventar. Decisão registrada em memória: número comercial `(11) 97223-3745` fica no app comum, número novo dedicado à API. **A maior parte da sessão foi configuração no Meta, e travou no fim**: App "OLI WPP" criado, webhook validado de verdade por `curl` (200 + challenge), número de teste registrado, número oficial (`11939429453`) reivindicado de uma WABA de terceiro via SMS mas trava com "Falha na inscrição" ao finalizar registro — mesmo erro em 2 contas diferentes (descarta teoria de conta nova, que **era** a causa real do bloqueio de criar Usuário do Sistema, resolvido separadamente com o Igor). Token permanente gerado com sucesso. **Pendências:** chamado de suporte Meta preparado mas não enviado; testar fluxo completo com número de teste enquanto isso; taxa Asaas e produto de subconta seguem sem decisão do fundador; templates ainda não submetidos à Meta; 3 WABAs duplicadas no portfólio, não limpas; nada commitado.
 
 **Resumo de 1 linha (24/ago):** Sessão de fechamento do bloco WhatsApp. Resolvido o registro do número (era só faltar `POST /register`, nunca chamado pela UI do Meta — ver §33) e confirmado o fluxo webhook→IA→WhatsApp funcionando de ponta a ponta. Depois, redesenho grande a pedido do fundador: **todo contato agora vira lead automaticamente** (antes, número sem campanha/site prévios caía em silêncio); IA reescrita como **vendedora de verdade** (descoberta, quebra de objeção, fechamento suave) com um **bug de matemática pego no teste** (a IA errou uma conta de custo mensal — fix: só pode citar 2 exemplos de preço já calculados, nunca computar total novo); rebrand pra "hub para profissionais da saúde" (só no prompt); **fotos por especialidade** (mapa sala↔especialidade confirmado no banco, não em comentário); **agendamento com autonomia** via link real do Calendly, sem precisar transferir pra humano; **reengajamento de lead silencioso** só dentro da janela de 24h (cron novo, `whatsapp-nudge-silencio`) — reengajar depois de 24h fica pendente de template aprovado pela Meta. Tudo documentado em `docs/IA_ATENDIMENTO_WHATSAPP.md`, manual-âncora que o prompt implementa. **Bug achado em uso real**: clicar na notificação de handoff na Fila abria o WhatsApp genérico em vez de `/conversas` com histórico — `FilaClient.tsx` nunca tratava esse tipo de notificação; fix rotea pra `/conversas?id=`, que ganhou suporte a abrir direto numa conversa via URL. **Publicado**: commit `832a90a`, push direto pra `main` — empacota também todo o trabalho do §33 que estava pronto e nunca tinha sido commitado (schema Asaas paciente, `/conversas`, edge functions). `tsc --noEmit` limpo nos dois projetos. **Pendências:** submeter os 3 templates de WhatsApp pra Meta (inclui um novo, de reengajamento pós-24h); limpar 3 WABAs duplicadas; `asaas-create-subaccount`/`create-patient-charge` sem decisão de taxa/produto; confirmar com o fundador que o fix da Fila resolveu; nada testado em device nativo.
+
+**Resumo de 1 linha (26/ago sessão 2):** O fundador perguntou por que os leads novos entravam sem nome nem especialidade — **não era bug de captura**: o lead nasce na primeira mensagem, e as pessoas que chegaram simplesmente não eram público ("tem pastel?", "quero pastel", um áudio sobre panela de pressão e freezer). Causa provável já registrada no §33: o número `11939429453` veio **pré-registrado numa WABA de terceiro** e tem dono anterior — pelo padrão das mensagens, uma pastelaria. **Decisão nova do fundador:** esse número é **exclusivamente comercial** (campanhas e canais de divulgação) e **nunca será usado para paciente** — o caminho de paciente nele deixa de existir na prática, e os templates de paciente do §33 precisam de outro número ou de decisão nova. **Limpeza:** backup em JSON antes (25 leads, 29 conversas, 203 mensagens), depois **25 leads de WhatsApp apagados** (base de 126 → 101) e 25 conversas de engano removidas, preservando as 4 conversas de teste real com `lead_id=NULL` (a FK é `NO ACTION`, então nulificar tem que vir antes do DELETE). **Dois fixes:** (1) a IA **respondia duas vezes** quando chegavam duas mensagens seguidas — cada mensagem é um POST separado do Meta e cada execução respondia sem saber da outra (visto em 4 conversas reais, 0,2s a 2,3s de intervalo); agora há uma janela de 5s e só responde quem ainda é a última mensagem da conversa, sem lock, com o banco como desempate; (2) chave `descarte=engano` nova no `[META:]` — a IA encerra em uma resposta (proibida de fazer piada ou insistir), fecha a conversa e manda o lead pra descartado com `motivo_descarte='engano_numero'`, **motivo próprio de propósito** pra não misturar engano com lead de verdade que não fechou. **Verificação:** `deno check` **rodou de verdade** pela primeira vez no projeto (instalado via `npm i -g deno@2` — enxerga `npm:` e o namespace `Deno`, ao contrário do `tsc`), migration conferida em produção e `whatsapp-webhook` publicada na **v21** com o conteúdo comparado byte a byte com o arquivo local. **Pendências:** o teste ao vivo pelo celular só o fundador pode fazer (duas mensagens rápidas → uma resposta; "quero pastel" → descarte); **nada commitado e `test-lead-ai` não redeployada** porque a ponte `device_bash` ficou fora do ar a sessão inteira (mesmo sintoma do §30); e ficou registrada uma **divergência não corrigida no manual da IA** — §4 ainda diz que ela nunca envia link de agenda e §5 ainda chama o OLI de "coworking médico", ambos superados pelo §34.
+
+**Resumo de 1 linha (26/ago sessão 3):** O fundador viu cadastros como **BASE** no admin — **não havia nenhum BASE no banco** (26 perfis: 24 START, 1 PRO, 1 sem plano; o BASE segue `ativo=false` com zero assinaturas). Era `admin/app/medicos/page.tsx` linha 87, `m.plan ?? 'BASE'`: um seguro escrito quando `plan` nunca era nulo, que virou bug quando o cadastro passou a nascer sem plano em 19/ago — só a Priscila Leal estava nesse estado. **Reversão de produto:** o fundador decidiu que **"quem está sem plano é START, não existe cadastro sem plano"**, o oposto da decisão dele mesmo na §30/§31 — confirmado depois de a sessão apontar o conflito e a consequência (com START automático o app volta a ser retenção de quem não paga, cenário que produziu os 24 START com 3 reservas). `_create_profile_and_subscription()` volta a criar perfil START + assinatura ativa, agora com `plan_id` buscado por nome (não hardcoded) e criação **idempotente** — a falta dessa guarda é o que deu 2 assinaturas à Claudia Moraes; `profiles.plan` recupera o default `'START'`; o Gate 3 saiu do `app/_layout.tsx` e `/escolher-plano` vira só upgrade pro PRO. Priscila colocada no START por SQL direto (o RPC usa `auth.uid()`), sem taxa congelada — entrou depois da reforma, paga R$ 1,90. Testado com **transação revertida** (INSERT em `auth.users` → SELECT → ROLLBACK, zero resíduo): perfil novo sai START com 1 assinatura. **Pendências:** OTA não enviada (a mudança do app só vale no celular depois de `eas update`), nada commitado (`device_bash` fora do ar a sessão inteira), e `src/models/oli-plans.ts` segue com o `plan_base` marcado como ativo e com preços velhos — apontado, sem decisão.
