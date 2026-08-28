@@ -115,9 +115,9 @@ PLANOS — fluxo direto após a primeira resposta de contato:
   agenda. Qual é a sua especialidade?"
 • Se busca atendimentos recorrentes, responda: "Para uma agenda mais
   recorrente, o PRO pode ser mais adequado: R$ 599/mês, ou R$ 499/mês com
-  fidelidade de 6 meses, mais R$ 1,45 por minuto. Inclui prontuário e agenda
-  pela internet, emissão de nota fiscal e apoio da recepção. Qual é a sua
-  especialidade?"
+  fidelidade de 6 meses, mais R$ 1,45 por minuto. Inclui emissão de nota
+  fiscal e apoio da recepção no agendamento, na cobrança e no retorno dos
+  pacientes. Qual é a sua especialidade?"
 • Depois de saber a especialidade, diga que há salas preparadas para esse
   atendimento e faça UMA pergunta: prefere receber uma foto ou agendar uma
   visita? Se escolher visita, envie o Calendly. Se escolher foto e demonstrar
@@ -505,10 +505,22 @@ async function aindaCabeResponder(
 
 async function processarMensagem(
   supabase: SupabaseClient,
-  msg: { id: string; from: string; type: string; text?: { body: string }; audio?: { id: string } },
+  msg: {
+    id: string; from: string; type: string; text?: { body: string }; audio?: { id: string };
+    button?: { text: string; payload: string };
+    interactive?: { type: string; button_reply?: { title: string }; list_reply?: { title: string } };
+  },
 ) {
   const conv = await resolveConversa(supabase, msg.from);
-  let body = msg.type === 'text' ? (msg.text?.body ?? '') : `[mensagem tipo ${msg.type} não suportada ainda]`;
+  // Botão de resposta rápida do template (quick reply, ex.: "Quero conhecer")
+  // chega como type='button'; botão de mensagem interativa livre chega como
+  // type='interactive'. Os dois têm que virar texto normal pra Olivia
+  // enxergar — sem isso a mensagem caía em "não suportada" e nunca gerava
+  // resposta, mesmo com todo template tendo botão associado.
+  const textoBotao = msg.button?.text ?? msg.interactive?.button_reply?.title ?? msg.interactive?.list_reply?.title;
+  let body = msg.type === 'text' ? (msg.text?.body ?? '')
+    : textoBotao ? textoBotao
+    : `[mensagem tipo ${msg.type} não suportada ainda]`;
   let mensagemAtual: string | undefined;
   let audioTranscrito = false;
 
@@ -547,7 +559,7 @@ async function processarMensagem(
       .eq('status', 'agendada');
   }
 
-  const iaResponde = conv.kind === 'lead' && conv.status === 'ia' && (msg.type === 'text' || audioTranscrito);
+  const iaResponde = conv.kind === 'lead' && conv.status === 'ia' && (msg.type === 'text' || !!textoBotao || audioTranscrito);
   if (iaResponde) {
     await new Promise(resolve => setTimeout(resolve, JANELA_AGRUPAMENTO_MS));
     if (!await aindaCabeResponder(supabase, conv, msg.id)) {
@@ -613,7 +625,11 @@ Deno.serve(async (req: Request) => {
 
   let payload: {
     entry?: Array<{ changes?: Array<{ field?: string; value?: {
-      messages?: Array<{ id: string; from: string; type: string; text?: { body: string }; audio?: { id: string } }>;
+      messages?: Array<{
+        id: string; from: string; type: string; text?: { body: string }; audio?: { id: string };
+        button?: { text: string; payload: string };
+        interactive?: { type: string; button_reply?: { title: string }; list_reply?: { title: string } };
+      }>;
       statuses?: Array<{ id: string; status: string }>;
     } }> }>;
   };

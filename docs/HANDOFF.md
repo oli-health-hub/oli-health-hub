@@ -1413,6 +1413,8 @@ Com os valores do banco, **todo pacote dá exatamente 10% de horas a mais** (10�
 
 ## 30. Reformulação de planos — dois planos, START sem mensalidade (13/ago)
 
+> ⚠️ **Superado em parte pela §43 (28/ago):** o prontuário **saiu do PRO** e virou serviço contratado à parte, por R$ 239/mês.
+
 **Nada disso foi implementado.** Sessão de decisão comercial: os números estão fechados, o escopo está definido, e o único entregável concluído é o material de venda em PDF. Banco, app, admin e site continuam com o modelo antigo, esperando autorização explícita do fundador.
 
 ### A decisão
@@ -2037,6 +2039,8 @@ corrigida nesta sessão (ver nota no próprio §4).
 
 ## 38. Olivia explica planos com contexto e CTA (28/ago)
 
+> ⚠️ **Superado em parte pela §43 (28/ago):** o prontuário **saiu do PRO** e virou serviço contratado à parte, por R$ 239/mês.
+
 Pedido do fundador: a explicação comercial dos planos precisava ser didática
 e prática, sem parecer texto corrido nem uma tabela fria. A regra aprovada é:
 começar pela escolha real da pessoa — frequência dos atendimentos e nível de
@@ -2070,6 +2074,8 @@ em `deno check`, foram deployadas no Supabase e o commit `4030729`
 (`feat(whatsapp): orienta explicação de planos`) foi enviado ao `main`.
 
 ## 39. Fluxo curto após o primeiro contato + material de apoio (28/ago)
+
+> ⚠️ **Superado em parte pela §43 (28/ago):** o prontuário **saiu do PRO** e virou serviço contratado à parte, por R$ 239/mês.
 
 Feedback do fundador sobre a primeira versão do roteiro: a explicação dos
 planos ainda estava longa demais para WhatsApp. A Olivia agora não abre os dois
@@ -2162,6 +2168,67 @@ Não usar o botão manual que abre o WhatsApp comercial da equipe para iniciar
 um fluxo que deverá ser conduzido pela Olivia: a resposta retornaria por outro
 canal e não chegaria ao webhook dela.
 
+## 43. Prontuário sai do PRO e vira serviço à parte (28/ago)
+
+Decisão do fundador: o prontuário **deixa de estar incluído no plano PRO** e passa a ser contratado à parte, por **R$ 239/mês** — valor que já era o do módulo `communicare` na tabela `modules`.
+
+### O que isso corrige
+
+Uma contradição que existia desde sempre: `src/models/oli-plans.ts` declara `COMMUNICARE_PRO_PLAN` como *"Plano Básico do Communicare — incluído no plano PRO"*, com a flag `feature_crm_communicare` ligada no PRO, enquanto o mesmo Communicare era vendido à parte por R$ 239/mês com `requiredPlan = PRO` (sessão de 22/jul). As duas coisas nunca puderam ser verdade ao mesmo tempo. Esta decisão resolve o conflito pelo lado do "é à parte".
+
+### ✅ RESOLVIDO (28/ago, sessão seguinte) — Olivia não promete mais prontuário
+
+As §38 e §39 deixaram os prompts dizendo que o PRO *"inclui … prontuário e agenda pela internet"* — achado ao testar a régua de nutrição em produção, com um lead real esperando resposta. Corrigido nos três arquivos de texto:
+
+- `supabase/functions/whatsapp-webhook/index.ts` (**em produção, v33**) — trecho vira "Inclui emissão de nota fiscal e apoio da recepção no agendamento, na cobrança e no retorno dos pacientes."
+- `supabase/functions/test-lead-ai/index.ts` (redeployado, v27) — mesma frase, sincronizado.
+- `docs/IA_ATENDIMENTO_WHATSAPP.md` — mesma frase.
+
+`deno check` limpo nos dois antes do deploy. **Ainda não corrigido:** `output/pdf/fluxo-atendimento-olivia.pdf` (material local, não versionado) e o alinhamento mais profundo listado em "Ainda não alinhado" abaixo — fora do escopo desta correção pontual.
+
+### O que sobra no PRO
+
+Impressão · recepção cuidando do agendamento, da cobrança e do retorno dos pacientes · emissão de nota fiscal · os dois diagnósticos · tudo do START.
+
+São **três diferenciais de serviço**, um a menos que antes, com a mensalidade parada em R$ 599/R$ 499. As viradas não mudam (19h no semestral, 23h no mensal), mas passam a entregar menos — vale observar se a objeção comercial aumenta.
+
+### Material atualizado
+
+`iCloud/OLI - HH/OLI_Planos_2026.pdf` refeito: o prontuário sai das duas listas de plano e vira uma linha de serviço adicional com o preço, logo abaixo dos cards. Números reconferidos por script (as 18 células da tabela, as duas viradas, os pacotes e o exemplo da consulta) — nada além do prontuário mudou.
+
+### Ainda não alinhado
+
+`oli-plans.ts` (`COMMUNICARE_PRO_PLAN` e `feature_crm_communicare`), `OLI_BASE.md` §4/§5/§10, a matriz `FEATURES` do `meu-plano.tsx`, o site, e `output/pdf/fluxo-atendimento-olivia.pdf` (os três arquivos de texto da Olivia já foram corrigidos — ver §44).
+
+## 44. Botão de resposta rápida não gerava resposta + "Iniciar com Olivia" ganha destaque (28/ago)
+
+Dois problemas achados testando a régua de nutrição em produção, com o fundador como lead de teste.
+
+### Resposta rápida do template (quick reply) não chegava na Olivia
+
+O lead tocou o botão "Quero conhecer" da mensagem de primeiro contato e não recebeu resposta. Causa: `processarMensagem` só tratava `msg.type === 'text'` (e `'audio'` transcrito) — resposta de botão chega como `type='button'` (`{ text, payload }`) ou `type='interactive'` (`button_reply`/`list_reply`), e caía direto em `[mensagem tipo ... não suportada ainda]`, sem acionar a IA nem cancelar a régua de nutrição pendente.
+
+**Fix** (`whatsapp-webhook` v32→v33): extrai o texto do botão (`msg.button?.text ?? msg.interactive?.button_reply?.title ?? msg.interactive?.list_reply?.title`) e trata como mensagem de texto normal — mesma cancelação de régua, mesmo acionamento de resposta da Olivia. `payload` type do webhook também ganhou os campos `button`/`interactive`.
+
+**Achado no meio do teste:** o template de primeiro contato enviado (`primeiro_contato_comercial_v1`) não tinha nenhum botão visível na mensagem recebida — a sugestão de botão do `docs/WHATSAPP_NUTRICAO_COMERCIAL.md` não virou configuração real quando o template foi submetido à Meta. O fix acima cobre qualquer template que **tenha** botão daqui pra frente; não resolve retroativamente os 5 já aprovados sem botão configurado.
+
+### "Iniciar com Olivia" estava escondido
+
+O botão (§37/§40) existia, mas em texto pequeno (11px, sublinhado) no fim de uma coluna estreita cheia de outros campos de edição — o fundador não conseguiu achar. Movido pra coluna **Contato**, ao lado do WhatsApp normal: botão sólido verde, primeira coisa visível na linha do lead. A origem do opt-in deixou de exigir escolha numa lista — é derivada automaticamente de `leads.origem` (`rd_station`→`formulario_rd`, `site`→`formulario_site`, `meta_ads`→`anuncio_meta`, resto→`manual`). Um clique só. `admin/app/leads/page.tsx`; `OPT_IN_SOURCE_LABEL` (não usado mais) removido.
+
+### Preparado, não ativado: cabeçalho de imagem em template
+
+Pedido do fundador: adicionar foto na mensagem de primeiro contato. `enviarTemplate()` (`_shared/whatsapp.ts`) ganhou `headerImageUrl` opcional — monta o componente `header` do tipo imagem quando presente. **Inerte**: nenhum template hoje tem `header_image_url` preenchido. Passo que falta, manual, só o fundador pode fazer: criar `primeiro_contato_comercial_v2` no Meta com cabeçalho Imagem (mesmo corpo, foto sugerida: `estrutura` — `https://olihealthhub.com.br/fotos/lounge.jpg`, já pública), mandar pra aprovação; quando aprovar, trocar `meta_template_name`/`header_image_url` na linha `primeiro_contato` de `whatsapp_templates`.
+
+### Teste real feito nesta sessão
+
+Lead sintético criado com o número do fundador (mesma metodologia do §34/§35): opt-in registrado, `whatsapp-nutricao-comercial` invocado direto pra esse lead, `primeiro_contato_comercial_v1` entregue de verdade (`status: entregue`, wamid confirmado), etapa `d3` já encadeada automaticamente. Lead de teste **mantido** no banco a pedido do fundador (não limpo).
+
+**⚠️ Pendências:**
+1. Confirmar com o fundador que tocar um botão de template agora gera resposta da Olivia (o teste anterior não tinha botão pra tocar).
+2. Criar `primeiro_contato_comercial_v2` com header de imagem no Meta e mandar pra aprovação (passo manual, fora do meu alcance).
+3. `output/pdf/fluxo-atendimento-olivia.pdf` e o alinhamento mais profundo do §43 seguem abertos.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -2251,3 +2318,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (26/ago sessão 2):** O fundador perguntou por que os leads novos entravam sem nome nem especialidade — **não era bug de captura**: o lead nasce na primeira mensagem, e as pessoas que chegaram simplesmente não eram público ("tem pastel?", "quero pastel", um áudio sobre panela de pressão e freezer). Causa provável já registrada no §33: o número `11939429453` veio **pré-registrado numa WABA de terceiro** e tem dono anterior — pelo padrão das mensagens, uma pastelaria. **Decisão nova do fundador:** esse número é **exclusivamente comercial** (campanhas e canais de divulgação) e **nunca será usado para paciente** — o caminho de paciente nele deixa de existir na prática, e os templates de paciente do §33 precisam de outro número ou de decisão nova. **Limpeza:** backup em JSON antes (25 leads, 29 conversas, 203 mensagens), depois **25 leads de WhatsApp apagados** (base de 126 → 101) e 25 conversas de engano removidas, preservando as 4 conversas de teste real com `lead_id=NULL` (a FK é `NO ACTION`, então nulificar tem que vir antes do DELETE). **Dois fixes:** (1) a IA **respondia duas vezes** quando chegavam duas mensagens seguidas — cada mensagem é um POST separado do Meta e cada execução respondia sem saber da outra (visto em 4 conversas reais, 0,2s a 2,3s de intervalo); agora há uma janela de 5s e só responde quem ainda é a última mensagem da conversa, sem lock, com o banco como desempate; (2) chave `descarte=engano` nova no `[META:]` — a IA encerra em uma resposta (proibida de fazer piada ou insistir), fecha a conversa e manda o lead pra descartado com `motivo_descarte='engano_numero'`, **motivo próprio de propósito** pra não misturar engano com lead de verdade que não fechou. **Verificação:** `deno check` **rodou de verdade** pela primeira vez no projeto (instalado via `npm i -g deno@2` — enxerga `npm:` e o namespace `Deno`, ao contrário do `tsc`), migration conferida em produção e `whatsapp-webhook` publicada na **v21** com o conteúdo comparado byte a byte com o arquivo local. **Pendências:** o teste ao vivo pelo celular só o fundador pode fazer (duas mensagens rápidas → uma resposta; "quero pastel" → descarte); **nada commitado e `test-lead-ai` não redeployada** porque a ponte `device_bash` ficou fora do ar a sessão inteira (mesmo sintoma do §30); e ficou registrada uma **divergência não corrigida no manual da IA** — §4 ainda diz que ela nunca envia link de agenda e §5 ainda chama o OLI de "coworking médico", ambos superados pelo §34.
 
 **Resumo de 1 linha (26/ago sessão 3):** O fundador viu cadastros como **BASE** no admin — **não havia nenhum BASE no banco** (26 perfis: 24 START, 1 PRO, 1 sem plano; o BASE segue `ativo=false` com zero assinaturas). Era `admin/app/medicos/page.tsx` linha 87, `m.plan ?? 'BASE'`: um seguro escrito quando `plan` nunca era nulo, que virou bug quando o cadastro passou a nascer sem plano em 19/ago — só a Priscila Leal estava nesse estado. **Reversão de produto:** o fundador decidiu que **"quem está sem plano é START, não existe cadastro sem plano"**, o oposto da decisão dele mesmo na §30/§31 — confirmado depois de a sessão apontar o conflito e a consequência (com START automático o app volta a ser retenção de quem não paga, cenário que produziu os 24 START com 3 reservas). `_create_profile_and_subscription()` volta a criar perfil START + assinatura ativa, agora com `plan_id` buscado por nome (não hardcoded) e criação **idempotente** — a falta dessa guarda é o que deu 2 assinaturas à Claudia Moraes; `profiles.plan` recupera o default `'START'`; o Gate 3 saiu do `app/_layout.tsx` e `/escolher-plano` vira só upgrade pro PRO. Priscila colocada no START por SQL direto (o RPC usa `auth.uid()`), sem taxa congelada — entrou depois da reforma, paga R$ 1,90. Testado com **transação revertida** (INSERT em `auth.users` → SELECT → ROLLBACK, zero resíduo): perfil novo sai START com 1 assinatura. **Pendências:** OTA não enviada (a mudança do app só vale no celular depois de `eas update`), nada commitado (`device_bash` fora do ar a sessão inteira), e `src/models/oli-plans.ts` segue com o `plan_base` marcado como ativo e com preços velhos — apontado, sem decisão.
+
+**Resumo de 1 linha (28/ago sessão 2):** O fundador tirou o **prontuário de dentro do PRO** — passa a ser contratado à parte por **R$ 239/mês**, o mesmo valor que o módulo `communicare` já tinha na tabela `modules`. A mudança **resolve uma contradição antiga** em vez de criar uma nova: o `oli-plans.ts` dizia que o Plano Básico do Communicare vinha incluído no PRO enquanto o mesmo Communicare era vendido à parte por R$ 239 exigindo PRO. **O alcance é maior que o material de venda:** as §38 e §39, escritas hoje mesmo, deixaram os prompts da Olivia em produção afirmando que o PRO inclui prontuário — enquanto não forem corrigidos, ela promete a lead real um item que saiu do plano; os quatro arquivos estão listados na §43 e **não foram tocados**, por dependerem de autorização e o webhook estar atendendo de verdade. O PRO fica com três diferenciais de serviço em vez de quatro (impressão, recepção e nota fiscal), com a mensalidade parada em R$ 599/R$ 499 e as viradas intactas em 19h e 23h — entrega menos pelo mesmo preço, então vale observar a objeção comercial. **Entregue:** `OLI_Planos_2026.pdf` refeito, com o prontuário fora das listas de plano e como linha de serviço adicional com preço, e todos os números reconferidos por script. **Pendente:** os quatro arquivos da Olivia, o `oli-plans.ts`, o `OLI_BASE.md`, a matriz `FEATURES` e o site.

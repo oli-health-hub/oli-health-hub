@@ -146,8 +146,9 @@ uma vez. Ela segue a resposta do lead:
   especialidade?"
 - **Atendimentos recorrentes:** "Para uma agenda mais recorrente, o PRO pode
   ser mais adequado: R$ 599/mês, ou R$ 499/mês com fidelidade de seis meses,
-  mais R$ 1,45 por minuto. Inclui prontuário e agenda pela internet, emissão
-  de nota fiscal e apoio da recepção. Qual é a sua especialidade?"
+  mais R$ 1,45 por minuto. Inclui emissão de nota fiscal e apoio da recepção
+  no agendamento, na cobrança e no retorno dos pacientes. Qual é a sua
+  especialidade?"
 - **Depois da especialidade:** informa que há salas preparadas para aquele
   atendimento e pergunta somente se a pessoa prefere receber uma foto ou
   agendar uma visita. Para visita, envia o Calendly; para foto, usa uma imagem

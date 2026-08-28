@@ -105,22 +105,21 @@ const CANAL_LABEL: Record<string, string> = {
   email:    'E-mail',
 };
 
-/* Régua de nutrição comercial (docs/WHATSAPP_NUTRICAO_COMERCIAL.md). Origem
-   do opt-in — de onde veio o consentimento pra falar por WhatsApp, não de
-   onde veio o lead (isso já é `origem`). */
-const OPT_IN_SOURCE_LABEL: Record<string, string> = {
-  formulario_rd:   'Formulário RD',
-  formulario_site: 'Formulário do site',
-  anuncio_meta:    'Anúncio Meta',
-  manual:          'Registrado manualmente',
-};
-
 const ETAPA_NUTRICAO_LABEL: Record<string, string> = {
   primeiro_contato: 'Primeiro contato',
   d3:  'Retomada D+3',
   d10: 'Retomada D+10',
   d24: 'Retomada D+24',
   d45: 'Encerramento D+45',
+};
+
+/* De onde o lead veio já diz de onde veio o consentimento, na maioria dos
+   casos — evita obrigar quem está clicando a escolher numa lista toda vez.
+   Origem sem mapeamento cai em 'manual', que é sempre uma opção válida. */
+const ORIGEM_PARA_OPT_IN_SOURCE: Record<string, string> = {
+  rd_station: 'formulario_rd',
+  site:       'formulario_site',
+  meta_ads:   'anuncio_meta',
 };
 
 function formatData(iso: string): string {
@@ -487,8 +486,25 @@ export default async function LeadsPage({
                     <p className="text-xs text-gray-400">{lead.email}</p>
                     {/* O botão some sozinho quando não há número utilizável —
                         oferecer e abrir o WhatsApp sem destino pareceria defeito. */}
-                    <div className="mt-1.5">
+                    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                       <BotaoWhatsApp numero={lead.whatsapp} texto={mensagemLead(lead.nome)} tamanho="pequeno" />
+                      {/* Ação principal pra começar a régua — fica na primeira
+                          coluna, ao lado do WhatsApp normal, não escondida no
+                          fim do formulário de edição. Só aparece antes do
+                          opt-in; depois disso o status/pausar/retomar vive na
+                          coluna Situação/Atualizar. */}
+                      {lead.whatsapp && !lead.whatsapp_opt_in_at && (
+                        <form action={optInLeadWhatsapp}>
+                          <input type="hidden" name="id" value={lead.id} />
+                          <input type="hidden" name="source" value={ORIGEM_PARA_OPT_IN_SOURCE[lead.origem] ?? 'manual'} />
+                          <button
+                            type="submit"
+                            className="bg-oli-green text-white font-semibold rounded-lg hover:opacity-90 transition-opacity text-[11px] px-2 py-0.5"
+                          >
+                            Iniciar com Olivia
+                          </button>
+                        </form>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3">{lead.especialidade ?? '—'}</td>
@@ -648,38 +664,28 @@ export default async function LeadsPage({
                     </form>
 
                     {/* Formulário à parte — HTML não aceita <form> aninhado.
-                        O primeiro contato sai pelo número da Olivia somente
-                        com opt-in e template aprovado na Meta. */}
-                    <div className="mt-2 pt-2 border-t border-gray-100">
-                      {!lead.whatsapp_opt_in_at ? (
-                        <form action={optInLeadWhatsapp} className="flex items-center gap-1.5">
-                          <input type="hidden" name="id" value={lead.id} />
-                          <select name="source" defaultValue="" required className="border border-gray-200 rounded-lg px-1.5 py-1 text-[11px] flex-1">
-                            <option value="" disabled>Opt-in WhatsApp por…</option>
-                            {Object.entries(OPT_IN_SOURCE_LABEL).map(([v, l]) => (
-                              <option key={v} value={v}>{l}</option>
-                            ))}
-                          </select>
-                          <button type="submit" className="text-[11px] text-oli-green font-semibold underline whitespace-nowrap">
-                            Iniciar com Olivia
-                          </button>
-                        </form>
-                      ) : lead.whatsapp_opt_out_at ? (
-                        <form action={resumeLeadWhatsappNutricao}>
-                          <input type="hidden" name="id" value={lead.id} />
-                          <button type="submit" className="text-[11px] text-oli-green font-semibold underline">
-                            Retomar nutrição
-                          </button>
-                        </form>
-                      ) : (
-                        <form action={pauseLeadWhatsappNutricao}>
-                          <input type="hidden" name="id" value={lead.id} />
-                          <button type="submit" className="text-[11px] text-gray-500 font-semibold underline">
-                            Pausar nutrição
-                          </button>
-                        </form>
-                      )}
-                    </div>
+                        O gatilho de opt-in ("Iniciar com Olivia") mora na
+                        coluna Contato, ao lado do WhatsApp normal — aqui só
+                        pausar/retomar, que só faz sentido depois do opt-in. */}
+                    {lead.whatsapp_opt_in_at && (
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        {lead.whatsapp_opt_out_at ? (
+                          <form action={resumeLeadWhatsappNutricao}>
+                            <input type="hidden" name="id" value={lead.id} />
+                            <button type="submit" className="text-[11px] text-oli-green font-semibold underline">
+                              Retomar nutrição
+                            </button>
+                          </form>
+                        ) : (
+                          <form action={pauseLeadWhatsappNutricao}>
+                            <input type="hidden" name="id" value={lead.id} />
+                            <button type="submit" className="text-[11px] text-gray-500 font-semibold underline">
+                              Pausar nutrição
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               );

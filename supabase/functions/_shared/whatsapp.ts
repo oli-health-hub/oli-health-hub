@@ -115,10 +115,20 @@ export async function enviarImagem(opts: { to: string; link: string; caption?: s
 }
 
 /** Mensagem via template pré-aprovado — única forma de iniciar conversa fora
- *  da janela de 24h. `variaveis` preenche {{1}}, {{2}}... na ordem. */
+ *  da janela de 24h. `variaveis` preenche {{1}}, {{2}}... na ordem.
+ *  `headerImageUrl` só se aplica a template cujo cabeçalho aprovado na Meta
+ *  é do tipo Imagem — mandar num template de cabeçalho texto (ou sem
+ *  cabeçalho) faz a Meta recusar a mensagem. */
 export async function enviarTemplate(opts: {
-  to: string; templateName: string; idioma: string; variaveis: string[];
+  to: string; templateName: string; idioma: string; variaveis: string[]; headerImageUrl?: string;
 }): Promise<{ wamid: string }> {
+  const components: unknown[] = [];
+  if (opts.headerImageUrl) {
+    components.push({ type: 'header', parameters: [{ type: 'image', image: { link: opts.headerImageUrl } }] });
+  }
+  if (opts.variaveis.length > 0) {
+    components.push({ type: 'body', parameters: opts.variaveis.map(v => ({ type: 'text', text: v })) });
+  }
   return chamarGraphMessages({
     messaging_product: 'whatsapp',
     to: opts.to,
@@ -126,9 +136,7 @@ export async function enviarTemplate(opts: {
     template: {
       name: opts.templateName,
       language: { code: opts.idioma },
-      components: opts.variaveis.length > 0
-        ? [{ type: 'body', parameters: opts.variaveis.map(v => ({ type: 'text', text: v })) }]
-        : undefined,
+      components: components.length > 0 ? components : undefined,
     },
   });
 }
