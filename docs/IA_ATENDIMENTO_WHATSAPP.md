@@ -110,6 +110,16 @@ histórico).
   planos" no §5) e especialidade continuam vindo depois do nome, uma
   pergunta por vez, como já era.
 
+### Nunca pede o WhatsApp/telefone
+
+Achado em produção (29/ago): Olivia pediu o WhatsApp de um lead que já
+estava falando com ela **pelo WhatsApp** — a conversa inteira acontece
+naquele número, pedir isso não faz sentido em nenhuma circunstância.
+Regra explícita e redundante no prompt (na ABERTURA DA CONVERSA e de novo
+em O QUE VOCÊ NÃO FAZ), inclusive dentro do fluxo de transferência para
+humano, que já proibia pedir "nome, telefone, e-mail... para confirmar"
+mas não deixava claro que isso vale sempre, não só na transferência.
+
 ### Retomada dentro de 24 horas
 
 O reengajamento só acontece quando existe um assunto comercial concreto e um
