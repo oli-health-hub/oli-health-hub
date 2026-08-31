@@ -69,9 +69,32 @@ Deno.serve(async (req: Request) => {
     const caption = typeof legenda === 'string' ? legenda.trim() : '';
     const { wamid } = await enviarImagemPorId({ to: conv.phone_e164, mediaId, caption: caption || undefined });
 
+    // Guarda uma cópia própria pra prévia no /conversas — o media id da Meta
+    // não dá pra buscar de volta sem token, e expira em ~30 dias. Falha aqui
+    // não pode derrubar o envio: a mensagem já foi entregue no WhatsApp.
+    let mediaUrl: string | null = null;
+    try {
+      const extensao = imagem.type === 'image/png' ? 'png' : 'jpg';
+      const caminho = `${conv.id}/${crypto.randomUUID()}.${extensao}`;
+      const { error: uploadErro } = await supabase.storage
+        .from('whatsapp-media')
+        .upload(caminho, imagem, { contentType: imagem.type });
+      if (!uploadErro) {
+        const { data: assinada } = await supabase.storage
+          .from('whatsapp-media')
+          .createSignedUrl(caminho, 60 * 60 * 24 * 365); // 1 ano — uso interno só de prévia
+        mediaUrl = assinada?.signedUrl ?? null;
+      } else {
+        console.error('[send-whatsapp-image] falha ao guardar cópia da imagem:', uploadErro.message);
+      }
+    } catch (err) {
+      console.error('[send-whatsapp-image] falha ao gerar prévia da imagem:', err);
+    }
+
     await supabase.from('messages').insert({
       conversation_id: conv.id, direction: 'outbound', sender_type: 'staff',
       body: caption || '[imagem enviada pela equipe]', wamid, status: 'enviada',
+      media_url: mediaUrl,
     });
 
     return json({ ok: true });

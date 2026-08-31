@@ -456,6 +456,7 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow, mensa
       await supabase.from('messages').insert({
         conversation_id: conv.id, direction: 'outbound', sender_type: 'ia',
         body: `[imagem: ${meta!.imagem}]`, wamid: wamidFoto, status: 'enviada',
+        media_url: urlFoto,
       });
     } catch (err) {
       // Falha no envio da foto não deve derrubar o resto do turno.

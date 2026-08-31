@@ -25,6 +25,7 @@ interface Mensagem {
   direction:        'inbound' | 'outbound';
   sender_type:      string;
   body:             string | null;
+  media_url:        string | null;
   status:           string;
   created_at:       string;
 }
@@ -114,7 +115,7 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
   const loadMensagens = useCallback(async (conversationId: string) => {
     const { data } = await getSupabaseBrowser()
       .from('messages')
-      .select('id, conversation_id, direction, sender_type, body, status, created_at')
+      .select('id, conversation_id, direction, sender_type, body, media_url, status, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
     setMensagens((data as Mensagem[]) ?? []);
@@ -267,7 +268,24 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
                       ? (m.sender_type === 'ia' ? 'bg-blue-50 text-blue-900' : 'bg-oli-green text-white')
                       : 'bg-gray-100 text-oli-dark'
                   }`}>
-                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                    {/* Prévia da imagem — sem isso a mensagem só mostrava o
+                        texto genérico "[imagem enviada pela equipe]"/"[imagem:
+                        especialidade]", sem dar pra saber qual foto foi essa. */}
+                    {m.media_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.media_url}
+                        alt="Imagem enviada na conversa"
+                        onClick={() => window.open(m.media_url!, '_blank')}
+                        className="rounded-xl max-w-full max-h-64 mb-1 cursor-zoom-in"
+                      />
+                    )}
+                    {/* Some só quando a prévia já apareceu — se o upload da
+                        cópia falhou (media_url nulo), o texto genérico vira o
+                        único indício de que uma foto foi enviada. */}
+                    {m.body && !(m.media_url && m.body.startsWith('[imagem')) && (
+                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                    )}
                     <p className={`text-[10px] mt-1 ${m.direction === 'outbound' && m.sender_type !== 'ia' ? 'text-white/70' : 'text-oli-lgray'}`}>
                       {m.sender_type === 'ia' ? 'IA · ' : ''}{new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </p>

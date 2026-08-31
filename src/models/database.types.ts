@@ -691,6 +691,7 @@ export type Database = {
           created_at: string
           direction: string
           id: string
+          media_url: string | null
           sender_type: string
           status: string
           template_name: string | null
@@ -702,6 +703,7 @@ export type Database = {
           created_at?: string
           direction: string
           id?: string
+          media_url?: string | null
           sender_type: string
           status?: string
           template_name?: string | null
@@ -713,6 +715,7 @@ export type Database = {
           created_at?: string
           direction?: string
           id?: string
+          media_url?: string | null
           sender_type?: string
           status?: string
           template_name?: string | null
