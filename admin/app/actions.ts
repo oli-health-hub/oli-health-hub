@@ -912,6 +912,20 @@ export async function sendConversationImage(formData: FormData) {
   revalidatePath('/conversas');
 }
 
+/** Marca a conversa como vista pela equipe agora — usado pelo /conversas pra
+ *  saber quais linhas mostrar como não lidas (last_message_at mais recente
+ *  que admin_last_read_at). Sem revalidatePath: é uma atualização leve e
+ *  frequente (toda troca de conversa), o realtime de UPDATE em conversations
+ *  já propaga pra outras abas/pessoas com o painel aberto. */
+export async function markConversationRead(conversationId: string) {
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase
+    .from('conversations')
+    .update({ admin_last_read_at: new Date().toISOString() })
+    .eq('id', conversationId);
+  if (error) throw new Error(error.message);
+}
+
 /** Alterna uma conversa de lead entre IA e humano. Conversa de paciente nunca
  *  aceita 'ia' — o CHECK do banco (chk_patient_never_ia) barra isso mesmo que
  *  esta action seja chamada errado. */

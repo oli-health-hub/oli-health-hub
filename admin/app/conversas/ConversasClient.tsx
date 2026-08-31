@@ -2,21 +2,23 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
-import { sendConversationReply, sendConversationImage, toggleConversationMode } from '@/app/actions';
+import { sendConversationReply, sendConversationImage, toggleConversationMode, markConversationRead } from '@/app/actions';
 
 interface Conversa {
-  id:               string;
-  kind:             'lead' | 'patient' | 'nao_classificada';
-  status:           'ia' | 'humano' | 'fechada';
-  phone_e164:       string;
-  last_message_at:  string | null;
-  last_inbound_at:  string | null;
-  lead_id:          string | null;
-  patient_id:       string | null;
-  professional_id:  string | null;
-  leads:            { nome: string } | null;
-  patients:         { nome: string } | null;
-  profiles:         { nome: string } | null;
+  id:                       string;
+  kind:                     'lead' | 'patient' | 'nao_classificada';
+  status:                   'ia' | 'humano' | 'fechada';
+  phone_e164:               string;
+  last_message_at:          string | null;
+  last_inbound_at:          string | null;
+  last_message_direction:   'inbound' | 'outbound' | null;
+  admin_last_read_at:       string | null;
+  lead_id:                  string | null;
+  patient_id:               string | null;
+  professional_id:          string | null;
+  leads:                    { nome: string } | null;
+  patients:                 { nome: string } | null;
+  profiles:                 { nome: string } | null;
 }
 
 interface Mensagem {
@@ -57,6 +59,19 @@ function grupoDe(c: Conversa): Grupo {
 
 function nomeContato(c: Conversa): string {
   return c.leads?.nome ?? c.patients?.nome ?? c.phone_e164;
+}
+/** Não lida = chegou/saiu mensagem depois da última vez que a equipe abriu
+ *  essa conversa. admin_last_read_at nulo (nunca aberta) conta como não lida. */
+function naoLida(c: Conversa): boolean {
+  if (!c.last_message_at) return false;
+  if (!c.admin_last_read_at) return true;
+  return new Date(c.last_message_at) > new Date(c.admin_last_read_at);
+}
+/** De quem é a vez de responder: última mensagem inbound = aguardando a
+ *  gente (IA ou equipe); outbound = aguardando o contato. Conversa encerrada
+ *  não tem "vez de ninguém". */
+function precisaNossaResposta(c: Conversa): boolean {
+  return c.status !== 'fechada' && c.last_message_direction === 'inbound';
 }
 function timeAgo(iso: string | null): string {
   if (!iso) return '—';
@@ -121,8 +136,19 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
     setMensagens((data as Mensagem[]) ?? []);
   }, []);
 
+  /** Otimista local + grava no banco — outras abas/pessoas com o painel
+   *  aberto recebem via UPDATE realtime em conversations. */
+  const marcarComoLida = useCallback((conversationId: string) => {
+    const agora = new Date().toISOString();
+    setConversas(prev => prev.map(c => c.id === conversationId ? { ...c, admin_last_read_at: agora } : c));
+    markConversationRead(conversationId).catch(err => console.error('[conversas] falha ao marcar como lida:', err));
+  }, []);
+
   useEffect(() => {
-    if (selecionada) loadMensagens(selecionada);
+    if (selecionada) {
+      loadMensagens(selecionada);
+      marcarComoLida(selecionada);
+    }
     // Troca de conversa não pode carregar uma foto anexada pra outro contato.
     removerImagem();
     setTexto('');
@@ -143,9 +169,13 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
         const msg = payload.new as Mensagem;
         setMensagens(prev => (prev.some(m => m.id === msg.id) || msg.conversation_id !== selecionada) ? prev : [...prev, msg]);
         setConversas(prev => {
-          const atualizado = prev.map(c => c.id === msg.conversation_id ? { ...c, last_message_at: msg.created_at } : c);
+          const atualizado = prev.map(c => c.id === msg.conversation_id
+            ? { ...c, last_message_at: msg.created_at, last_message_direction: msg.direction }
+            : c);
           return [...atualizado].sort((a, b) => (b.last_message_at ?? '').localeCompare(a.last_message_at ?? ''));
         });
+        // A conversa aberta já mostra a mensagem nova na hora — conta como lida.
+        if (msg.conversation_id === selecionada) marcarComoLida(msg.conversation_id);
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, (payload) => {
         setConversas(prev => [payload.new as Conversa, ...prev]);
@@ -214,22 +244,37 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
               <div className="sticky top-0 z-10 px-4 py-1.5 text-[10px] uppercase tracking-wide text-gray-400 font-semibold bg-stone-50 border-b border-oli-border/60">
                 {GRUPO_LABEL[grupo]} <span className="opacity-60">{itens.length}</span>
               </div>
-              {itens.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelecionada(c.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-oli-border/60 hover:bg-stone-50 transition-colors ${selecionada === c.id ? 'bg-stone-50' : ''}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-oli-dark truncate">{nomeContato(c)}</span>
-                    <span className="text-[10px] text-oli-lgray shrink-0">{timeAgo(c.last_message_at)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${KIND_BG[c.kind]}`}>{KIND_LABEL[c.kind]}</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{STATUS_LABEL[c.status]}</span>
-                  </div>
-                </button>
-              ))}
+              {itens.map(c => {
+                const lida = !naoLida(c);
+                const aguardandoNos = precisaNossaResposta(c);
+                // Borda esquerda diz de quem é a vez: vermelho = aguardando
+                // nossa resposta (IA ou equipe), verde = já respondemos e
+                // esperamos o contato. Encerrada não tem vez de ninguém.
+                const bordaResposta = c.status === 'fechada'
+                  ? 'border-l-transparent'
+                  : aguardandoNos ? 'border-l-oli-red' : 'border-l-oli-green/50';
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelecionada(c.id)}
+                    className={`w-full text-left pl-3.5 pr-4 py-3 border-b border-l-[3px] border-oli-border/60 ${bordaResposta} transition-colors ${
+                      selecionada === c.id ? 'bg-stone-50' : !lida ? 'bg-amber-50/70 hover:bg-amber-50' : 'hover:bg-stone-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-sm truncate ${!lida ? 'font-bold text-oli-dark' : 'font-semibold text-oli-dark'}`}>{nomeContato(c)}</span>
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        {!lida && <span className="w-2 h-2 rounded-full bg-oli-gold" aria-label="Não lida" />}
+                        <span className="text-[10px] text-oli-lgray">{timeAgo(c.last_message_at)}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${KIND_BG[c.kind]}`}>{KIND_LABEL[c.kind]}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{STATUS_LABEL[c.status]}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           );
         })}

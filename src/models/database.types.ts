@@ -255,6 +255,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          admin_last_read_at: string | null
           assigned_to: string | null
           channel: string
           created_at: string
@@ -262,6 +263,7 @@ export type Database = {
           kind: string
           last_inbound_at: string | null
           last_message_at: string | null
+          last_message_direction: string | null
           last_nudge_at: string | null
           lead_id: string | null
           patient_id: string | null
@@ -271,6 +273,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_last_read_at?: string | null
           assigned_to?: string | null
           channel?: string
           created_at?: string
@@ -278,6 +281,7 @@ export type Database = {
           kind: string
           last_inbound_at?: string | null
           last_message_at?: string | null
+          last_message_direction?: string | null
           last_nudge_at?: string | null
           lead_id?: string | null
           patient_id?: string | null
@@ -287,6 +291,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_last_read_at?: string | null
           assigned_to?: string | null
           channel?: string
           created_at?: string
@@ -294,6 +299,7 @@ export type Database = {
           kind?: string
           last_inbound_at?: string | null
           last_message_at?: string | null
+          last_message_direction?: string | null
           last_nudge_at?: string | null
           lead_id?: string | null
           patient_id?: string | null

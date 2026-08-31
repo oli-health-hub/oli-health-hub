@@ -14,6 +14,7 @@ export default async function ConversasPage({
     .from('conversations')
     .select(`
       id, kind, status, phone_e164, last_message_at, last_inbound_at,
+      last_message_direction, admin_last_read_at,
       lead_id, patient_id, professional_id,
       leads:lead_id ( nome ),
       patients:patient_id ( nome ),

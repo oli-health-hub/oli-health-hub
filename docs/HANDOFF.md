@@ -2400,6 +2400,20 @@ Fundador corrigiu uma nuance comercial importante: Olivia não deve afirmar que 
 
 Para uma prática fora dessa linha, como podologia, a resposta-modelo é: *“Temos uma sala que pode ser apropriada para o seu atendimento — veja esta foto.”* A Olivia envia uma foto de clínica geral ou estrutura conforme o contexto, sem inventar características da sala. Manual, webhook e simulador foram atualizados juntos; prompts comparados byte a byte, `deno check` limpo e deploy em produção concluído para as duas Edge Functions.
 
+## 59. Organização do inbox de `/conversas`: não lida, ordem por atividade e de quem é a vez de responder (31/ago)
+
+Fundador pediu organização visual pro `ConversasClient`: conversas com mensagem não lida numa cor diferente, ordenadas sempre pela mais recente (mesmo que já tivessem sido respondidas antes — qualquer mensagem nova muda a posição), e uma cor pra "precisa da nossa resposta" diferente de "aguardando o cliente".
+
+A ordenação por `last_message_at` decrescente e a reordenação automática a cada mensagem nova (realtime) já existiam desde o §52 — nada mudou aí. O que faltava era saber **quem viu** a conversa por último e **de quem é a vez** de responder, e nenhum dos dois dado existia no schema.
+
+**Duas colunas novas em `conversations`** (migration `20260831_conversas_leitura_e_direcao.sql`, aplicada + `database.types.ts` regenerado via MCP):
+- `admin_last_read_at timestamptz` — quando a equipe abriu essa conversa pela última vez. Não lida = `last_message_at` mais recente que isso (ou nunca aberta). Gravada por uma action nova, `markConversationRead`, chamada ao trocar de conversa e a cada mensagem nova que chega numa conversa já aberta (o realtime já mostra a mensagem na hora, então já conta como vista) — otimista no client + grava no banco, sem `revalidatePath` (é escrita leve e frequente; outras abas/pessoas recebem via UPDATE realtime que já existia).
+- `last_message_direction text` (`inbound`/`outbound`) — de quem foi a última mensagem. O trigger que já mantinha `last_message_at`/`last_inbound_at` em dia (`trg_update_conversation_on_message`, do §íntegro `20260819_whatsapp_conversations.sql`) passou a gravar essa direção também. Backfill rodado pras conversas existentes a partir da mensagem mais recente de cada uma.
+
+**UI**: borda esquerda de 3px na linha da lista — vermelho (`oli-red`) quando a última mensagem é `inbound` (aguardando IA ou equipe responder), verde (`oli-green/50`) quando é `outbound` (bola com o contato); conversa encerrada não tem cor de vez de ninguém. Não lida ganha fundo âmbar leve, nome em negrito e uma bolinha dourada (`oli-gold`) ao lado do horário — cor separada das duas de cima de propósito, pra não confundir "não vi ainda" com "quem precisa responder" (podem ou não coincidir).
+
+`tsc --noEmit` e `next build` limpos. Backfill conferido direto no banco via MCP (`last_message_direction` populado, `admin_last_read_at` nulo como esperado pra quem nunca abriu). Não testado ao vivo no navegador (sem credencial de admin neste ambiente) — vale o fundador abrir `/conversas` e confirmar visualmente antes de considerar redondo. Nada commitado ainda.
+
 ## 13. Comandos úteis
 
 ```bash
