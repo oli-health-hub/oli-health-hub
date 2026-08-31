@@ -2412,7 +2412,13 @@ A ordenação por `last_message_at` decrescente e a reordenação automática a 
 
 **UI**: borda esquerda de 3px na linha da lista — vermelho (`oli-red`) quando a última mensagem é `inbound` (aguardando IA ou equipe responder), verde (`oli-green/50`) quando é `outbound` (bola com o contato); conversa encerrada não tem cor de vez de ninguém. Não lida ganha fundo âmbar leve, nome em negrito e uma bolinha dourada (`oli-gold`) ao lado do horário — cor separada das duas de cima de propósito, pra não confundir "não vi ainda" com "quem precisa responder" (podem ou não coincidir).
 
-`tsc --noEmit` e `next build` limpos. Backfill conferido direto no banco via MCP (`last_message_direction` populado, `admin_last_read_at` nulo como esperado pra quem nunca abriu). Não testado ao vivo no navegador (sem credencial de admin neste ambiente) — vale o fundador abrir `/conversas` e confirmar visualmente antes de considerar redondo. Nada commitado ainda.
+`tsc --noEmit` e `next build` limpos. Backfill conferido direto no banco via MCP (`last_message_direction` populado, `admin_last_read_at` nulo como esperado pra quem nunca abriu). Não testado ao vivo no navegador (sem credencial de admin neste ambiente) — vale o fundador abrir `/conversas` e confirmar visualmente antes de considerar redondo. Commit `49602a0`, push direto pra `main`.
+
+## 60. Abas Equipe/Olivia na sidebar de `/conversas` (31/ago, sessão seguinte à §59)
+
+Fundador reclamou de ter que rolar a lista até achar os atendimentos da Olivia. Dois botões fixos no topo da sidebar (`Equipe` / `Olivia`, com contador) substituem a rolagem: `Equipe` mostra os grupos `equipe` + `pacientes` + `encerradas` (tudo que a equipe acompanha direto), `Olivia` mostra só o grupo `olivia` (leads em atendimento autônomo). A thread aberta não depende da aba — trocar de aba não fecha a conversa selecionada, só filtra a lista. Link de notificação (`?id=`) abre direto na aba certa (calculado a partir do grupo da conversa inicial), sem precisar trocar na mão.
+
+Não mudou o agrupamento em si (`grupoDe`, do §52) nem a ordenação — só filtra quais grupos aparecem por aba. `tsc --noEmit` e `next build` limpos. Não testado ao vivo. Aproveitado pra checar o status da régua de nutrição comercial a pedido do fundador (não é código, é leitura de estado): 5 templates aprovados, cron ativo rodando de 30 em 30 min sem falha, 42 primeiro-contato + 1 d3 enviados, 24 d3 + 1 d10 agendados, zero `falhou` — d24/d45 ainda não dispararam porque a régua começou em 28/ago e essas etapas são D+24/D+45 desde o contato anterior.
 
 ## 13. Comandos úteis
 

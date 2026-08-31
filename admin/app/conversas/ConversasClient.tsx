@@ -57,6 +57,19 @@ function grupoDe(c: Conversa): Grupo {
   return c.status === 'ia' ? 'olivia' : 'equipe';
 }
 
+/** Aba da sidebar — separa o que é conduzido pela Olivia (fica bem no fim
+ *  da lista, atrás de equipe/pacientes/encerradas) do resto, pra não
+ *  precisar rolar até lá. "Equipe" reúne tudo que a equipe acompanha
+ *  diretamente: assumidas, pacientes e encerradas. */
+type Aba = 'equipe' | 'olivia';
+const GRUPOS_DA_ABA: Record<Aba, Grupo[]> = {
+  equipe: ['equipe', 'pacientes', 'encerradas'],
+  olivia: ['olivia'],
+};
+function abaDoGrupo(g: Grupo): Aba {
+  return g === 'olivia' ? 'olivia' : 'equipe';
+}
+
 function nomeContato(c: Conversa): string {
   return c.leads?.nome ?? c.patients?.nome ?? c.phone_e164;
 }
@@ -89,6 +102,13 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
   // Vem da notificação da Fila (?id=) quando existe — senão cai na mais
   // recente, comportamento de antes.
   const [selecionada, setSelecionada] = useState<string | null>(initialId ?? initial[0]?.id ?? null);
+  // Abre na aba de quem a conversa inicial pertence — sem isso, um link de
+  // notificação pra uma conversa da Olivia cairia na aba errada e pareceria
+  // que a seleção não funcionou.
+  const [aba, setAba] = useState<Aba>(() => {
+    const selecionadaInicial = initial.find(c => c.id === (initialId ?? initial[0]?.id));
+    return selecionadaInicial ? abaDoGrupo(grupoDe(selecionadaInicial)) : 'equipe';
+  });
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -232,11 +252,28 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
   return (
     <div className="flex h-[calc(100%-4.5rem)] bg-white rounded-2xl border border-oli-border overflow-hidden">
       {/* Lista */}
-      <div className="w-80 shrink-0 border-r border-oli-border overflow-y-auto">
+      <div className="w-80 shrink-0 border-r border-oli-border flex flex-col min-h-0">
+        <div className="flex gap-1.5 p-2.5 border-b border-oli-border shrink-0">
+          {(['equipe', 'olivia'] as const).map(a => {
+            const total = conversas.filter(c => GRUPOS_DA_ABA[a].includes(grupoDe(c))).length;
+            return (
+              <button
+                key={a}
+                onClick={() => setAba(a)}
+                className={`flex-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                  aba === a ? 'bg-oli-green text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {a === 'equipe' ? 'Equipe' : 'Olivia'} <span className="opacity-70">{total}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex-1 overflow-y-auto min-h-0">
         {conversas.length === 0 && (
           <p className="text-sm text-oli-lgray p-5">Nenhuma conversa ainda.</p>
         )}
-        {ORDEM_GRUPOS.map(grupo => {
+        {ORDEM_GRUPOS.filter(grupo => GRUPOS_DA_ABA[aba].includes(grupo)).map(grupo => {
           const itens = conversas.filter(c => grupoDe(c) === grupo);
           if (itens.length === 0) return null;
           return (
@@ -278,6 +315,7 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
             </div>
           );
         })}
+        </div>
       </div>
 
       {/* Thread */}
