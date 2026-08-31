@@ -2352,6 +2352,20 @@ Confirmado antes de rodar: nenhum desses leads tem `rd_deal_id` — zero chamada
 
 `tsc --noEmit` limpo. **Não testado ao vivo** — sem credencial de admin neste ambiente, mesma limitação já registrada em sessões anteriores. Vale o fundador confirmar visualmente o layout novo e a classificação fazendo sentido pros leads que ele já conhece. Commit `65eb1de`, push direto pra `main`.
 
+## 54. Equipe consegue enviar foto nos atendimentos humanos de `/conversas` (29/ago, sessão seguinte à §53)
+
+**Pedido do fundador:** enviar foto pra quem está em atendimento humano no WhatsApp — até aqui `/conversas` só tinha texto livre (`send-whatsapp-reply`); a única foto que saía era a fixa por especialidade que a Olivia manda (link público pré-cadastrado em `FOTO_POR_ESPECIALIDADE`), sem servir pra recepção mandar um comprovante, print ou documento qualquer.
+
+**Decisão de arquitetura:** em vez de exigir um bucket público (subir a foto em algum storage nosso, gerar URL, só então mandar por `link`), a foto sobe direto pro **Media Storage da própria Meta** — `POST /{phone_number_id}/media` devolve um `media_id`, e a mensagem sai com `image: { id: mediaId }` em vez de `image: { link }`. Evita criar infraestrutura de storage só pra isso; o `media_id` expira em ~30 dias, mas a mensagem já foi entregue a essa altura.
+
+**Implementado:**
+- `_shared/whatsapp.ts` ganha `subirMidiaWhatsApp()` (upload multipart) e `enviarImagemPorId()` (envio pelo id) — ao lado do `enviarImagem()` existente (por link, usado só pela Olivia).
+- Nova edge function **`send-whatsapp-image`** (v1, `verify_jwt=true`, mesmo padrão de `send-whatsapp-reply`): recebe `multipart/form-data` (conversationId, imagem, legenda opcional), valida tipo (JPEG/PNG) e tamanho (5MB, mesmo teto da própria Meta), checa a janela de 24h igual ao texto livre, sobe e envia.
+- `admin/app/actions.ts` ganha `sendConversationImage()` — repassa o `File` do formulário via `FormData` pro `functions.invoke` (o cliente supabase-js já detecta `FormData` e ajusta o `Content-Type` sozinho, sem precisar serializar nada).
+- `ConversasClient.tsx`: botão de anexo (📎) ao lado do campo de texto. Selecionar uma foto mostra uma prévia com opção de remover; o texto do campo vira **legenda** da imagem (não uma segunda mensagem). Trocar de conversa limpa o anexo pendente, pra não vazar foto pro contato errado.
+
+`deno check` e `tsc --noEmit` limpos. Não testado com envio real (sem credencial de admin neste ambiente) — vale o fundador mandar uma foto de teste antes de contar com isso em produção. Commit `ddffb0c`, push direto pra `main`.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -2455,3 +2469,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (29/ago sessão 3):** Fundador reportou perda de controle do fluxo de leads — investigado direto no banco antes de tocar em código. Achado: 86 leads `origem='whatsapp'` (canal orgânico, hoje maioria do volume) presos em `status='novo'` mesmo com conversa real e trocada com a Olivia — o único caminho que avançava o funil era o botão manual de outreach da RD (§46), o webhook orgânico nunca atualizava `leads.status`/`atendido_por_ia`. Fix: primeira resposta da Olivia move `novo → contatado` e marca `atendido_por_ia`, idempotente. Backfill de 85 leads já qualificados. Segundo pedido do fundador — separar na aba Conversas quem a Olivia está atendendo de quem a equipe assumiu — resolvido com 4 grupos visuais (Assumidas pela equipe / Pacientes / Com a Olivia / Encerradas), derivados de campos já existentes, sem schema novo. Ver §52. `deno check` e `tsc --noEmit` limpos, commit `a27b5f5`, push direto pra `main`.
 
 **Resumo de 1 linha (29/ago sessão 4):** Fundador pediu revisão das conversas pra classificar os 85 leads de WhatsApp genericamente em "Contatado" — lidas as 86 conversas (532 mensagens) linha a linha, reclassificados por conteúdo real: 6 visita agendada, 2 aguardando retorno, 10 sem resposta, +11 descartado (engano de número, fornecedor tentando vender pra OLI, preço/distância rejeitados), 58 continuam contatado mas com temperatura (6 quente/8 morno/44 frio) pra priorizar follow-up. Zero leads linkados na RD, limpeza 100% interna. Em seguida, pedido separado — layout de `/leads` "confuso" — resolvido reorganizando a coluna Situação por hierarquia (status+temperatura em destaque, resto vira texto secundário) e adicionando filtros Temperatura/Perfil que não existiam. Ver §53. `tsc --noEmit` limpo, não testado ao vivo (sem credencial admin), commit `65eb1de`, push direto pra `main`.
+
+**Resumo de 1 linha (29/ago sessão 5):** Fundador pediu pra enviar foto nos atendimentos humanos de `/conversas` — até aqui só existia texto livre e a foto fixa por especialidade da Olivia. Nova edge function `send-whatsapp-image`: sobe o arquivo direto pro Media Storage da Meta (media id, sem precisar de bucket público próprio) e envia por `image: { id }`. `ConversasClient` ganha botão de anexo com prévia, texto vira legenda quando junto de foto. Limite 5MB/JPEG-PNG, mesma janela de 24h do texto. Ver §54. `deno check`/`tsc --noEmit` limpos, não testado com envio real (sem credencial admin), commit `ddffb0c`, push direto pra `main`.
