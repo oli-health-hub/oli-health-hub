@@ -37,6 +37,23 @@ const KIND_BG: Record<Conversa['kind'], string> = {
 };
 const STATUS_LABEL: Record<Conversa['status'], string> = { ia: 'IA', humano: 'Humano', fechada: 'Fechada' };
 
+/** Separa a lista em blocos operacionais — o que importa pra saber quem já
+ *  foi assumido de quem ainda está com a Olivia, sem depender de decorar o
+ *  significado do badge "Humano"/"IA" linha a linha. Paciente é sempre
+ *  humano por regra do banco (chk_patient_never_ia), então vira grupo à
+ *  parte — não é "assumido da Olivia", nunca foi dela. */
+type Grupo = 'equipe' | 'pacientes' | 'olivia' | 'encerradas';
+const GRUPO_LABEL: Record<Grupo, string> = {
+  equipe: 'Assumidas pela equipe', pacientes: 'Pacientes',
+  olivia: 'Com a Olivia', encerradas: 'Encerradas',
+};
+const ORDEM_GRUPOS: Grupo[] = ['equipe', 'pacientes', 'olivia', 'encerradas'];
+function grupoDe(c: Conversa): Grupo {
+  if (c.status === 'fechada') return 'encerradas';
+  if (c.kind === 'patient') return 'pacientes';
+  return c.status === 'ia' ? 'olivia' : 'equipe';
+}
+
 function nomeContato(c: Conversa): string {
   return c.leads?.nome ?? c.patients?.nome ?? c.phone_e164;
 }
@@ -144,22 +161,33 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
         {conversas.length === 0 && (
           <p className="text-sm text-oli-lgray p-5">Nenhuma conversa ainda.</p>
         )}
-        {conversas.map(c => (
-          <button
-            key={c.id}
-            onClick={() => setSelecionada(c.id)}
-            className={`w-full text-left px-4 py-3 border-b border-oli-border/60 hover:bg-stone-50 transition-colors ${selecionada === c.id ? 'bg-stone-50' : ''}`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-oli-dark truncate">{nomeContato(c)}</span>
-              <span className="text-[10px] text-oli-lgray shrink-0">{timeAgo(c.last_message_at)}</span>
+        {ORDEM_GRUPOS.map(grupo => {
+          const itens = conversas.filter(c => grupoDe(c) === grupo);
+          if (itens.length === 0) return null;
+          return (
+            <div key={grupo}>
+              <div className="sticky top-0 z-10 px-4 py-1.5 text-[10px] uppercase tracking-wide text-gray-400 font-semibold bg-stone-50 border-b border-oli-border/60">
+                {GRUPO_LABEL[grupo]} <span className="opacity-60">{itens.length}</span>
+              </div>
+              {itens.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelecionada(c.id)}
+                  className={`w-full text-left px-4 py-3 border-b border-oli-border/60 hover:bg-stone-50 transition-colors ${selecionada === c.id ? 'bg-stone-50' : ''}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-oli-dark truncate">{nomeContato(c)}</span>
+                    <span className="text-[10px] text-oli-lgray shrink-0">{timeAgo(c.last_message_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${KIND_BG[c.kind]}`}>{KIND_LABEL[c.kind]}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{STATUS_LABEL[c.status]}</span>
+                  </div>
+                </button>
+              ))}
             </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${KIND_BG[c.kind]}`}>{KIND_LABEL[c.kind]}</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{STATUS_LABEL[c.status]}</span>
-            </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
       {/* Thread */}

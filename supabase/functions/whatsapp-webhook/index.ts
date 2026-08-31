@@ -409,6 +409,21 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow, mensa
     body: reply, wamid, status: 'enviada',
   });
 
+  // Primeira resposta da Olivia pra este lead: sai de 'novo' e marca que foi
+  // atendido por ela — mesma semântica do botão manual "Iniciar com Olivia"
+  // (admin/app/actions.ts), só que pro caminho orgânico (lead escreve
+  // primeiro), que até aqui nunca atualizava o funil por conta própria.
+  // Achado em produção (29/ago): 86 leads de WhatsApp com conversa real,
+  // alguns já com handoff pra humano, presos em 'novo' pra sempre — o
+  // painel não tinha como diferenciar quem já foi falado de quem não foi.
+  // `.eq('status', 'novo')` torna idempotente: só a primeira resposta move.
+  if (conv.lead_id) {
+    await supabase.from('leads')
+      .update({ status: 'contatado', atendido_por_ia: true })
+      .eq('id', conv.lead_id)
+      .eq('status', 'novo');
+  }
+
   if (meta?.descarte === 'engano') {
     // Engano de número: encerra a conversa (status 'fechada' faz a IA parar
     // de responder este número) e tira o lead do funil. O registro não é
