@@ -2366,6 +2366,18 @@ Confirmado antes de rodar: nenhum desses leads tem `rd_deal_id` — zero chamada
 
 `deno check` e `tsc --noEmit` limpos. Não testado com envio real (sem credencial de admin neste ambiente) — vale o fundador mandar uma foto de teste antes de contar com isso em produção. Commit `ddffb0c`, push direto pra `main`.
 
+## 55. Prévia de imagem no histórico de `/conversas` (29/ago, sessão seguinte à §54)
+
+**Pedido do fundador**, logo depois do §54: dá pra ver uma prévia de qual foto foi enviada, "mesmo que rodem apenas pra mim" — sem isso, tanto a foto fixa da Olivia quanto a anexada pela equipe viravam só texto genérico no thread ("[imagem: psicologia]", "[imagem enviada pela equipe]"), sem saber qual foto foi de fato mandada.
+
+**Schema:** `messages.media_url text` — a URL que o front usa pra `<img src>`. Dois caminhos diferentes preenchem esse campo:
+- **Olivia** (`FOTO_POR_ESPECIALIDADE`): a URL já é pública (mesma que a Meta usa pra entregar a foto) — só passou a salvar no `media_url` no mesmo insert que já existia, zero custo extra.
+- **Equipe** (`send-whatsapp-image`): aqui não tinha nada reaproveitável — o `media_id` que a Meta devolve não dá pra buscar de volta sem token, e expira em ~30 dias. Solução: sobe uma **cópia própria** pro bucket novo `whatsapp-media` (privado, RLS `is_oli_admin()` — mesmo padrão do `professional-docs` já existente) e gera uma **signed URL de 1 ano** (uso interno, só prévia — não precisa ser eterna). Se esse upload falhar, o envio real pro WhatsApp não é afetado — a mensagem já foi entregue a essa altura; só a prévia fica ausente e cai no texto genérico como fallback.
+
+**Front:** `ConversasClient` renderiza `<img>` no bubble quando `media_url` existe (clicável, abre em tamanho real numa aba nova); o texto genérico some quando a imagem aparece, mas continua visível se a prévia falhou — nunca fica sem nenhum indício de que uma foto foi enviada.
+
+Migration aplicada direto (coluna + bucket + policy), `database.types.ts` regenerado nos dois projetos. `deno check`/`tsc --noEmit` limpos. Deployado: `whatsapp-webhook` v37, `send-whatsapp-image` v2. Não testado com envio real — mesma limitação de sempre, sem credencial de admin neste ambiente. Commit `76cad44`, push direto pra `main`.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -2471,3 +2483,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (29/ago sessão 4):** Fundador pediu revisão das conversas pra classificar os 85 leads de WhatsApp genericamente em "Contatado" — lidas as 86 conversas (532 mensagens) linha a linha, reclassificados por conteúdo real: 6 visita agendada, 2 aguardando retorno, 10 sem resposta, +11 descartado (engano de número, fornecedor tentando vender pra OLI, preço/distância rejeitados), 58 continuam contatado mas com temperatura (6 quente/8 morno/44 frio) pra priorizar follow-up. Zero leads linkados na RD, limpeza 100% interna. Em seguida, pedido separado — layout de `/leads` "confuso" — resolvido reorganizando a coluna Situação por hierarquia (status+temperatura em destaque, resto vira texto secundário) e adicionando filtros Temperatura/Perfil que não existiam. Ver §53. `tsc --noEmit` limpo, não testado ao vivo (sem credencial admin), commit `65eb1de`, push direto pra `main`.
 
 **Resumo de 1 linha (29/ago sessão 5):** Fundador pediu pra enviar foto nos atendimentos humanos de `/conversas` — até aqui só existia texto livre e a foto fixa por especialidade da Olivia. Nova edge function `send-whatsapp-image`: sobe o arquivo direto pro Media Storage da Meta (media id, sem precisar de bucket público próprio) e envia por `image: { id }`. `ConversasClient` ganha botão de anexo com prévia, texto vira legenda quando junto de foto. Limite 5MB/JPEG-PNG, mesma janela de 24h do texto. Ver §54. `deno check`/`tsc --noEmit` limpos, não testado com envio real (sem credencial admin), commit `ddffb0c`, push direto pra `main`.
+
+**Resumo de 1 linha (29/ago sessão 6):** Fundador pediu prévia de qual foto foi enviada no histórico de `/conversas` — antes só aparecia texto genérico ("[imagem enviada pela equipe]"). Nova coluna `messages.media_url`: pra Olivia reaproveita a URL pública que ela já manda; pra equipe, sobe uma cópia própria pro bucket privado novo `whatsapp-media` e gera signed URL de 1 ano (o media id da Meta expira em 30 dias e não dá pra buscar sem token). Front renderiza `<img>` no bubble, com fallback pro texto se a cópia falhar. Ver §55. `deno check`/`tsc --noEmit` limpos, deployado `whatsapp-webhook` v37 + `send-whatsapp-image` v2, commit `76cad44`, push direto pra `main`.
