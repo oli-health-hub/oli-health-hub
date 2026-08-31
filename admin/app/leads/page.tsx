@@ -196,9 +196,14 @@ export default async function LeadsPage({
   // Eixo macro (pendente/atendido) coexiste com a etapa detalhada de propósito:
   // "pendente" é só um atalho pra status==='novo', não substitui a esteira.
   const filtroAtend = searchParams.atendimento ?? 'todos';
+  // Temperatura/perfil viraram filtro próprio depois da classificação em massa
+  // dos leads de WhatsApp (29/ago) — sem isso, "quem eu ligo primeiro" ficava
+  // só visível vasculhando badge por badge na tabela inteira.
+  const filtroTemp   = searchParams.temperatura ?? 'todos';
+  const filtroPerfil = searchParams.perfil      ?? 'todos';
   const buscaCrua   = (searchParams.q ?? '').trim().toLowerCase();
 
-  const bate = (l: Lead, excluir?: 'status' | 'atendente' | 'origem' | 'atendimento'): boolean => {
+  const bate = (l: Lead, excluir?: 'status' | 'atendente' | 'origem' | 'atendimento' | 'temperatura' | 'perfil'): boolean => {
     if (buscaCrua) {
       const alvo = `${l.nome} ${l.email ?? ''} ${l.whatsapp ?? ''}`.toLowerCase();
       if (!alvo.includes(buscaCrua)) return false;
@@ -217,6 +222,14 @@ export default async function LeadsPage({
       if (filtroAtend === 'pendente' && !pendente) return false;
       if (filtroAtend === 'atendido' && pendente) return false;
     }
+    if (excluir !== 'temperatura' && filtroTemp !== 'todos') {
+      const bucket = l.temperatura ?? 'sem';
+      if (bucket !== filtroTemp) return false;
+    }
+    if (excluir !== 'perfil' && filtroPerfil !== 'todos') {
+      const bucket = l.perfil ?? 'sem';
+      if (bucket !== filtroPerfil) return false;
+    }
     return true;
   };
 
@@ -229,6 +242,8 @@ export default async function LeadsPage({
   const baseAtd    = todos.filter(l => bate(l, 'atendente'));
   const baseOrig   = todos.filter(l => bate(l, 'origem'));
   const baseAtend  = todos.filter(l => bate(l, 'atendimento'));
+  const baseTemp   = todos.filter(l => bate(l, 'temperatura'));
+  const basePerfil = todos.filter(l => bate(l, 'perfil'));
 
   const contagem = baseStatus.reduce<Record<string, number>>((acc, l) => {
     acc[l.status] = (acc[l.status] ?? 0) + 1;
@@ -252,19 +267,35 @@ export default async function LeadsPage({
     return acc;
   }, {});
 
+  const contagemTemp = baseTemp.reduce<Record<string, number>>((acc, l) => {
+    const k = l.temperatura ?? 'sem';
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const contagemPerfil = basePerfil.reduce<Record<string, number>>((acc, l) => {
+    const k = l.perfil ?? 'sem';
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
   // Preserva os outros filtros ao montar cada link, senão clicar num chip
   // descarta silenciosamente as escolhas anteriores.
-  const href = (p: { status?: string; atendente?: string; origem?: string; atendimento?: string; q?: string }) => {
+  const href = (p: { status?: string; atendente?: string; origem?: string; atendimento?: string; temperatura?: string; perfil?: string; q?: string }) => {
     const query = new URLSearchParams();
     const s  = p.status      ?? filtro;
     const a  = p.atendente   ?? filtroAtd;
     const o  = p.origem      ?? filtroOrig;
     const at = p.atendimento ?? filtroAtend;
+    const t  = p.temperatura ?? filtroTemp;
+    const pf = p.perfil      ?? filtroPerfil;
     const b  = p.q           ?? searchParams.q ?? '';
     if (s  !== 'todos') query.set('status', s);
     if (a  !== 'todos') query.set('atendente', a);
     if (o  !== 'todos') query.set('origem', o);
     if (at !== 'todos') query.set('atendimento', at);
+    if (t  !== 'todos') query.set('temperatura', t);
+    if (pf !== 'todos') query.set('perfil', pf);
     if (b)              query.set('q', b);
     const qs = query.toString();
     return qs ? `/leads?${qs}` : '/leads';
@@ -405,6 +436,88 @@ export default async function LeadsPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Temperatura</span>
+          <Link
+            href={href({ temperatura: 'todos' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroTemp === 'todos'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+            }`}
+          >
+            Todas <span className="opacity-70">{baseTemp.length}</span>
+          </Link>
+          {Object.entries(TEMPERATURA_LABEL).map(([valor, meta]) => {
+            const n = contagemTemp[valor] ?? 0;
+            if (n === 0 && filtroTemp !== valor) return null;
+            const ativo = filtroTemp === valor;
+            return (
+              <Link
+                key={valor}
+                href={href({ temperatura: valor })}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  ativo ? 'bg-oli-green text-white border-oli-green' : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
+                }`}
+              >
+                {meta.label} <span className="opacity-70">{n}</span>
+              </Link>
+            );
+          })}
+          {/* "Sem avaliação" separado, igual ao "Sem atendente" — é fila de
+              trabalho (falta classificar), não deve se perder misturado. */}
+          <Link
+            href={href({ temperatura: 'sem' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroTemp === 'sem'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-gray-100 text-gray-500 border-transparent hover:border-oli-green'
+            }`}
+          >
+            Sem avaliação <span className="opacity-70">{contagemTemp['sem'] ?? 0}</span>
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Perfil</span>
+          <Link
+            href={href({ perfil: 'todos' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroPerfil === 'todos'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+            }`}
+          >
+            Todos <span className="opacity-70">{basePerfil.length}</span>
+          </Link>
+          {Object.entries(PERFIL_LABEL).map(([valor, meta]) => {
+            const n = contagemPerfil[valor] ?? 0;
+            if (n === 0 && filtroPerfil !== valor) return null;
+            const ativo = filtroPerfil === valor;
+            return (
+              <Link
+                key={valor}
+                href={href({ perfil: valor })}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  ativo ? 'bg-oli-green text-white border-oli-green' : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
+                }`}
+              >
+                {meta.label} <span className="opacity-70">{n}</span>
+              </Link>
+            );
+          })}
+          <Link
+            href={href({ perfil: 'sem' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroPerfil === 'sem'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-gray-100 text-gray-500 border-transparent hover:border-oli-green'
+            }`}
+          >
+            Sem avaliação <span className="opacity-70">{contagemPerfil['sem'] ?? 0}</span>
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Atendente</span>
           <Link
             href={href({ atendente: 'todos' })}
@@ -535,10 +648,25 @@ export default async function LeadsPage({
                     {lead.anuncio && <p className="text-xs text-gray-400">{lead.anuncio}</p>}
                   </td>
                   <td className="px-4 py-3">
+                    {/* Hierarquia deliberada, depois da classificação em massa de
+                        29/ago deixar a coluna virando uma pilha de 8 selos do
+                        mesmo peso visual — impossível bater o olho e saber o que
+                        importa. Linha 1 (destaque): status + temperatura, é a
+                        decisão de "ligo agora ou não". Linha 2: dono do
+                        atendimento. Resto vira texto miúdo secundário — ainda
+                        visível, mas não competindo por atenção com o que decide
+                        prioridade. */}
                     <div className="flex flex-col items-start gap-1.5">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusMeta.bg} ${statusMeta.text}`}>
-                        {statusMeta.label}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${statusMeta.bg} ${statusMeta.text}`}>
+                          {statusMeta.label}
+                        </span>
+                        {tempMeta && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${tempMeta.bg} ${tempMeta.text}`}>
+                            {tempMeta.label}
+                          </span>
+                        )}
+                      </div>
                       {/* Sem dono aparece em âmbar, não some: lead sem atendente
                           é o que mais corre risco de ficar parado. Olivia tem
                           prioridade de exibição — é o mesmo balde do filtro. */}
@@ -553,43 +681,40 @@ export default async function LeadsPage({
                           : <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-50 text-amber-700">
                               sem atendente
                             </span>}
-                      {lead.canal_primeiro_contato && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-sky-50 text-sky-700">
-                          1º contato: {CANAL_LABEL[lead.canal_primeiro_contato] ?? lead.canal_primeiro_contato}
-                        </span>
-                      )}
                       {/* Régua de nutrição comercial — só aparece com opt-in
-                          registrado. Sem isso, não existe disparo automático. */}
+                          registrado. Sem isso, não existe disparo automático.
+                          Continua em selo (não texto miúdo): é acionável, tem
+                          data. */}
                       {nutricaoMeta && (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${nutricaoMeta.bg} ${nutricaoMeta.text}`}>
                           {nutricaoMeta.label}
                         </span>
                       )}
-                      {tempMeta && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${tempMeta.bg} ${tempMeta.text}`}>
-                          {tempMeta.label}
-                        </span>
-                      )}
-                      {perfilMeta && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${perfilMeta.bg} ${perfilMeta.text}`}>
-                          {perfilMeta.label}
-                        </span>
-                      )}
-                      {lead.motivo_descarte && (
-                        <span className="text-xs text-gray-400">
-                          {MOTIVO_LABEL[lead.motivo_descarte] ?? lead.motivo_descarte}
-                        </span>
+                      {/* Metadado secundário — perfil, canal e motivo de descarte
+                          continuam visíveis, só não brigam mais em peso visual
+                          com status/temperatura/dono. Uma linha só, separada
+                          por "·", sem fundo colorido. */}
+                      {(perfilMeta || lead.canal_primeiro_contato || lead.motivo_descarte) && (
+                        <p className="text-[11px] text-gray-400 leading-snug">
+                          {[
+                            perfilMeta?.label,
+                            lead.canal_primeiro_contato && `1º contato: ${CANAL_LABEL[lead.canal_primeiro_contato] ?? lead.canal_primeiro_contato}`,
+                            lead.motivo_descarte && (MOTIVO_LABEL[lead.motivo_descarte] ?? lead.motivo_descarte),
+                          ].filter(Boolean).join(' · ')}
+                        </p>
                       )}
                       {/* Só aparece quando algo deu errado. Sem este aviso, um lead
                           dessincronizado da RD ficaria invisível — que é justamente
-                          o problema que a sincronização existe para evitar. */}
+                          o problema que a sincronização existe para evitar. Mantido
+                          em destaque (vermelho) — é o único item desta coluna que
+                          pede ação corretiva, não é só contexto. */}
                       {lead.rd_sync_erro && (
                         <span className="text-xs text-oli-red font-semibold" title={lead.rd_sync_erro}>
                           ⚠ não espelhado na RD
                         </span>
                       )}
                       {!lead.rd_deal_id && (
-                        <span className="text-xs text-gray-400">sem negociação na RD</span>
+                        <p className="text-[11px] text-gray-300">sem negociação na RD</p>
                       )}
                     </div>
                   </td>
