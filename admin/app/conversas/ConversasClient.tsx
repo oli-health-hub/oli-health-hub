@@ -269,8 +269,10 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
 
   return (
     <div className="flex h-[calc(100%-4.5rem)] bg-white rounded-2xl border border-oli-border overflow-hidden">
-      {/* Lista */}
-      <div className="w-80 shrink-0 border-r border-oli-border flex flex-col min-h-0">
+      {/* Lista — no celular ocupa a tela inteira; some quando uma conversa
+          está aberta (aí é a thread que ocupa). Do md pra cima, as duas
+          colunas ficam lado a lado como sempre. */}
+      <div className={`w-full md:w-80 shrink-0 border-oli-border md:border-r flex-col min-h-0 ${selecionada ? 'hidden md:flex' : 'flex'}`}>
         <div className="flex gap-1.5 p-2.5 border-b border-oli-border shrink-0">
           {(['equipe', 'olivia'] as const).map(a => {
             const doAba = conversas.filter(c => GRUPOS_DA_ABA[a].includes(grupoDe(c)));
@@ -344,15 +346,25 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
       </div>
 
       {/* Thread */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={`flex-1 flex-col min-w-0 ${selecionada ? 'flex' : 'hidden md:flex'}`}>
         {!conv ? (
           <div className="flex-1 flex items-center justify-center text-sm text-oli-lgray">Selecione uma conversa</div>
         ) : (
           <>
             <div className="px-5 py-3 border-b border-oli-border flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-oli-dark">{nomeContato(conv)}</p>
-                <p className="text-xs text-oli-lgray">{conv.phone_e164} {conv.profiles?.nome ? `· ${conv.profiles.nome}` : ''}</p>
+              <div className="flex items-center gap-2 min-w-0">
+                {/* Voltar pra lista — só no celular, onde as colunas empilham. */}
+                <button
+                  onClick={() => setSelecionada(null)}
+                  aria-label="Voltar pra lista de conversas"
+                  className="md:hidden shrink-0 w-8 h-8 -ml-1.5 rounded-lg flex items-center justify-center text-oli-lgray hover:bg-stone-50"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-oli-dark truncate">{nomeContato(conv)}</p>
+                  <p className="text-xs text-oli-lgray truncate">{conv.phone_e164} {conv.profiles?.nome ? `· ${conv.profiles.nome}` : ''}</p>
+                </div>
               </div>
               {conv.kind === 'lead' && (
                 <div className="flex gap-1.5">

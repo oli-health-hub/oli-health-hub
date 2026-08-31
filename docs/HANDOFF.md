@@ -2430,6 +2430,81 @@ Duas peças pequenas pedidas juntas. Nenhuma delas precisou de coluna nova: `mes
 
 `tsc --noEmit` e `next build` limpos. Não testado ao vivo — depende de mensagem real passar por `entregue`/`lida` no WhatsApp pra ver as três cores, o que não dá pra forçar neste ambiente. Commit `a787318`, push direto pra `main`.
 
+## 62. Endereço de atendimento entra no PRO + peça por plano (31/ago)
+
+**Benefício novo no PRO:** o profissional pode **divulgar o endereço de atendimento nas suas redes e materiais**. Vale só no PRO; na peça do START aparece como não incluso.
+
+É o primeiro benefício do PRO que **não tem custo marginal para o OLI** e ataca uma objeção concreta de quem atende em espaço compartilhado — não ter endereço próprio para pôr no Instagram, no Google e no material. Também compensa em parte a saída do prontuário (§43): o PRO volta a ter **quatro diferenciais** — impressão, recepção, endereço e nota fiscal.
+
+### Material
+
+- `iCloud/OLI - HH/OLI_Planos_2026.pdf` — comparativo atualizado com o item novo nos dois cards.
+- **Duas peças novas, uma por plano:** `OLI_Plano_START.png` (1588×3025) e `OLI_Plano_PRO.png` (1588×3058), na pasta `OLI - HH`.
+
+As peças seguem **a mesma estrutura e ordem do PDF** — cabeçalho, promessa, as três regras de cobrança, o card do plano, quanto sai o mês, compra de horas, faixa de destaque e rodapé —, com duas adaptações de layout: o card ocupa a largura toda e a lista de serviços vira duas colunas. A tabela de custo mostra só o plano da peça (o PRO traz mensal × semestral).
+
+**Como foram geradas:** mesmo HTML e mesmo CSS do PDF, renderizado por screenshot do Chromium (`--screenshot --window-size=794,1900 --force-device-scale-factor=2`) e recortado no fim do conteúdo por script. Ficaram altas (proporção ~1:1,9, não A4) porque o conteúdo das duas páginas do PDF cabe numa imagem só — melhor para mandar no WhatsApp do que dois arquivos. Ver [[pdf-chromium]] na memória do projeto.
+
+**Números reconferidos por script:** 26 valores (as três tabelas de custo mensal, a compra de horas nos dois planos, as horas efetivas com bônus e os dois exemplos de consulta de 50 minutos). Todos batem com as taxas.
+
+### ⚠️ Observação comercial deixada em aberto
+
+A peça do START mostra **os quatro itens que ele não tem** (impressão, recepção, endereço, nota fiscal), porque o pedido foi "exatamente igual ao PDF". Isso contraria a regra registrada no **item 35 do §11**: o cliente vê um plano por vez, então a peça individual deveria ser ficha de serviço, não comparativo. Numa peça isolada, quatro itens riscados leem como lista de defeitos, e o START é justamente o plano de entrada. **Tirar é uma linha de código** — fica dependendo de decisão do fundador.
+
+### Pendências
+
+O site, o `OLI_BASE.md` e a matriz `FEATURES` do `meu-plano.tsx` ainda não citam o endereço. Os prompts da Olivia (já corrigidos quanto ao prontuário, ver §43) também não mencionam o benefício novo — vale entrar quando o PRO for explicado.
+
+## 63. Estacionamento nos dois planos + a regra fantasma do START (31/ago, sessão seguinte à §62)
+
+Dois ajustes pedidos pelo fundador ao revisar as peças.
+
+### 🐛 A regra que não podia existir
+
+A peça do START oferecia a conversa com contador e advogado *"no plano semestral, sem custo adicional"* — mas **o START não tem plano semestral**: ele não tem mensalidade nenhuma, então não há o que assinar por seis meses. A condição era resíduo do desenho intermediário de 13/ago, quando o START custava R$ 97/mês e o compromisso de seis meses era a contrapartida da cortesia (§30). Quando o START voltou a ser gratuito, a contrapartida evaporou e a letra miúda ficou.
+
+**Decisão: os dois diagnósticos saem do START e viram exclusivos do PRO.** Reforça o plano pago e elimina a regra sem lastro. Vale notar que isso **também tira o único uso que restava da ideia de "START semestral"** — se aparecer em algum material ou prompt, é resquício.
+
+### 🅿️ Estacionamento entra nos dois planos
+
+Novo benefício: **vaga de estacionamento no prédio durante o atendimento**, para quem estiver atendendo, em qualquer plano. Não vira diferencial de upgrade de propósito — é condição de uso do espaço, e a leitura natural de "durante o atendimento" não distingue plano.
+
+### Como ficaram os planos
+
+| | START | PRO |
+|---|:--:|:--:|
+| Sala equipada | ✅ | ✅ |
+| App (agenda, tempo de sala, pacientes) | ✅ | ✅ |
+| Comunidade e eventos | ✅ | ✅ |
+| **Vaga de estacionamento durante o atendimento** | ✅ | ✅ |
+| Conversa com contador e com advogado | — | ✅ |
+| Impressão | — | ✅ |
+| Recepção (agendamento, cobrança, retorno) | — | ✅ |
+| Endereço para divulgar nas redes | — | ✅ |
+| Emissão de nota fiscal | — | ✅ |
+
+O PRO passa a ter **cinco diferenciais**; o START fica com quatro itens, todos inclusos e sem condição.
+
+### Material refeito
+
+`OLI_Planos_2026.pdf`, `OLI_Plano_START.png` (1588×3215) e `OLI_Plano_PRO.png` (1588×3276), todos na pasta `OLI - HH`. As duas peças passaram a ser geradas por `gera_pecas.py`, que lê o `<style>` do próprio HTML do PDF — assim a peça individual **não pode divergir do comparativo** por esquecimento, que era o risco real depois de três rodadas de mudança em um dia.
+
+### Pendências
+
+O estacionamento e o endereço ainda não estão no site, no `OLI_BASE.md`, na matriz `FEATURES` do `meu-plano.tsx` nem nos prompts da Olivia. E **a observação da §62 continua de pé**: a peça do START ainda mostra os cinco itens que ele não tem.
+
+## 64. Admin responsivo no celular (31/ago, sessão seguinte à §61)
+
+Fundador pediu pra rodar bem no celular — até aqui o admin era desenhado só pra desktop. Auditoria (grep por `w-[…px]`, `grid-cols` sem variante responsiva, tabela sem scroll) achou só três pontos reais de quebra num painel de 29 telas, o resto já usava padrão responsivo (`grid-cols-1 md:…`, `overflow-x-auto` em quase toda tabela) — não foi preciso mexer tela por tela.
+
+**Sidebar** (`components/Sidebar.tsx`): era `w-60` fixo sempre visível — numa tela de ~375px sobrava só ~135px pro conteúdo. Virou gaveta no celular: botão flutuante (canto inferior esquerdo, de propósito longe do topo onde cada página põe título/ações) abre um drawer com fundo escurecido; `fixed` no celular vira `md:sticky` no desktop, mesmo comportamento de sempre a partir de 768px. Cada link fecha a gaveta ao navegar.
+
+**Três tabelas cortavam em vez de rolar** (`cupons`, `comunidade`, `parceiros`): o container tinha `overflow-hidden` em vez de `overflow-x-auto` — mesmo bug que o `/leads` já tinha corrigido antes (comentário deixado lá citando o motivo). Troca de uma classe nos três.
+
+**`/conversas`** (o painel de duas colunas que ficou o mais construído dessa semana): lista de 320px fixos ao lado da thread não cabe no celular de jeito nenhum. Agora empilha — lista ocupa a tela inteira, some quando uma conversa é aberta (a thread que passa a ocupar), com seta de voltar no cabeçalho da thread só visível no celular. Reaproveita o `selecionada` que já existia, sem estado novo. Ao entrar direto (sem vir de notificação), continua abrindo na conversa mais recente por padrão — igual ao desktop — então quem entra pelo celular vê a thread primeiro e usa a seta pra voltar à lista; aceitável, não vale a complexidade de detectar viewport no server pra mudar esse default.
+
+`tsc --noEmit` e `next build` limpos nas duas rodadas. **Login pra verificação visual falhou:** a credencial de teste do `e2e/auth.setup.ts` (`test-playwright@olihealthhub.com`) existe no repo mas voltou "e-mail ou senha incorretos" contra o Supabase local — rotacionada ou nunca existiu nesse ambiente. Sem outra credencial de admin, o dreno de gaveta e o empilhamento do `/conversas` não foram vistos rodando de verdade — vale o fundador abrir no celular antes de dar como certo. Achado à parte: `docs/HANDOFF.md` estava sendo editado em paralelo por outra sessão (§62/§63 apareceram entre uma edição e outra desta) — inserção feita com `Edit` (old_string/new_string), não `Write`, então nada foi sobrescrito.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -2537,3 +2612,7 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (29/ago sessão 5):** Fundador pediu pra enviar foto nos atendimentos humanos de `/conversas` — até aqui só existia texto livre e a foto fixa por especialidade da Olivia. Nova edge function `send-whatsapp-image`: sobe o arquivo direto pro Media Storage da Meta (media id, sem precisar de bucket público próprio) e envia por `image: { id }`. `ConversasClient` ganha botão de anexo com prévia, texto vira legenda quando junto de foto. Limite 5MB/JPEG-PNG, mesma janela de 24h do texto. Ver §54. `deno check`/`tsc --noEmit` limpos, não testado com envio real (sem credencial admin), commit `ddffb0c`, push direto pra `main`.
 
 **Resumo de 1 linha (29/ago sessão 6):** Fundador pediu prévia de qual foto foi enviada no histórico de `/conversas` — antes só aparecia texto genérico ("[imagem enviada pela equipe]"). Nova coluna `messages.media_url`: pra Olivia reaproveita a URL pública que ela já manda; pra equipe, sobe uma cópia própria pro bucket privado novo `whatsapp-media` e gera signed URL de 1 ano (o media id da Meta expira em 30 dias e não dá pra buscar sem token). Front renderiza `<img>` no bubble, com fallback pro texto se a cópia falhar. Ver §55. `deno check`/`tsc --noEmit` limpos, deployado `whatsapp-webhook` v37 + `send-whatsapp-image` v2, commit `76cad44`, push direto pra `main`.
+
+**Resumo de 1 linha (31/ago sessão 2):** Entrou um benefício novo no PRO — **o profissional pode divulgar o endereço de atendimento nas suas redes e materiais**, o primeiro diferencial do PRO **sem custo marginal para o OLI** e que ataca uma objeção concreta de quem atende em espaço compartilhado; com ele o PRO volta a ter quatro diferenciais depois de perder o prontuário na §43. Além do comparativo em PDF atualizado, foram geradas **duas peças novas, uma por plano** (`OLI_Plano_START.png` e `OLI_Plano_PRO.png`), com a mesma estrutura e ordem do PDF e só duas adaptações de layout — card em largura total e serviços em duas colunas. São altas em vez de A4 porque o conteúdo das duas páginas cabe numa imagem só, o que é melhor para WhatsApp. Os 26 valores das peças foram reconferidos por script contra as taxas. **Ficou uma observação comercial em aberto:** a peça do START exibe os quatro itens que ele não tem, porque o pedido foi "exatamente igual ao PDF" — o que contraria a regra do item 35 do §11 (peça individual é ficha de serviço, não comparativo) e faz o plano de entrada abrir com uma lista de defeitos; tirar é uma linha, e depende do fundador. **Pendente:** site, `OLI_BASE.md`, matriz `FEATURES` e os prompts da Olivia ainda não citam o endereço.
+
+**Resumo de 1 linha (31/ago sessão 3):** O fundador pegou uma regra que **não podia existir**: a peça do START oferecia os diagnósticos "no plano semestral", mas o START não tem mensalidade e portanto não tem plano semestral nenhum — era resíduo do desenho intermediário de 13/ago, quando o START custava R$ 97 e o compromisso de seis meses era a contrapartida da cortesia; quando o plano voltou a ser gratuito, a contrapartida evaporou e a letra miúda ficou. **Decisão: os dois diagnósticos saem do START e viram exclusivos do PRO**, o que de quebra encerra o último uso da ideia de "START semestral". Entrou também **vaga de estacionamento no prédio durante o atendimento, nos dois planos** — de propósito não é diferencial de upgrade, é condição de uso do espaço. O PRO fica com cinco diferenciais e o START com quatro itens, todos sem condição. PDF e as duas peças refeitos, agora geradas por `gera_pecas.py`, que lê o CSS do próprio HTML do PDF para que peça individual e comparativo não possam divergir por esquecimento — risco real depois de três rodadas de mudança no mesmo dia. **Pendente:** estacionamento e endereço ainda não estão no site, no `OLI_BASE.md`, na matriz `FEATURES` nem nos prompts da Olivia.

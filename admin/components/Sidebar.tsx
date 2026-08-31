@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
@@ -172,6 +173,25 @@ function IconStar() {
   );
 }
 
+function IconMenu() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+function IconX() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
 // ─── Navegação ────────────────────────────────────────────────────────────────
 
 // Sidebar enxuto: 9 itens em 4 grupos. Páginas consolidadas em /financeiro e /catalogo.
@@ -229,6 +249,9 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
   const pathname = usePathname();
   const router   = useRouter();
   const isFounder = userEmail === FOUNDER_EMAIL;
+  // Sidebar sempre visível no desktop; no celular vira gaveta (drawer) aberta
+  // por um botão flutuante, pra não comer 240px de uma tela de ~375px.
+  const [aberta, setAberta] = useState(false);
 
   async function handleLogout() {
     await getSupabaseBrowser().auth.signOut();
@@ -238,7 +261,29 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
   const initial = userEmail?.[0]?.toUpperCase() ?? 'A';
 
   return (
-    <aside className="flex flex-col w-60 min-w-[240px] bg-oli-sidebar h-screen sticky top-0">
+    <>
+      {/* Botão flutuante — só no celular. Fica embaixo à esquerda de propósito:
+          topo já é onde cada página põe título/ações, um botão fixo ali em
+          cima colidiria. */}
+      <button
+        onClick={() => setAberta(v => !v)}
+        aria-label={aberta ? 'Fechar menu' : 'Abrir menu'}
+        className="md:hidden fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full bg-oli-sidebar text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+      >
+        {aberta ? <IconX /> : <IconMenu />}
+      </button>
+
+      {/* Fundo escurecido atrás da gaveta — clicar fecha. */}
+      {aberta && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          onClick={() => setAberta(false)}
+        />
+      )}
+
+      <aside className={`flex flex-col w-60 min-w-[240px] bg-oli-sidebar h-screen fixed md:sticky top-0 left-0 z-40 md:z-auto transition-transform duration-200 ease-out ${
+        aberta ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0`}>
 
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
@@ -269,6 +314,7 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
                 <Link
                   key={href}
                   href={href}
+                  onClick={() => setAberta(false)}
                   className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                     ${active
                       ? 'bg-oli-green text-white shadow-sm'
@@ -296,6 +342,7 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
             </p>
             <Link
               href="/meu-recebimento"
+              onClick={() => setAberta(false)}
               className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                 ${pathname === '/meu-recebimento'
                   ? 'bg-oli-green text-white shadow-sm'
@@ -332,6 +379,7 @@ export default function Sidebar({ unreadCount, userEmail }: Props) {
           <span className="text-sm font-medium">Sair da conta</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

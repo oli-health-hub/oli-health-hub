@@ -169,7 +169,9 @@ export default async function ParceirosPage() {
         const config = configByPartner.get(partner.id) ?? { partner_id: partner.id, ...DEFAULT_CONFIG };
 
         return (
-          <div key={partner.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          // overflow-x-auto, não overflow-hidden: em tela menor a tabela rola em
+          // vez de cortar coluna (mesmo motivo do /leads).
+          <div key={partner.id} className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
             <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
               <div>
                 <p className="font-semibold text-oli-dark">{partner.nome}</p>

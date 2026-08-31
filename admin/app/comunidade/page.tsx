@@ -30,7 +30,9 @@ export default async function ComunidadePage() {
         <p className="text-sm text-gray-500">Moderação de posts do feed interno. {count ?? 0} posts no total (últimos 100 exibidos).</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      {/* overflow-x-auto, não overflow-hidden: em tela menor a tabela rola em
+          vez de cortar coluna (mesmo motivo do /leads). */}
+      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
             <tr>
