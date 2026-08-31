@@ -2335,6 +2335,23 @@ Fundador reportou dois sintomas em `/leads`: (1) lead que a Olivia já contatou 
 
 `tsc --noEmit` limpo no admin. Não testado ao vivo em produção nesta sessão (sem credencial de admin no ambiente) — vale o fundador confirmar visualmente os 4 grupos e os números batendo com o que via antes. Commit `a27b5f5`, push direto pra `main`.
 
+## 53. Classificação em massa dos leads de WhatsApp + reorganização visual de `/leads` (29/ago, sessão seguinte à §52)
+
+**Pedido do fundador:** "revise as conversas e classifique os leads pelos filtros que temos, baseado no contexto em que eles pararam ou seguiram". Depois do §52 corrigir o funil (leads de WhatsApp saindo de `novo`), os 85 leads orgânicos ficaram todos genericamente em `contatado` — nenhuma diferenciação de quem é lead quente, quem já era caso perdido (número errado, achou caro, mora longe) ou quem já tinha visita marcada.
+
+**Trabalho:** lidas as 86 conversas ativas (532 mensagens) linha a linha via Supabase MCP, sem tocar em nada até confirmar o padrão. Reclassificados com base no conteúdo real:
+- **Visita agendada** (6): link do Calendly enviado após interesse explícito confirmado.
+- **Aguardando retorno** (2): pitch completo feito, lead adiou decisão ("vou analisar").
+- **Sem resposta** (10): pergunta real respondida pela Olivia, silêncio depois — 3 com `perfil=fora` (Alphaville, Salvador).
+- **Descartado** (+11, total 39): 7 engano de número (comida, bot de outra empresa respondendo sozinho), 1 fornecedor tentando vender pra OLI (`sem_perfil`), 1 preço rejeitado explicitamente, 2 distância rejeitada explicitamente.
+- **Contatado** (58, mantido): conversa real mas sem sinal forte pra mover de etapa — todos com `temperatura` marcada (6 quente, 8 morno, 44 frio) pra priorizar quem vale ligar primeiro.
+
+Confirmado antes de rodar: nenhum desses leads tem `rd_deal_id` — zero chamada disparada pra RD Station, é limpeza 100% interna. Não é migration nem código, são `UPDATE`s diretos documentados aqui pra rastreabilidade.
+
+**Layout de `/leads` reorganizado em seguida** — pedido separado do fundador: "está confuso de entender". A coluna Situação tinha virado uma pilha de até 8 selos do mesmo peso visual (status, atendente, canal, nutrição, temperatura, perfil, motivo, RD), e ficou pior ainda depois da classificação em massa acrescentar temperatura/perfil em quase todo mundo. Reorganizado por hierarquia: status+temperatura juntos em destaque no topo (a decisão de "ligo agora"), dono do atendimento logo abaixo, e perfil/canal/motivo viram texto miúdo secundário numa linha só, sem fundo colorido — só `rd_sync_erro` continua em destaque, por pedir ação corretiva. Novos filtros **Temperatura** e **Perfil** (mesmo padrão dos filtros existentes) — sem eles não dava pra enxergar "quem eu ligo primeiro" sem vasculhar a tabela badge por badge.
+
+`tsc --noEmit` limpo. **Não testado ao vivo** — sem credencial de admin neste ambiente, mesma limitação já registrada em sessões anteriores. Vale o fundador confirmar visualmente o layout novo e a classificação fazendo sentido pros leads que ele já conhece. Commit `65eb1de`, push direto pra `main`.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -2436,3 +2453,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (29/ago sessão 2):** Fundador reportou um erro absurdo em conversa real — Olivia pediu o WhatsApp de um lead que já estava falando com ela pelo próprio WhatsApp. O prompt só proibia isso implicitamente, dentro do bloco de transferência para humano. Fix urgente ("corrija AGORA"): regra explícita e redundante (logo no início do prompt + na lista O QUE VOCÊ NÃO FAZ) proibindo pedir WhatsApp/telefone/contato em qualquer situação, sem exceção. Deployado direto em produção (`whatsapp-webhook` v35, `test-lead-ai` v29) e testado ao vivo antes de fechar (abertura normal + cenário de handoff, nenhum pede telefone). Ver §51. `deno check` limpo, commit `1f5958f`, push direto pra `main`.
 
 **Resumo de 1 linha (29/ago sessão 3):** Fundador reportou perda de controle do fluxo de leads — investigado direto no banco antes de tocar em código. Achado: 86 leads `origem='whatsapp'` (canal orgânico, hoje maioria do volume) presos em `status='novo'` mesmo com conversa real e trocada com a Olivia — o único caminho que avançava o funil era o botão manual de outreach da RD (§46), o webhook orgânico nunca atualizava `leads.status`/`atendido_por_ia`. Fix: primeira resposta da Olivia move `novo → contatado` e marca `atendido_por_ia`, idempotente. Backfill de 85 leads já qualificados. Segundo pedido do fundador — separar na aba Conversas quem a Olivia está atendendo de quem a equipe assumiu — resolvido com 4 grupos visuais (Assumidas pela equipe / Pacientes / Com a Olivia / Encerradas), derivados de campos já existentes, sem schema novo. Ver §52. `deno check` e `tsc --noEmit` limpos, commit `a27b5f5`, push direto pra `main`.
+
+**Resumo de 1 linha (29/ago sessão 4):** Fundador pediu revisão das conversas pra classificar os 85 leads de WhatsApp genericamente em "Contatado" — lidas as 86 conversas (532 mensagens) linha a linha, reclassificados por conteúdo real: 6 visita agendada, 2 aguardando retorno, 10 sem resposta, +11 descartado (engano de número, fornecedor tentando vender pra OLI, preço/distância rejeitados), 58 continuam contatado mas com temperatura (6 quente/8 morno/44 frio) pra priorizar follow-up. Zero leads linkados na RD, limpeza 100% interna. Em seguida, pedido separado — layout de `/leads` "confuso" — resolvido reorganizando a coluna Situação por hierarquia (status+temperatura em destaque, resto vira texto secundário) e adicionando filtros Temperatura/Perfil que não existiam. Ver §53. `tsc --noEmit` limpo, não testado ao vivo (sem credencial admin), commit `65eb1de`, push direto pra `main`.
