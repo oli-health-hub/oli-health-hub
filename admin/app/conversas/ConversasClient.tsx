@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase-client';
-import { sendConversationReply, toggleConversationMode } from '@/app/actions';
+import { sendConversationReply, sendConversationImage, toggleConversationMode } from '@/app/actions';
 
 interface Conversa {
   id:               string;
@@ -77,7 +77,37 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  // Foto anexada, ainda não enviada — texto vira legenda quando junto de uma
+  // imagem, mesmo campo faz os dois papéis sem duplicar UI.
+  const [imagem, setImagem] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const TIPOS_IMAGEM_ACEITOS = ['image/jpeg', 'image/png'];
+  const TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024; // 5MB — mesmo limite da Meta
+
+  function selecionarImagem(arquivo: File | undefined) {
+    if (!arquivo) return;
+    if (!TIPOS_IMAGEM_ACEITOS.includes(arquivo.type)) {
+      setErro('Formato não aceito — envie JPEG ou PNG.');
+      return;
+    }
+    if (arquivo.size > TAMANHO_MAXIMO_IMAGEM) {
+      setErro('Imagem maior que 5MB — reduza o tamanho antes de enviar.');
+      return;
+    }
+    setErro(null);
+    setImagem(arquivo);
+    setPreviewUrl(URL.createObjectURL(arquivo));
+  }
+
+  function removerImagem() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setImagem(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
 
   const conv = conversas.find(c => c.id === selecionada) ?? null;
 
@@ -92,6 +122,11 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
 
   useEffect(() => {
     if (selecionada) loadMensagens(selecionada);
+    // Troca de conversa não pode carregar uma foto anexada pra outro contato.
+    removerImagem();
+    setTexto('');
+    setErro(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selecionada, loadMensagens]);
 
   useEffect(() => {
@@ -124,14 +159,23 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
   }, [selecionada]);
 
   async function enviar() {
-    if (!conv || !texto.trim()) return;
+    if (!conv || (!texto.trim() && !imagem)) return;
     setEnviando(true);
     setErro(null);
-    const fd = new FormData();
-    fd.set('conversation_id', conv.id);
-    fd.set('texto', texto.trim());
     try {
-      await sendConversationReply(fd);
+      if (imagem) {
+        const fd = new FormData();
+        fd.set('conversation_id', conv.id);
+        fd.set('imagem', imagem);
+        if (texto.trim()) fd.set('legenda', texto.trim());
+        await sendConversationImage(fd);
+        removerImagem();
+      } else {
+        const fd = new FormData();
+        fd.set('conversation_id', conv.id);
+        fd.set('texto', texto.trim());
+        await sendConversationReply(fd);
+      }
       setTexto('');
       await loadMensagens(conv.id);
     } catch (e) {
@@ -240,19 +284,51 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
                 </p>
               )}
               {erro && <p className="text-xs text-oli-red mb-2">{erro}</p>}
+              {/* Prévia da foto anexada — o texto abaixo vira legenda dela,
+                  não uma segunda mensagem. Some com o X ou depois de enviar. */}
+              {previewUrl && (
+                <div className="flex items-center gap-2 mb-2 bg-stone-50 border border-oli-border rounded-xl px-2 py-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={previewUrl} alt="Prévia da foto a enviar" className="w-12 h-12 object-cover rounded-lg" />
+                  <span className="text-xs text-oli-lgray truncate flex-1">{imagem?.name}</span>
+                  <button
+                    onClick={removerImagem}
+                    disabled={enviando}
+                    className="text-xs text-oli-red font-semibold px-2 py-1 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    Remover
+                  </button>
+                </div>
+              )}
               <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={e => selecionarImagem(e.target.files?.[0])}
+                  disabled={!dentroDaJanela || enviando}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!dentroDaJanela || enviando}
+                  title="Anexar foto"
+                  className="shrink-0 text-lg px-3 py-2 rounded-xl border border-oli-border text-oli-lgray hover:bg-stone-50 transition-colors disabled:opacity-40"
+                >
+                  📎
+                </button>
                 <input
                   type="text"
                   value={texto}
                   onChange={e => setTexto(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !enviando) enviar(); }}
                   disabled={!dentroDaJanela || enviando}
-                  placeholder={dentroDaJanela ? 'Escrever mensagem…' : 'Indisponível fora da janela de 24h'}
+                  placeholder={!dentroDaJanela ? 'Indisponível fora da janela de 24h' : imagem ? 'Legenda da foto (opcional)…' : 'Escrever mensagem…'}
                   className="flex-1 text-sm border border-oli-border rounded-xl px-3 py-2 text-oli-dark focus:outline-none focus:ring-1 focus:ring-oli-green disabled:bg-gray-50 disabled:text-oli-lgray"
                 />
                 <button
                   onClick={enviar}
-                  disabled={!dentroDaJanela || enviando || !texto.trim()}
+                  disabled={!dentroDaJanela || enviando || (!texto.trim() && !imagem)}
                   className="text-sm font-semibold px-4 py-2 rounded-xl bg-oli-green text-white hover:bg-oli-green/80 transition-colors disabled:opacity-40"
                 >
                   {enviando ? 'Enviando…' : 'Enviar'}

@@ -114,6 +114,43 @@ export async function enviarImagem(opts: { to: string; link: string; caption?: s
   });
 }
 
+/** Sobe um arquivo pro Media Storage da Meta e devolve o media id — usado
+ *  quando a imagem vem de upload direto (equipe anexando no /conversas), sem
+ *  passar por um bucket público como as fotos fixas de FOTO_POR_ESPECIALIDADE
+ *  exigem. Media id expira em ~30 dias, mas a mensagem já foi enviada. */
+export async function subirMidiaWhatsApp(arquivo: Blob, mimeType: string): Promise<{ mediaId: string }> {
+  const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+  const accessToken    = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
+  if (!phoneNumberId || !accessToken) {
+    throw new Error('WHATSAPP_PHONE_NUMBER_ID ou WHATSAPP_ACCESS_TOKEN ausente — mensageria ainda não configurada');
+  }
+
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('file', arquivo, 'imagem');
+  form.append('type', mimeType);
+
+  const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/media`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok || !data.id) throw new Error(`Upload de mídia falhou: ${res.status} ${JSON.stringify(data)}`);
+  return { mediaId: data.id as string };
+}
+
+/** Mensagem de imagem por media id já enviado à Meta (ver subirMidiaWhatsApp) —
+ *  caminho pra anexo de upload direto, diferente de enviarImagem (link público). */
+export async function enviarImagemPorId(opts: { to: string; mediaId: string; caption?: string }): Promise<{ wamid: string }> {
+  return chamarGraphMessages({
+    messaging_product: 'whatsapp',
+    to: opts.to,
+    type: 'image',
+    image: { id: opts.mediaId, caption: opts.caption },
+  });
+}
+
 /** Mensagem via template pré-aprovado — única forma de iniciar conversa fora
  *  da janela de 24h. `variaveis` preenche {{1}}, {{2}}... na ordem.
  *  `headerImageUrl` só se aplica a template cujo cabeçalho aprovado na Meta

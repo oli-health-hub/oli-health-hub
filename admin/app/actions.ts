@@ -884,6 +884,28 @@ export async function sendConversationReply(formData: FormData) {
   revalidatePath('/conversas');
 }
 
+/** Envia uma foto anexada pela equipe numa conversa — mesma janela de 24h do
+ *  texto livre. O arquivo sobe pro Media Storage da Meta na Edge Function,
+ *  não passa por storage nosso. */
+export async function sendConversationImage(formData: FormData) {
+  const conversationId = formData.get('conversation_id') as string;
+  const imagem          = formData.get('imagem') as File | null;
+  if (!imagem || imagem.size === 0) throw new Error('Selecione uma imagem.');
+
+  const fd = new FormData();
+  fd.set('conversationId', conversationId);
+  fd.set('imagem', imagem);
+  const legenda = (formData.get('legenda') as string ?? '').trim();
+  if (legenda) fd.set('legenda', legenda);
+
+  const supabase = await createSupabaseAdmin();
+  const { data, error } = await supabase.functions.invoke('send-whatsapp-image', { body: fd });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+
+  revalidatePath('/conversas');
+}
+
 /** Alterna uma conversa de lead entre IA e humano. Conversa de paciente nunca
  *  aceita 'ia' — o CHECK do banco (chk_patient_never_ia) barra isso mesmo que
  *  esta action seja chamada errado. */
