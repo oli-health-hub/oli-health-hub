@@ -2287,7 +2287,7 @@ Olicoins sem nenhuma mudança de lógica: `cadastro_completo` (10 coins) já cre
 
 **Pendência:** a régua de ativação por WhatsApp pro médico pós-cadastro (desenhada nesta sessão, plano em espera) volta à mesa agora que o onboarding novo está pronto — pode inclusive usar `especialidade`/`objetivo_oli` pra segmentar a mensagem.
 
-**Publicado:** commit `820984e`, push direto pra `main`. Admin já foi (Vercel auto-deploy). **App ainda não** — mudança em `app/onboarding.tsx` só chega ao médico via `eas update` nos dois canais (`production`+`preview`), regra de deploy do §3, ainda não rodado. Sem OTA, o onboarding em produção continua na versão de 1 tela antiga.
+**Publicado:** commit `820984e`, push direto pra `main`. Admin foi por Vercel e o app recebeu OTA em **31/ago** a partir de checkout limpo desse commit (sem incluir alterações locais pendentes): `production` **`b99a2cbb-5619-4c22-8936-83c35e0c8c97`** e `preview` **`997f292b-4bdc-4848-96fe-316aab6b10f3`**. O onboarding obrigatório já está disponível nos dois canais.
 
 ## 49. Causa raiz do cache do `/leads` achada — mesma classe de bug do §45, agora corrigida na fonte (28/ago, sessão seguinte à §48)
 
@@ -2377,6 +2377,28 @@ Confirmado antes de rodar: nenhum desses leads tem `rd_deal_id` — zero chamada
 **Front:** `ConversasClient` renderiza `<img>` no bubble quando `media_url` existe (clicável, abre em tamanho real numa aba nova); o texto genérico some quando a imagem aparece, mas continua visível se a prévia falhou — nunca fica sem nenhum indício de que uma foto foi enviada.
 
 Migration aplicada direto (coluna + bucket + policy), `database.types.ts` regenerado nos dois projetos. `deno check`/`tsc --noEmit` limpos. Deployado: `whatsapp-webhook` v37, `send-whatsapp-image` v2. Não testado com envio real — mesma limitação de sempre, sem credencial de admin neste ambiente. Commit `76cad44`, push direto pra `main`.
+
+## 56. Olivia passa a recomendar o plano que atende à necessidade declarada (31/ago)
+
+Fundador identificou comportamento comercial indesejado: mesmo quando o profissional dizia querer apenas **horas avulsas**, a Olivia tentava conduzir a conversa para o PRO. A diretriz foi invertida de forma explícita: ela vende a solução que a pessoa procura, não o plano de maior ticket.
+
+- Horas avulsas, uso pontual, flexibilidade ou desejo de experimentar o espaço → recomenda **START**, ajuda a avançar nessa escolha e não introduz o PRO.
+- O PRO só entra se a pessoa pedir uma comparação ou se a conversa indicar agenda recorrente/interesse nos serviços do plano; ainda assim, como opção contextual, nunca pressão ou correção da escolha pelo START.
+- Estacionamento: há vaga para o profissional enquanto estiver em atendimento. Pacientes têm convênio com estacionamentos parceiros próximos ao OLI. Preço, disponibilidade e regras específicas continuam sujeitos à confirmação pela equipe.
+
+Atualizados juntos (fonte de verdade + produção + simulador): `docs/IA_ATENDIMENTO_WHATSAPP.md`, `supabase/functions/whatsapp-webhook/index.ts` e `supabase/functions/test-lead-ai/index.ts`. Os dois prompts foram comparados byte a byte e os dois passaram em `deno check`. Deploy em produção concluído para `whatsapp-webhook` e `test-lead-ai`; a CLI atual não oferece mais o subcomando de invocação, portanto a simulação remota não foi executada por esse canal.
+
+## 57. Olivia pode mostrar mais ambientes quando o lead pede fotos (31/ago)
+
+Fundador reforçou que interesse visual é sinal comercial positivo: se a Olivia já enviou uma imagem e o lead pede mais, ela deve simplesmente enviar outra foto de ambiente, sem dizer que já mandou imagem, sem restringir o pedido e sem fazer a pessoa se sentir inconveniente. O sistema continua enviando **uma imagem por resposta**, mas pode atender novos pedidos com imagens diferentes.
+
+Além de consultórios, o catálogo agora permite `conforto_medico` (`conforto-medico.jpg`) e `sala_espera` (`lounge-espera.jpg`), além das chaves existentes para estrutura e sala de eventos. As duas imagens foram confirmadas em `landing/fotos/` e usam URLs públicas do domínio OLI. Atualizados e publicados em produção: manual, `whatsapp-webhook` e `test-lead-ai`; prompts comparados byte a byte e `deno check` limpo nos dois.
+
+## 58. Salas são adequadas à prática, não dedicadas a toda especialidade (31/ago)
+
+Fundador corrigiu uma nuance comercial importante: Olivia não deve afirmar que há sala **específica** ou dedicada para especialidades fora dos ambientes conhecidos (clínica geral, ginecologia/estética e psicologia). A formulação geral passou de “salas preparadas para esse atendimento” para “salas que podem ser apropriadas para esse atendimento”.
+
+Para uma prática fora dessa linha, como podologia, a resposta-modelo é: *“Temos uma sala que pode ser apropriada para o seu atendimento — veja esta foto.”* A Olivia envia uma foto de clínica geral ou estrutura conforme o contexto, sem inventar características da sala. Manual, webhook e simulador foram atualizados juntos; prompts comparados byte a byte, `deno check` limpo e deploy em produção concluído para as duas Edge Functions.
 
 ## 13. Comandos úteis
 

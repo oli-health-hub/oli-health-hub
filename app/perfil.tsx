@@ -688,6 +688,22 @@ export default function PerfilScreen() {
             </View>
             <Ionicons name="chevron-forward-outline" size={18} color={colors.gray} />
           </TouchableOpacity>
+          <TouchableOpacity style={styles.actionRow} onPress={() => router.push('/termos-uso')} accessibilityLabel="Ver termos de uso">
+            <Ionicons name="reader-outline" size={20} color={colors.oliGreen} />
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionLabel}>Termos de Uso</Text>
+              <Text style={styles.actionDesc}>Regras de uso do app</Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={18} color={colors.gray} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionRow} onPress={() => router.push('/contrato-servico')} accessibilityLabel="Ver contrato de prestação de serviços">
+            <Ionicons name="briefcase-outline" size={20} color={colors.oliGreen} />
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionLabel}>Contrato de Prestação de Serviços</Text>
+              <Text style={styles.actionDesc}>Planos, cobrança e minutagem</Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={18} color={colors.gray} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.actionRow} onPress={handleExportData} accessibilityLabel="Exportar meus dados">
             <Ionicons name="download-outline" size={20} color={colors.oliGreen} />
             <View style={styles.actionTextWrap}>

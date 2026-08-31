@@ -731,10 +731,16 @@ export async function optInLeadWhatsapp(formData: FormData) {
 
   // Não processa a fila inteira aqui. O cron continua responsável pelas
   // retomadas; este invoke tenta somente o primeiro contato deste lead agora.
+  // Best-effort: se falhar (template pendente, erro transitório), a etapa
+  // continua 'agendada' e o cron tenta de novo no próximo ciclo — por isso
+  // NÃO propaga erro daqui. Um throw aqui já aconteceu de deixar o lead
+  // corretamente atualizado no banco (status/atendido_por_ia acima) mas sem
+  // nunca rodar o revalidatePath abaixo, e o admin via página de erro em vez
+  // do estado novo — parecia que o clique "não tinha feito nada".
   const { error: invokeError } = await supabase.functions.invoke('whatsapp-nutricao-comercial', {
     body: { leadId: id },
   });
-  if (invokeError) throw new Error(invokeError.message);
+  if (invokeError) console.error(`[optInLeadWhatsapp] invoke falhou pro lead ${id}:`, invokeError.message);
 
   revalidatePath('/leads');
   revalidatePath('/conversas');

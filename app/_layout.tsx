@@ -199,6 +199,20 @@ export default function RootLayout() {
             headerStyle: { backgroundColor: colors.white },
           }}
         />
+        <Stack.Screen
+          name="termos-uso"
+          options={{
+            title:       'Termos de Uso',
+            headerStyle: { backgroundColor: colors.white },
+          }}
+        />
+        <Stack.Screen
+          name="contrato-servico"
+          options={{
+            title:       'Contrato de Prestação de Serviços',
+            headerStyle: { backgroundColor: colors.white },
+          }}
+        />
       </Stack>
 
       {/* App Lock — overlay sobre tudo quando sessão está bloqueada.
