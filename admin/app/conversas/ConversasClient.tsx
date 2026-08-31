@@ -86,6 +86,24 @@ function naoLida(c: Conversa): boolean {
 function precisaNossaResposta(c: Conversa): boolean {
   return c.status !== 'fechada' && c.last_message_direction === 'inbound';
 }
+/** Tiques de entrega no estilo WhatsApp — só faz sentido em mensagem
+ *  outbound, cujo `status` vem do webhook de status da Meta (enviada →
+ *  entregue → lida, ou falhou). Cor muda pelo fundo da bolha: verde da
+ *  equipe (`tom='staff'`) ou azul claro da IA (`tom='ia'`). */
+function TiquesWhatsApp({ status, tom }: { status: string; tom: 'staff' | 'ia' }) {
+  if (status === 'falhou') {
+    return <span className="text-oli-red text-xs leading-none" title="Falha no envio">⚠</span>;
+  }
+  const lida = status === 'lida';
+  const duplo = status === 'entregue' || status === 'lida';
+  const cor = lida ? 'text-sky-400' : tom === 'staff' ? 'text-white/60' : 'text-blue-900/40';
+  return (
+    <svg viewBox="0 0 18 13" width="14" height="11" className={cor} fill="none" aria-hidden="true">
+      <path d="M1 7.2 L5.2 11.4 L11 3.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      {duplo && <path d="M6.3 7.2 L10.5 11.4 L17 1.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />}
+    </svg>
+  );
+}
 function timeAgo(iso: string | null): string {
   if (!iso) return '—';
   const diff = Date.now() - new Date(iso).getTime();
@@ -255,16 +273,23 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
       <div className="w-80 shrink-0 border-r border-oli-border flex flex-col min-h-0">
         <div className="flex gap-1.5 p-2.5 border-b border-oli-border shrink-0">
           {(['equipe', 'olivia'] as const).map(a => {
-            const total = conversas.filter(c => GRUPOS_DA_ABA[a].includes(grupoDe(c))).length;
+            const doAba = conversas.filter(c => GRUPOS_DA_ABA[a].includes(grupoDe(c)));
+            const total = doAba.length;
+            const naoLidas = doAba.filter(naoLida).length;
             return (
               <button
                 key={a}
                 onClick={() => setAba(a)}
-                className={`flex-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                className={`relative flex-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
                   aba === a ? 'bg-oli-green text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {a === 'equipe' ? 'Equipe' : 'Olivia'} <span className="opacity-70">{total}</span>
+                {naoLidas > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-oli-red text-white text-[10px] font-bold leading-none">
+                    {naoLidas}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -369,8 +394,9 @@ export default function ConversasClient({ initial, initialId }: { initial: Conve
                     {m.body && !(m.media_url && m.body.startsWith('[imagem')) && (
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
                     )}
-                    <p className={`text-[10px] mt-1 ${m.direction === 'outbound' && m.sender_type !== 'ia' ? 'text-white/70' : 'text-oli-lgray'}`}>
-                      {m.sender_type === 'ia' ? 'IA · ' : ''}{new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    <p className={`flex items-center justify-end gap-1 text-[10px] mt-1 ${m.direction === 'outbound' && m.sender_type !== 'ia' ? 'text-white/70' : 'text-oli-lgray'}`}>
+                      <span>{m.sender_type === 'ia' ? 'IA · ' : ''}{new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      {m.direction === 'outbound' && <TiquesWhatsApp status={m.status} tom={m.sender_type === 'ia' ? 'ia' : 'staff'} />}
                     </p>
                   </div>
                 </div>

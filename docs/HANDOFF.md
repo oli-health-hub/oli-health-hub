@@ -2418,7 +2418,17 @@ A ordenação por `last_message_at` decrescente e a reordenação automática a 
 
 Fundador reclamou de ter que rolar a lista até achar os atendimentos da Olivia. Dois botões fixos no topo da sidebar (`Equipe` / `Olivia`, com contador) substituem a rolagem: `Equipe` mostra os grupos `equipe` + `pacientes` + `encerradas` (tudo que a equipe acompanha direto), `Olivia` mostra só o grupo `olivia` (leads em atendimento autônomo). A thread aberta não depende da aba — trocar de aba não fecha a conversa selecionada, só filtra a lista. Link de notificação (`?id=`) abre direto na aba certa (calculado a partir do grupo da conversa inicial), sem precisar trocar na mão.
 
-Não mudou o agrupamento em si (`grupoDe`, do §52) nem a ordenação — só filtra quais grupos aparecem por aba. `tsc --noEmit` e `next build` limpos. Não testado ao vivo. Aproveitado pra checar o status da régua de nutrição comercial a pedido do fundador (não é código, é leitura de estado): 5 templates aprovados, cron ativo rodando de 30 em 30 min sem falha, 42 primeiro-contato + 1 d3 enviados, 24 d3 + 1 d10 agendados, zero `falhou` — d24/d45 ainda não dispararam porque a régua começou em 28/ago e essas etapas são D+24/D+45 desde o contato anterior.
+Não mudou o agrupamento em si (`grupoDe`, do §52) nem a ordenação — só filtra quais grupos aparecem por aba. `tsc --noEmit` e `next build` limpos. Não testado ao vivo. Aproveitado pra checar o status da régua de nutrição comercial a pedido do fundador (não é código, é leitura de estado): 5 templates aprovados, cron ativo rodando de 30 em 30 min sem falha, 42 primeiro-contato + 1 d3 enviados, 24 d3 + 1 d10 agendados, zero `falhou` — d24/d45 ainda não dispararam porque a régua começou em 28/ago e essas etapas são D+24/D+45 desde o contato anterior. Commit `22caae2`, push direto pra `main`.
+
+## 61. Tiques de entrega estilo WhatsApp + contador de não lida no botão Equipe (31/ago, sessão seguinte à §60)
+
+Duas peças pequenas pedidas juntas. Nenhuma delas precisou de coluna nova: `messages.status` (`enviada`/`entregue`/`lida`/`falhou`) já é mantido em dia pelo `processarStatus()` do `whatsapp-webhook` desde sempre (status de entrega que a Meta manda via webhook) — só faltava mostrar na UI.
+
+**Tiques**: `TiquesWhatsApp` novo em `ConversasClient`, um tique cinza pra `enviada`, dois cinza pra `entregue`, dois azuis pra `lida`, `⚠` vermelho pra `falhou`. Só aparece em mensagem outbound. Cor do tique padrão muda pela cor de fundo da bolha (`tom='staff'` na bolha verde, `tom='ia'` na bolha azul clara) pra não sumir contra o fundo.
+
+**Badge de não lida**: os dois botões de aba (`Equipe`/`Olivia`, do §60) ganham uma bolinha vermelha com contador no canto quando há conversa não lida naquela aba — mesmo `naoLida()` do §59, só que somado por aba em vez de por linha. Pedido foi só pra `Equipe`, implementado igual nos dois por consistência visual (mesmo mecanismo, sem motivo pra ficar assimétrico).
+
+`tsc --noEmit` e `next build` limpos. Não testado ao vivo — depende de mensagem real passar por `entregue`/`lida` no WhatsApp pra ver as três cores, o que não dá pra forçar neste ambiente.
 
 ## 13. Comandos úteis
 
