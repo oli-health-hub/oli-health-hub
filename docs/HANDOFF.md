@@ -2428,7 +2428,7 @@ Duas peças pequenas pedidas juntas. Nenhuma delas precisou de coluna nova: `mes
 
 **Badge de não lida**: os dois botões de aba (`Equipe`/`Olivia`, do §60) ganham uma bolinha vermelha com contador no canto quando há conversa não lida naquela aba — mesmo `naoLida()` do §59, só que somado por aba em vez de por linha. Pedido foi só pra `Equipe`, implementado igual nos dois por consistência visual (mesmo mecanismo, sem motivo pra ficar assimétrico).
 
-`tsc --noEmit` e `next build` limpos. Não testado ao vivo — depende de mensagem real passar por `entregue`/`lida` no WhatsApp pra ver as três cores, o que não dá pra forçar neste ambiente.
+`tsc --noEmit` e `next build` limpos. Não testado ao vivo — depende de mensagem real passar por `entregue`/`lida` no WhatsApp pra ver as três cores, o que não dá pra forçar neste ambiente. Commit `a787318`, push direto pra `main`.
 
 ## 13. Comandos úteis
 
