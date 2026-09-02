@@ -2505,6 +2505,26 @@ Fundador pediu pra rodar bem no celular — até aqui o admin era desenhado só 
 
 `tsc --noEmit` e `next build` limpos nas duas rodadas. **Login pra verificação visual falhou:** a credencial de teste do `e2e/auth.setup.ts` (`test-playwright@olihealthhub.com`) existe no repo mas voltou "e-mail ou senha incorretos" contra o Supabase local — rotacionada ou nunca existiu nesse ambiente. Sem outra credencial de admin, o dreno de gaveta e o empilhamento do `/conversas` não foram vistos rodando de verdade — vale o fundador abrir no celular antes de dar como certo. Achado à parte: `docs/HANDOFF.md` estava sendo editado em paralelo por outra sessão (§62/§63 apareceram entre uma edição e outra desta) — inserção feita com `Edit` (old_string/new_string), não `Write`, então nada foi sobrescrito.
 
+## 65. Cadastro travado no onboarding + `profiles` ganha coluna `email` (02/set)
+
+Fundador reportou que médicos não conseguiam se cadastrar — tela de onboarding travava, sem rolar e sem trocar de campo. Duas causas, corrigidas em duas rodadas (a segunda achada só depois de testar de novo com o fundador).
+
+**Rodada 1 — sem `ScrollView`.** `app/onboarding.tsx` usava uma `View` fixa com `justifyContent: 'space-between'` pra empurrar o botão final pro rodapé, sem nenhum scroll. Em tela menor, campos abaixo da dobra (UF, tipo de atendimento, objetivo, indicação, botão "Entrar no app") ficavam fisicamente inacessíveis. Envolvido em `ScrollView` — e isso gerou um crash real na primeira tentativa (`Invariant Violation: ScrollView child layout (["justifyContent"]) must be applied through contentContainerStyle`), porque o `style` reusado carregava o `justifyContent` que só pode ir no `contentContainerStyle`. Corrigido com um style próprio pro `ScrollView`.
+
+**Rodada 2 — "ainda tem pontos que não rolam".** Causa era o `TouchableWithoutFeedback` que envolvia o `ScrollView` inteiro (`onPress={Keyboard.dismiss}`) — ele disputava o gesto de arrastar com o próprio scroll, então em certos pontos da tela (sobre labels, gaps entre campos) o toque não iniciava a rolagem. Removido; troca por `onScrollBeginDrag={Keyboard.dismiss}` no `ScrollView`, que dispensa o teclado sem interceptar o gesto.
+
+**Ícones genéricos.** De quebra, os ícones de Tratamento (Dr./Dra.) e das opções de Tipo de atendimento/Objetivo usavam todos o mesmo `ribbon-outline` — nem diferenciava Dr. de Dra. Trocados por ícones próprios por opção: `man-outline`/`woman-outline` (Dr./Dra.), `business-outline`/`videocam-outline`/`infinite-outline` (Presencial/Telemedicina/Ambos), `briefcase-outline`/`time-outline`/`eye-outline` (objetivo com o OLI).
+
+Verificado rodando `expo start --web` num viewport mobile, com bypass temporário e local do gate de auth do `_layout.tsx` (revertido antes de cada commit, nunca ficou no diff) — e depois via Expo Go no simulador iOS pra confirmar em app real, não só web. `tsc --noEmit` limpo. Dois commits (`5f7dc3c`, `d61a6e3`), `eas update` publicado em `production` e `preview` nos dois.
+
+**Achado à parte, séria: `profiles` nunca teve coluna `email`.** O fundador notou que e-mail não aparecia em lugar nenhum pro time. Investigando: `signUp` sempre mandou o e-mail certinho pro Supabase Auth (`auth.users.email`), mas a função `_create_profile_and_subscription` (chamada pelo trigger `handle_new_user` em todo cadastro novo) recebia `p_email` só pra usar como fallback de nome (`split_part` antes do `@`) — nunca gravava. `profiles` (a tabela que alimenta admin/CRM) simplesmente não tinha essa coluna. Confirmado direto no banco de produção antes de mexer.
+
+Corrigido com migration (`supabase/migrations/20260902_profiles_email.sql`, aplicada direto em produção via Supabase MCP): coluna `email` adicionada, função reescrita pra gravar, backfill rodado pros 35 profissionais já cadastrados (lendo de `auth.users`, todos ficaram com `email` preenchido). Types regenerados (`generate_typescript_types`) nas duas cópias do repo — `src/models/database.types.ts` e `admin/lib/database.types.ts`, que tinha ficado pra trás. Só mudança de schema, sem impacto de UX — não precisou de OTA.
+
+**Admin também não mostrava e-mail.** A tela de detalhe (`/medicos/[id]`) já mostrava — mas via chamada separada à Auth Admin API (`supabaseAdmin.auth.admin.getUserById`), não de `profiles`. A lista (`/medicos`) nunca teve e-mail nenhum. Adicionada coluna, lendo direto de `profiles.email` agora que existe. `tsc --noEmit` limpo no admin. Não testado visualmente — admin exige login e não há credencial de teste válida disponível (mesma limitação da §64: `test-playwright@olihealthhub.com` continua não autenticando).
+
+**Decisão tomada com o fundador, não mexida:** "de onde a pessoa veio" (`como_conheceu`) continua fora do onboarding, como missão gamificada pós-cadastro (§48) — não foi trazida de volta pra tela de cadastro.
+
 ## 13. Comandos úteis
 
 ```bash
