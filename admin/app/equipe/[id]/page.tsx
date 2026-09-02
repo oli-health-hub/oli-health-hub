@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { DeleteTeamProfileButton } from './DeleteTeamProfileButton';
 import { TeamProfileForm } from './TeamProfileForm';
-import { updatePartnerCommissionConfig, ensurePartnerReferralCode } from '@/app/actions';
+import { updatePartnerCommissionConfig, ensurePartnerReferralCode, addHours, desativarHorasDemonstracao } from '@/app/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +24,16 @@ export default async function EquipeDetailPage({ params }: { params: { id: strin
   const { data: commissionConfig } = p.user_type === 'partner'
     ? await supabase.from('partner_commission_config').select('*').eq('partner_id', p.id).maybeSingle()
     : { data: null };
+
+  // Founder (Guilherme/Igor) não aparece em /medicos nem entra em contagem
+  // ou métrica de faturamento — reserva/checkout no app é gatilhado só por
+  // ter saldo em hour_balance (nenhum outro lugar do código olha
+  // user_type), então dá pra ligar/desligar aqui sem tocar em nada disso.
+  const agora = new Date().toISOString();
+  const { data: saldoRows } = p.user_type === 'founder'
+    ? await supabase.from('hour_balance').select('minutos_total, minutos_usados').eq('professional_id', p.id).gt('expira_em', agora)
+    : { data: null };
+  const minutosLivres = (saldoRows ?? []).reduce((acc, r) => acc + (r.minutos_total - r.minutos_usados), 0);
 
   return (
     <div className="p-7 max-w-2xl">
@@ -49,6 +59,44 @@ export default async function EquipeDetailPage({ params }: { params: { id: strin
         whatsapp={p.whatsapp}
         adminNotes={p.admin_notes}
       />
+
+      {p.user_type === 'founder' && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 mt-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Modo demonstração</p>
+          <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+            Ligar/desligar aqui não afeta produção — founder não conta em /medicos
+            nem em nenhuma métrica de faturamento. Só dá saldo de horas pra
+            reservar sala e fazer checkout de verdade no app, pra mostrar pra
+            quem está de visita. Desligar zera o saldo na hora, sem esperar o
+            pacote expirar sozinho.
+          </p>
+          <p className="text-sm font-bold text-oli-dark mb-3">
+            {minutosLivres > 0
+              ? `Ativo — ${Math.floor(minutosLivres / 60)}h${minutosLivres % 60 ? ` ${minutosLivres % 60}min` : ''} de saldo`
+              : 'Desligado — sem saldo'}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <form action={addHours} className="flex items-center gap-2">
+              <input type="hidden" name="professional_id" value={p.id} />
+              <input
+                type="number" name="horas" defaultValue={5} min={1} step={1}
+                className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              />
+              <button type="submit" className="bg-oli-green text-white rounded-lg px-4 py-2 text-sm font-semibold hover:opacity-90 transition">
+                {minutosLivres > 0 ? 'Adicionar mais horas' : 'Ativar modo demonstração'}
+              </button>
+            </form>
+            {minutosLivres > 0 && (
+              <form action={desativarHorasDemonstracao}>
+                <input type="hidden" name="professional_id" value={p.id} />
+                <button type="submit" className="bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-200 transition">
+                  Desligar agora
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {p.user_type === 'partner' && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mt-4">

@@ -45,6 +45,32 @@ export async function addHours(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath(`/medicos/${professionalId}`);
+  // No-op pra perfil que não é médico (founder/specialist/partner/team) —
+  // essa rota não existe pra eles. Revalida mesmo assim: é de lá (modo
+  // demonstração em /equipe/[id]) que este action também é chamado.
+  revalidatePath(`/equipe/${professionalId}`);
+  revalidatePath('/horas');
+}
+
+/** Zera na hora o saldo de horas de um perfil — usado pelo "Modo
+ *  demonstração" em /equipe/[id] (founder), pra desligar o acesso a
+ *  reserva/checkout no app assim que a visita do cliente terminar, sem
+ *  esperar a validade de 1 ano expirar sozinha. Expira em vez de apagar:
+ *  mantém o histórico de quanto já foi concedido. */
+export async function desativarHorasDemonstracao(formData: FormData) {
+  const professionalId = formData.get('professional_id') as string;
+  const agora = new Date().toISOString();
+
+  const supabase = await createSupabaseAdmin();
+  const { error } = await supabase
+    .from('hour_balance')
+    .update({ expira_em: agora })
+    .eq('professional_id', professionalId)
+    .gt('expira_em', agora);
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/equipe/${professionalId}`);
+  revalidatePath(`/medicos/${professionalId}`);
   revalidatePath('/horas');
 }
 
