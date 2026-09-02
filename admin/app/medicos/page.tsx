@@ -29,7 +29,7 @@ export default async function MedicosPage() {
 
   const { data: medicos } = await supabase
     .from('profiles')
-    .select('id, nome, crm, especialidade, plan, created_at, assessorias_atuais, account_status')
+    .select('id, nome, email, crm, especialidade, plan, created_at, assessorias_atuais, account_status')
     .not('user_type', 'in', '(admin,founder,specialist,partner,pending,team)')
     .neq('account_status', 'deleted')
     .order('created_at', { ascending: false })
@@ -75,7 +75,7 @@ export default async function MedicosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-oli-border">
-                {['Nome', 'Status', 'CRM', 'Especialidade', 'Plano', 'Módulos', 'Assessorias', 'Cadastro'].map(h => (
+                {['Nome', 'E-mail', 'Status', 'CRM', 'Especialidade', 'Plano', 'Módulos', 'Assessorias', 'Cadastro'].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-[11px] font-bold text-oli-lgray uppercase tracking-wider">
                     {h}
                   </th>
@@ -101,6 +101,7 @@ export default async function MedicosPage() {
                         {m.nome ?? '—'}
                       </Link>
                     </td>
+                    <td className="px-4 py-3 text-oli-gray">{m.email ?? '—'}</td>
                     <td className="px-4 py-3">
                       {statusBadge
                         ? <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadge.color}`}>{statusBadge.label}</span>
