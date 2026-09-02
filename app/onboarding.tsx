@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -181,13 +181,13 @@ export default function OnboardingScreen() {
     <SafeAreaProvider>
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.flex}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={Keyboard.dismiss}
         >
           <Text style={styles.title}>Só mais um passo</Text>
           <Text style={styles.subtitle}>
@@ -267,17 +267,17 @@ export default function OnboardingScreen() {
           {/* Tipo de atendimento — obrigatório */}
           <Text style={[styles.question, styles.questionSpacing]}>Tipo de atendimento</Text>
           <View style={styles.boolRow}>
-            <OptionCard<TipoAtendimento> value="presencial"   label="Presencial"    selected={tipoAtendimento === 'presencial'}   onPress={setTipoAtendimento} />
-            <OptionCard<TipoAtendimento> value="telemedicina" label="Telemedicina"  selected={tipoAtendimento === 'telemedicina'} onPress={setTipoAtendimento} />
-            <OptionCard<TipoAtendimento> value="ambos"        label="Ambos"         selected={tipoAtendimento === 'ambos'}        onPress={setTipoAtendimento} />
+            <OptionCard<TipoAtendimento> value="presencial"   label="Presencial"    selected={tipoAtendimento === 'presencial'}   onPress={setTipoAtendimento} icon="business-outline" />
+            <OptionCard<TipoAtendimento> value="telemedicina" label="Telemedicina"  selected={tipoAtendimento === 'telemedicina'} onPress={setTipoAtendimento} icon="videocam-outline" />
+            <OptionCard<TipoAtendimento> value="ambos"        label="Ambos"         selected={tipoAtendimento === 'ambos'}        onPress={setTipoAtendimento} icon="infinite-outline" />
           </View>
 
           {/* Objetivo com o OLI — obrigatório */}
           <Text style={[styles.question, styles.questionSpacing]}>O que te traz ao OLI?</Text>
           <View style={styles.objetivoCol}>
-            <OptionCard<ObjetivoOli> value="migrar_rotina" label="Quero migrar minha rotina pro OLI" selected={objetivoOli === 'migrar_rotina'} onPress={setObjetivoOli} />
-            <OptionCard<ObjetivoOli> value="espaco_avulso" label="Quero um espaço avulso, uso pontual" selected={objetivoOli === 'espaco_avulso'} onPress={setObjetivoOli} />
-            <OptionCard<ObjetivoOli> value="so_conhecer"   label="Só quero conhecer por enquanto"     selected={objetivoOli === 'so_conhecer'}   onPress={setObjetivoOli} />
+            <OptionCard<ObjetivoOli> value="migrar_rotina" label="Quero migrar minha rotina pro OLI" selected={objetivoOli === 'migrar_rotina'} onPress={setObjetivoOli} icon="briefcase-outline" />
+            <OptionCard<ObjetivoOli> value="espaco_avulso" label="Quero um espaço avulso, uso pontual" selected={objetivoOli === 'espaco_avulso'} onPress={setObjetivoOli} icon="time-outline" />
+            <OptionCard<ObjetivoOli> value="so_conhecer"   label="Só quero conhecer por enquanto"     selected={objetivoOli === 'so_conhecer'}   onPress={setObjetivoOli} icon="eye-outline" />
           </View>
 
           {/* Indicação — resolvida em silêncio via deep link; fallback manual aqui */}
@@ -338,7 +338,6 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
     </SafeAreaProvider>
