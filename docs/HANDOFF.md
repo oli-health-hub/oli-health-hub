@@ -2543,6 +2543,8 @@ Mostra o saldo atual (`Xh Ymin` ou "Desligado — sem saldo") pra founder saber 
 
 `tsc --noEmit` limpo. Não testado ao vivo — sem credencial de admin neste ambiente. Commit `e8758e3`, push direto pra `main`.
 
+**Preocupação levantada depois (02/set):** fundador pediu ambiente de teste separado pra essas reservas, receio de disputar sala com usuário real. Investigado (sem código): dupla-reserva de verdade já é impossível — exclusion constraint `reservations_no_room_overlap` (17/jul) rejeita a segunda tentativa no Postgres, erro 23P01, app já trata como "Sala já reservada"; checkout de sala também não gera cobrança real na Asaas (é só `hour_balance`/`usage_charges` interno). Ambiente de teste de verdade exigiria projeto Supabase separado + jeito de apontar o app pra ele (URL do Supabase é hardcoded em `src/services/supabase.ts`, não vem de env) — build à parte ou troca de ambiente em runtime, nenhum dos dois é ajuste rápido. **Decisão do fundador: não investir nisso agora** — mitigação de zero custo por enquanto é conferir o Mapa de Salas antes de demonstrar. Pendência registrada, sem código tocado.
+
 ## 13. Comandos úteis
 
 ```bash
