@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback,
   StyleSheet, Alert, KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,12 +20,13 @@ import type { Tratamento, TipoAtendimento, ObjetivoOli } from '../src/models/typ
 // do app — ver app/completar-perfil.tsx e src/utils/profileSections.ts.
 
 function OptionCard<T extends string>({
-  label, value, selected, onPress,
+  label, value, selected, onPress, icon = 'ribbon-outline',
 }: {
   label: string;
   value: T;
   selected: boolean;
   onPress: (v: T) => void;
+  icon?: keyof typeof Ionicons.glyphMap;
 }) {
   return (
     <TouchableOpacity
@@ -34,7 +36,7 @@ function OptionCard<T extends string>({
       accessibilityState={{ selected }}
       accessibilityLabel={label}
     >
-      <Ionicons name="ribbon-outline" size={20} color={selected ? colors.white : colors.oliGreen} />
+      <Ionicons name={icon} size={20} color={selected ? colors.white : colors.oliGreen} />
       <Text style={[styles.optLabel, selected && styles.optLabelActive]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -181,7 +183,12 @@ export default function OnboardingScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.flex}>
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.title}>Só mais um passo</Text>
           <Text style={styles.subtitle}>
             Informações básicas pra gente te identificar. O resto do seu perfil você completa
@@ -191,8 +198,8 @@ export default function OnboardingScreen() {
           {/* Tratamento — opcional */}
           <Text style={styles.question}>Tratamento <Text style={styles.optionalHint}>(opcional)</Text></Text>
           <View style={styles.boolRow}>
-            <OptionCard value={'Dr.' as Tratamento}  label="Dr."  selected={tratamento === 'Dr.'}  onPress={setTratamento} />
-            <OptionCard value={'Dra.' as Tratamento} label="Dra." selected={tratamento === 'Dra.'} onPress={setTratamento} />
+            <OptionCard value={'Dr.' as Tratamento}  label="Dr."  selected={tratamento === 'Dr.'}  onPress={setTratamento} icon="man-outline" />
+            <OptionCard value={'Dra.' as Tratamento} label="Dra." selected={tratamento === 'Dra.'} onPress={setTratamento} icon="woman-outline" />
           </View>
 
           {/* WhatsApp — obrigatório */}
@@ -317,7 +324,7 @@ export default function OnboardingScreen() {
               <Text style={styles.refToggleText}>Tem um código de indicação?</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </ScrollView>
 
         <View style={styles.footer}>
           <TouchableOpacity
@@ -341,6 +348,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: colors.oliBackground },
   flex:    { flex: 1, justifyContent: 'space-between' },
+  scroll:  { flex: 1 },
   content: { padding: spacing.lg },
   title:    { fontSize: 26, fontWeight: '700', color: colors.oliDarkGray, marginBottom: spacing.xs },
   subtitle: { fontSize: 14, color: colors.oliLightGray, marginBottom: spacing.lg, lineHeight: 20 },
