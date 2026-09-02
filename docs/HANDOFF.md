@@ -2432,6 +2432,9 @@ Duas peças pequenas pedidas juntas. Nenhuma delas precisou de coluna nova: `mes
 
 ## 62. Endereço de atendimento entra no PRO + peça por plano (31/ago)
 
+> ⚠️ **Escopo do benefício ampliado em 02/set — ver §67.** Não é só divulgação:
+> o PRO dá **endereço comercial e fiscal**.
+
 **Benefício novo no PRO:** o profissional pode **divulgar o endereço de atendimento nas suas redes e materiais**. Vale só no PRO; na peça do START aparece como não incluso.
 
 É o primeiro benefício do PRO que **não tem custo marginal para o OLI** e ataca uma objeção concreta de quem atende em espaço compartilhado — não ter endereço próprio para pôr no Instagram, no Google e no material. Também compensa em parte a saída do prontuário (§43): o PRO volta a ter **quatro diferenciais** — impressão, recepção, endereço e nota fiscal.
@@ -2456,6 +2459,10 @@ A peça do START mostra **os quatro itens que ele não tem** (impressão, recep�
 O site, o `OLI_BASE.md` e a matriz `FEATURES` do `meu-plano.tsx` ainda não citam o endereço. Os prompts da Olivia (já corrigidos quanto ao prontuário, ver §43) também não mencionam o benefício novo — vale entrar quando o PRO for explicado.
 
 ## 63. Estacionamento nos dois planos + a regra fantasma do START (31/ago, sessão seguinte à §62)
+
+> ⚠️ **Superado em parte pela §67 (02/set): o estacionamento saiu do START e
+> ficou exclusivo do PRO.** A tabela de planos desta seção está velha — usar a
+> da §67.
 
 Dois ajustes pedidos pelo fundador ao revisar as peças.
 
@@ -2544,6 +2551,102 @@ Mostra o saldo atual (`Xh Ymin` ou "Desligado — sem saldo") pra founder saber 
 `tsc --noEmit` limpo. Não testado ao vivo — sem credencial de admin neste ambiente. Commit `e8758e3`, push direto pra `main`.
 
 **Preocupação levantada depois (02/set):** fundador pediu ambiente de teste separado pra essas reservas, receio de disputar sala com usuário real. Investigado (sem código): dupla-reserva de verdade já é impossível — exclusion constraint `reservations_no_room_overlap` (17/jul) rejeita a segunda tentativa no Postgres, erro 23P01, app já trata como "Sala já reservada"; checkout de sala também não gera cobrança real na Asaas (é só `hour_balance`/`usage_charges` interno). Ambiente de teste de verdade exigiria projeto Supabase separado + jeito de apontar o app pra ele (URL do Supabase é hardcoded em `src/services/supabase.ts`, não vem de env) — build à parte ou troca de ambiente em runtime, nenhum dos dois é ajuste rápido. **Decisão do fundador: não investir nisso agora** — mitigação de zero custo por enquanto é conferir o Mapa de Salas antes de demonstrar. Pendência registrada, sem código tocado.
+
+## 67. Estacionamento vira exclusivo do PRO + endereço passa a ser comercial e fiscal (02/set)
+
+Duas correções de escopo de plano dadas pelo fundador ao revisar o documento de
+análise estratégica montado para a consultoria de governança (ver §68). Ambas
+mudam a matriz de benefícios registrada na §62/§63.
+
+### O que mudou
+
+1. **Vaga de estacionamento sai do START.** A §63 tinha colocado a vaga nos dois
+   planos de propósito, com o argumento de que é condição de uso do espaço e não
+   moeda de troca para upgrade. O fundador reverteu: **vale só no PRO**.
+2. **O endereço do PRO não é só de divulgação.** A §62 registrou o benefício como
+   "divulgar o endereço de atendimento nas redes e materiais". O escopo real é
+   maior: **endereço comercial e fiscal** — serve para domiciliar a empresa, não
+   só para pôr no Instagram e no Google.
+
+### Matriz de benefícios vigente
+
+| | START | PRO |
+|---|:--:|:--:|
+| Sala equipada | ✅ | ✅ |
+| App (agenda, tempo de sala, pacientes) | ✅ | ✅ |
+| Comunidade e eventos | ✅ | ✅ |
+| **Vaga de estacionamento durante o atendimento** | — | ✅ |
+| Conversa com contador e com advogado | — | ✅ |
+| Impressão | — | ✅ |
+| Recepção (agendamento, cobrança, retorno) | — | ✅ |
+| **Endereço comercial e fiscal** | — | ✅ |
+| Emissão de nota fiscal | — | ✅ |
+
+O START fica com **três itens**, todos sem condição; o PRO mantém os cinco
+diferenciais, agora com o estacionamento como sexto.
+
+### ⚠️ Não propagado
+
+Nada além deste handoff foi tocado. Continuam com a versão velha:
+
+- `OLI_Planos_2026.pdf`, `OLI_Plano_START.png` e `OLI_Plano_PRO.png` — as peças
+  mostram a vaga como benefício do START e o endereço só como divulgação.
+  Regerar por `gera_pecas.py` (§63).
+- `docs/OLI_BASE.md` — a matriz de plano do §5 nunca chegou a citar nem o
+  estacionamento nem o endereço.
+- Matriz `FEATURES` do `app/meu-plano.tsx` e o site institucional — mesma
+  pendência aberta desde a §62.
+- Prompts da Olivia (`whatsapp-webhook`, `test-lead-ai`,
+  `docs/IA_ATENDIMENTO_WHATSAPP.md`) — ela ainda não menciona nenhum dos dois
+  benefícios ao explicar o PRO.
+
+## 68. Documento de análise estratégica para a consultoria de governança (02/set)
+
+O fundador pediu um retrato consolidado — quem somos, o que resolvemos, proposta
+de valor e momento atual da jornada — para alimentar uma consultoria de
+governança em andamento. Montado como artifact HTML a partir de `CLAUDE.md`,
+`docs/OLI_BASE.md`, `docs/ROADMAP.md` e deste handoff, sem dado inventado.
+
+**Estrutura final (10 seções):** quem somos · problema e proposta de valor ·
+modelo de negócio · capacidade e ponto de equilíbrio · aquisição, funil e
+qualidade de lead · momento atual da jornada · produto, tecnologia e
+conformidade · achados de controle e integridade · estrutura de decisão e pontos
+de atenção · horizonte de crescimento.
+
+**Correções de fato feitas pelo fundador durante a montagem** (todas já
+refletidas no documento, e as duas primeiras registradas na §67):
+
+- Estacionamento e endereço — ver §67.
+- **Guilherme Pasquetti é Diretor de Operações**, não sócio-fundador. O
+  `user_type='founder'` no banco é rótulo técnico de papel de acesso, não título
+  societário — não confundir os dois em material externo.
+- **Cesar e Edna entram no quadro**, ambos sócios: Cesar é investidor e
+  conselheiro, tomador de decisão para estrutura física e caminho organizacional
+  — é o único elo com conselho consultivo e com respaldo para novos aportes;
+  Edna cuida de gestão de pessoas, organização e conforto dos espaços.
+- **Ana é sócia e parceira externa ao mesmo tempo** — presta assessoria jurídica
+  remunerada aos clientes, sob demanda, sem tabela fechada.
+- **AR Soluções e MBS Hackathon saíram do quadro de parceiros.**
+- **Communicare vira só indicação** — não será mais absorvido como
+  funcionalidade nativa do app. A integração construída (§6) fica inerte por
+  decisão de produto, não mais por falta de token.
+- **Remuneração do Diretor de Operações não entra em documento externo** —
+  informação sensível, fica restrita ao `admin/app/meu-recebimento`.
+
+**Dado de capacidade calculado nesta sessão e que não existia em lugar nenhum:**
+9 salas × 15h × 30 dias = **4.050 h/mês de capacidade teórica** pela mesma
+métrica de ocupação do `/meu-recebimento`. Como o break-even exige ~480 h/mês
+(24 profissionais × 20h), **o negócio empata com ~12% da capacidade instalada**.
+Vale como argumento comercial e de investimento — o problema não é estrutura nem
+preço, é volume de profissional ativo.
+
+**Achados de controle consolidados no documento** (nenhum novo, todos já
+registrados avulsos neste handoff — o valor foi juntá-los e ver o padrão):
+formulário do site que nunca funcionou, `rd-vincular-deals` parada por meses em
+silêncio, bônus de horas prometido e não creditado, preço vivendo em quatro
+fontes divergentes, 4 edge functions em produção fora do repo, 21 pendências
+formais com vários "confirmado ainda aberto". Padrão: **defeito comercial só
+aparece quando alguém decide olhar** — não há rotina de verificação.
 
 ## 13. Comandos úteis
 
@@ -2658,3 +2761,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (31/ago sessão 3):** O fundador pegou uma regra que **não podia existir**: a peça do START oferecia os diagnósticos "no plano semestral", mas o START não tem mensalidade e portanto não tem plano semestral nenhum — era resíduo do desenho intermediário de 13/ago, quando o START custava R$ 97 e o compromisso de seis meses era a contrapartida da cortesia; quando o plano voltou a ser gratuito, a contrapartida evaporou e a letra miúda ficou. **Decisão: os dois diagnósticos saem do START e viram exclusivos do PRO**, o que de quebra encerra o último uso da ideia de "START semestral". Entrou também **vaga de estacionamento no prédio durante o atendimento, nos dois planos** — de propósito não é diferencial de upgrade, é condição de uso do espaço. O PRO fica com cinco diferenciais e o START com quatro itens, todos sem condição. PDF e as duas peças refeitos, agora geradas por `gera_pecas.py`, que lê o CSS do próprio HTML do PDF para que peça individual e comparativo não possam divergir por esquecimento — risco real depois de três rodadas de mudança no mesmo dia. **Pendente:** estacionamento e endereço ainda não estão no site, no `OLI_BASE.md`, na matriz `FEATURES` nem nos prompts da Olivia.
 
 **Resumo de 1 linha (02/set sessão 2):** Fundador não conseguia adicionar horas nos próprios perfis founder (Guilherme/Igor) — precisava ligar/desligar acesso completo (reserva, checkout) a qualquer momento pra demonstrar o app em visitas, sem impactar produção. Investigado antes de mexer: bloqueio real era `/medicos/[id]` dar `notFound()` pra founder — única página com o form de horas; `addHours` e o gate de reserva do app (`hasReservationCredit`) nunca filtram por `user_type`. Fix: card "Modo demonstração" em `/equipe/[id]` (que founder já acessa) — ativa/soma horas reusando `addHours`, e nova ação `desativarHorasDemonstracao` expira o saldo na hora pra desligar. Não abriu o gate de `/medicos` de propósito — isso poluiria contagens e dashboards de faturamento. Ver §66. `tsc --noEmit` limpo, não testado ao vivo, commit `e8758e3`, push direto pra `main`.
+
+**Resumo de 1 linha (02/set sessão 3):** Montado um **documento de análise estratégica para a consultoria de governança** (artifact HTML, 10 seções) a partir de `CLAUDE.md`, `OLI_BASE.md`, `ROADMAP.md` e deste handoff — ver §68. A montagem virou sessão de correção de fato: **estacionamento saiu do START e ficou exclusivo do PRO**, e o **endereço do PRO é comercial e fiscal**, não só de divulgação (§67, matriz de benefícios refeita — peças, site, `OLI_BASE.md`, `FEATURES` e prompts da Olivia seguem com a versão velha). Também corrigidos no quadro de pessoas: **Guilherme é Diretor de Operações**, não sócio-fundador (`user_type='founder'` é rótulo técnico de acesso, não título societário); **Cesar e Edna entram como sócios** — Cesar investidor/conselheiro e único elo com conselho consultivo e respaldo para aportes, Edna em gestão de pessoas e espaços; **Ana é sócia E parceira externa** (assessoria jurídica remunerada aos clientes, sem tabela fechada — parte relacionada sem política escrita); **AR Soluções e MBS saíram** do quadro; **Communicare vira só indicação**, sem absorção nativa. Remuneração do Diretor de Operações **não entra em documento externo**. **Dado novo calculado na sessão:** capacidade teórica de **4.050 h/mês** (9 salas × 15h × 30d) contra ~480 h de break-even — **o negócio empata com ~12% da estrutura que já paga**. Erro de leitura desta sessão que vale registrar: a primeira versão do documento trouxe o BASE como plano vivo e os indicadores de lead de 13/ago, ignorando a reversão da §36 e a reclassificação da §53 — **ler o handoff até o fim antes de consolidar estado, não só as seções mais recentes**.
