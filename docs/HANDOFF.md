@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 28/Agosto/2026.
+> Última atualização: 02/Setembro/2026.
 
 ---
 
@@ -2648,6 +2648,46 @@ fontes divergentes, 4 edge functions em produção fora do repo, 21 pendências
 formais com vários "confirmado ainda aberto". Padrão: **defeito comercial só
 aparece quando alguém decide olhar** — não há rotina de verificação.
 
+## 69. `OLI_BASE.md` reescrito na v2.0 + `CLAUDE.md` corrigido (02/set, sessão seguinte à §68)
+
+`docs/OLI_BASE.md` estava parado na v1.0 de 17/jun — 2,5 meses defasado.
+Vendia BASE/VIP com preços antigos, listava AR Soluções como parceiro ativo e
+descrevia o Communicare como integração a ativar por token. Reescrito na
+**v2.0**, com tudo que foi decidido até a §68 deste handoff:
+
+- **Seção nova "Quem é quem"** — não existia antes. Cesar, Guilherme (Diretor
+  de Operações, não sócio-fundador), Igor, Ana, Edna, Claudia, com o aviso de
+  que `user_type='founder'` é rótulo técnico de acesso e a nota de partes
+  relacionadas sem política escrita.
+- **Seção nova "Capacidade e ponto de equilíbrio"** — o cálculo de 4.050h/mês
+  vs ~480h da §68, formalizado como referência permanente.
+- **Planos:** só START/PRO, matriz de benefícios do §67 (estacionamento e
+  endereço comercial/fiscal exclusivos do PRO), viradas de 23h/19h.
+- **Regra de cobrança do §16** (blocos de 1h, reserva em múltiplos de 30min,
+  consumo por minuto) — o §16 avisava que não estava confirmado se o
+  `OLI_BASE.md` descrevia isso certo. Não descrevia. Entrou completa, com a
+  armadilha de copy do "pague só os minutos".
+- **Communicare** rebaixado a "só indicação" (§68); AR Soluções e MBS
+  Hackathon tirados do quadro de parceiros.
+- Divergências abertas citadas onde importam, não escondidas: `oli-plans.ts`
+  ainda com `plan_base` ativo e preços velhos (pendência sem decisão desde
+  26/ago — ver §36); `hour_packages.valor` errado no banco (§28/§30).
+
+`CLAUDE.md`: tabela de preços corrigida (START 1,90/PRO 1,45, tipo `PlanType`
+sem BASE/VIP); as 5 personas de chatbot trocadas pela Olivia única, com as
+regras duras dela (nunca pede telefone, nunca inventa preço, formatação
+`*simples*`); tabelas novas do Supabase listadas (`leads`, `conversations`,
+`messages`, `whatsapp_templates`, `patient_charges`,
+`professional_asaas_accounts`).
+
+**Não tocado de propósito** — muda comportamento em produção ou é material
+público, então exige autorização explícita antes de editar:
+`src/models/oli-plans.ts` (cobrança real), prompts da Olivia em
+`whatsapp-webhook`/`test-lead-ai` (comportamento com lead real), peças
+comerciais geradas por `gera_pecas.py` (fora do repo, no iCloud) e o site.
+
+Commit `ca22b22`, push direto pra `main`.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -2763,3 +2803,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (02/set sessão 2):** Fundador não conseguia adicionar horas nos próprios perfis founder (Guilherme/Igor) — precisava ligar/desligar acesso completo (reserva, checkout) a qualquer momento pra demonstrar o app em visitas, sem impactar produção. Investigado antes de mexer: bloqueio real era `/medicos/[id]` dar `notFound()` pra founder — única página com o form de horas; `addHours` e o gate de reserva do app (`hasReservationCredit`) nunca filtram por `user_type`. Fix: card "Modo demonstração" em `/equipe/[id]` (que founder já acessa) — ativa/soma horas reusando `addHours`, e nova ação `desativarHorasDemonstracao` expira o saldo na hora pra desligar. Não abriu o gate de `/medicos` de propósito — isso poluiria contagens e dashboards de faturamento. Ver §66. `tsc --noEmit` limpo, não testado ao vivo, commit `e8758e3`, push direto pra `main`.
 
 **Resumo de 1 linha (02/set sessão 3):** Montado um **documento de análise estratégica para a consultoria de governança** (artifact HTML, 10 seções) a partir de `CLAUDE.md`, `OLI_BASE.md`, `ROADMAP.md` e deste handoff — ver §68. A montagem virou sessão de correção de fato: **estacionamento saiu do START e ficou exclusivo do PRO**, e o **endereço do PRO é comercial e fiscal**, não só de divulgação (§67, matriz de benefícios refeita — peças, site, `OLI_BASE.md`, `FEATURES` e prompts da Olivia seguem com a versão velha). Também corrigidos no quadro de pessoas: **Guilherme é Diretor de Operações**, não sócio-fundador (`user_type='founder'` é rótulo técnico de acesso, não título societário); **Cesar e Edna entram como sócios** — Cesar investidor/conselheiro e único elo com conselho consultivo e respaldo para aportes, Edna em gestão de pessoas e espaços; **Ana é sócia E parceira externa** (assessoria jurídica remunerada aos clientes, sem tabela fechada — parte relacionada sem política escrita); **AR Soluções e MBS saíram** do quadro; **Communicare vira só indicação**, sem absorção nativa. Remuneração do Diretor de Operações **não entra em documento externo**. **Dado novo calculado na sessão:** capacidade teórica de **4.050 h/mês** (9 salas × 15h × 30d) contra ~480 h de break-even — **o negócio empata com ~12% da estrutura que já paga**. Erro de leitura desta sessão que vale registrar: a primeira versão do documento trouxe o BASE como plano vivo e os indicadores de lead de 13/ago, ignorando a reversão da §36 e a reclassificação da §53 — **ler o handoff até o fim antes de consolidar estado, não só as seções mais recentes**.
+
+**Resumo de 1 linha (02/set sessão 4):** `docs/OLI_BASE.md` reescrito na **v2.0** — estava parado desde 17/jun, vendendo BASE/VIP e AR Soluções e descrevendo Communicare como pendente de token. Ganhou seções novas de "Quem é quem" e "Capacidade e ponto de equilíbrio" e passou a refletir tudo que a §68 já tinha fixado (planos, matriz de benefícios do §67, Communicare como indicação, regra de cobrança do §16). `CLAUDE.md` corrigido junto (preços, `PlanType` sem BASE/VIP, 5 personas → Olivia única, tabelas novas do Supabase). Ver §69. Não tocado de propósito: `oli-plans.ts`, prompts da Olivia, peças comerciais e site — mudam comportamento em produção ou são material público. Commit `ca22b22`, push direto pra `main`.
