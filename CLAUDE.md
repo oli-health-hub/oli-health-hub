@@ -103,29 +103,31 @@ oliRed:       '#D9534F'   // Alertas e urgência
 > Fonte de negócio (preços, escopo): `docs/OLI_BASE.md`. Fonte de código: `src/models/oli-plans.ts`. Ao alterar, atualizar os dois.
 
 ```typescript
-type PlanType = 'START' | 'BASE' | 'PRO' | 'VIP';
+type PlanType = 'START' | 'PRO';   // BASE desativado, VIP nunca lançado
 
-// R$/min (ratePerMinute) — ver src/models/oli-plans.ts
-RATE_PER_MINUTE = { START: 2.00, BASE: 1.50, PRO: 1.30 }  // VIP em standby (não lançado)
-MONTHLY_PRICE   = { START: 0, BASE: 299.00, PRO: 599.00 } // VIP: null
+// Valores vigentes (fonte: tabela `plans` no Supabase)
+RATE_PER_MINUTE = { START: 1.90, PRO: 1.45 }
+MONTHLY_PRICE   = { START: 0, PRO: 599.00 }   // PRO semestral: 499.00/mês, fidelidade 6 meses
 ```
 
-- **START**: gratuito, default no signup. **BASE/PRO**: recorrentes. **VIP**: em desenvolvimento — não comercializar nem implementar lógica.
-- O catálogo completo de benefícios por plano está em `app/(tabs)/ecossistema.tsx` — componente `PLAN_BENEFITS`.
+- **START**: sem mensalidade, **padrão automático no cadastro** (a exigência de escolher plano existiu entre 19 e 26/ago e foi revertida).
+- **PRO**: recorrente, mensal ou semestral. Ponto de virada: ~23h/mês no mensal, ~19h no semestral.
+- **BASE**: desativado (`ativo=false`), zero assinantes, fora da vitrine — preservado só por histórico.
+- **VIP**: nunca lançado — não comercializar nem implementar lógica.
+- ⚠️ **`src/models/oli-plans.ts` está defasado** — ainda marca `plan_base` como ativo com preços velhos (R$ 299 / R$ 1,50). Pendência aberta desde 26/ago, sem decisão. O banco é a fonte correta.
+- Benefícios por plano: matriz em `docs/OLI_BASE.md` §5. Estacionamento e endereço comercial e fiscal são exclusivos do PRO.
 
-## Especialistas IA (Chatbot)
-5 personas ativas em `app/chatbot.tsx`, roteadas via `?persona=`:
+## Olivia — assistente única de IA
+As 5 personas antigas (Ana Luiza, Isabella, Amanda, Ronaldo, Olivia) foram **reduzidas a uma** em 19/ago — nenhuma tinha ponto de entrada ativo no app. A Edge Function `chat` não recebe mais `persona` no body.
 
-| Persona | Nome | Especialidade |
-|---------|------|--------------|
-| `ana` | Ana Luiza | Direito Médico (CFM, LGPD, contratos) |
-| `isabella` | Isabella | Contabilidade Médica (PJ, impostos) |
-| `convenios` | Amanda | OLI Convênios (TISS, credenciamento) |
-| `carreira` | Ronaldo | OLI Carreira (captação, posicionamento) |
-| `olivia` | Olivia | OLI Health Hub (salas, planos, reservas) |
+| Frente | Onde | O que faz |
+|--------|------|-----------|
+| App | `app/chatbot.tsx` → Edge Function `chat` | Dúvidas sobre salas, planos, reservas, módulos, eventos, comunidade, indicação |
+| WhatsApp | Edge Function `whatsapp-webhook` | **Responsável comercial**: descoberta, quebra de objeção, foto por especialidade, agendamento de visita, handoff para humano |
 
-Todas roteiam para a Edge Function `chat` no Supabase que chama `claude-haiku-4-5-20251001`.
-`consultaUrl` está `null` em todas — preencher com links Calendly quando disponíveis.
+Ambas usam `claude-haiku-4-5-20251001`. O comportamento no WhatsApp é regido por **`docs/IA_ATENDIMENTO_WHATSAPP.md`** — o prompt em código implementa o manual, não o contrário; ao mexer no prompt, atualizar o manual junto e manter `test-lead-ai` sincronizada com `whatsapp-webhook`.
+
+**Regras duras da Olivia:** nunca pede WhatsApp/telefone (o canal já é o WhatsApp); nunca inventa regra, preço ou política; nunca calcula total novo (só cita exemplos já conferidos); usa `*asterisco simples*` (WhatsApp não renderiza `**duplo**`); paciente nunca é atendido por IA (travado por constraint no banco).
 
 ## LGPD — Requisitos Obrigatórios (Lei 13.709/2018)
 Dados de saúde são **dados sensíveis** (Art. 11). Status atual:
@@ -156,8 +158,12 @@ Toda comunicação passa por `src/services/communicare.ts`.
 | `usage_charges` | Cobranças por minuto de sessão |
 | `hour_balance` | Saldo de pacotes de horas |
 | `nps_responses` | NPS (tabela criada, sem UI ainda) |
-| `plans` | Planos BASE/PRO/VIP com preços |
+| `plans` | Planos com preços — **fonte correta**, à frente do `oli-plans.ts` |
 | `auth_attempts` | Rate limiting de login |
+| `leads` | Funil comercial (9 etapas, 6 origens, vínculo com RD Station) |
+| `conversations` / `messages` | Inbox de WhatsApp (lead e paciente), Olivia e equipe |
+| `whatsapp_templates` | Templates aprovados pela Meta |
+| `patient_charges` / `professional_asaas_accounts` | Cobrança de paciente via subconta Asaas |
 
 RLS habilitado em todas as tabelas. `database.types.ts` gerado via Supabase MCP.
 
