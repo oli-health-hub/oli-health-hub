@@ -1,0 +1,692 @@
+{
+  "meta": {
+    "documento": "Dossiê OLI Health Hub",
+    "versao": "1.0",
+    "gerado_em": "2026-09-23",
+    "numeros_medidos_no_banco_em": "2026-09-23",
+    "fontes": [
+      "docs/HANDOFF.md §1–§75",
+      "docs/OLI_BASE.md v2.0",
+      "Supabase xwcarrurjvfxisuaihid (consulta direta)",
+      "Projeto claude.ai 'OLI - HH' (Plano de execução do CEO, Documentos dos 100 dias, reports diários)",
+      "memória do projeto",
+      "pasta iCloud 'OLI - HH'"
+    ],
+    "regra": "Onde este arquivo diverge de seção antiga do HANDOFF, vale este. Sem credenciais nem remuneração."
+  },
+  "empresa": {
+    "nome": "OLI Health Hub",
+    "genero_gramatical": "masculino (do OLI, no OLI, ao OLI)",
+    "posicionamento": "hub para profissionais da saúde: consultórios prontos + app de gestão + operação cuidada pelo OLI",
+    "nao_usar": [
+      "coworking",
+      "coworking médico",
+      "ecossistema",
+      "hub de soluções",
+      "premium",
+      "pay-per-use",
+      "networking"
+    ],
+    "mote": "chega, atende e cresce",
+    "headline_site": "Consultório pronto. Sem aluguel e sem fidelidade.",
+    "publico_alvo": "profissionais de saúde de nível superior (médicos, psicólogos, nutricionistas, dentistas, esteticistas, fisioterapeutas etc.), PF ou PJ, presencial e/ou telemedicina",
+    "endereco": "Rua Marquês de Paranaguá, 348, Edifício Ralph Center, conjuntos 61 a 68, Consolação, São Paulo/SP, CEP 01303-905",
+    "contatos": {
+      "whatsapp_comercial_business_app": "(11) 97223-3745",
+      "whatsapp_olivia_cloud_api": "(11) 93942-9453 — exclusivamente comercial, nunca paciente; chip com dono anterior (pastelaria), enganos são esperados",
+      "recepcao": "(11) 91998-0777",
+      "email": "contato@olihealthhub.com.br",
+      "site": "https://olihealthhub.com.br",
+      "calendly_visita": "https://calendly.com/olihealthhub/atendimento-presencial"
+    },
+    "custo_fixo_mensal": 50000,
+    "capacidade": {
+      "salas": 9,
+      "horas_teoricas_mes": 4050,
+      "horas_equilibrio_mes": 480,
+      "percentual_capacidade_no_equilibrio": 12
+    },
+    "salas": [
+      {
+        "n": 1,
+        "tipo": "Vídeo Conferência"
+      },
+      {
+        "n": 2,
+        "tipo": "Psicologia"
+      },
+      {
+        "n": 3,
+        "tipo": "Clínica Geral"
+      },
+      {
+        "n": 4,
+        "tipo": "Audiovisual"
+      },
+      {
+        "n": 5,
+        "tipo": "Clínica Geral"
+      },
+      {
+        "n": 6,
+        "tipo": "Clínica Geral"
+      },
+      {
+        "n": 7,
+        "tipo": "Clínica Geral"
+      },
+      {
+        "n": 8,
+        "tipo": "Ginecologia / Estética"
+      },
+      {
+        "n": 9,
+        "tipo": "Eventos"
+      }
+    ],
+    "horario_reserva": "segunda a sábado, 08h00–18h30; domingo fechado",
+    "paleta": {
+      "verde": "#5F7D67",
+      "dourado": "#B8893C",
+      "creme": "#F4EFEA",
+      "texto": "#2F2F2F",
+      "texto_secundario": "#6B6B6B",
+      "alerta": "#D9534F"
+    }
+  },
+  "pessoas": [
+    {
+      "nome": "César",
+      "papel": "sócio, fundador, Responsável Técnico (RT); investidor e conselheiro; decide estrutura física e caminho organizacional; preside o Board; guarda o fundo de reserva"
+    },
+    {
+      "nome": "Igor Oliveira",
+      "papel": "sócio; controla a estrutura de contas do OLI e a migração; Master Admin; enxoval comercial; ferramentas internas (Trello, Slack, e-mail)"
+    },
+    {
+      "nome": "Ana Luiza",
+      "papel": "sócia e parceira jurídica (assessoria remunerada aos clientes, sob demanda); valida questões jurídicas; documentos de governança"
+    },
+    {
+      "nome": "Edna",
+      "papel": "sócia; gestão de pessoas, organização e conforto dos espaços; rede que traz visitas"
+    },
+    {
+      "nome": "Guilherme Pasquetti",
+      "papel": "executivo contratado (não é sócio); Diretor de Operações até ago/2026; Executivo (CEO) desde 16/09/2026 por contrato de prestação de serviços de 3 meses (até 15/12/2026, 4 anexos); executa o plano dos 100 dias; fecha B2B e exceções",
+      "observacao": "user_type='founder' no banco é rótulo técnico de acesso, não título societário"
+    },
+    {
+      "nome": "Nathalia Coelho",
+      "papel": "dona do comercial desde 21/09/2026 (ex-Livance): atendimento de leads no espaço, visitas, apresentação de planos, fechamento de individuais, plano comercial e onboarding",
+      "em_aberto": "vínculo, carga horária, remuneração; se é a 'parceira comercial' de 10–12%"
+    },
+    {
+      "nome": "Cláudia Moraes",
+      "papel": "recepção e linha de frente: levantar leads, busca ativa, primeiro atendimento; acesso ao painel"
+    },
+    {
+      "nome": "Olivia",
+      "papel": "IA (Claude Haiku): assistente do app e responsável comercial no WhatsApp"
+    }
+  ],
+  "fluxo_do_lead": [
+    "Olivia (WhatsApp)",
+    "Cláudia (linha de frente)",
+    "Nathalia (visita, planos, fechamento)",
+    "Edna (recepção e rede)"
+  ],
+  "parceiros": [
+    {
+      "empresa": "Contábil Mello",
+      "contato": "Isabella",
+      "servico": "contabilidade especializada em saúde",
+      "status": "ativo",
+      "precos": {
+        "simples_nacional_mes": 460,
+        "lucro_presumido_mes": 632,
+        "abertura_empresa_sp": 1200
+      }
+    },
+    {
+      "empresa": "Communicare",
+      "contato": "Heitor",
+      "servico": "prontuário, agenda, teleconsulta",
+      "status": "só indicação desde 02/09/2026; integração técnica construída e inerte por decisão de produto",
+      "precos": {
+        "prontuario_mes": 239,
+        "teleconsulta_profissional": 97
+      }
+    },
+    {
+      "empresa": "Agência Mint",
+      "contatos": [
+        "Victor",
+        "Cynthia",
+        "Larissa",
+        "Michelle"
+      ],
+      "servico": "marketing digital e comunicação",
+      "status": "contrato na pasta Parceiros/Mint; agência atual em rescisão desde 21/09 (confirmar se é a Mint)"
+    },
+    {
+      "empresa": "Marangos",
+      "servico": "piloto de indicação passiva (código MAR-8124A)",
+      "status": "encerrado sem resultado; não recebe nada"
+    },
+    {
+      "empresa": "AR Soluções",
+      "status": "fora do quadro"
+    },
+    {
+      "empresa": "MBS Hackathon",
+      "status": "fora do quadro; código MBS-81CCB sem comissão; MBS alugou o espaço, não é parceira"
+    }
+  ],
+  "regra_parceiros_em_material": "nunca nomear a empresa parceira; usar 'nossa assessoria contábil', 'nossa especialista jurídica'",
+  "planos": {
+    "vigentes": [
+      {
+        "nome": "START",
+        "mensalidade": 0,
+        "preco_minuto": 1.9,
+        "preco_hora": 114,
+        "padrao_no_cadastro": true,
+        "inclui": [
+          "sala equipada",
+          "app (agenda, tempo de sala, pacientes)",
+          "comunidade e eventos"
+        ]
+      },
+      {
+        "nome": "PRO",
+        "mensalidade": 599,
+        "mensalidade_semestral": 499,
+        "fidelidade_semestral_meses": 6,
+        "preco_minuto": 1.45,
+        "preco_hora": 87,
+        "inclui": [
+          "tudo do START",
+          "vaga de estacionamento durante o atendimento",
+          "conversa com contador e com advogado (cortesia na assinatura)",
+          "impressão",
+          "recepção (agendamento, cobrança, retorno de pacientes)",
+          "endereço comercial e fiscal",
+          "emissão de nota fiscal"
+        ]
+      }
+    ],
+    "viradas_horas_mes": {
+      "start_para_pro_mensal": 23,
+      "start_para_pro_semestral": 19
+    },
+    "desativados": {
+      "BASE": "ativo=false, zero assinantes",
+      "VIP": "nunca lançado; não citar",
+      "PRO_anual": "fora da UI, ainda existe no banco e no Asaas"
+    },
+    "taxa_congelada": "profiles.taxa_min_congelada preserva a taxa de quem entrou antes de 19/08/2026",
+    "prontuario": "não está em plano nenhum; módulo à parte R$ 239/mês (Communicare, só indicação)"
+  },
+  "regra_de_cobranca": {
+    "compra": "horas só em blocos de 1 hora",
+    "reserva": "múltiplos de 30 minutos; precisa de saldo",
+    "consumo": "por minuto dentro da reserva",
+    "excedente": "arredonda para os próximos 30 minutos",
+    "copy_proibida": [
+      "pague só os minutos que usar",
+      "consulta de 50 min por R$ X como compra avulsa"
+    ],
+    "copy_correta": "compre horas e use por minuto; a sobra fica no saldo"
+  },
+  "pacotes_de_horas": [
+    {
+      "compra_h": 1,
+      "recebe_h": 1,
+      "start": 114,
+      "pro": 87,
+      "validade_dias": 30
+    },
+    {
+      "compra_h": 10,
+      "recebe_h": 11,
+      "start": 1140,
+      "pro": 870,
+      "validade_dias": 60
+    }
+  ],
+  "receitas_sem_preco_validado": {
+    "sala_conferencia": {
+      "sugerido_hora": 150,
+      "minimo_h": 1
+    },
+    "sala_eventos": {
+      "sugerido_hora": 280,
+      "pacote_4h": 960,
+      "minimo_h": 2
+    },
+    "pacotes_b2b_consultoria": [
+      "Transbordo Corporativo",
+      "Retaguarda Plantonista",
+      "Grade Satélite"
+    ]
+  },
+  "programas_de_indicacao": {
+    "entre_profissionais": "indicador ganha 60 min válidos por 90 dias quando o indicado conclui o onboarding; link /baixar?ref=CODIGO",
+    "parceiros_externos": "comissão em R$ configurável por parceiro no admin (/parceiros); padrão 10% (até 12% para a parceira comercial); nunca acionado comercialmente com resultado"
+  },
+  "indicadores_banco_2026_09_23": {
+    "leads_total": 617,
+    "leads_ultimos_30_dias": 518,
+    "leads_por_origem": {
+      "whatsapp": 410,
+      "rd_station": 182,
+      "meta_ads": 22,
+      "site": 2,
+      "outro": 1
+    },
+    "leads_por_etapa": {
+      "novo": 9,
+      "contatado": 453,
+      "sem_resposta": 11,
+      "aguardando_retorno": 3,
+      "visita_agendada": 9,
+      "visita_realizada": 0,
+      "proposta_enviada": 1,
+      "convertido": 0,
+      "descartado": 131
+    },
+    "profissionais_cadastrados": 33,
+    "profissionais_no_start": 33,
+    "profissionais_no_pro": 0,
+    "onboarding_concluido": 15,
+    "perfis_internos": {
+      "founder": 2,
+      "partner": 2,
+      "team": 1
+    },
+    "assinaturas_ativas": 39,
+    "assinaturas_pro_pagas": 0,
+    "reservas_total_historico": 7,
+    "reservas_ultimos_30_dias": 3,
+    "perfis_com_reserva": 3,
+    "cobrancas_de_sala": 7,
+    "cobrancas_de_sala_de_clientes_reais": 0,
+    "receita_real_de_sala": 0,
+    "conversas_whatsapp": 528,
+    "mensagens_whatsapp": 3151,
+    "regua_nutricao": {
+      "primeiro_contato_enviados": 74,
+      "d3_enviados": 39,
+      "d10_enviados": 30,
+      "d10_agendados": 8,
+      "d24_agendados": 28
+    },
+    "leitura": "topo do funil cresceu de 66 (13/08) para 617 leads, mas visita→fechamento não andou: 0 conversões, 0 PRO, faturamento zero. Gargalo é visita e fechamento, não preço nem capacidade."
+  },
+  "historico_funil": [
+    {
+      "data": "2026-08-13",
+      "leads": 66,
+      "visitas": 4,
+      "conversoes": 0
+    },
+    {
+      "data": "2026-08-29",
+      "leads": 218,
+      "visitas_agendadas": 6,
+      "conversoes": 0
+    },
+    {
+      "data": "2026-09-23",
+      "leads": 617,
+      "visitas_agendadas": 9,
+      "propostas": 1,
+      "conversoes": 0
+    }
+  ],
+  "tecnologia": {
+    "app": {
+      "stack": "React Native + Expo SDK 54, Expo Router, Zustand",
+      "lojas": [
+        "App Store (publicado)",
+        "Google Play (publicado; sumiu e voltou em 21/07)"
+      ],
+      "bundle": "com.oli.healthhub",
+      "atualizacao": "OTA via EAS Update nos canais production e preview",
+      "funcionalidades": [
+        "reserva com saldo e trava de dupla reserva no banco",
+        "pacientes com LGPD",
+        "financeiro e checkout Asaas com cupom",
+        "pacotes de horas",
+        "comunidade com feed",
+        "gamificação Olicoins",
+        "indicação",
+        "push com régua de nurturing",
+        "Face ID",
+        "Olivia no app",
+        "eventos Luma",
+        "onboarding com especialidade, cidade, tipo de atendimento e objetivo"
+      ]
+    },
+    "admin": {
+      "stack": "Next.js 14 na Vercel",
+      "telas": [
+        "profissionais",
+        "equipe",
+        "parceiros",
+        "leads",
+        "conversas",
+        "fila",
+        "mapa de salas",
+        "cupons",
+        "notificações",
+        "catálogo",
+        "planos",
+        "modo demonstração"
+      ]
+    },
+    "site": {
+      "stack": "HTML estático em landing/, Vercel projeto oli-landing",
+      "paginas": [
+        "/",
+        "/baixar",
+        "/consultorio",
+        "/confirmado",
+        "/privacidade"
+      ],
+      "armadilha": "iCloud/OLI - HH/Website/oli-deploy é cópia órfã da era Netlify; nunca editar"
+    },
+    "backend": {
+      "supabase_project": "xwcarrurjvfxisuaihid",
+      "edge_functions_ativas": 27,
+      "cron": [
+        "régua comercial",
+        "RD vincular/reprocessar",
+        "nudge de silêncio",
+        "campanhas de push"
+      ]
+    },
+    "integracoes": {
+      "asaas": "pagamentos em produção (mínimo R$ 5 por cobrança)",
+      "rd_station_crm": "fonte única de lead por webhook; status espelhado de volta por trigger",
+      "whatsapp_cloud_api": "ativa desde 24/08/2026; 5 templates de marketing aprovados; handoff_comercial_v1",
+      "resend": "e-mails transacionais",
+      "luma": "eventos",
+      "calendly": "visitas",
+      "openai": "somente transcrição de áudio de lead, sem retenção",
+      "communicare": "construída, inerte por decisão de produto",
+      "meta_leads_webhook": "plano B inerte (Meta entra via RD)"
+    },
+    "repositorio": "github.com/guipasquetti/oli-health-hub (local ~/Developer/OLIHealthHub)"
+  },
+  "olivia": {
+    "canais": [
+      "app (dúvidas)",
+      "WhatsApp (comercial)"
+    ],
+    "comportamento": [
+      "atende todo contato",
+      "se apresenta e pergunta o nome só na primeira resposta",
+      "recomenda o plano que atende a necessidade (START para avulso)",
+      "envia foto real por especialidade ou ambiente",
+      "agenda visita pelo Calendly",
+      "reengaja silêncio dentro de 24 h",
+      "descarta engano de número",
+      "transfere para humano com alerta no WhatsApp comercial",
+      "responde áudio transcrito"
+    ],
+    "proibicoes": [
+      "pedir telefone/WhatsApp",
+      "inventar preço, regra ou política",
+      "calcular valor novo",
+      "prometer prontuário no PRO",
+      "afirmar sala dedicada a especialidade não existente",
+      "usar **negrito duplo**",
+      "atender paciente"
+    ],
+    "manual": "docs/IA_ATENDIMENTO_WHATSAPP.md"
+  },
+  "linha_do_tempo": [
+    {
+      "periodo": "2026-01/03",
+      "marco": "plano de negócio, projeção 6 meses, proposta de estruturação operacional, kickoff estratégico, primeiro contrato do Guilherme (Diretor de Operações)"
+    },
+    {
+      "periodo": "2026-04/05",
+      "marco": "identidade visual, contrato Mint, apresentação a sócios, reunião de parceiros 15/05, parcerias Mello e AR, panorama contratual"
+    },
+    {
+      "periodo": "2026-06",
+      "marco": "TestFlight, Asaas em produção (18/06), Google Play em teste fechado"
+    },
+    {
+      "periodo": "2026-07",
+      "marco": "Google Play em produção (13/07), App Store aprovada, gamificação, push, comunidade, site para Vercel (21/07), hackathon MBS no espaço (28/07), site reescrito e captura de leads (31/07)"
+    },
+    {
+      "periodo": "2026-08",
+      "marco": "leads Meta e RD no banco (03–05/08), reforma de planos (13–19/08), Olivia única, WhatsApp Cloud API (24/08), cadastro volta ao START (26/08), régua comercial aprovada (28/08), prontuário sai do PRO, funil orgânico corrigido (29/08)"
+    },
+    {
+      "periodo": "2026-09",
+      "marco": "PRO com endereço fiscal e estacionamento (02/09), OLI_BASE v2.0, consultoria Roland Berger (workshop 15/09), contrato de CEO (16/09), migração de contas (17/09), agenda dos 100 dias (20/09), kickoff e Nathalia (21/09), Trello e report diário (21/09)"
+    }
+  ],
+  "plano_100_dias": {
+    "meta": "R$ 20 mil de faturamento bruto mensal em até 90 dias",
+    "premissas": {
+      "ticket_medio": 1100,
+      "ativos_necessarios": 19,
+      "marcos_ativos": {
+        "dia_30": 2,
+        "dia_45": 6,
+        "dia_60": 10,
+        "dia_75": 14,
+        "dia_90": 19
+      }
+    },
+    "divisao_proposta": {
+      "b2b_e_eventos_guilherme": 13000,
+      "individuais_nathalia": 7000,
+      "status": "a validar"
+    },
+    "calendario": {
+      "consultoria_dia1": "2026-09-15",
+      "consultoria_dia100": "2026-12-23",
+      "guilherme_dia1": "2026-09-21",
+      "guilherme_dia100": "2026-12-29",
+      "fim_contrato_ceo": "2026-12-15",
+      "status": "divergência em aberto"
+    },
+    "fases_consultoria": {
+      "fase_0": "15–29/09",
+      "sprint_1": "30/09–29/10",
+      "sprint_2": "30/10–28/11",
+      "sprint_3": "29/11–23/12"
+    },
+    "ritos": [
+      "Weekly de Tração seg 09h30",
+      "Briefing de Prospecção seg 15h",
+      "prospecção B2B ter e qui de manhã",
+      "Comitê Legal e B2B ter 15h30",
+      "Handover qui 14h",
+      "Flash de Caixa sex 09h",
+      "Board dia 10 (09/10, 10/11, 10/12)",
+      "Relatório mensal até o 5º dia útil (07/10, 09/11, 07/12)"
+    ],
+    "kpis_contrato_ceo": [
+      "MRR R$ 20 mil",
+      "tração B2B (em branco)",
+      "fechamento institucional (em branco)",
+      "governança digital 100% no 1º mês",
+      "burn dentro do envelope",
+      "2 eventos/mês"
+    ],
+    "limites_consultoria_nao_assinados": {
+      "envelope_opex_mes": 35000,
+      "alcada_ceo": 2000,
+      "verba_ativacao_offline_mes": 3000,
+      "alcada_claudia": 500,
+      "fundo_reserva": 5000
+    },
+    "documentos_governanca_vencidos": [
+      {
+        "doc": "Acordo de Sócios",
+        "dono": "Ana Luiza e César",
+        "prazo": "2026-09-21"
+      },
+      {
+        "doc": "Regimento Interno",
+        "dono": "Ana Luiza e César",
+        "prazo": "2026-09-21"
+      },
+      {
+        "doc": "Matriz de Alçadas",
+        "dono": "Ana Luiza e César",
+        "prazo": "2026-09-21"
+      },
+      {
+        "doc": "Envelope Financeiro Trimestral",
+        "dono": "Ana Luiza e César",
+        "prazo": "2026-09-21"
+      },
+      {
+        "doc": "Minutas-padrão de MoU B2B",
+        "dono": "Ana Luiza",
+        "prazo": "2026-09-21"
+      },
+      {
+        "doc": "Trello corporativo, e-mail @oli, Slack",
+        "dono": "Igor",
+        "prazo": "2026-09-19"
+      },
+      {
+        "doc": "Enxoval comercial (lâminas e prospectos A, B, C)",
+        "dono": "Igor",
+        "prazo": "2026-09-22"
+      }
+    ],
+    "proximos_marcos": [
+      {
+        "data": "2026-09-24",
+        "item": "encerrar agência atual e contratar nova; mapear 50 interlocutores no raio de 3 km"
+      },
+      {
+        "data": "2026-09-25",
+        "item": "política de descontos aprovada; treinar Cláudia (agenda, Trello, transbordo com SLA 15 min)"
+      },
+      {
+        "data": "2026-09-28",
+        "item": "Igor apresenta Slack e Trello ao time; lâmina vai para impressão"
+      },
+      {
+        "data": "2026-09-29",
+        "item": "transferência tecnológica ao Master Admin do Igor, sob ata"
+      },
+      {
+        "data": "2026-09-30",
+        "item": "levar os 4 pedidos do aditivo ao César; início do Sprint 1 (calendário da consultoria)"
+      },
+      {
+        "data": "2026-10-07",
+        "item": "1º relatório mensal do CEO"
+      },
+      {
+        "data": "2026-10-09",
+        "item": "Board de outubro; prazo para escolher nova agência"
+      },
+      {
+        "data": "2026-10-15",
+        "item": "entregas do mês 1 do contrato (plano de tração, inventário digital, painel, plano de parcerias, calendário de ativação)"
+      }
+    ],
+    "ferramentas": {
+      "agenda_100_dias": "https://claude.ai/code/artifact/661052a0-b420-4c3b-9d36-efb87907272f",
+      "kickoff_semana_1": "https://claude.ai/code/artifact/d9397760-9482-4dad-99d8-a41da6891627",
+      "plano_de_acao_guilherme": "https://claude.ai/code/artifact/80242b4e-a1fc-41ae-a3b7-f5d262734eb9",
+      "planner_fase_0": "https://claude.ai/artifact/1hvAXrFNqgS6t9FZuB63Ph",
+      "trello_execucao_ceo": "https://trello.com/b/IFfkMHNm/oli-execu%C3%A7%C3%A3o-ceo (pessoal, não compartilhar)",
+      "report_diario": "07h30 em dias úteis, projeto claude.ai 'OLI - HH', pasta claude/reports/"
+    }
+  },
+  "aditivo_contrato_ceo_pedidos": [
+    "renovação automática salvo aviso até 30/11",
+    "alçada de R$ 2.000, verba de R$ 3.000/mês e ato formal de designação; corrigir cláusula I.1.1.f",
+    "não concorrência cai se a não renovação partir do OLI",
+    "teto de responsabilidade, data de pagamento com multa simétrica, propriedade intelectual com data de corte",
+    "corrigir remissão da cláusula XI.2 (Anexo IV → Anexo II)"
+  ],
+  "migracao_de_contas": {
+    "responsavel": "Igor",
+    "iniciada": "2026-09-17",
+    "destino": "contas em nome do próprio OLI",
+    "feito": [
+      "CNPJ do OLI",
+      "Google Workspace",
+      "registro.br",
+      "módulo de vendas",
+      "conta Claude",
+      "conta Luma"
+    ],
+    "pendente": [
+      "créditos da API Anthropic",
+      "demais itens do Checklist_Migracao_Contas_OLI.pdf"
+    ]
+  },
+  "decisoes_em_aberto": [
+    "política de descontos com a Nathalia (Guilherme + César)",
+    "vínculo, carga e remuneração da Nathalia; se é a parceira comercial de 10–12%",
+    "preço de pacotes B2B e de locação de salas de conferência/eventos",
+    "calendário oficial dos 100 dias (15/09 ou 21/09)",
+    "aditivo do contrato do CEO",
+    "peça individual do START ainda mostra itens que ele não tem",
+    "taxa do OLI e produto de subconta Asaas para cobrança de paciente",
+    "fluxo de check-in na sala (não desenhado)"
+  ],
+  "pendencias_tecnicas": [
+    "oli-plans.ts com plan_base ativo e preços velhos; hour_packages.valor desatualizado",
+    "site e admin sem os planos novos; 'sem fidelidade' no H1 do site",
+    "estacionamento e endereço fiscal fora do site, da matriz FEATURES, dos prompts da Olivia e das peças (regerar por gera_pecas.py)",
+    "edge functions rd-sync-status, rd-setup-webhook e rd-backfill fora do repo; apagar rd-probe",
+    "template primeiro_contato_comercial_v2 com imagem; limpar 3 WABAs duplicadas; número próprio para templates de paciente",
+    "75 leads de WhatsApp sem e-mail sem vínculo com a RD (aceito)",
+    "credencial de teste do admin não autentica",
+    "Google Ads sem responsável; segmentação geográfica do Meta",
+    "login social e expo-location dependem de rebuild nativo; reforma de planos sem teste em device"
+  ],
+  "regras_permanentes": [
+    "OLI é masculino; português correto com acentuação",
+    "linguagem concreta, sem jargão",
+    "não nomear empresas parceiras em material comercial; não citar VIP; não falar de check-in",
+    "remuneração do executivo não entra em documento externo",
+    "conferir números contra o banco, não contra a documentação",
+    "validar proposta de conteúdo com o Guilherme antes de implementar",
+    "PDF de marca por HTML + Chromium headless; nunca LibreOffice no sandbox",
+    "edge function se confere com deno check",
+    "mudança no app: eas update nos dois canais no mesmo turno",
+    "toda tarefa concluída entra no docs/HANDOFF.md; ler o arquivo do disco antes de escrever"
+  ],
+  "onde_esta_cada_coisa": {
+    "codigo": "~/Developer/OLIHealthHub",
+    "handoff": "docs/HANDOFF.md",
+    "documento_base": "docs/OLI_BASE.md",
+    "manual_olivia": "docs/IA_ATENDIMENTO_WHATSAPP.md",
+    "regua_comercial": "docs/WHATSAPP_NUTRICAO_COMERCIAL.md",
+    "dossie_json": "docs/OLI_DOSSIE.json",
+    "material_negocio": "iCloud/OLI - HH/",
+    "contratos": "iCloud/OLI - HH/Contratos OLI/",
+    "parceiros": "iCloud/OLI - HH/Parceiros/",
+    "fotos_boas": [
+      "iCloud/OLI - HH/Fotos Estrutura/Tratadas/",
+      "iCloud/OLI - HH/MBS/assets/",
+      "landing/fotos/"
+    ],
+    "pecas_de_planos": [
+      "OLI_Planos_2026.pdf",
+      "OLI_Plano_START.png",
+      "OLI_Plano_PRO.png"
+    ],
+    "plano_ceo_e_reports": "projeto claude.ai 'OLI - HH'"
+  }
+}

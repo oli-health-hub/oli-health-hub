@@ -1,7 +1,9 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 02/Setembro/2026.
+> Última atualização: 23/Setembro/2026.
+>
+> **Chegou agora? Comece pela §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026.
 
 ---
 
@@ -2688,6 +2690,210 @@ comerciais geradas por `gera_pecas.py` (fora do repo, no iCloud) e o site.
 
 Commit `ca22b22`, push direto pra `main`.
 
+## 70. Agenda de entregáveis dos 100 dias, por pessoa (20/set)
+
+**Pedido do fundador:** a partir do cronograma do relatório final da consultoria (Fase 0 e Sprints 1 a 3, `Oli - Relatorio Final.pdf`, 5 páginas), montar uma agenda de entregáveis por pessoa para chegar a R$ 20 mil de faturamento mensal em até 90 dias. O Guilherme executa o plano e cobra o time.
+
+**Entrega:** documento vivo no Claude Docs, "OLI — Agenda de Entregáveis dos 100 Dias" (`https://claude.ai/code/artifact/661052a0-b420-4c3b-9d36-efb87907272f`). Seis listas (GP Guilherme, IG Igor, CE César, AL Ana Luiza, CL Cláudia, ED Edna), cada item com prazo real, entregável e evidência; ritmo de acompanhamento (Weekly na segunda, Comitê na quarta, placar na sexta, Relatório Mensal no 5º dia útil, Board no dia 10); calendário semana a semana; sete decisões em aberto. É proposta: nada foi criado no Trello nem na agenda, e nenhum código foi alterado.
+
+**Premissas fixadas (todas a validar):** Dia 1 = segunda 21/09/2026, o que dá Dia 16 = ter 06/10, Dia 90 = sáb 19/12 (prazo prático sex 18/12) e Dia 100 = ter 29/12. Meta lida como **faturamento bruto mensal** (mensalidades + horas usadas + B2B); só de mensalidade seriam 34 PROs a R$ 599. Ticket de planejamento de R$ 1.100 por profissional (8 a 9 h/mês), o que pede ~19 ativos. Funil de ~6 tours por semana com 30% de conversão em ativo. Marcos de 2, 6, 10, 14 e 19 ativos nos Dias 30, 45, 60, 75 e 90, com revisão da conversão real no Dia 45 (04/11).
+
+**Onde o plano do relatório não bate com o estado do OLI:**
+- O relatório cita três planos (Start, Base e Pro); só existem START e PRO desde 19/ago.
+- O relatório fala em MRR, mas o START não tem mensalidade: quase todo o faturamento é minutagem.
+- Dia 13 (workshop de tour) cai num sábado, 12/10 e 02/11 são feriados (Weekly vai para a terça) e o dia 10/10 é sábado (Board de outubro proposto para sex 09/10).
+- R$ 20 mil são 40% do custo fixo de R$ 50 mil (equilíbrio em ~480 h/mês, `OLI_BASE.md` §1 e §4): é marco, não o breakeven que o relatório atribui ao Sprint 3.
+- Locação de salas de conferência e eventos segue sem preço validado (`OLI_BASE.md` §9) e é insumo do prospecto do Igor e dos dois eventos do Sprint 1.
+
+**Armadilha de leitura (registrar para não repetir):** a memória do projeto ainda trazia "66 leads, 4 visitas, 0 conversões" (13/ago) e "o admin não tem tela de leads". Os dois estão superados: em 29/ago a base tinha 218 leads e 6 visitas agendadas (§53) e a `/leads` existe desde a §15. Antes de citar número de funil, conferir o handoff e o `OLI_BASE.md`.
+
+**Pendências (decisão do fundador):** definição da meta; escopo da parceira comercial (treinar Cláudia e Olívia, validar leads; critério de comissão de 10% a 12% e sua base); preço dos pacotes B2B (Transbordo Corporativo, Retaguarda Plantonista, Grade Satélite) e da locação de salas; data de início; peça individual do START (ainda lista os itens que ele não tem); workshop em 02/10 ou 03/10 e Board em 09/10; "CEO" no relatório versus Diretor de Operações no `OLI_BASE.md`.
+
+## 71. Kickoff de 21/set e Semana 1, com a entrada da Nathalia (21/set)
+
+**Pedido do fundador:** o kickoff acontece na segunda 21/09 às 10h (não terça 22/09, como estava na §70) e ele precisava sair da reunião já com as agendas e metas da semana designadas por pessoa. Durante a montagem entrou uma pessoa nova no projeto.
+
+**Nathalia Coelho (nova):** ex-coordenadora de vendas e onboarding na Livance. Passa a ser a **dona do comercial**: atende a maior parte dos leads no espaço, acompanha as visitas, apresenta os planos e fecha vendas, e desenha o plano comercial e o onboarding dos profissionais. **Cláudia** vira a linha de frente (levanta leads, busca ativa de contatos e informações, primeiro atendimento, apoio total à Nathalia); **Edna** trabalha direto com ela (a rede da Edna traz as visitas, que a Nathalia apresenta e fecha). Fluxo do lead passa a ser Olívia, Cláudia, Nathalia, Edna na recepção. O fundador precisa alinhar com ela a **política de descontos e valores** do primeiro momento.
+
+**Entrega:** (1) novo documento vivo no Claude Docs, "OLI — Kickoff e Semana 1" (`https://claude.ai/code/artifact/d9397760-9482-4dad-99d8-a41da6891627`): resumo, roteiro do kickoff de 80 minutos, agenda da semana de cada pessoa com mensagem pronta para enviar, pauta de 1 hora para a política de descontos com a Nathalia, linha de base e formato do placar de sexta 25/09. (2) Agenda dos 100 dias atualizada: GP-1 para seg 21/09 10h, **agenda da Nathalia com 15 entregáveis (NC-1 a NC-15)**, GP-24 (aprovar a política de descontos com o César até sex 25/09), Weekly com a Nathalia, ajustes de texto em Cláudia e Edna, calendário das semanas 1 a 3 e oitava decisão em aberto.
+
+**Planner visual para o grupo:** página publicada "Planner OLI Fase 0" (`https://claude.ai/artifact/1hvAXrFNqgS6t9FZuB63Ph`, privada até o fundador compartilhar): calendário 21/09 a 05/10, 40 tarefas por dia com prazo, escopo, evidência, responsáveis, conectados, observação em destaque e documentos a consultar, com filtro por pessoa. Não linka a Agenda dos 100 dias nem o kickoff (têm decisões e números internos); o Aditivo (AL-2 e GP-3) ficou de fora por ser do contrato do fundador. Cartões com sufixo N são propostas e viram tarefas oficiais ao enviar.
+
+**Semana 1 (até sex 25/09):** 11 IDs, 7 entregas distintas: CE-1 e AL-1 (quatro documentos de governança), AL-2 e GP-3 (aditivo), AL-3 (minutas de MoU), GP-2 e IG-1 (SLA da agência, reunião sugerida qui 24/09), GP-4 (fonte do placar), IG-2 (contas e canais, incluindo os acessos da Nathalia até ter 22/09) e IG-3 (fluxo de anúncios), mais GP-1. Itens de sufixo N no documento do kickoff (CE-N, AL-N, CL-N, ED-N, GP-N2) são propostas só da semana 1 e não entraram na agenda dos 100 dias.
+
+**Conta útil para a política de descontos:** com ticket de R$ 1.100 e meta de R$ 20 mil, cada 5% de desconto médio custa 1 a 2 ativos a mais (0% = 19, 10% = 21, 20% = 23). O PRO semestral (R$ 499) já é 17% de desconto na mensalidade. Preço médio de equilíbrio implícito: ~R$ 104/h (R$ 50 mil / 480 h). A lâmina do IG-4 vai para impressão em 28/09, então a política precisa estar aprovada na sexta 25/09. Alçada sugerida só como ponto de partida: Nathalia até 5%, Guilherme até 10%, César acima.
+
+**Pendências:** oito decisões do fundador, a nova é se a Nathalia é a "parceira comercial" que o plano previa (10% a 12% de comissão, GP-7 e GP-8) e qual o vínculo, a carga horária e o modelo de remuneração dela; a política de descontos em si; nenhum cartão foi criado no Trello. Linha de base numérica de hoje (leads, visitas, ativos, faturamento de setembro) **não foi consultada no banco**: o documento usa os números de 29/ago (§53). Sem código, sem commit.
+
+## 72. Plano de ação e metas do Guilherme, a partir do relatório final da consultoria (21/set)
+
+**Pedido do fundador:** olhar o material final da consultoria ("Oli - Relatorio Final - Equipe", Roland Berger, 88 páginas) e desenhar o fluxo e as metas dele, com estratégias e planos de ação bem definidos para executar os 100 dias. **Correção dele no meio da sessão:** ignorar o BASE do relatório; só existem START e PRO, com as condições desta HANDOFF (START R$ 1,90/min = R$ 114/h sem mensalidade; PRO R$ 599, R$ 499 no semestral, R$ 1,45/min = R$ 87/h).
+
+**Entrega:** documento vivo no Claude Docs, "OLI — Plano de Ação e Metas do Guilherme" (`https://claude.ai/code/artifact/80242b4e-a1fc-41ae-a3b7-f5d262734eb9`, privado): resumo, leitura do relatório, metas em cascata, fluxo de operação, estratégias por frente, plano de ação (12 ações novas PA-01 a PA-12 e 14 semanas), indicadores com gatilhos de correção (G1 a G8), riscos e 11 decisões. O documento do projeto "OLI - Documentos dos 100 dias" ganhou o link.
+
+**O que o relatório final traz e o cronograma de 5 páginas não trazia:** papel de CEO e Head de Novos Negócios; seis metas individuais do fundador (p. 40); limites de gasto (teto de R$ 35 mil/mês, ativação offline R$ 3.000/mês, R$ 2.000 por evento, Cláudia R$ 500, Fundo de Reserva R$ 5.000, CapEx R$ 10.000 no trimestre); funil híbrido (a rua gera 12 de 20 clientes); preços dos pacotes B2B; semana típica com Flash de Caixa (sex 09h), Briefing de Prospecção (seg 15h), Comitê Legal e B2B (ter 15h30) e Handover (qui 14h); encontro do Dia 50 com o consultor.
+
+**Divergências resolvidas no documento:** (1) o relatório usa Start R$ 120/h, Base e Pro R$ 78/h; tudo foi refeito com START e PRO de hoje. (2) O gatilho de upgrade automático em 7 h (para o Base) não vale; proposta: oferecer o PRO semestral a partir de 18 h/mês. (3) O relatório põe o fundador para fechar o plano após o tour; agora a Nathalia fecha os individuais e ele fecha B2B e exceções. (4) O relatório conta o Dia 1 em 15/09; mantido o nosso 21/09.
+
+**Conta principal (proposta a validar):** R$ 20.933/mês = R$ 13.010 de B2B e eventos (2 clínicas a R$ 2.730 = R$ 990 + 20 h × R$ 87; 3 grades a R$ 1.350; 2 diárias, R$ 3.500), sob o fundador, mais R$ 7.923 de individuais (10 plantonistas no START a 4 h; 3 PRO a R$ 1.121), sob a Nathalia. O pacote Transbordo Corporativo sai a R$ 136/h, acima do START (R$ 114/h); a Grade Satélite a R$ 1.350 fica 26% abaixo do START; o locker e o desconto de endereço fiscal do relatório não existem no catálogo. Fechamento visita a contrato exigido: 67% (premissa do relatório) dá 23 visitas, 33% dá 46; as 25 saídas de rua (ter e qui, 06/10 a 29/12) geram até 25 visitas, por isso a meta é de 4 visitas agendadas por semana.
+
+**Pendências:** onze decisões do fundador (meta e divisão, papel e comissão da Nathalia, descontos GP-24, preços B2B GP-5, regra de upgrade, alçadas, teto de vouchers, novos ritos, agenda de rua, datas, plano B do Dia 45). A agenda dos 100 dias, o planner e os PDFs **não foram alterados** e ainda não trazem as metas individuais do relatório (p. 40 a 45); a linha de base do banco continua não consultada. O relatório traz aviso de confidencialidade (não repassar a terceiros nem a ferramentas de IA sem salvaguarda de sigilo); vale confirmar o uso com o consultor. Sem código, sem commit.
+
+## 74. Metas do fundador no Trello, quadro "OLI — Execução CEO" (21/set)
+
+**Pedido do fundador:** conectar as metas dele dentro do Trello, no projeto OLI. O único quadro do OLI na conta dele é "OLI — Execução CEO" (`https://trello.com/b/IFfkMHNm/oli-execu%C3%A7%C3%A3o-ceo`), pessoal e com ele como único membro; já tinha 25 cartões de prazos do contrato, dependências de terceiros e semana. Nada foi apagado.
+
+**Criado no quadro:** coluna "Metas dos 100 dias (Guilherme)" com os 6 cartões das metas do relatório (tração financeira, prospecção de rua, conversão B2B, ativação do espaço, governança de caixa e transferência tecnológica), cada um com prazo, prova de entrega e checklist, mais o cartão "Controles da semana" (checklist de 7 itens para repetir toda semana). Coluna "Marcos de faturamento (Dias 30 a 90)" com 5 cartões (20/10, 04/11, 19/11, 04/12 e 18/12: ativos, faturamento, parte do B2B e da Nathalia, prova e gatilho de correção). Cartão novo "Igor apresenta o Slack e o Trello ao time (IG-16)" em "Esta semana" (28/09).
+
+**Alterado:** o cartão "Repactuar SLA e budget da agência" virou "Encerrar a agência atual e contratar a nova (com o Igor e a Ana Luiza)", com o novo passo a passo e prazo 24/09 (ver §73).
+
+**Limites e pendências:** o quadro é privado e tem conteúdo do contrato do fundador, por isso não deve ser compartilhado com o time; o Trello do time (IG-2, sex 25/09) ainda não existe e os cartões de tarefas do time não foram criados. Sem rótulos (os rótulos do quadro não têm nome e a ferramenta não os edita) e sem membros nos cartões. O quadro usa o calendário do relatório (Dia 1 = 15/09) em cartões antigos, como "Sprint 1 começa" em 30/09; os cartões novos usam o nosso (Dia 1 = 21/09, Sprint 1 em 06/10). A divergência continua em aberto. Sem código, sem commit.
+
+## 75. Dossiê consolidado do projeto — retrato sistêmico em 23/09/2026
+
+> **Para que serve esta seção:** é o ponto de entrada de quem chega agora. Resume, num lugar só, tudo o que as §1 a §74 registraram ao longo de quatro meses, com os números **medidos no banco em 23/09/2026** (não copiados de seções antigas). Onde esta seção e uma seção antiga divergem, **vale esta**. O detalhe e a causa-raiz de cada item continuam nas seções citadas entre parênteses.
+>
+> Versão estruturada em JSON para consumo por outras ferramentas: `docs/OLI_DOSSIE.json` (mesmo conteúdo, mesmos números).
+
+### 75.1 O que é o OLI
+
+- **Negócio:** espaço físico de consultórios prontos para profissionais de saúde de nível superior (não só médicos) + app próprio de gestão + painel de operação + atendimento comercial por IA. Posicionamento oficial: **hub para profissionais da saúde**, não "coworking médico" (a palavra "coworking" sai de material comercial). Mote: **"chega, atende e cresce"**. Copy concreta, sem jargão ("consultórios prontos", nunca "hub de soluções" ou "ecossistema").
+- **Unidade:** Rua Marquês de Paranaguá, 348, Edifício Ralph Center, conjuntos 61 a 68, Consolação, São Paulo/SP, CEP 01303-905.
+- **9 salas:** 1 Vídeo Conferência · 2 Psicologia · 3, 5, 6, 7 Clínica Geral · 4 Audiovisual · 8 Ginecologia/Estética · 9 Eventos. Todas fotografadas (§11 item 4). Funcionamento de reserva: segunda a sábado, 08h00 às 18h30 (§ sessão 12/jul).
+- **Custo fixo:** R$ 50.000/mês. **Capacidade teórica:** 4.050 h/mês (9 salas × 15 h × 30 dias). **Equilíbrio:** ~480 h/mês, ou seja, ~12% da capacidade (§68).
+- **Contatos:** WhatsApp comercial (11) 97223-3745 (WhatsApp Business App, recepção) · número da Olivia na Cloud API 11 93942-9453 (só comercial, nunca paciente) · recepção (11) 91998-0777 · contato@olihealthhub.com.br · site olihealthhub.com.br.
+
+### 75.2 Quem é quem (estado em 23/09)
+
+| Pessoa | Papel |
+|---|---|
+| César | Sócio, fundador, Responsável Técnico (RT) do espaço; investidor e conselheiro; decide estrutura física e caminho organizacional; preside o Board |
+| Igor Oliveira | Sócio; controla toda a estrutura de contas do OLI (migração de contas, §75.9); Master Admin; enxoval comercial e ferramentas internas |
+| Ana Luiza | Sócia e parceira jurídica (assessoria remunerada aos clientes, sob demanda); valida as questões jurídicas |
+| Edna | Sócia; gestão de pessoas, organização e conforto dos espaços; rede de relacionamento que traz visitas |
+| **Guilherme Pasquetti** | **Não é sócio.** Executivo contratado por prestação de serviços. Foi Diretor de Operações até ago/2026; **desde 16/09/2026 é o Executivo (CEO)**, contrato de 3 meses (até 15/12/2026) com 4 anexos (escopo e KPIs, não concorrência, dados pessoais, reembolso). Executa o plano dos 100 dias e cobra o time |
+| Nathalia Coelho | Entrou em 21/09. Ex-coordenadora de vendas e onboarding da Livance. **Dona do comercial**: atende leads no espaço, visitas, apresenta planos, fecha individuais, desenha plano comercial e onboarding |
+| Cláudia Moraes | Recepção e linha de frente: levanta leads, busca ativa, primeiro atendimento; acesso ao painel (`is_admin`) |
+| Olivia | IA (Claude Haiku) — assistente do app e responsável comercial no WhatsApp |
+
+> ⚠️ `user_type='founder'` no banco é **rótulo técnico de acesso**, não título societário (Guilherme e Igor têm). O `OLI_BASE.md` §2 ainda diz "Diretor de Operações" para o Guilherme e "sócio-fundador" para o Igor — desatualizado desde 16/09.
+
+**Parceiros:** Contábil Mello (Isabella) — contabilidade especializada em saúde, ativa · Communicare (Heitor) — prontuário/agenda, **só indicação** desde 02/set · Agência Mint (Victor, Cynthia, Larissa, Michelle) — marketing, contrato na pasta `Parceiros/Mint` · Marangos (sogro do Guilherme) — piloto de indicação **encerrado sem resultado**, não recebe nada · **Fora do quadro:** AR Soluções (convênios) e MBS Hackathon. **Regra de copy:** nunca nomear empresa parceira em material externo — "nossa assessoria contábil", não "Contábil Mello".
+
+### 75.3 Produto e preço vigentes
+
+| | START | PRO |
+|---|---|---|
+| Mensalidade | sem mensalidade | R$ 599/mês · R$ 499/mês no semestral (fidelidade 6 meses) |
+| Minuto / hora | R$ 1,90 / R$ 114 | R$ 1,45 / R$ 87 |
+| Sala equipada, app, comunidade e eventos | ✅ | ✅ |
+| Estacionamento durante o atendimento, conversa com contador e advogado, impressão, recepção (agendamento, cobrança, retorno), endereço comercial e fiscal, emissão de nota fiscal | — | ✅ |
+
+- **Viradas:** PRO mensal compensa a partir de ~23 h/mês; PRO semestral a partir de ~19 h/mês. Abaixo disso, START.
+- **Cobrança (premissa inegociável, §16):** horas compradas só em blocos de 1 h; reserva em múltiplos de 30 min; consumo por minuto; excedente arredonda para os próximos 30 min. Nunca escrever "pague só os minutos".
+- **Pacotes:** 1 h (R$ 114 / R$ 87, 30 dias) e 10 h que entregam 11 h (R$ 1.140 / R$ 870, 60 dias). Bônus fixo de 10%.
+- **Módulos à parte:** prontuário Communicare R$ 239/mês (só indicação) · contabilidade Mello R$ 460 (Simples) / R$ 632 (Presumido) / R$ 1.200 abertura · jurídico sem tabela.
+- **Cadastro nasce no START** automaticamente (§36). BASE desativado, VIP nunca lançado. Quem entrou antes de 19/ago tem taxa congelada (`profiles.taxa_min_congelada`).
+- **Salas de evento e conferência por bloco** (R$ 150/h conferência; R$ 280/h ou R$ 960 por 4 h eventos) seguem **sem preço validado** — única receita mapeada que não depende de captar profissional.
+- **Pacotes B2B propostos pela consultoria** (Transbordo Corporativo, Retaguarda Plantonista, Grade Satélite) — **preço não decidido** (GP-5).
+
+### 75.4 Números medidos no banco em 23/09/2026
+
+| Indicador | Valor |
+|---|---|
+| Leads na base | **617** (518 entraram nos últimos 30 dias) |
+| Por origem | WhatsApp orgânico 410 · RD Station 182 · Meta Ads 22 · site 2 · outro 1 |
+| Por etapa | novo 9 · contatado 453 · sem resposta 11 · aguardando retorno 3 · visita agendada 9 · visita realizada 0 · proposta enviada 1 · **convertido 0** · descartado 131 |
+| Profissionais cadastrados (`subscriber`) | 33, **todos no START**; 15 concluíram onboarding |
+| Assinaturas PRO pagas | **0** |
+| Reservas em toda a história | 7 (3 nos últimos 30 dias), feitas por 3 perfis |
+| Cobranças de sala (`usage_charges`) | 7, **todas de perfis founder em modo demonstração** → **receita real de sala: R$ 0** |
+| Conversas / mensagens de WhatsApp | 528 / 3.151 |
+| Régua de nutrição comercial | primeiro contato 74 enviados · D+3 39 · D+10 30 enviados · D+24 28 agendados |
+
+**Leitura:** o topo do funil explodiu (de 66 leads em 13/ago para 617 hoje, puxado pelo WhatsApp orgânico e pela régua da Olivia), mas **o meio e o fundo não andaram**: 9 visitas agendadas, 0 realizadas registradas, 1 proposta, 0 conversões, 0 PRO. O OLI **não fatura**. O gargalo é visita → fechamento, não preço nem capacidade — exatamente o que a entrada da Nathalia e o plano dos 100 dias atacam.
+
+### 75.5 Tecnologia construída (o que existe e funciona)
+
+- **App do profissional** (React Native + Expo SDK 54): publicado na **App Store** e na **Google Play** (voltou ao ar em 21/jul após sumir sem causa confirmada). Reserva com gate de saldo no servidor e trava contra dupla reserva no Postgres; pacientes com LGPD; financeiro e checkout Asaas (cartão/PIX/boleto) com cupom; comunidade com feed; gamificação Olicoins; indicação +60 min; push com régua de nurturing (23 gatilhos, governança de frequência); Face ID; onboarding com especialidade, cidade, tipo de atendimento e intenção (`objetivo_oli`). Atualização por OTA nos canais `production` e `preview`.
+- **Painel admin** (Next.js, Vercel): profissionais, equipe, parceiros e comissão, `/leads` (esteira de 9 etapas, temperatura, perfil, atendente, Olivia, filtros, botão "Iniciar com Olivia"), `/conversas` (inbox WhatsApp com abas Equipe/Olivia, foto, tiques de entrega), Fila de trabalho, mapa de salas dia/semana, cupons, notificações, push manual, modo demonstração, responsivo no celular.
+- **Site** (`landing/`, Vercel `oli-landing`): home, `/baixar`, `/consultorio?para=Nome`, `/confirmado`, `/privacidade`; formulário grava direto em `leads`. **A pasta `iCloud/OLI - HH/Website/oli-deploy/` é cópia órfã — nunca editar.**
+- **Backend Supabase** (`xwcarrurjvfxisuaihid`): 27 edge functions ativas, pg_cron para régua, RD, nudge e push.
+- **Integrações:** Asaas em produção · RD Station CRM como fonte única de lead, com status espelhado de volta · WhatsApp Cloud API ativa desde 24/ago · Resend (e-mail) · Luma (eventos) · Calendly (visita) · OpenAI só para transcrever áudio, sem retenção · Communicare construída e **inerte por decisão de produto**.
+- **Olivia no WhatsApp:** atende todo contato, se apresenta e pergunta o nome, recomenda o plano que atende à necessidade (START para avulso, PRO só se houver recorrência), manda foto real por especialidade, agenda visita pelo Calendly, reengaja silêncio dentro de 24 h, descarta engano de número, transfere para humano com alerta no WhatsApp comercial. Nunca pede telefone, nunca calcula valor novo, nunca promete prontuário. Manual-âncora: `docs/IA_ATENDIMENTO_WHATSAPP.md`.
+
+### 75.6 Linha do tempo
+
+| Quando | Marco |
+|---|---|
+| jan–mar/2026 | Plano de negócio, projeção de 6 meses, proposta de estruturação operacional, kickoff estratégico, primeiro contrato do Guilherme (Diretor de Operações), escopo de trabalho, fluxos de recepção e onboarding |
+| abr–mai | Identidade visual, contrato Mint, apresentação a sócios, reunião de parceiros (15/05), parcerias Mello e AR, panorama contratual |
+| jun | App em TestFlight, Asaas em produção (18/06), Google Play em teste fechado |
+| jul | Google Play em produção (13/07) e App Store aprovada; gamificação, push, comunidade; site migrado Netlify → Vercel (21/07); pitch e hackathon MBS no espaço (28/07); site reescrito com fotos reais e captura de leads (31/07) |
+| ago | Leads do Meta e da RD unificados no banco (03–05/08); reforma de planos START sem mensalidade + PRO (13–19/08); Olivia única; WhatsApp Cloud API ativo (24/08); cadastro volta a nascer no START (26/08); régua comercial de 5 templates aprovada (28/08); prontuário sai do PRO; funil orgânico do WhatsApp corrigido (29/08) |
+| set | Endereço fiscal e estacionamento exclusivos do PRO; `OLI_BASE.md` v2.0 (02/09); consultoria Roland Berger e workshop (15/09); migração de contas para o OLI (17/09); novo contrato do Guilherme como CEO (16/09 a 15/12); agenda dos 100 dias (20/09); kickoff e entrada da Nathalia (21/09); Trello "OLI — Execução CEO" e report diário automático (21/09) |
+
+### 75.7 Plano dos 100 dias e governança
+
+- **Meta:** R$ 20 mil de **faturamento bruto mensal** em até 90 dias (40% do custo fixo — é marco, não equilíbrio). Premissa: ~19 profissionais ativos a ticket de R$ 1.100; marcos de 2, 6, 10, 14 e 19 ativos nos Dias 30, 45, 60, 75 e 90. Proposta de divisão (a validar): ~R$ 13 mil de B2B e eventos (Guilherme) + ~R$ 7 mil de individuais (Nathalia).
+- **Calendário em disputa:** a consultoria conta o Dia 1 em 15/09 (Dia 100 = 23/12); os documentos do Guilherme contam em 21/09 (Dia 100 = 29/12). O contrato do CEO termina em **15/12**, antes do Dia 100 dos dois calendários.
+- **Ritos:** Weekly de Tração seg 09h30 · Briefing de Prospecção seg 15h · prospecção B2B na rua ter e qui de manhã · Comitê Legal e B2B ter 15h30 · Handover qui 14h · Flash de Caixa sex 09h · Board mensal no dia 10 (09/10, 10/11, 10/12) · Relatório mensal até o 5º dia útil (07/10, 09/11, 07/12).
+- **KPIs do contrato do CEO:** MRR R$ 20 mil; tração B2B e fechamento institucional ainda **em branco**; governança digital 100% no 1º mês; burn dentro do envelope; 2 eventos/mês. Não alteram o honorário fixo; servem para avaliar continuidade.
+- **Números da consultoria:** envelope OpEx R$ 35 mil/mês; alçada do CEO R$ 2.000; verba de ativação offline R$ 3.000/mês; alçada da Cláudia R$ 500; fundo de reserva R$ 5.000 (César). Nenhum deles está assinado.
+- **Documentos de governança vencidos (21/09), travados com Ana Luiza e César:** Acordo de Sócios, Regimento Interno, Matriz de Alçadas, Envelope Financeiro Trimestral, minutas-padrão de MoU B2B. **Com o Igor:** Trello corporativo, e-mail @oli e Slack (vencido 19/09); enxoval comercial (22/09).
+- **Aditivo pedido pelo CEO (levar ao César até 30/09):** renovação automática; alçada e verba formais; não concorrência cai se o OLI não renovar; teto de responsabilidade, data de pagamento com multa simétrica e propriedade intelectual com data de corte; corrigir remissão errada da cláusula XI.2. Advogado próprio, não a Ana.
+- **Agência de marketing:** a atual está sendo rescindida (e-mail enviado em 21/09, sem devolutiva sobre pagamento e aviso prévio); nova agência a escolher até 09/10.
+- **Ferramentas de gestão:** documentos vivos "Agenda de Entregáveis dos 100 Dias", "Kickoff e Semana 1", "Plano de Ação e Metas do Guilherme", página "Planner OLI Fase 0" (links na §70 a §72 e no documento do projeto "OLI - Documentos dos 100 dias"); Trello pessoal "OLI — Execução CEO" (não compartilhar); report diário às 07h30 salvo em `claude/reports/` do projeto.
+
+### 75.8 Decisões em aberto (donos entre parênteses)
+
+1. Política de descontos e valores com a Nathalia — precisava estar aprovada em 25/09, antes da lâmina ir para impressão em 28/09 (Guilherme + César).
+2. Vínculo, carga horária e remuneração da Nathalia; se ela é a "parceira comercial" de 10% a 12% de comissão (Guilherme + sócios).
+3. Preço dos pacotes B2B e da locação de salas de conferência e eventos (Guilherme).
+4. Qual calendário dos 100 dias vale (15/09 ou 21/09).
+5. Os quatro pedidos do aditivo do contrato do CEO (César).
+6. Peça individual do START ainda lista os itens que ele não tem.
+7. Taxa do OLI e produto de subconta Asaas para a cobrança de paciente (bloqueia `asaas-create-subaccount` e `create-patient-charge`).
+8. Fluxo de check-in na sala — **não desenhado**; não instruir profissional a fazer check-in.
+
+### 75.9 Pendências técnicas e de material (herdadas, ainda abertas)
+
+- **Preço em quatro fontes que divergem:** `src/models/oli-plans.ts` ainda tem `plan_base` ativo e preços velhos; `hour_packages.valor` guarda R$ 120/R$ 1.200 (cobrança real ignora a coluna); site e admin nunca receberam os planos novos; "sem fidelidade" no H1 do site só vale para START e PRO mensal.
+- **Benefícios novos do PRO (estacionamento, endereço fiscal) não propagados** (o `OLI_BASE.md` v2.0 já tem) para site, matriz `FEATURES` do `meu-plano.tsx`, prompts da Olivia e peças `OLI_Planos_2026.pdf` / `OLI_Plano_START.png` / `OLI_Plano_PRO.png` (regerar por `gera_pecas.py`).
+- **Edge functions fora do repo:** `rd-sync-status`, `rd-setup-webhook`, `rd-backfill` (a `rd-vincular-deals` foi trazida em 29/08). `rd-probe` segue ativa e deve ser apagada pelo painel.
+- `primeiro_contato_comercial_v2` com imagem de cabeçalho a criar no Meta; 3 WABAs duplicadas a limpar; templates de paciente precisam de outro número.
+- 75 leads de WhatsApp sem e-mail não se vinculam à RD (limitação aceita).
+- Credencial de teste do admin (`test-playwright@…`) não autentica — nenhuma tela do admin pôde ser verificada visualmente pelas sessões desde 31/08.
+- Google Ads rodando sem responsável identificado; conferir segmentação geográfica do Meta (1/3 dos leads fora do raio de visita).
+- Login social e `expo-location` dependem de rebuild nativo; nada da reforma de planos foi testado em device nativo.
+- **Migração de contas para o OLI (17/09, responsável Igor):** já migrados CNPJ, Google Workspace, registro.br, módulo de vendas, conta Claude e Luma; faltam créditos da API Anthropic e os demais itens do `Checklist_Migracao_Contas_OLI.pdf`.
+
+### 75.10 Regras permanentes (valem para qualquer sessão)
+
+- "OLI" é masculino: "do OLI", "no OLI", "ao OLI". Português correto, com acento, mesmo em copy informal.
+- Linguagem concreta; sem "coworking", "ecossistema", "hub de soluções", "premium".
+- Não nomear empresas parceiras em material comercial; não citar VIP; não falar de check-in; não expor remuneração do executivo em documento externo.
+- Conferir número contra o que o sistema entrega (banco), nunca contra a documentação.
+- Validar toda proposta de conteúdo com o Guilherme antes de implementar.
+- PDF de peça de marca: HTML + Chromium headless; nunca LibreOffice no sandbox.
+- Edge function: `deno check`, não `tsc`. Mudança em `app/`/`src/` → `eas update` nos dois canais no mesmo turno.
+- Toda tarefa concluída entra neste handoff (seção numerada + resumo de 1 linha). Ler o arquivo do disco antes de escrever — outras sessões editam em paralelo.
+
+### 75.11 Onde está cada coisa
+
+| O quê | Onde |
+|---|---|
+| Código (app, admin, site, Supabase) | `~/Developer/OLIHealthHub` · GitHub `guipasquetti/oli-health-hub` |
+| Estado e histórico técnico | `docs/HANDOFF.md` (este arquivo) |
+| Documento-base do negócio | `docs/OLI_BASE.md` v2.0 |
+| Manual da Olivia / régua comercial | `docs/IA_ATENDIMENTO_WHATSAPP.md` · `docs/WHATSAPP_NUTRICAO_COMERCIAL.md` |
+| Dossiê em JSON | `docs/OLI_DOSSIE.json` |
+| Material de negócio, contratos, peças, fotos | `iCloud/OLI - HH/` (contratos em `Contratos OLI/` e `Contrato Clinovi/`; parceiros em `Parceiros/`; fotos boas em `Fotos Estrutura/Tratadas/` e `MBS/assets/`) |
+| Plano do CEO, documentos dos 100 dias, reports diários | Projeto "OLI - HH" no claude.ai |
+| Execução do CEO | Trello "OLI — Execução CEO" (pessoal) |
+
+**Estado de publicação:** esta seção e `docs/OLI_DOSSIE.json` foram gravadas no disco em 23/09; **não commitadas** (o shell da máquina do fundador estava fora do ar nesta sessão — rodar `git add docs/HANDOFF.md docs/OLI_DOSSIE.json && git commit` no terminal). Sem código alterado, sem OTA.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -2805,3 +3011,13 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (02/set sessão 3):** Montado um **documento de análise estratégica para a consultoria de governança** (artifact HTML, 10 seções) a partir de `CLAUDE.md`, `OLI_BASE.md`, `ROADMAP.md` e deste handoff — ver §68. A montagem virou sessão de correção de fato: **estacionamento saiu do START e ficou exclusivo do PRO**, e o **endereço do PRO é comercial e fiscal**, não só de divulgação (§67, matriz de benefícios refeita — peças, site, `OLI_BASE.md`, `FEATURES` e prompts da Olivia seguem com a versão velha). Também corrigidos no quadro de pessoas: **Guilherme é Diretor de Operações**, não sócio-fundador (`user_type='founder'` é rótulo técnico de acesso, não título societário); **Cesar e Edna entram como sócios** — Cesar investidor/conselheiro e único elo com conselho consultivo e respaldo para aportes, Edna em gestão de pessoas e espaços; **Ana é sócia E parceira externa** (assessoria jurídica remunerada aos clientes, sem tabela fechada — parte relacionada sem política escrita); **AR Soluções e MBS saíram** do quadro; **Communicare vira só indicação**, sem absorção nativa. Remuneração do Diretor de Operações **não entra em documento externo**. **Dado novo calculado na sessão:** capacidade teórica de **4.050 h/mês** (9 salas × 15h × 30d) contra ~480 h de break-even — **o negócio empata com ~12% da estrutura que já paga**. Erro de leitura desta sessão que vale registrar: a primeira versão do documento trouxe o BASE como plano vivo e os indicadores de lead de 13/ago, ignorando a reversão da §36 e a reclassificação da §53 — **ler o handoff até o fim antes de consolidar estado, não só as seções mais recentes**.
 
 **Resumo de 1 linha (02/set sessão 4):** `docs/OLI_BASE.md` reescrito na **v2.0** — estava parado desde 17/jun, vendendo BASE/VIP e AR Soluções e descrevendo Communicare como pendente de token. Ganhou seções novas de "Quem é quem" e "Capacidade e ponto de equilíbrio" e passou a refletir tudo que a §68 já tinha fixado (planos, matriz de benefícios do §67, Communicare como indicação, regra de cobrança do §16). `CLAUDE.md` corrigido junto (preços, `PlanType` sem BASE/VIP, 5 personas → Olivia única, tabelas novas do Supabase). Ver §69. Não tocado de propósito: `oli-plans.ts`, prompts da Olivia, peças comerciais e site — mudam comportamento em produção ou são material público. Commit `ca22b22`, push direto pra `main`.
+
+**Resumo de 1 linha (20/set sessão 1):** Montada, a partir do relatório final da consultoria, a **agenda de entregáveis dos 100 dias por pessoa** (Guilherme, Igor, César, Ana Luiza, Cláudia, Edna) rumo a R$ 20 mil de faturamento mensal, como documento vivo no Claude Docs — ver §70. Com Dia 1 em 21/09, o Dia 90 é sáb 19/12; a meta exige ~19 profissionais ativos a ~8 a 9 h/mês (ticket de R$ 1.100) e ~6 tours por semana, e **R$ 20 mil são só 40% do custo fixo de R$ 50 mil**, ou seja, marco e não breakeven. O relatório ainda cita o BASE e trata a meta como MRR, e três datas caem em fim de semana ou feriado. **A memória do projeto estava defasada** (funil de 13/ago e "sem tela de leads"); os números de 29/ago estão na §53 e no `OLI_BASE.md`. **Pendente:** sete decisões do fundador (meta, parceira comercial, preços B2B e de locação, data de início, peça do START, duas datas, "CEO"). Sem código, sem commit.
+
+**Resumo de 1 linha (21/set sessão 1):** Kickoff antecipado para segunda 21/09 às 10h e **Nathalia Coelho entra como dona do comercial** (atende leads, acompanha visitas, apresenta planos, fecha vendas; Cláudia na linha de frente e Edna trabalhando direto com ela). Criado o documento "Kickoff e Semana 1" (roteiro de 80 min, agenda e mensagem pronta por pessoa, pauta de descontos, placar de sexta) e a agenda dos 100 dias ganhou NC-1 a NC-15, GP-24 e ajustes em Cláudia e Edna, ver §71. A Semana 1 tem 11 IDs e 7 entregas até sex 25/09; a política de descontos precisa estar aprovada em 25/09 porque a lâmina do IG-4 imprime em 28/09. **Pendente:** oito decisões do fundador (a nova: se a Nathalia é a parceira comercial e o vínculo dela) e a linha de base de hoje no banco. Depois, planner visual da Fase 0 para o grupo (página "Planner OLI Fase 0", 40 tarefas). Sem código, sem commit.
+
+**Resumo de 1 linha (21/set sessão 2):** Lido o relatório final da consultoria (88 páginas) e criado o documento "Plano de Ação e Metas do Guilherme" (metas em cascata, fluxo semanal, estratégias por frente, 14 semanas de ação, gatilhos, riscos, 11 decisões), ver §72. Tudo refeito só com START e PRO (o BASE do relatório foi descartado a pedido do fundador). Conta proposta: R$ 20,9 mil = R$ 13,0 mil de B2B e eventos (fundador) + R$ 7,9 mil de individuais (Nathalia). **Pendente:** onze decisões, agenda/planner/PDFs sem as metas individuais do relatório e linha de base no banco. Sem código, sem commit.
+
+**Resumo de 1 linha (21/set sessão 4):** As metas do fundador foram para o Trello ("OLI — Execução CEO"): 6 cartões de metas, 5 de marcos de faturamento, controles semanais com checklist, cartão do IG-16 e o cartão da agência reescrito, ver §74. Quadro privado e do contrato dele; divergência de calendário (15/09 x 21/09) segue em aberto. Sem código, sem commit.
+
+**Resumo de 1 linha (23/set):** Montado o **dossiê consolidado do projeto** (§75): quem é quem com o Guilherme como CEO contratado desde 16/09 (não sócio) e a Nathalia no comercial, produto e preço vigentes, **números medidos no banco hoje** (617 leads, 518 nos últimos 30 dias; 9 visitas agendadas, 1 proposta, **0 conversões, 0 PRO, receita real de sala R$ 0** — as 7 cobranças de sala são de perfis founder em demonstração), tecnologia, linha do tempo, plano dos 100 dias e governança, decisões e pendências abertas. Versão estruturada em `docs/OLI_DOSSIE.json`. Sem código alterado, sem OTA; gravado no disco e **não commitado** (shell da máquina fora do ar).
