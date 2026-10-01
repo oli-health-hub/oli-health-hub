@@ -354,21 +354,26 @@ type MetaTag = {
 const CHAVES_META = ['nome', 'especialidade', 'resumo', 'imagem', 'aviso', 'handoff', 'descarte'] as const;
 
 function extraiMetaTag(reply: string): { texto: string; meta: MetaTag | null } {
-  const m = reply.match(/\[META:\s*([^\]]*)\]\s*$/i);
-  if (!m) return { texto: reply.trim(), meta: null };
+  // Em QUALQUER posição: o modelo às vezes escreve a tag no meio da resposta; só
+  // reconhecê-la no fim a deixava vazar para o cliente e a foto não saía.
+  const achadas = [...reply.matchAll(/\[META:\s*([^\]]*)\]/gi)];
+  if (achadas.length === 0) return { texto: reply.trim(), meta: null };
 
   const meta: MetaTag = {};
-  for (const par of m[1].split(';')) {
-    const idx = par.indexOf('=');
-    if (idx < 0) continue;
-    const chave = par.slice(0, idx).trim().toLowerCase();
-    const valor = par.slice(idx + 1).trim();
-    if (!valor) continue;
-    if ((CHAVES_META as readonly string[]).includes(chave)) {
-      (meta as Record<string, string>)[chave] = valor;
+  for (const m of achadas) {
+    for (const par of m[1].split(';')) {
+      const idx = par.indexOf('=');
+      if (idx < 0) continue;
+      const chave = par.slice(0, idx).trim().toLowerCase();
+      const valor = par.slice(idx + 1).trim();
+      if (!valor) continue;
+      if ((CHAVES_META as readonly string[]).includes(chave)) {
+        (meta as Record<string, string>)[chave] = valor;
+      }
     }
   }
-  return { texto: reply.slice(0, m.index).trim(), meta };
+  const texto = reply.replace(/\[META:\s*([^\]]*)\]/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+  return { texto, meta };
 }
 
 /** O modelo às vezes escreve "[imagem: chave]" no próprio texto (imitando como a
