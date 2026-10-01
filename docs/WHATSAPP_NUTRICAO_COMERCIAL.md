@@ -131,6 +131,28 @@ Quando quiser retomar e conhecer o OLI Health Hub, basta responder a esta conver
 
 **Botão sugerido:** resposta rápida `Quero retomar`.
 
+### 6. `reativacao_pro_horas_out26_v1` — campanha de outubro/2026
+
+**Uso:** disparo único, **só para leads com opt-in válido** (`whatsapp_opt_in_at`
+preenchido, sem `whatsapp_opt_out_at`), não descartados nem convertidos, com
+primeiro nome informado. Categoria **Marketing**, idioma `pt_BR`. Válido até
+31/10/2026; **não enviar depois dessa data**. Status inicial: **a cadastrar e
+aguardar aprovação da Meta** — nada é enviado antes de **Ativo**.  
+**Corpo:**
+
+```text
+Olá, {{1}}! Em outubro, quem contrata o plano PRO mensal do OLI Health Hub recebe 6 horas de sala creditadas com o primeiro pagamento.
+
+A condição vale para contratações até 31/10. Quer saber como funciona?
+```
+
+**Botões sugeridos:** respostas rápidas `Quero saber mais` e `Agora não`.
+
+Quem responde abre a janela de 24h e a Olivia segue a conversa com a regra da
+promoção (`docs/IA_ATENDIMENTO_WHATSAPP.md`, seção "Promoção de outubro/2026").
+Os demais contatos sem opt-in **não recebem** este template: só entram na
+conversa se escreverem primeiro.
+
 ### Modelo interno já criado
 
 `handoff_comercial_v1` é separado desta régua: categoria **Utilidade**, enviado

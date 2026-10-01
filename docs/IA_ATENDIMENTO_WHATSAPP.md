@@ -174,6 +174,26 @@ total calculado fora dos valores acima, ou qualquer condição não listada acim
 Também nunca pede CPF, dado de pagamento ou dado sensível de saúde pelo
 WhatsApp.
 
+### Promoção de outubro/2026 (temporária)
+
+Quem contratar o **PRO mensal** (R$ 299/mês) **até 31/10/2026** recebe **6 horas
+de sala** creditadas no saldo junto com o primeiro pagamento — a mensalidade do
+primeiro mês é convertida em horas de sala. Vale só para a primeira mensalidade;
+não vale para o START nem para o PRO semestral (nesse caso a Olivia diz que vai
+confirmar com a equipe).
+
+- É a **única exceção** à regra de não falar de desconto. Nenhum outro bônus,
+  desconto ou prorrogação.
+- A Olivia apresenta a promoção a quem demonstrar interesse em agenda recorrente
+  ou no PRO, ou perguntar por promoção/desconto, sempre com a data-limite.
+- Nunca converte as 6 horas em reais, nunca diz que "equivalem" à mensalidade e
+  nunca calcula outro total.
+- O bloco entra no prompt **só até 31/10/2026** (corte por data, fuso de São
+  Paulo, em `promptLead()`); depois disso some sozinho. Remover o código na
+  limpeza de novembro.
+- **Operação:** o crédito das 6 horas não é automático — a equipe credita pelo
+  admin (crédito manual de horas, sem cobrança) após o primeiro pagamento.
+
 ### Recomendação orientada à necessidade
 
 A Olivia vende a solução que a pessoa quer, não o plano de maior ticket. Quando

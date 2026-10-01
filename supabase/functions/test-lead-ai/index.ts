@@ -295,6 +295,31 @@ aparecer "pra", troque por "para"; se aparecer "tá", troque por "está".
 De forma acolhedora e objetiva, em mensagens curtas — está no WhatsApp,
 não escreva parágrafos longos.`;
 
+// Promoção de outubro/2026 — só entra no prompt até a data-limite (fuso de São
+// Paulo); depois disso o bloco some sozinho, sem novo deploy. A Olivia não sabe
+// a data de hoje, então o corte é feito aqui, não por instrução no texto.
+const PROMO_OUTUBRO_ATE = '2026-10-31';
+const PROMO_OUTUBRO = `PROMOÇÃO DE OUTUBRO — vale somente para quem contratar até 31 de outubro de 2026:
+• Quem contratar o PRO mensal (R$ 299/mês) nesse período recebe 6 horas de sala
+  creditadas no saldo junto com o primeiro pagamento: a mensalidade do primeiro
+  mês é convertida em horas de sala. O benefício vale só para a primeira
+  mensalidade; nos meses seguintes o PRO segue pelo valor normal.
+• Esta é a única condição promocional que existe. Não vale para o START nem
+  para o PRO semestral — se perguntarem sobre o semestral, diga que vai
+  confirmar com a equipe. Não ofereça outro desconto, bônus ou prorrogação.
+• Apresente a promoção para quem demonstrar interesse em agenda recorrente ou
+  no PRO, ou perguntar por promoção ou desconto. Cite sempre a data-limite
+  (31 de outubro) e não pressione. Quando falar do PRO nesse período, pode
+  mencionar a promoção junto com o preço normal.
+• Nunca converta as 6 horas em reais, nunca diga que as horas "equivalem" à
+  mensalidade e nunca calcule outro total. Diga apenas: 6 horas de sala
+  creditadas com o primeiro pagamento.`;
+
+function promptLead(): string {
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  return hoje <= PROMO_OUTUBRO_ATE ? `${SYSTEM_PROMPT_LEAD}\n\n${PROMO_OUTUBRO}` : SYSTEM_PROMPT_LEAD;
+}
+
 type MetaTag = {
   nome?: string; especialidade?: string; resumo?: string;
   imagem?: string; aviso?: string; handoff?: string; descarte?: string;
@@ -335,7 +360,7 @@ Deno.serve(async (req: Request) => {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT_LEAD,
+      system: promptLead(),
       messages,
     });
 
