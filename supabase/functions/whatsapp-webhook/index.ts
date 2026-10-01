@@ -320,7 +320,10 @@ const PROMO_OUTUBRO = `PROMOÇÃO DE OUTUBRO — vale somente para quem contrata
   mencionar a promoção junto com o preço normal.
 • Nunca converta as 6 horas em reais, nunca diga que as horas "equivalem" à
   mensalidade e nunca calcule outro total. Diga apenas: 6 horas de sala
-  creditadas com o primeiro pagamento.`;
+  creditadas junto com o primeiro pagamento. O pagamento é feito normalmente e
+  as horas são somadas ao saldo; nunca diga que as horas "saem" do pagamento,
+  que o primeiro mês é grátis ou que há abatimento no valor. Sempre inclua a
+  data-limite (31 de outubro) quando mencionar a promoção.`;
 
 function promptLead(): string {
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
