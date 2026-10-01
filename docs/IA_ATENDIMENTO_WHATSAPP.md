@@ -191,8 +191,30 @@ confirmar com a equipe).
 - O bloco entra no prompt **só até 31/10/2026** (corte por data, fuso de São
   Paulo, em `promptLead()`); depois disso some sozinho. Remover o código na
   limpeza de novembro.
+- **Interruptor:** no `whatsapp-webhook` a promoção só vale com o segredo
+  `PROMO_OUTUBRO_ATIVA=true` (Supabase → Edge Functions → Secrets). Sem ele, a
+  Olivia não menciona a promoção. A `test-lead-ai` ignora o interruptor.
 - **Operação:** o crédito das 6 horas não é automático — a equipe credita pelo
   admin (crédito manual de horas, sem cobrança) após o primeiro pagamento.
+
+### Retorno após pausa
+
+Quando a pessoa volta depois de **12 horas ou mais** sem interação (contadas da
+última mensagem nossa até a primeira mensagem dela no bloco atual), a Olivia abre
+com uma saudação curta de volta ("Que bom ter você de volta, [Nome]!"), retoma em
+uma frase onde pararam e responde ao que ela escreveu — sem repetir apresentação
+nem o que já foi dito. Resposta rápida (poucos minutos) segue normal, sem a
+saudação. O limite é `RETORNO_APOS_HORAS` em `whatsapp-webhook`/`test-lead-ai`.
+A instrução vai também junto da última mensagem da pessoa, só na chamada à IA
+(nunca é gravada nem enviada); só no prompt de sistema o modelo a ignorava.
+
+### Fotos
+
+A foto enviada é gravada no histórico como `[imagem: chave]`. Para o modelo não
+imitar esse formato no texto (a marcação ia parar na tela do cliente e a foto não
+saía), o histórico devolvido à IA reescreve a foto como a tag `[META: imagem=chave]`
+na resposta anterior, e o código, se ainda assim a marcação aparecer no texto, a
+remove e dispara a foto. Teste: 13 casos em 30 dias antes da correção.
 
 ### Recomendação orientada à necessidade
 

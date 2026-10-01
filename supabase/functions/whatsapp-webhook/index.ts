@@ -325,9 +325,32 @@ const PROMO_OUTUBRO = `PROMOÇÃO DE OUTUBRO — vale somente para quem contrata
   que o primeiro mês é grátis ou que há abatimento no valor. Sempre inclua a
   data-limite (31 de outubro) quando mencionar a promoção.`;
 
-function promptLead(): string {
+/** A partir de quantas horas sem interação a Olivia trata a volta da pessoa como
+ *  retorno (saudação de boas-vindas de volta, em vez de seguir como se fosse
+ *  continuação imediata). */
+const RETORNO_APOS_HORAS = 12;
+const RETORNO_APOS_PAUSA = `RETORNO APÓS PAUSA: a pessoa ficou um bom tempo sem interagir e voltou agora. Comece a resposta com uma saudação curta de retorno, como "Que bom ter você de volta, [Nome]!" (use o nome só se já souber), retome em UMA frase onde a conversa parou, sem repetir o que já foi dito, e siga a partir do que ela acabou de escrever — se ela só cumprimentou, pergunte se ainda faz sentido continuar de onde pararam. Não repita a apresentação, não peça de novo o que ela já informou e não cite horas ou dias exatos.`;
+
+/** Reforço junto da última mensagem da pessoa: só no prompt de sistema o modelo
+ *  ignorava a saudação de retorno. A nota vai só na chamada à IA, nunca é gravada
+ *  nem enviada ao cliente. */
+const NOTA_RETORNO = '[Instrução do sistema, invisível para a pessoa — nunca a mencione: ela ficou muito tempo sem interagir e acabou de voltar. Sua resposta DEVE começar com uma saudação curta de boas-vindas de volta, por exemplo "Que bom ter você de volta, Nome!" (use o nome só se já souber). Depois retome em uma frase onde vocês pararam e responda ao que ela escreveu. Não repita a apresentação nem o que já foi dito.]';
+
+function comNotaDeRetorno(
+  mensagens: { role: 'user' | 'assistant'; content: string }[], retornoHoras?: number | null,
+): { role: 'user' | 'assistant'; content: string }[] {
+  if (retornoHoras == null || retornoHoras < RETORNO_APOS_HORAS) return mensagens;
+  const i = mensagens.map(m => m.role).lastIndexOf('user');
+  if (i < 0) return mensagens;
+  return mensagens.map((m, k) => (k === i ? { ...m, content: `${m.content}\n\n${NOTA_RETORNO}` } : m));
+}
+
+function promptLead(retornoHoras?: number | null): string {
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-  return hoje <= PROMO_OUTUBRO_ATE ? `${SYSTEM_PROMPT_LEAD}\n\n${PROMO_OUTUBRO}` : SYSTEM_PROMPT_LEAD;
+  const promoLigada = Deno.env.get('PROMO_OUTUBRO_ATIVA') === 'true' && hoje <= PROMO_OUTUBRO_ATE;
+  const voltou = retornoHoras != null && retornoHoras >= RETORNO_APOS_HORAS;
+  return [SYSTEM_PROMPT_LEAD, promoLigada ? PROMO_OUTUBRO : '', voltou ? RETORNO_APOS_PAUSA : '']
+    .filter(Boolean).join('\n\n');
 }
 
 type ConversaRow = {
@@ -407,7 +430,7 @@ const FOTO_POR_ESPECIALIDADE: Record<string, string> = {
 
 /** Extrai a tag técnica opcional "[META: chave=valor; ...]" do fim da
  *  resposta da IA (nunca mostrada à pessoa) — ver docs/IA_ATENDIMENTO_WHATSAPP.md §6. */
-function extraiMeta(reply: string): { texto: string; meta: MetaTag | null } {
+function extraiMetaTag(reply: string): { texto: string; meta: MetaTag | null } {
   const m = reply.match(/\[META:\s*([^\]]*)\]\s*$/i);
   if (!m) return { texto: reply.trim(), meta: null };
 
@@ -423,6 +446,19 @@ function extraiMeta(reply: string): { texto: string; meta: MetaTag | null } {
     }
   }
   return { texto: reply.slice(0, m.index).trim(), meta };
+}
+
+/** O modelo às vezes escreve "[imagem: chave]" no próprio texto (imitando como a
+ *  foto aparece no histórico) em vez de usar a tag META — a foto não sai e a
+ *  marcação vai parar na tela do cliente. Tira do texto e converte em imagem=. */
+function extraiMeta(reply: string): { texto: string; meta: MetaTag | null } {
+  const { texto, meta } = extraiMetaTag(reply);
+  const marca = texto.match(/\[imagem:\s*(\w+)\]/i);
+  if (!marca) return { texto, meta };
+  return {
+    texto: texto.replace(/\[imagem:\s*\w+\]/gi, '').replace(/\n{3,}/g, '\n\n').trim(),
+    meta: { ...(meta ?? {}), imagem: meta?.imagem ?? marca[1].toLowerCase() },
+  };
 }
 
 async function transcreverAudio(audioId: string): Promise<string> {
@@ -453,17 +489,55 @@ async function transcreverAudio(audioId: string): Promise<string> {
   return data.text.trim();
 }
 
+type LinhaMsg = { direction: string; body: string | null; created_at: string };
+
+/** A foto enviada pela Olivia é gravada como "[imagem: chave]". Devolvida assim ao
+ *  modelo, ele imita o formato no texto e a foto nunca sai. Reescreve no formato
+ *  real do protocolo: a tag META anexada à resposta anterior. */
+function historicoParaIA(linhas: LinhaMsg[]): { role: 'user' | 'assistant'; content: string }[] {
+  const saida: { role: 'user' | 'assistant'; content: string }[] = [];
+  for (const m of linhas) {
+    if (!m.body || m.body.startsWith('[Áudio recebido')) continue;
+    const foto = m.direction === 'outbound' ? m.body.match(/^\[imagem:\s*(\w+)\]$/) : null;
+    if (foto) {
+      const anterior = saida[saida.length - 1];
+      if (anterior?.role === 'assistant') anterior.content += `\n[META: imagem=${foto[1]}]`;
+      continue;
+    }
+    const inbound = m.direction === 'inbound';
+    saida.push({
+      role: inbound ? 'user' : 'assistant',
+      // respostas antigas que já saíram com a marcação no texto não podem servir de modelo
+      content: inbound ? m.body : m.body.replace(/\[imagem:\s*\w+\]\s*/gi, '').trim(),
+    });
+  }
+  return saida;
+}
+
+/** Horas entre a última mensagem NOSSA e a volta da pessoa (primeira mensagem do
+ *  bloco final de inbound). null se ainda não respondemos nada a ela. */
+function horasDeSilencio(linhas: LinhaMsg[]): number | null {
+  let i = linhas.length - 1;
+  while (i >= 0 && linhas[i].direction === 'inbound') i--;
+  if (i < 0 || i === linhas.length - 1) return null;
+  const voltou = new Date(linhas[i + 1].created_at).getTime();
+  const ultimaNossa = new Date(linhas[i].created_at).getTime();
+  return (voltou - ultimaNossa) / 3_600_000;
+}
+
 async function responderComIA(supabase: SupabaseClient, conv: ConversaRow, mensagemAtual?: string) {
   const { data: historico } = await supabase
     .from('messages')
-    .select('direction, body')
+    .select('direction, body, created_at')
     .eq('conversation_id', conv.id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(40);
 
-  const mensagens = (historico ?? [])
-    .filter(m => m.body && !m.body.startsWith('[Áudio recebido'))
-    .map(m => ({ role: m.direction === 'inbound' ? 'user' as const : 'assistant' as const, content: m.body as string }));
+  // As 40 mais RECENTES (ascendente + limit pegava as 40 mais antigas e cortava
+  // justamente o fim de conversas longas), devolvidas em ordem cronológica.
+  const linhas = ((historico ?? []) as LinhaMsg[]).reverse();
+  const mensagens = historicoParaIA(linhas);
+  const silencio = horasDeSilencio(linhas);
 
   if (mensagemAtual) mensagens.push({ role: 'user', content: mensagemAtual });
 
@@ -473,8 +547,8 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow, mensa
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
-    system: promptLead(),
-    messages: mensagens,
+    system: promptLead(silencio),
+    messages: comNotaDeRetorno(mensagens, silencio),
   });
 
   const bruto = response.content[0]?.type === 'text' ? response.content[0].text : '';
