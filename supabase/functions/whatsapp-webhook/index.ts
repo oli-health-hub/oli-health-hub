@@ -314,7 +314,13 @@ type ConversaRow = {
  *  (ver docs/IA_ATENDIMENTO_WHATSAPP.md §1). A IA aprende quem é a pessoa
  *  durante a conversa e preenche o cadastro via a tag [META: ...]. */
 async function resolveConversa(supabase: SupabaseClient, phone: string): Promise<ConversaRow> {
-  const { data: existente } = await supabase.from('conversations').select('*').eq('phone_e164', phone).maybeSingle();
+  // order+limit(1): se já houver conversas duplicadas para o número (sem unique
+  // em phone_e164, duas mensagens simultâneas do primeiro contato criam duas),
+  // .maybeSingle() sem limite falha com "mais de uma linha", `existente` vem
+  // null e cada mensagem nova abria OUTRA conversa — a Olivia recomeçava a
+  // apresentação toda vez. Pega sempre a mais antiga.
+  const { data: existente } = await supabase.from('conversations').select('*').eq('phone_e164', phone)
+    .order('created_at', { ascending: true }).limit(1).maybeSingle();
   if (existente) return existente as ConversaRow;
 
   const ultimos10 = phone.slice(-10);
