@@ -155,16 +155,24 @@ pedir atendimento humano ou surgir outro critério desta seção.
 | Plano START | R$ 1,90/min, sem mensalidade, sem fidelidade |
 | Plano PRO | R$ 599/mês (ou R$ 499/mês semestral, fidelidade 6 meses) + R$ 1,45/min |
 | Modelo de cobrança | Por minuto de uso real da sala, sem aluguel fixo |
-| Estacionamento | Há vaga para o profissional enquanto estiver em atendimento. Pacientes têm convênio com estacionamentos parceiros próximos ao OLI; preço, disponibilidade e regras específicas devem ser confirmados com a equipe. |
+| Fidelidade | START: nenhuma. PRO mensal: nenhuma. PRO semestral: 6 meses |
+| O que os dois planos incluem | Sala equipada, app (agenda, tempo de sala e pacientes), comunidade e eventos |
+| O que só o PRO inclui | Vaga de estacionamento durante o atendimento, conversa com contador e com advogado, impressão, recepção (agendamento, cobrança e retorno dos pacientes), endereço comercial e fiscal, emissão de nota fiscal. O START não inclui nenhum desses itens |
+| Hora cheia | START R$ 114 · PRO R$ 87 |
+| Pacotes de horas | 1 hora: R$ 114 (START) / R$ 87 (PRO), validade 30 dias. 10 horas que entregam 11: R$ 1.140 (START) / R$ 870 (PRO), validade 60 dias |
+| Regra de compra e uso | Compra só em blocos de 1 hora; reserva em múltiplos de 30 min; consumo por minuto dentro da reserva; sobra fica no saldo. Nunca "pague só os minutos que usar" |
+| Estacionamento | A vaga para o profissional durante o atendimento é benefício do PRO; no START não está incluída. Pacientes têm convênio com estacionamentos parceiros próximos ao OLI; preço, disponibilidade e regras específicas devem ser confirmados com a equipe. |
 
-Fonte: `src/models/oli-plans.ts` (preço) e verificação de código/landing
-feita em 24/ago (endereço, estrutura). **Ao mudar preço ou endereço,
-atualizar aqui e no prompt no mesmo commit.**
+Fonte: `docs/OLI_BASE.md` §5–§7 e `docs/HANDOFF.md` §67 e §75.3 (preço e
+benefícios vigentes, conferidos contra a tabela `plans`) e verificação de
+código/landing feita em 24/ago (endereço, estrutura). **Ao mudar preço,
+benefício ou endereço, atualizar aqui e no prompt no mesmo commit.**
 
 **Fora disso, a IA sempre diz que vai confirmar com a equipe** — nunca
-afirma horário de funcionamento (não documentado), preço de módulo/pacote
-de horas, prazo, ou qualquer condição não listada acima. Também nunca
-pede CPF, dado de pagamento ou dado sensível de saúde pelo WhatsApp.
+afirma horário de funcionamento (não documentado), preço de módulo, prazo,
+total calculado fora dos valores acima, ou qualquer condição não listada acima.
+Também nunca pede CPF, dado de pagamento ou dado sensível de saúde pelo
+WhatsApp.
 
 ### Recomendação orientada à necessidade
 
