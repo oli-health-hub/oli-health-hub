@@ -201,9 +201,12 @@ confirmar com a equipe).
 
 Quando a pessoa volta depois de **12 horas ou mais** sem interação (contadas da
 última mensagem nossa até a primeira mensagem dela no bloco atual), a Olivia abre
-com uma saudação curta de volta ("Que bom ter você de volta, [Nome]!"), retoma em
-uma frase onde pararam e responde ao que ela escreveu — sem repetir apresentação
-nem o que já foi dito. Resposta rápida (poucos minutos) segue normal, sem a
+com uma saudação curta de volta ("Que bom ter você de volta, [Nome]!"), responde
+primeiro ao que ela escreveu e **revisita o assunto**: lembra em uma frase o que
+ela buscava (especialidade, rotina, dor ou objetivo que já contou) e pergunta se
+continua buscando o mesmo e se a situação ou as dificuldades seguem as mesmas
+(é a única pergunta da resposta). Se ela ainda não contou nada, pergunta só o que
+a trouxe de volta. Não repete apresentação nem o que já foi dito. Resposta rápida (poucos minutos) segue normal, sem a
 saudação. O limite é `RETORNO_APOS_HORAS` em `whatsapp-webhook`/`test-lead-ai`.
 A instrução vai também junto da última mensagem da pessoa, só na chamada à IA
 (nunca é gravada nem enviada); só no prompt de sistema o modelo a ignorava.

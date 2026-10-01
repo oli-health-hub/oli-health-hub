@@ -322,12 +322,12 @@ const PROMO_OUTUBRO = `PROMOÇÃO DE OUTUBRO — vale somente para quem contrata
  *  retorno (saudação de boas-vindas de volta, em vez de seguir como se fosse
  *  continuação imediata). */
 const RETORNO_APOS_HORAS = 12;
-const RETORNO_APOS_PAUSA = `RETORNO APÓS PAUSA: a pessoa ficou um bom tempo sem interagir e voltou agora. Comece a resposta com uma saudação curta de retorno, como "Que bom ter você de volta, [Nome]!" (use o nome só se já souber), retome em UMA frase onde a conversa parou, sem repetir o que já foi dito, e siga a partir do que ela acabou de escrever — se ela só cumprimentou, pergunte se ainda faz sentido continuar de onde pararam. Não repita a apresentação, não peça de novo o que ela já informou e não cite horas ou dias exatos.`;
+const RETORNO_APOS_PAUSA = `RETORNO APÓS PAUSA: a pessoa ficou um bom tempo sem interagir e voltou agora. Comece com uma saudação curta de retorno, como "Que bom ter você de volta, [Nome]!" (use o nome só se já souber). Responda primeiro ao que ela acabou de escrever, se houver pergunta. Depois REVISITE O ASSUNTO: lembre em uma frase o que ela buscava (especialidade, rotina, dor ou objetivo que ela já contou) e pergunte se continua buscando o mesmo e se a situação ou as dificuldades dela seguem as mesmas — é a UMA pergunta da resposta. Se ela ainda não contou o que busca, pergunte apenas o que a trouxe de volta. Não repita a apresentação, não repita o que já foi dito e não cite horas ou dias exatos.`;
 
 /** Reforço junto da última mensagem da pessoa: só no prompt de sistema o modelo
  *  ignorava a saudação de retorno. A nota vai só na chamada à IA, nunca é gravada
  *  nem enviada ao cliente. */
-const NOTA_RETORNO = '[Instrução do sistema, invisível para a pessoa — nunca a mencione: ela ficou muito tempo sem interagir e acabou de voltar. Sua resposta DEVE começar com uma saudação curta de boas-vindas de volta, por exemplo "Que bom ter você de volta, Nome!" (use o nome só se já souber). Depois retome em uma frase onde vocês pararam e responda ao que ela escreveu. Não repita a apresentação nem o que já foi dito.]';
+const NOTA_RETORNO = '[Instrução do sistema, invisível para a pessoa — nunca a mencione: ela ficou muito tempo sem interagir e acabou de voltar. Sua resposta DEVE (1) começar com uma saudação curta de boas-vindas de volta, por exemplo "Que bom ter você de volta, Nome!" (use o nome só se já souber); (2) responder primeiro ao que ela escreveu, se houver pergunta; (3) revisitar o assunto: lembrar em uma frase o que ela buscava (especialidade, rotina, dor ou objetivo que ela já contou) e perguntar se continua buscando o mesmo e se a situação ou as dificuldades seguem as mesmas — essa é a UMA pergunta da resposta. Se ela ainda não contou o que busca, pergunte só o que a trouxe de volta. Não repita a apresentação nem o que já foi dito.]';
 
 function comNotaDeRetorno(
   mensagens: { role: 'user' | 'assistant'; content: string }[], retornoHoras?: number | null,
