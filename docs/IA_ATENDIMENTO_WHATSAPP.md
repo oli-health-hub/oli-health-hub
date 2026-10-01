@@ -149,7 +149,7 @@ pedir atendimento humano ou surgir outro critério desta seção.
 
 | Fato | Valor |
 |---|---|
-| O que é o OLI | Hub para profissionais da saúde: espaço físico com salas equipadas e app de gestão (agenda, financeiro e cadastro de pacientes), sem aluguel fixo |
+| O que é o OLI | Hub para profissionais da saúde: espaço físico com salas equipadas e um app para reservar salas, comprar horas e cadastrar pacientes (o app é ferramenta de apoio, não o diferencial; nunca "gestão de agenda/financeiro"), sem aluguel fixo |
 | Endereço | Rua Marquês de Paranaguá, 348, Edifício Ralph Center, Consolação, São Paulo/SP |
 | Estrutura | 9 salas equipadas, diversas especialidades (clínica geral, psicologia, ginecologia, estética, entre outras) |
 | Plano START | R$ 1,50/min, sem mensalidade, sem fidelidade |
