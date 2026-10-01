@@ -152,19 +152,19 @@ pedir atendimento humano ou surgir outro critério desta seção.
 | O que é o OLI | Hub para profissionais da saúde: espaço físico com salas equipadas e app de gestão (agenda, financeiro e cadastro de pacientes), sem aluguel fixo |
 | Endereço | Rua Marquês de Paranaguá, 348, Edifício Ralph Center, Consolação, São Paulo/SP |
 | Estrutura | 9 salas equipadas, diversas especialidades (clínica geral, psicologia, ginecologia, estética, entre outras) |
-| Plano START | R$ 1,90/min, sem mensalidade, sem fidelidade |
-| Plano PRO | R$ 599/mês (ou R$ 499/mês semestral, fidelidade 6 meses) + R$ 1,45/min |
+| Plano START | R$ 1,50/min, sem mensalidade, sem fidelidade |
+| Plano PRO | R$ 299/mês (ou R$ 199/mês semestral, fidelidade 6 meses) + R$ 0,79/min |
 | Modelo de cobrança | Por minuto de uso real da sala, sem aluguel fixo |
 | Fidelidade | START: nenhuma. PRO mensal: nenhuma. PRO semestral: 6 meses |
-| O que os dois planos incluem | Sala equipada, app (agenda, tempo de sala e pacientes), comunidade e eventos |
-| O que só o PRO inclui | Vaga de estacionamento durante o atendimento, conversa com contador e com advogado, impressão, recepção (agendamento, cobrança e retorno dos pacientes), endereço comercial e fiscal, emissão de nota fiscal. O START não inclui nenhum desses itens |
-| Hora cheia | START R$ 114 · PRO R$ 87 |
-| Pacotes de horas | 1 hora: R$ 114 (START) / R$ 87 (PRO), validade 30 dias. 10 horas que entregam 11: R$ 1.140 (START) / R$ 870 (PRO), validade 60 dias |
-| Regra de compra e uso | Compra só em blocos de 1 hora; reserva em múltiplos de 30 min; consumo por minuto dentro da reserva; sobra fica no saldo. Nunca "pague só os minutos que usar" |
-| Estacionamento | A vaga para o profissional durante o atendimento é benefício do PRO; no START não está incluída. Pacientes têm convênio com estacionamentos parceiros próximos ao OLI; preço, disponibilidade e regras específicas devem ser confirmados com a equipe. |
+| O que os dois planos incluem | Sala equipada, reservas e controle do tempo pelo app, cadastro de pacientes, comunidade e eventos do OLI, vaga de estacionamento durante o atendimento |
+| O que só o PRO inclui | Recepção (agendamento, cobrança e retorno dos pacientes), conversa com contador e com advogado, endereço comercial e fiscal. O START não inclui esses itens. Impressão e nota fiscal **não** são afirmadas como benefício de plano (não constam na tabela de out/2026) |
+| Hora cheia | START R$ 90 · PRO R$ 47,40 |
+| Pacotes de horas | 10 h + 1 h de bônus: R$ 900 (START) / R$ 474 (PRO). 20 h + 3 h: R$ 1.800 / R$ 948. 40 h + 8 h: R$ 3.600 / R$ 1.896. No PRO a mensalidade é cobrada à parte |
+| Regra de compra e uso | Compra só em blocos de 1 hora; reserva a partir de 30 min; consumo por minuto dentro da reserva; sobra fica no saldo. Nunca "pague só os minutos que usar" |
+| Estacionamento | A vaga para o profissional durante o atendimento está incluída nos dois planos. Pacientes têm convênio com estacionamentos parceiros próximos ao OLI; preço, disponibilidade e regras específicas devem ser confirmados com a equipe. |
 
-Fonte: `docs/OLI_BASE.md` §5–§7 e `docs/HANDOFF.md` §67 e §75.3 (preço e
-benefícios vigentes, conferidos contra a tabela `plans`) e verificação de
+Fonte: tabela de planos de outubro/2026 (`OLI_Planos_Out2026.pdf`, com PRO a
+R$ 0,79/min e vaga de estacionamento também no START, conforme o fundador) e verificação de
 código/landing feita em 24/ago (endereço, estrutura). **Ao mudar preço,
 benefício ou endereço, atualizar aqui e no prompt no mesmo commit.**
 
@@ -192,14 +192,14 @@ Depois da primeira mensagem de contato, a Olivia não explica os dois planos de
 uma vez. Ela segue a resposta do lead:
 
 - **Atendimentos pontuais ou horas avulsas:** "Para uma rotina mais flexível,
-  o START é o que encaixa melhor: sem mensalidade e R$ 1,90 por minuto. Você compra horas,
+  o START é o que encaixa melhor: sem mensalidade e R$ 1,50 por minuto. Você compra horas,
   reserva a partir de 30 minutos e usa o saldo conforme a agenda. Qual é a sua
   especialidade?"
 - **Atendimentos recorrentes ou comparação solicitada:** "Para uma agenda mais
-  recorrente, o PRO pode ser mais adequado: R$ 599/mês, ou R$ 499/mês com fidelidade de seis meses,
-  mais R$ 1,45 por minuto. Inclui emissão de nota fiscal e apoio da recepção
-  no agendamento, na cobrança e no retorno dos pacientes. Qual é a sua
-  especialidade?"
+  recorrente, o PRO pode ser mais adequado: R$ 299/mês, ou R$ 199/mês com fidelidade de seis meses,
+  mais R$ 0,79 por minuto. Inclui apoio da recepção no agendamento, na
+  cobrança e no retorno dos pacientes, além de endereço comercial e fiscal.
+  Qual é a sua especialidade?"
 - **Depois da especialidade:** informa que há salas que podem ser apropriadas
   para aquele atendimento e pergunta somente se a pessoa prefere receber uma foto ou
   agendar uma visita. Para visita, envia o Calendly; para foto, usa uma imagem
