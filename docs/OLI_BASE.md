@@ -53,15 +53,15 @@ Receita composta por **5 fontes**:
 
 **Por que minutagem:** a sala é custo **fixo** para a OLI. Cada minuto vendido é margem ~100% (menos ~2% de taxa Asaas). Isso permite oferecer o START sem mensalidade como porta de entrada e ganhar escala no uso, não na adesão.
 
-**Receita por profissional a 20h/mês** — os dois planos convergem, e é isso que torna o plano gratuito defensável:
+**Receita por profissional a 20h/mês** (preços de out/2026) — o PRO sai mais barato que o START a partir de ~10h/mês:
 
 | Plano | Conta | Receita/mês |
 |---|---|---|
-| START | 1.200 min × R$ 1,90 | **R$ 2.280** |
-| PRO mensal | R$ 599 + 1.200 × R$ 1,45 | **R$ 2.339** |
-| PRO semestral | R$ 499 + 1.200 × R$ 1,45 | **R$ 2.239** |
+| START | 1.200 min × R$ 1,29 | **R$ 1.548** |
+| PRO mensal | R$ 299 + 1.200 × R$ 0,79 | **R$ 1.247** |
+| PRO semestral | R$ 199 + 1.200 × R$ 0,79 | **R$ 1.147** |
 
-O START não é subsídio: quem usa a sala paga praticamente o mesmo, por caminho diferente. O risco do START é atrair cadastro que **nunca usa a sala** — comportamento já observado (24 cadastros gratuitos, 3 com alguma reserva).
+Com os preços de outubro a receita por profissional caiu de 32% (START) a 47% (PRO mensal) frente aos valores anteriores, a 20h/mês (START de R$ 2.280 para R$ 1.548; PRO mensal de R$ 2.339 para R$ 1.247). O risco do START é atrair cadastro que **nunca usa a sala** — comportamento já observado (24 cadastros gratuitos, 3 com alguma reserva).
 
 ---
 
@@ -90,12 +90,12 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 
 ## 5. Planos e preços
 
-> Fonte em código: `src/models/oli-plans.ts`. **⚠️ O código está defasado** — ainda marca `plan_base` como ativo e com preços velhos (R$ 299 / R$ 1,50). O banco (`plans`) está correto. Pendência aberta desde 26/ago, sem decisão.
+> Fonte em código: `src/models/oli-plans.ts` (preços de START e PRO atualizados em 02/out; `plan_base` ainda aparece como ativo, pendência de 26/ago). **Preços de outubro/2026 definidos pelo fundador em 02/10** — a tabela `plans` do banco, as telas do app, os termos e o site podem ainda mostrar os valores anteriores até serem propagados (ver `HANDOFF.md` §76).
 
 | Plano | Mensalidade | R$/min | Hora cheia | Status |
 |---|---|---|---|---|
-| **START** | sem mensalidade | R$ 1,90 | R$ 114 | Ativo — **padrão automático no cadastro** |
-| **PRO** | R$ 599/mês · **R$ 499/mês no semestral** (fidelidade 6 meses) | R$ 1,45 | R$ 87 | Ativo |
+| **START** | sem mensalidade | R$ 1,29 | R$ 77,40 | Ativo — **padrão automático no cadastro** |
+| **PRO** | R$ 299/mês · **R$ 199/mês no semestral** (fidelidade 6 meses) | R$ 0,79 | R$ 47,40 | Ativo |
 | ~~BASE~~ | — | — | — | Desativado (`ativo=false`), zero assinantes, fora da vitrine |
 | ~~VIP~~ | — | — | — | Nunca lançado — não projetar nem vender |
 
@@ -121,14 +121,14 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 
 ### Ponto de virada entre os planos
 
-Calculado sobre a diferença de minutagem (R$ 0,45/min), não sobre a mensalidade cheia:
+Calculado sobre a diferença de minutagem (R$ 0,50/min), não sobre a mensalidade cheia:
 
 | Virada | Horas/mês | Conta |
 |---|---|---|
-| START → PRO mensal | **~23h** (22,2 exatas) | R$ 599 ÷ (R$ 0,45 × 60) |
-| START → PRO semestral | **~19h** (18,5 exatas) | R$ 499 ÷ (R$ 0,45 × 60) |
+| START → PRO mensal | **~10h** (9,97 exatas) | R$ 299 ÷ (R$ 0,50 × 60) |
+| START → PRO semestral | **~7h** (6,6 exatas) | R$ 199 ÷ (R$ 0,50 × 60) |
 
-Abaixo de 19h/mês o START é sempre mais econômico para o profissional — e ainda entrega margem maior por minuto para a OLI.
+Abaixo de ~7h/mês o START é sempre mais econômico para o profissional — e ainda entrega margem maior por minuto para a OLI.
 
 ---
 

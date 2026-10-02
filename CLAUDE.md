@@ -105,16 +105,16 @@ oliRed:       '#D9534F'   // Alertas e urgência
 ```typescript
 type PlanType = 'START' | 'PRO';   // BASE desativado, VIP nunca lançado
 
-// Valores vigentes (fonte: tabela `plans` no Supabase)
-RATE_PER_MINUTE = { START: 1.90, PRO: 1.45 }
-MONTHLY_PRICE   = { START: 0, PRO: 599.00 }   // PRO semestral: 499.00/mês, fidelidade 6 meses
+// Valores vigentes desde out/2026 (fundador, 02/10). ⚠️ tabela `plans`, telas do app, termos e prompts da Olivia ainda no valor antigo — ver HANDOFF §76
+RATE_PER_MINUTE = { START: 1.29, PRO: 0.79 }   // preços de out/2026 (02/10)
+MONTHLY_PRICE   = { START: 0, PRO: 299.00 }   // PRO semestral: 199.00/mês, fidelidade 6 meses
 ```
 
 - **START**: sem mensalidade, **padrão automático no cadastro** (a exigência de escolher plano existiu entre 19 e 26/ago e foi revertida).
-- **PRO**: recorrente, mensal ou semestral. Ponto de virada: ~23h/mês no mensal, ~19h no semestral.
+- **PRO**: recorrente, mensal ou semestral. Ponto de virada: ~10h/mês no mensal, ~7h no semestral.
 - **BASE**: desativado (`ativo=false`), zero assinantes, fora da vitrine — preservado só por histórico.
 - **VIP**: nunca lançado — não comercializar nem implementar lógica.
-- ⚠️ **`src/models/oli-plans.ts` está defasado** — ainda marca `plan_base` como ativo com preços velhos (R$ 299 / R$ 1,50). Pendência aberta desde 26/ago, sem decisão. O banco é a fonte correta.
+- ⚠️ **`src/models/oli-plans.ts`**: preços de START e PRO atualizados em 02/10; `plan_base` ainda aparece como ativo (pendência desde 26/ago). **A tabela `plans` do banco ainda tem os valores antigos** até a propagação (HANDOFF §76).
 - Benefícios por plano: matriz em `docs/OLI_BASE.md` §5. Estacionamento e endereço comercial e fiscal são exclusivos do PRO.
 
 ## Olivia — assistente única de IA

@@ -2909,8 +2909,9 @@ Varredura feita comparando git, banco, edge functions deployadas e arquivos solt
 - O START do prompt (R$ 1,50) **não bate** com o do PDF (R$ 1,29). Os valores do PRO batem entre PDF e prompt, mas **não com o banco**.
 - Pacotes de horas no PDF: START 10h+1 = R$ 774, 20h+3 = R$ 1.548, 40h+8 = R$ 3.096; PRO 474 / 948 / 1.896 (iguais aos do prompt para o PRO).
 - **Efeito prático:** a Olivia (app e WhatsApp) cita preço diferente do que o banco cobra. `create-hour-package`, `usage_charges` e o app continuam no banco. Quem fechar pela conversa vai ver um valor e pagar outro.
-- **Decisão do fundador em 02/10: os preços novos (mais baixos) estão em vigor; o banco e o `CLAUDE.md` estão defasados.** O PRO está fechado (R$ 0,79/min, R$ 299 mensal, R$ 199 semestral). **O START ainda diverge: R$ 1,29 (PDF) ou R$ 1,50 (prompts)?** Não foi dito qual; confirmar antes de mexer em qualquer lugar.
-- **A fazer depois dessa confirmação:** atualizar a tabela `plans` (`taxa_min`, `preco_mensal`, `preco_semestral`), `oli-plans.ts`, `CLAUDE.md`, `OLI_BASE.md`, a matriz `FEATURES` e o texto dos prompts e de `docs/IA_ATENDIMENTO_WHATSAPP.md`. Atenção a clientes com taxa congelada (migration `freeze_legacy_subscriber_rates`) e a `create-hour-package` (preço do pacote).
+- **Decisão do fundador em 02/10: os preços novos (mais baixos) estão em vigor; o banco e o `CLAUDE.md` estão defasados.** O PRO está fechado (R$ 0,79/min, R$ 299 mensal, R$ 199 semestral). **START confirmado em R$ 1,29/min (hora R$ 77,40), igual ao PDF; o R$ 1,50 dos prompts é erro.**
+- **Já propagado (02/10, só no repo):** `CLAUDE.md`, `docs/OLI_BASE.md` (receita a 20h, tabela de planos, ponto de virada: ~10h mensal, ~7h semestral) e `src/models/oli-plans.ts` (START 1,29; PRO 299 e 0,79; `plan_base` segue como estava).
+- **Ainda no valor antigo, aguardando ok (billing, texto jurídico e produção):** tabela `plans` (`taxa_min`, `preco_mensal`, `preco_semestral`), `oli-plans.ts`, `CLAUDE.md`, `OLI_BASE.md`, a matriz `FEATURES` e o texto dos prompts e de `docs/IA_ATENDIMENTO_WHATSAPP.md`. Atenção a clientes com taxa congelada (migration `freeze_legacy_subscriber_rates`) e a `create-hour-package` (preço do pacote).
 
 ### 76.2 Prompts da Olivia em produção sem versão no git
 
@@ -2950,7 +2951,7 @@ Em 01/10 foram deployados direto no Supabase, sem commit: `chat` v34 (15h18), `w
 
 ### 76.6 Pendências abertas desta varredura
 
-1. **Confirmar o preço do START** (R$ 1,29 ou R$ 1,50) e propagar os preços novos para banco e documentos (76.1). O PRO já está fechado.
+1. **Propagar os preços de outubro** (START 1,29; PRO 0,79, 299, 199) para o que falta: tabela `plans`, `app/escolher-plano.tsx`, `app/meu-plano.tsx`, `app/termos-uso.tsx`, `app/contrato-servico.tsx` (precisa OTA), `landing/index.html`, `create-hour-package` (fallback 1,90), prompts da Olivia e `docs/IA_ATENDIMENTO_WHATSAPP.md`.
 2. Puxar `chat`, `whatsapp-webhook` e `test-lead-ai` deployados para o git e atualizar `docs/IA_ATENDIMENTO_WHATSAPP.md` (76.2).
 3. Commitar o admin da revisita e a migration reconstruída (76.3), depois testar com login de admin.
 4. Decidir o destino dos arquivos soltos (76.5).
