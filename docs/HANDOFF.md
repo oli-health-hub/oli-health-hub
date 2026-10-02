@@ -1,9 +1,9 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 23/Setembro/2026.
+> Última atualização: 02/Outubro/2026.
 >
-> **Chegou agora? Comece pela §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026.
+> **Chegou agora? Comece pela §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
 ---
 
@@ -2894,6 +2894,68 @@ Commit `ca22b22`, push direto pra `main`.
 
 **Estado de publicação:** esta seção e `docs/OLI_DOSSIE.json` foram gravadas no disco em 23/09; **não commitadas** (o shell da máquina do fundador estava fora do ar nesta sessão — rodar `git add docs/HANDOFF.md docs/OLI_DOSSIE.json && git commit` no terminal). Sem código alterado, sem OTA.
 
+## 76. Varredura de 02/10 — o que ficou fora do handoff desde 23/09
+
+Varredura feita comparando git, banco, edge functions deployadas e arquivos soltos. **Nenhum commit entrou depois do `a53a283` (23/09)**; tudo abaixo estava só no banco, em produção ou no disco.
+
+### 76.1 Preços: três conjuntos em circulação (novos valem; START a confirmar)
+
+| Fonte | START /min | PRO /min | PRO mensal | PRO semestral |
+|---|---|---|---|---|
+| Tabela `plans` no banco (inalterada desde ago) e `CLAUDE.md` | R$ 1,90 | R$ 1,45 | R$ 599 | R$ 499 |
+| PDF `landing/Claude outputs/OLI_Planos_Out2026.pdf` (24/09, "valores de referência para outubro de 2026, sujeitos a alteração") | **R$ 1,29** (hora R$ 77,40) | R$ 0,79 (hora R$ 47,40) | R$ 299 | R$ 199 |
+| Prompts da Olivia deployados em 01/10 | **R$ 1,50** | R$ 0,79 | R$ 299 | R$ 199 |
+
+- O START do prompt (R$ 1,50) **não bate** com o do PDF (R$ 1,29). Os valores do PRO batem entre PDF e prompt, mas **não com o banco**.
+- Pacotes de horas no PDF: START 10h+1 = R$ 774, 20h+3 = R$ 1.548, 40h+8 = R$ 3.096; PRO 474 / 948 / 1.896 (iguais aos do prompt para o PRO).
+- **Efeito prático:** a Olivia (app e WhatsApp) cita preço diferente do que o banco cobra. `create-hour-package`, `usage_charges` e o app continuam no banco. Quem fechar pela conversa vai ver um valor e pagar outro.
+- **Decisão do fundador em 02/10: os preços novos (mais baixos) estão em vigor; o banco e o `CLAUDE.md` estão defasados.** O PRO está fechado (R$ 0,79/min, R$ 299 mensal, R$ 199 semestral). **O START ainda diverge: R$ 1,29 (PDF) ou R$ 1,50 (prompts)?** Não foi dito qual; confirmar antes de mexer em qualquer lugar.
+- **A fazer depois dessa confirmação:** atualizar a tabela `plans` (`taxa_min`, `preco_mensal`, `preco_semestral`), `oli-plans.ts`, `CLAUDE.md`, `OLI_BASE.md`, a matriz `FEATURES` e o texto dos prompts e de `docs/IA_ATENDIMENTO_WHATSAPP.md`. Atenção a clientes com taxa congelada (migration `freeze_legacy_subscriber_rates`) e a `create-hour-package` (preço do pacote).
+
+### 76.2 Prompts da Olivia em produção sem versão no git
+
+Em 01/10 foram deployados direto no Supabase, sem commit: `chat` v34 (15h18), `whatsapp-webhook` v46 (15h14) e `test-lead-ai` v40 (13h44). O fonte local (`supabase/functions/`) está **da versão de 31/08**; o diff do `whatsapp-webhook` é grande. Mudanças identificadas no deployado:
+
+- Novo bloco **"O DIFERENCIAL DO OLI"**: ambiente humanizado, equipe e recepção em primeiro lugar; consultório pronto e bem localizado; app e ferramentas só como detalhe de apoio, mencionados apenas se perguntarem.
+- O OLI passa a se descrever como **coworking para profissionais da saúde** (antes: "hub" com espaço físico + app de gestão). O app é descrito só como "reservar salas, comprar horas e cadastrar pacientes", nunca como sistema de agenda ou financeiro.
+- **Eventos e reuniões:** estrutura completa, sob demanda; Olivia não cita preço nem o que está incluído e faz handoff.
+- **Recepção:** em todos os planos há recepcionista; agendamento, cobrança e confirmação de consulta são serviços do PRO.
+- Copy: "por minuto" vira "sem custo fixo de consultório nos dias parados" (sai "você só paga o que usa"); nunca dizer "só paga o que usar", em linha com a regra de cobrança da §16.
+- **Estacionamento nos dois planos; diagnósticos contábil e jurídico e endereço comercial e fiscal só no PRO** (alinhado à §67). Fidelidade: START nenhuma; PRO mensal nenhuma; só o semestral tem 6 meses.
+- Exemplo de sessão de 50 min: START R$ 75 e PRO R$ 39,50 (no fonte local: R$ 95 e R$ 72,50). Conta coerente com os preços de 76.1, não com o banco.
+
+**Pendência técnica:** trazer o fonte deployado para o git (`get_edge_function` das três) antes de qualquer outro deploy, para ninguém sobrescrever a versão de 01/10 com a de 31/08. `docs/IA_ATENDIMENTO_WHATSAPP.md` também precisa acompanhar (regra do `CLAUDE.md`: o manual vem junto do prompt). Não verificado: o manual já reflete estas mudanças.
+
+### 76.3 Revisita da base herdada da agência anterior (migration 22/09)
+
+- **Migration `20260922_leads_revisita_fields`**, aplicada no Supabase em 22/09. O arquivo não existia no repo; foi **reconstruído hoje** em `supabase/migrations/20260922_leads_revisita_fields.sql` a partir do schema vivo.
+- Colunas novas em `leads`: `lote` (text), `revisita_status` (check: `pendente`, `em_andamento`, `respondeu`, `sem_retorno`, `encerrado`; NULL = fora da fila), `revisita_em`, `revisita_por` (uuid), `revisita_resultado`.
+- **Dados hoje:** 611 leads com `lote='agencia_anterior'`; **475 em `pendente`** (a fila) e 136 fora dela (127 descartados, 9 de outras situações, como visita já agendada). 76 leads sem lote (entrada nova).
+- **Admin, não commitado** (`admin/app/actions.ts` +16, `admin/app/leads/page.tsx` +134): filtro "Revisita" na barra de `/leads` (Revisitar, Em curso, Respondeu, Sem retorno, Encerrada, Fora da fila), com contagem por balde que ignora só o próprio eixo, como os demais filtros; `updateLead` grava `revisita_status/resultado/por` e carimba `revisita_em` sozinho (não pede data na tela). **Voltar o lead para `pendente` limpa a data**, senão ele reapareceria como já revisitado.
+- Contexto de negócio: varredura manual da Cláudia por WhatsApp antes da troca de agência. É eixo separado da esteira (`status`) de propósito: um lead pode estar `contatado` e ainda não ter sido revisitado.
+- Não testado ao vivo (sem credencial de admin neste ambiente). `database.types.ts` e o tipo `Lead` do admin: o admin já tem os campos; confirmar se `database.types.ts` do app foi regenerado.
+
+### 76.4 Números novos no banco (02/10)
+
+- **687 leads** (eram 617 em 23/09); **332 nos últimos 30 dias** (eram 518, a janela andou); 9 em `visita_agendada`; 150 descartados.
+- Não refeita hoje a contagem de conversões, PRO ativos e receita de sala (§75 tinha 0 / 0 / R$ 0). **Reconferir antes de citar.**
+
+### 76.5 Material fora do git (disco)
+
+- `landing/Claude outputs/OLI_Planos_Out2026.pdf` (24/09): peça de planos de outubro, ver 76.1. Só publicar depois de confirmar o preço do START.
+- `resumo-matinal-2026-09-06.html` e `resumo-matinal-2026-09-21.html` na raiz: saída de rotina de resumo matinal, sem relevância para o projeto. Candidatos a apagar.
+- `.serena/`: cache e memórias da ferramenta Serena; deve entrar no `.gitignore`.
+- Deletados no worktree e sem commit: `OLD/fotos-brutas/print-screen-app-ios/` (4 PNG) e `assets/Print App material Impresso/` (4 PNG). Confirmar que foram removidos de propósito antes de commitar a deleção.
+- `docs/OLI_DOSSIE.json` e a §75 foram commitados (`a53a283`); o aviso de "não commitado" na §75 está desatualizado.
+
+### 76.6 Pendências abertas desta varredura
+
+1. **Confirmar o preço do START** (R$ 1,29 ou R$ 1,50) e propagar os preços novos para banco e documentos (76.1). O PRO já está fechado.
+2. Puxar `chat`, `whatsapp-webhook` e `test-lead-ai` deployados para o git e atualizar `docs/IA_ATENDIMENTO_WHATSAPP.md` (76.2).
+3. Commitar o admin da revisita e a migration reconstruída (76.3), depois testar com login de admin.
+4. Decidir o destino dos arquivos soltos (76.5).
+5. `src/models/oli-plans.ts` segue defasado (já era pendência desde 26/ago); agora piora com os preços de outubro.
+
 ## 13. Comandos úteis
 
 ```bash
@@ -3021,3 +3083,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (21/set sessão 4):** As metas do fundador foram para o Trello ("OLI — Execução CEO"): 6 cartões de metas, 5 de marcos de faturamento, controles semanais com checklist, cartão do IG-16 e o cartão da agência reescrito, ver §74. Quadro privado e do contrato dele; divergência de calendário (15/09 x 21/09) segue em aberto. Sem código, sem commit.
 
 **Resumo de 1 linha (23/set):** Montado o **dossiê consolidado do projeto** (§75): quem é quem com o Guilherme como CEO contratado desde 16/09 (não sócio) e a Nathalia no comercial, produto e preço vigentes, **números medidos no banco hoje** (617 leads, 518 nos últimos 30 dias; 9 visitas agendadas, 1 proposta, **0 conversões, 0 PRO, receita real de sala R$ 0** — as 7 cobranças de sala são de perfis founder em demonstração), tecnologia, linha do tempo, plano dos 100 dias e governança, decisões e pendências abertas. Versão estruturada em `docs/OLI_DOSSIE.json`. Sem código alterado, sem OTA; gravado no disco e **não commitado** (shell da máquina fora do ar).
+
+**Resumo de 1 linha (02/out):** Varredura de git, banco, edge functions e disco para ver o que o handoff não tinha (§76). Achados: **três tabelas de preço em conflito** (banco e `CLAUDE.md` com START R$ 1,90 / PRO R$ 599-499 / R$ 1,45; PDF de outubro com START R$ 1,29 e PRO R$ 299-199 / R$ 0,79; prompts da Olivia com START R$ 1,50 e o PRO do PDF), prompts de `chat`, `whatsapp-webhook` e `test-lead-ai` **deployados em 01/10 sem commit** com novo posicionamento ("coworking humanizado", app como apoio), e a **revisita da base herdada** (migration de 22/09 aplicada no banco sem arquivo no repo, agora reconstruído; 475 leads em fila; admin com filtro e gravação, sem commit). Fundador confirmou que os preços novos (mais baixos) valem; falta definir o START (R$ 1,29 ou R$ 1,50) e propagar para banco e documentos. Sem OTA, sem deploy, sem commit.

@@ -710,10 +710,24 @@ export async function updateLead(formData: FormData) {
   const motivoInformado  = (formData.get('motivo_descarte') as string) || null;
   const motivo_descarte  = status === 'descartado' ? motivoInformado : null;
 
+  // Revisita da base herdada da agência anterior. A data não é pedida na tela:
+  // quem está atendendo não deveria ter que digitar "hoje". Fica valendo como
+  // "última vez que mexeram na revisita" — voltar o lead pra 'pendente' limpa a
+  // data, senão um lead recolocado na fila apareceria como já revisitado.
+  const revisita_status    = (formData.get('revisita_status')    as string) || null;
+  const revisita_resultado = (formData.get('revisita_resultado') as string) || null;
+  const revisita_por       = (formData.get('revisita_por')       as string) || null;
+  const revisita_em = revisita_status && revisita_status !== 'pendente'
+    ? new Date().toISOString()
+    : null;
+
   const supabase = await createSupabaseAdmin();
   const { error } = await supabase
     .from('leads')
-    .update({ status, observacoes, temperatura, perfil, motivo_descarte, atendente_id, canal_primeiro_contato })
+    .update({
+      status, observacoes, temperatura, perfil, motivo_descarte, atendente_id, canal_primeiro_contato,
+      revisita_status, revisita_resultado, revisita_por, revisita_em,
+    })
     .eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/leads');

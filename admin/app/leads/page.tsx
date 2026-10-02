@@ -30,6 +30,11 @@ interface Lead {
   whatsapp_opt_in_at:     string | null;
   whatsapp_opt_in_source: string | null;
   whatsapp_opt_out_at:    string | null;
+  revisita_status:    string | null;
+  revisita_em:        string | null;
+  revisita_por:       string | null;
+  revisita_resultado: string | null;
+  lote:               string | null;
 }
 
 interface Atendente {
@@ -86,6 +91,18 @@ const PERFIL_LABEL: Record<string, { label: string; bg: string; text: string }> 
   dentro:      { label: 'Dentro do perfil', bg: 'bg-green-50', text: 'text-oli-green' },
   fora:        { label: 'Fora do perfil',   bg: 'bg-gray-100', text: 'text-gray-500'  },
   a_confirmar: { label: 'Perfil a confirmar', bg: 'bg-yellow-50', text: 'text-yellow-700' },
+};
+
+/* Revisita da base herdada: varredura manual da Claudia por WhatsApp antes da
+   troca de agência. Eixo separado da esteira (`status`) de propósito — um lead
+   pode estar 'contatado' na esteira e ainda não ter sido revisitado. `null` =
+   fora da fila (descartados e quem já tem visita agendada). */
+const REVISITA_LABEL: Record<string, { label: string; bg: string; text: string }> = {
+  pendente:     { label: 'Revisitar',        bg: 'bg-rose-50',   text: 'text-rose-700'   },
+  em_andamento: { label: 'Revisita em curso', bg: 'bg-amber-50',  text: 'text-amber-700'  },
+  respondeu:    { label: 'Respondeu',        bg: 'bg-green-50',  text: 'text-oli-green'  },
+  sem_retorno:  { label: 'Sem retorno',      bg: 'bg-orange-50', text: 'text-orange-700' },
+  encerrado:    { label: 'Revisita encerrada', bg: 'bg-gray-100', text: 'text-gray-500'  },
 };
 
 const MOTIVO_LABEL: Record<string, string> = {
@@ -201,9 +218,13 @@ export default async function LeadsPage({
   // só visível vasculhando badge por badge na tabela inteira.
   const filtroTemp   = searchParams.temperatura ?? 'todos';
   const filtroPerfil = searchParams.perfil      ?? 'todos';
+  // Fila da revisita pré-troca de agência. 'fora' é balde próprio: descartados e
+  // visitas já agendadas ficaram de fora da varredura e não deveriam sumir do
+  // painel só por isso.
+  const filtroRev    = searchParams.revisita    ?? 'todos';
   const buscaCrua   = (searchParams.q ?? '').trim().toLowerCase();
 
-  const bate = (l: Lead, excluir?: 'status' | 'atendente' | 'origem' | 'atendimento' | 'temperatura' | 'perfil'): boolean => {
+  const bate = (l: Lead, excluir?: 'status' | 'atendente' | 'origem' | 'atendimento' | 'temperatura' | 'perfil' | 'revisita'): boolean => {
     if (buscaCrua) {
       const alvo = `${l.nome} ${l.email ?? ''} ${l.whatsapp ?? ''}`.toLowerCase();
       if (!alvo.includes(buscaCrua)) return false;
@@ -230,6 +251,10 @@ export default async function LeadsPage({
       const bucket = l.perfil ?? 'sem';
       if (bucket !== filtroPerfil) return false;
     }
+    if (excluir !== 'revisita' && filtroRev !== 'todos') {
+      const bucket = l.revisita_status ?? 'fora';
+      if (bucket !== filtroRev) return false;
+    }
     return true;
   };
 
@@ -244,6 +269,7 @@ export default async function LeadsPage({
   const baseAtend  = todos.filter(l => bate(l, 'atendimento'));
   const baseTemp   = todos.filter(l => bate(l, 'temperatura'));
   const basePerfil = todos.filter(l => bate(l, 'perfil'));
+  const baseRev    = todos.filter(l => bate(l, 'revisita'));
 
   const contagem = baseStatus.reduce<Record<string, number>>((acc, l) => {
     acc[l.status] = (acc[l.status] ?? 0) + 1;
@@ -279,9 +305,15 @@ export default async function LeadsPage({
     return acc;
   }, {});
 
+  const contagemRev = baseRev.reduce<Record<string, number>>((acc, l) => {
+    const k = l.revisita_status ?? 'fora';
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
   // Preserva os outros filtros ao montar cada link, senão clicar num chip
   // descarta silenciosamente as escolhas anteriores.
-  const href = (p: { status?: string; atendente?: string; origem?: string; atendimento?: string; temperatura?: string; perfil?: string; q?: string }) => {
+  const href = (p: { status?: string; atendente?: string; origem?: string; atendimento?: string; temperatura?: string; perfil?: string; revisita?: string; q?: string }) => {
     const query = new URLSearchParams();
     const s  = p.status      ?? filtro;
     const a  = p.atendente   ?? filtroAtd;
@@ -289,6 +321,7 @@ export default async function LeadsPage({
     const at = p.atendimento ?? filtroAtend;
     const t  = p.temperatura ?? filtroTemp;
     const pf = p.perfil      ?? filtroPerfil;
+    const rv = p.revisita    ?? filtroRev;
     const b  = p.q           ?? searchParams.q ?? '';
     if (s  !== 'todos') query.set('status', s);
     if (a  !== 'todos') query.set('atendente', a);
@@ -296,6 +329,7 @@ export default async function LeadsPage({
     if (at !== 'todos') query.set('atendimento', at);
     if (t  !== 'todos') query.set('temperatura', t);
     if (pf !== 'todos') query.set('perfil', pf);
+    if (rv !== 'todos') query.set('revisita', rv);
     if (b)              query.set('q', b);
     const qs = query.toString();
     return qs ? `/leads?${qs}` : '/leads';
@@ -318,6 +352,7 @@ export default async function LeadsPage({
         <input type="hidden" name="atendente" value={filtroAtd} />
         <input type="hidden" name="origem" value={filtroOrig} />
         <input type="hidden" name="atendimento" value={filtroAtend} />
+        <input type="hidden" name="revisita" value={filtroRev} />
         <input
           type="search"
           name="q"
@@ -334,6 +369,48 @@ export default async function LeadsPage({
       {/* Filtro por situação. Links, não botões: mantém a página como server
           component e deixa cada filtro com URL própria, compartilhável. */}
       <div className="space-y-2">
+        {/* Primeira linha da barra enquanto a varredura pré-troca de agência
+            estiver rodando: é a fila que a Claudia trabalha hoje. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Revisita</span>
+          <Link
+            href={href({ revisita: 'todos' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroRev === 'todos'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
+            }`}
+          >
+            Todas <span className="opacity-70">{baseRev.length}</span>
+          </Link>
+          {Object.entries(REVISITA_LABEL).map(([valor, meta]) => {
+            const n = contagemRev[valor] ?? 0;
+            if (n === 0 && filtroRev !== valor) return null;
+            const ativo = filtroRev === valor;
+            return (
+              <Link
+                key={valor}
+                href={href({ revisita: valor })}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  ativo ? 'bg-oli-green text-white border-oli-green' : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
+                }`}
+              >
+                {meta.label} <span className="opacity-70">{n}</span>
+              </Link>
+            );
+          })}
+          <Link
+            href={href({ revisita: 'fora' })}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              filtroRev === 'fora'
+                ? 'bg-oli-green text-white border-oli-green'
+                : 'bg-gray-100 text-gray-500 border-transparent hover:border-oli-green'
+            }`}
+          >
+            Fora da varredura <span className="opacity-70">{contagemRev['fora'] ?? 0}</span>
+          </Link>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Atendimento</span>
           <Link
@@ -606,6 +683,7 @@ export default async function LeadsPage({
               const tempMeta     = lead.temperatura ? TEMPERATURA_LABEL[lead.temperatura] : null;
               const perfilMeta   = lead.perfil      ? PERFIL_LABEL[lead.perfil]           : null;
               const nutricaoMeta = resumoNutricao(lead);
+              const revMeta      = lead.revisita_status ? REVISITA_LABEL[lead.revisita_status] : null;
               return (
                 <tr key={lead.id} className="border-t border-gray-50 align-top">
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatData(lead.created_at)}</td>
@@ -666,7 +744,22 @@ export default async function LeadsPage({
                             {tempMeta.label}
                           </span>
                         )}
+                        {/* Ao lado de status/temperatura porque, enquanto a
+                            varredura roda, "falta revisitar" pesa tanto quanto
+                            a etapa da esteira na hora de escolher quem chamar. */}
+                        {revMeta && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${revMeta.bg} ${revMeta.text}`}>
+                            {revMeta.label}
+                          </span>
+                        )}
                       </div>
+                      {lead.revisita_em && (
+                        <p className="text-[11px] text-gray-400 leading-snug">
+                          Revisita {formatData(lead.revisita_em)}
+                          {lead.revisita_por && ` · ${nomeCurto(nomePorId.get(lead.revisita_por) ?? '—')}`}
+                          {lead.revisita_resultado && ` · ${lead.revisita_resultado}`}
+                        </p>
+                      )}
                       {/* Sem dono aparece em âmbar, não some: lead sem atendente
                           é o que mais corre risco de ficar parado. Olivia tem
                           prioridade de exibição — é o mesmo balde do filtro. */}
@@ -736,6 +829,43 @@ export default async function LeadsPage({
                           <option key={value} value={value}>{meta.label}</option>
                         ))}
                       </select>
+
+                      {/* Bloco da varredura pré-troca de agência. Fica logo
+                          abaixo da etapa porque é o eixo paralelo a ela: a
+                          esteira diz onde o lead está, a revisita diz se já
+                          passamos por ele nesta rodada. Escolher "— fora da
+                          varredura" tira o lead da fila da Claudia. */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Revisita</label>
+                          <select name="revisita_status" defaultValue={lead.revisita_status ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
+                            <option value="">— fora da varredura</option>
+                            {Object.entries(REVISITA_LABEL).map(([value, meta]) => (
+                              <option key={value} value={value}>{meta.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Quem revisitou</label>
+                          <select name="revisita_por" defaultValue={lead.revisita_por ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
+                            <option value="">— não registrado</option>
+                            {atendentes.map(a => (
+                              <option key={a.id} value={a.id}>{a.nome}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Separado de `observacoes` de propósito: aquele campo
+                          guarda o histórico da agência anterior e não deve ser
+                          sobrescrito pelo que o lead responder agora. */}
+                      <input
+                        type="text"
+                        name="revisita_resultado"
+                        defaultValue={lead.revisita_resultado ?? ''}
+                        placeholder="O que ele respondeu na revisita"
+                        className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                      />
 
                       <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">1º contato foi por</label>
                       <select name="canal_primeiro_contato" defaultValue={lead.canal_primeiro_contato ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
