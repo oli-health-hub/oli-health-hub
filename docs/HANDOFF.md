@@ -2911,7 +2911,16 @@ Varredura feita comparando git, banco, edge functions deployadas e arquivos solt
 - **Efeito prático:** a Olivia (app e WhatsApp) cita preço diferente do que o banco cobra. `create-hour-package`, `usage_charges` e o app continuam no banco. Quem fechar pela conversa vai ver um valor e pagar outro.
 - **Decisão do fundador em 02/10: os preços novos (mais baixos) estão em vigor; o banco e o `CLAUDE.md` estão defasados.** O PRO está fechado (R$ 0,79/min, R$ 299 mensal, R$ 199 semestral). **START confirmado em R$ 1,29/min (hora R$ 77,40), igual ao PDF; o R$ 1,50 dos prompts é erro.**
 - **Já propagado (02/10, só no repo):** `CLAUDE.md`, `docs/OLI_BASE.md` (receita a 20h, tabela de planos, ponto de virada: ~10h mensal, ~7h semestral) e `src/models/oli-plans.ts` (START 1,29; PRO 299 e 0,79; `plan_base` segue como estava).
-- **Ainda no valor antigo, aguardando ok (billing, texto jurídico e produção):** tabela `plans` (`taxa_min`, `preco_mensal`, `preco_semestral`), `oli-plans.ts`, `CLAUDE.md`, `OLI_BASE.md`, a matriz `FEATURES` e o texto dos prompts e de `docs/IA_ATENDIMENTO_WHATSAPP.md`. Atenção a clientes com taxa congelada (migration `freeze_legacy_subscriber_rates`) e a `create-hour-package` (preço do pacote).
+- **Aplicado em 02/10, após o ok do fundador ("avance nessa ordem"):**
+  - **Banco:** migration `precos_outubro_2026` (arquivo `supabase/migrations/20261002_precos_outubro_2026.sql`). START `taxa_min` 1,29; PRO `taxa_min` 0,79, `preco_mensal` 299, `preco_semestral` 199. Pacote de horas sai de `taxa_min × 60 × horas` (`create-hour-package`), então START 10h = R$ 774 e PRO 10h = R$ 474 já saem certos sem tocar em `hour_packages`.
+  - **`create-hour-package`:** fallback 1,90 → 1,29 **só no fonte, sem deploy** (só dispara se o plano não achar linha em `plans`).
+  - **Edge functions deployadas:** `whatsapp-webhook` **v47** e `chat` **v35**. START 1,50 → 1,29; hora cheia START R$ 90 → R$ 77,40; pacotes START 900/1.800/3.600 → 774/1.548/3.096; exemplo de sessão de 50 min no START R$ 75 → R$ 64,50. O `whatsapp-webhook` do repo agora é **byte a byte o deployado** (conferido por diff); o `chat` foi deployado do mesmo texto do repo, sem diff.
+  - `docs/IA_ATENDIMENTO_WHATSAPP.md`: só os preços e a frase do PRO foram atualizados; o resto do manual segue defasado (aviso no topo da tabela de fatos).
+- **Assinantes com taxa congelada (`profiles.taxa_min_congelada`) NÃO foram tocados.** São 24 perfis em R$ 2,00 e 1 em R$ 1,30, todos com START ativo. **Efeito colateral a decidir:** esses 24 pagam R$ 2,00/min enquanto quem entra hoje paga R$ 1,29. A regra "nada muda pra quem já estava dentro" (§31) nasceu para impedir *aumento*; agora protege uma taxa 55% acima da vigente. Enquanto não decidir, o app mostra e cobra 2,00 para eles. Nenhuma assinatura PRO existe hoje, então o PRO não tem esse problema.
+- **Pacotes de 20h e 40h:** a tabela `hour_packages` tem os dois com `ativo=false` e bônus de 2 e 4 horas; o PDF e os prompts prometem 20h+3 e 40h+8. Hoje só o 10h+1 e o avulso de 1h estão ativos. Reativar e ajustar o bônus é decisão comercial, **não feita**. A Olivia cita pacotes que o app não vende.
+- **Avulso de 1h** em `hour_packages` está com `valor=120` (taxa antiga de R$ 2,00); a compra real usa `taxa_min × 60`, então o campo é só catálogo, mas convém alinhar.
+- **Promoção de outubro** (PRO mensal com 6h creditadas até 31/10): está no prompt do `whatsapp-webhook` mas **desligada** por padrão, só vale com o secret `PROMO_OUTUBRO_ATIVA=true`. No `test-lead-ai` ela entra sempre. Não há lógica de crédito de 6h no banco ou no checkout; confirmar quem credita antes de ligar.
+- **Ainda no valor antigo:** `test-lead-ai` v40 (ferramenta de teste, ainda com START 1,50; sincronizar com o webhook), telas do app (`escolher-plano.tsx`, `meu-plano.tsx`), termos e contrato (`termos-uso.tsx`, `contrato-servico.tsx`), `landing/index.html`, `tmp/pdfs/build_olivia_flow.py`.
 
 ### 76.2 Prompts da Olivia em produção sem versão no git
 
@@ -2951,7 +2960,8 @@ Em 01/10 foram deployados direto no Supabase, sem commit: `chat` v34 (15h18), `w
 
 ### 76.6 Pendências abertas desta varredura
 
-1. **Propagar os preços de outubro** (START 1,29; PRO 0,79, 299, 199) para o que falta: tabela `plans`, `app/escolher-plano.tsx`, `app/meu-plano.tsx`, `app/termos-uso.tsx`, `app/contrato-servico.tsx` (precisa OTA), `landing/index.html`, `create-hour-package` (fallback 1,90), prompts da Olivia e `docs/IA_ATENDIMENTO_WHATSAPP.md`.
+1. **Propagar os preços de outubro para o que falta:** `app/escolher-plano.tsx`, `app/meu-plano.tsx`, `app/termos-uso.tsx`, `app/contrato-servico.tsx` (precisam de OTA; termos e contrato são texto jurídico), `landing/index.html`, `test-lead-ai`. Banco, `chat` e `whatsapp-webhook` já foram (76.1).
+1b. **Decidir a taxa dos 24 assinantes congelados em R$ 2,00** e se os pacotes de 20h e 40h voltam (76.1).
 2. Puxar `chat`, `whatsapp-webhook` e `test-lead-ai` deployados para o git e atualizar `docs/IA_ATENDIMENTO_WHATSAPP.md` (76.2).
 3. Commitar o admin da revisita e a migration reconstruída (76.3), depois testar com login de admin.
 4. Decidir o destino dos arquivos soltos (76.5).

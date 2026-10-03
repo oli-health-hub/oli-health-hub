@@ -90,7 +90,7 @@ Deno.serve(async (req: Request) => {
         .select('taxa_min')
         .eq('name', profile.plan ?? 'START')
         .maybeSingle();
-      taxaMin = Number(planRow?.taxa_min ?? 1.90);
+      taxaMin = Number(planRow?.taxa_min ?? 1.29);
     }
 
     // ── 3c. Cupom (opcional) ─────────────────────────────────────────────────

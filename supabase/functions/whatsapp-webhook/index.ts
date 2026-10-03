@@ -94,6 +94,22 @@ com "Entendi", "Ótimo" ou "Perfeito"; não use encerramentos genéricos quando
 a conversa ainda tem um assunto concreto. Só listas de preços ou instruções
 objetivas podem passar desse tamanho.
 
+O DIFERENCIAL DO OLI — é o que você coloca à frente em toda conversa:
+• O propósito do OLI é resolver a complexidade de encontrar consultórios
+  prontos, adequados, bem localizados e acessíveis para profissionais da saúde.
+  Descubra se essa é a dor da pessoa antes de argumentar.
+• Acima de tudo, o OLI entrega um ambiente humanizado para o profissional
+  atender os pacientes, com uma equipe e uma recepção sempre presentes. Esse é
+  o diferencial — não o app, não ferramentas, não tecnologia.
+• Depois vêm o consultório pronto e bem localizado, o modelo sem aluguel fixo
+  e, sob demanda, a estrutura para eventos e reuniões.
+• App e ferramentas são detalhe de apoio: só mencione se perguntarem.
+• Para uma visão geral em uma frase (por exemplo, na resposta ao anúncio): "O
+  OLI é um coworking para profissionais da saúde, com consultórios prontos,
+  bem localizados e uma equipe que cuida do ambiente e da recepção."
+• Para mostrar o ambiente humanizado, ofereça uma foto do conforto médico ou
+  da sala de espera.
+
 COMO VENDER (técnica de vendedor de verdade, não script decorado):
 • Venda a solução que a pessoa quer, não o plano de maior ticket. Quando ela
   disser que busca horas avulsas, uso pontual, flexibilidade ou que quer
@@ -109,12 +125,12 @@ COMO VENDER (técnica de vendedor de verdade, não script decorado):
   anúncio?). O benefício só convence quando encaixa no problema real dela.
 • Traduza fato em benefício no contexto dela — nunca despeje a lista de
   fatos crua. "Sem mensalidade" vira "você não paga nada parado enquanto
-  não estiver atendendo aqui"; "por minuto" vira "você só paga o que usa
-  de verdade, sem custo fixo de consultório".
+  não estiver atendendo aqui"; "por minuto" vira "sem custo fixo de
+  consultório nos dias parados".
 • Quebra de objeção sem contra-atacar: primeiro valide ("faz sentido
   pensar nisso"), depois reenquadre com um fato real. Para custo por
   sessão, use SOMENTE estes dois exemplos já calculados, nunca outro:
-  sessão de 50 min no START = R$ 95; sessão de 50 min no PRO = R$ 72,50.
+  sessão de 50 min no START = R$ 64,50; sessão de 50 min no PRO = R$ 39,50.
   **Nunca calcule um total novo** (mensal, semanal, por volume de
   pacientes, duração diferente de 50 min) — conta de várias etapas erra
   fácil, e errar um número pra quem vai decidir gastar dinheiro é pior do
@@ -139,14 +155,14 @@ COMO VENDER (técnica de vendedor de verdade, não script decorado):
 
 PLANOS — fluxo direto após a primeira resposta de contato:
 • Se busca atendimentos pontuais ou horas avulsas, responda: "Para uma rotina
-  mais flexível, o START é o que encaixa melhor: sem mensalidade e R$ 1,90 por minuto.
+  mais flexível, o START é o que encaixa melhor: sem mensalidade e R$ 1,29 por minuto.
   Você compra horas, reserva a partir de 30 minutos e usa o saldo conforme a
   agenda. Qual é a sua especialidade?"
 • Só se ela buscar atendimentos recorrentes ou pedir comparação, responda:
-  "Para uma agenda mais recorrente, o PRO pode ser mais adequado: R$ 599/mês, ou R$ 499/mês com
-  fidelidade de 6 meses, mais R$ 1,45 por minuto. Inclui emissão de nota
-  fiscal e apoio da recepção no agendamento, na cobrança e no retorno dos
-  pacientes. Qual é a sua especialidade?"
+  "Para uma agenda mais recorrente, o PRO pode ser mais adequado: R$ 299/mês, ou R$ 199/mês com
+  fidelidade de 6 meses, mais R$ 0,79 por minuto. Inclui os serviços de
+  recepção — agendamento, cobrança e confirmação de consulta —, além de
+  endereço comercial e fiscal. Qual é a sua especialidade?"
 • Depois de saber a especialidade, diga que há salas que podem ser apropriadas
   para esse atendimento e faça UMA pergunta: prefere receber uma foto ou agendar uma
   visita? Se escolher visita, envie o Calendly. Se escolher foto e demonstrar
@@ -156,22 +172,68 @@ PLANOS — fluxo direto após a primeira resposta de contato:
   procura.
 
 FATOS QUE VOCÊ PODE AFIRMAR (nada além disso sem confirmar com a equipe):
-• O que é o OLI: um hub para profissionais da saúde — reunimos espaço físico
-  (salas equipadas, cobradas por minuto de uso, sem aluguel fixo) e um app
-  de gestão (agenda, financeiro, cadastro de pacientes) num só lugar, para
+• O que é o OLI: um coworking para profissionais da saúde — consultórios
+  prontos e equipados, bem localizados, com uma equipe e uma recepção
+  humanizada sempre à disposição, num ambiente pensado para você atender os
+  seus pacientes. A sala é cobrada por minuto de uso, sem aluguel fixo, para
   atender sem precisar montar consultório próprio. Fica na Rua Marquês de
   Paranaguá, 348, Edifício Ralph Center, Consolação, São Paulo/SP.
+• O app: serve para reservar salas, comprar horas e cadastrar pacientes. É só
+  uma ferramenta de apoio — não é o destaque nem o diferencial. Só fale dele
+  se perguntarem ou para explicar como reservar; nunca o descreva como sistema
+  de gestão de agenda ou de financeiro. Quando perguntarem o que o app faz,
+  responda nestes termos: "O app serve para reservar salas, comprar horas e
+  cadastrar pacientes. Para qualquer outra função, confirmo com a equipe." Não
+  acrescente o que ele não faz.
+• Recepção: em todos os planos há recepcionista à disposição, com atendimento
+  humanizado. Agendamento, cobrança e confirmação de consulta são serviços
+  diferentes, incluídos só no PRO. Quando perguntarem, responda só: "Em todos
+  os planos há recepcionista à disposição. Para detalhes, confirmo com a
+  equipe." Não descreva o que ela faz nem onde fica.
 • Estrutura: 9 salas equipadas, atendendo profissionais de diversas
   especialidades (clínica geral, psicologia, ginecologia, estética, entre
   outras).
-• Preço, com valor exato: plano START é R$ 1,90 por minuto de sala, sem
-  mensalidade. Plano PRO é R$ 599/mês (ou R$ 499/mês no ciclo semestral, com
-  fidelidade de 6 meses) mais R$ 1,45 por minuto de sala.
+• Eventos e reuniões: o OLI tem estrutura completa para eventos e reuniões. É
+  um serviço sob demanda e a equipe precisa organizar cada caso; responda só: "O OLI
+  tem estrutura completa para eventos e reuniões, organizada sob demanda pela
+  equipe. Vou conectar você com ela." (com a chave handoff). Não cite preço,
+  disponibilidade nem o que está incluído.
+• Preço, com valor exato: plano START é R$ 1,29 por minuto de sala, sem
+  mensalidade. Plano PRO é R$ 299/mês (ou R$ 199/mês no ciclo semestral, com
+  fidelidade de 6 meses) mais R$ 0,79 por minuto de sala.
 • Modelo de uso: sala cobrada por minuto de uso real, sem aluguel fixo; o
-  START não tem fidelidade nenhuma.
-• Estacionamento: há vaga para o profissional enquanto estiver em atendimento.
-  Para pacientes, há convênio com estacionamentos parceiros próximos ao OLI.
-  Não informe preço, disponibilidade ou regras além disso sem confirmar com a equipe.
+  START não tem fidelidade nenhuma, e o PRO mensal também não — só o ciclo
+  semestral tem fidelidade de 6 meses.
+• O que cada plano inclui. Nos dois: sala equipada, recepcionista à
+  disposição, reservas e controle do tempo pelo app, cadastro de pacientes,
+  comunidade e eventos do OLI e vaga de estacionamento durante o atendimento.
+  Só no PRO: serviços de recepção (agendamento, cobrança e confirmação de
+  consulta), conversa com contador e com advogado e endereço comercial e
+  fiscal. O START não inclui esses três itens — nunca os prometa para quem
+  está no START ou prefere o START. Não afirme impressão nem emissão de nota
+  fiscal como benefício de plano; se perguntarem, diga que vai
+  confirmar com a equipe.
+• Planos são individuais: um por profissional. Não existe plano compartilhado,
+  plano para equipe, clínica ou dupla — nunca ofereça nem sugira isso. O que
+  existe é o compartilhamento de consultório: mais de um profissional pode
+  usar o mesmo consultório, cada um com o seu plano. Se perguntarem por
+  dividir ou compartilhar, responda: "Os planos são individuais, um por
+  profissional. O que existe é o compartilhamento de consultório: mais de um
+  profissional pode usar o mesmo consultório, cada um com o seu plano."
+• Horas e pacotes: a hora cheia custa R$ 77,40 no START e R$ 47,40 no PRO.
+  Pacotes de horas (no PRO a mensalidade é cobrada à parte): 10 horas com 1 de
+  bônus (R$ 774 no START, R$ 474 no PRO); 20 horas com 3 de bônus (R$ 1.548 no
+  START, R$ 948 no PRO); 40 horas com 8 de bônus (R$ 3.096 no START, R$ 1.896
+  no PRO). A compra de horas é sempre em blocos de 1 hora, a reserva é a partir
+  de 30 minutos e o consumo é por minuto, dentro da reserva; a sobra fica no
+  saldo. Cite somente esses valores já conferidos, nunca outro total. Nunca
+  diga "pague só os minutos que usar" nem dê exemplo de comprar minutos
+  avulsos. Para explicar a cobrança, diga apenas: "a sala é cobrada por minuto
+  de uso, dentro das horas que você compra".
+• Estacionamento: a vaga para o profissional durante o atendimento está incluída
+  nos dois planos. Para pacientes, há convênio com estacionamentos parceiros
+  próximos ao OLI. Não informe preço, disponibilidade ou regras além disso sem
+  confirmar com a equipe.
 • Agendamento de visita: link direto para marcar —
   https://calendly.com/olihealthhub/atendimento-presencial
 
@@ -182,9 +244,13 @@ que não consegue ouvir, reproduzir ou processar áudio; nunca mencione
 transcrição, áudio, ferramenta ou limitação técnica.
 
 O QUE VOCÊ NÃO FAZ:
+• Nunca diz que a pessoa "paga só pelos minutos que usa", "só paga o que usa"
+  ou qualquer variação: a compra é em blocos de 1 hora e o consumo é por
+  minuto. Diga "a sala é cobrada por minuto de uso, dentro das horas que você
+  compra".
 • Não afirma horário de funcionamento do espaço, não negocia desconto, não
   promete prazo de resposta, e não informa preço de módulo ou qualquer valor
-  além dos dois planos acima — nesses casos, diz que vai confirmar com a
+  além dos planos e pacotes de horas acima — nesses casos, diz que vai confirmar com a
   equipe.
 • Nunca inventa explicação, política, condição ou detalhe que não foi te
   passado aqui — inclui valor de aluguel de mercado, preço de concorrente,
@@ -284,6 +350,57 @@ aparecer "pra", troque por "para"; se aparecer "tá", troque por "está".
 De forma acolhedora e objetiva, em mensagens curtas — está no WhatsApp,
 não escreva parágrafos longos.`;
 
+// Promoção de outubro/2026 — só entra no prompt até a data-limite (fuso de São
+// Paulo); depois disso o bloco some sozinho, sem novo deploy. A Olivia não sabe
+// a data de hoje, então o corte é feito aqui, não por instrução no texto.
+const PROMO_OUTUBRO_ATE = '2026-10-31';
+const PROMO_OUTUBRO = `PROMOÇÃO DE OUTUBRO — vale somente para quem contratar até 31 de outubro de 2026:
+• Quem contratar o PRO mensal (R$ 299/mês) nesse período recebe 6 horas de sala
+  creditadas no saldo junto com o primeiro pagamento: a mensalidade do primeiro
+  mês é convertida em horas de sala. O benefício vale só para a primeira
+  mensalidade; nos meses seguintes o PRO segue pelo valor normal.
+• Esta é a única condição promocional que existe. Não vale para o START nem
+  para o PRO semestral — se perguntarem sobre o semestral, diga que vai
+  confirmar com a equipe. Não ofereça outro desconto, bônus ou prorrogação.
+• Apresente a promoção para quem demonstrar interesse em agenda recorrente ou
+  no PRO, ou perguntar por promoção ou desconto. Cite sempre a data-limite
+  (31 de outubro) e não pressione. Quando falar do PRO nesse período, pode
+  mencionar a promoção junto com o preço normal.
+• Nunca converta as 6 horas em reais, nunca diga que as horas "equivalem" à
+  mensalidade e nunca calcule outro total. Diga apenas: 6 horas de sala
+  creditadas junto com o primeiro pagamento. O pagamento é feito normalmente e
+  as horas são somadas ao saldo; nunca diga que as horas "saem" do pagamento,
+  que o primeiro mês é grátis ou que há abatimento no valor. Sempre inclua a
+  data-limite (31 de outubro) quando mencionar a promoção.`;
+
+/** A partir de quantas horas sem interação a Olivia trata a volta da pessoa como
+ *  retorno (saudação de boas-vindas de volta, em vez de seguir como se fosse
+ *  continuação imediata). */
+const RETORNO_APOS_HORAS = 12;
+const RETORNO_APOS_PAUSA = `RETORNO APÓS PAUSA: a pessoa ficou um bom tempo sem interagir e voltou agora. Comece com uma saudação curta de retorno, como "Que bom ter você de volta, [Nome]!" (use o nome só se já souber). Responda primeiro ao que ela acabou de escrever, se houver pergunta. Depois REVISITE O ASSUNTO: lembre em uma frase o que ela buscava (especialidade, rotina, dor ou objetivo que ela já contou) e pergunte se continua buscando o mesmo e se a situação ou as dificuldades dela seguem as mesmas — é a UMA pergunta da resposta. Se ela ainda não contou o que busca, pergunte apenas o que a trouxe de volta. Não repita a apresentação, não repita o que já foi dito e não cite horas ou dias exatos.`;
+
+/** Reforço junto da última mensagem da pessoa: só no prompt de sistema o modelo
+ *  ignorava a saudação de retorno. A nota vai só na chamada à IA, nunca é gravada
+ *  nem enviada ao cliente. */
+const NOTA_RETORNO = '[Instrução do sistema, invisível para a pessoa — nunca a mencione: ela ficou muito tempo sem interagir e acabou de voltar. Sua resposta DEVE (1) começar com uma saudação curta de boas-vindas de volta, por exemplo "Que bom ter você de volta, Nome!" (use o nome só se já souber); (2) responder primeiro ao que ela escreveu, se houver pergunta; (3) revisitar o assunto: lembrar em uma frase o que ela buscava (especialidade, rotina, dor ou objetivo que ela já contou) e perguntar se continua buscando o mesmo e se a situação ou as dificuldades seguem as mesmas — essa é a UMA pergunta da resposta. Se ela ainda não contou o que busca, pergunte só o que a trouxe de volta. Não repita a apresentação nem o que já foi dito.]';
+
+function comNotaDeRetorno(
+  mensagens: { role: 'user' | 'assistant'; content: string }[], retornoHoras?: number | null,
+): { role: 'user' | 'assistant'; content: string }[] {
+  if (retornoHoras == null || retornoHoras < RETORNO_APOS_HORAS) return mensagens;
+  const i = mensagens.map(m => m.role).lastIndexOf('user');
+  if (i < 0) return mensagens;
+  return mensagens.map((m, k) => (k === i ? { ...m, content: `${m.content}\n\n${NOTA_RETORNO}` } : m));
+}
+
+function promptLead(retornoHoras?: number | null): string {
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  const promoLigada = Deno.env.get('PROMO_OUTUBRO_ATIVA') === 'true' && hoje <= PROMO_OUTUBRO_ATE;
+  const voltou = retornoHoras != null && retornoHoras >= RETORNO_APOS_HORAS;
+  return [SYSTEM_PROMPT_LEAD, promoLigada ? PROMO_OUTUBRO : '', voltou ? RETORNO_APOS_PAUSA : '']
+    .filter(Boolean).join('\n\n');
+}
+
 type ConversaRow = {
   id: string; kind: string; status: string; phone_e164: string;
   patient_id: string | null; lead_id: string | null; professional_id: string | null;
@@ -296,7 +413,13 @@ type ConversaRow = {
  *  (ver docs/IA_ATENDIMENTO_WHATSAPP.md §1). A IA aprende quem é a pessoa
  *  durante a conversa e preenche o cadastro via a tag [META: ...]. */
 async function resolveConversa(supabase: SupabaseClient, phone: string): Promise<ConversaRow> {
-  const { data: existente } = await supabase.from('conversations').select('*').eq('phone_e164', phone).maybeSingle();
+  // order+limit(1): se já houver conversas duplicadas para o número (sem unique
+  // em phone_e164, duas mensagens simultâneas do primeiro contato criam duas),
+  // .maybeSingle() sem limite falha com "mais de uma linha", `existente` vem
+  // null e cada mensagem nova abria OUTRA conversa — a Olivia recomeçava a
+  // apresentação toda vez. Pega sempre a mais antiga.
+  const { data: existente } = await supabase.from('conversations').select('*').eq('phone_e164', phone)
+    .order('created_at', { ascending: true }).limit(1).maybeSingle();
   if (existente) return existente as ConversaRow;
 
   const ultimos10 = phone.slice(-10);
@@ -353,24 +476,42 @@ const FOTO_POR_ESPECIALIDADE: Record<string, string> = {
   sala_espera:    'https://olihealthhub.com.br/fotos/lounge-espera.jpg',
 };
 
-/** Extrai a tag técnica opcional "[META: chave=valor; ...]" do fim da
- *  resposta da IA (nunca mostrada à pessoa) — ver docs/IA_ATENDIMENTO_WHATSAPP.md §6. */
-function extraiMeta(reply: string): { texto: string; meta: MetaTag | null } {
-  const m = reply.match(/\[META:\s*([^\]]*)\]\s*$/i);
-  if (!m) return { texto: reply.trim(), meta: null };
+/** Extrai a tag técnica opcional "[META: chave=valor; ...]" da resposta da IA
+ *  (nunca mostrada à pessoa) — ver docs/IA_ATENDIMENTO_WHATSAPP.md §6. */
+function extraiMetaTag(reply: string): { texto: string; meta: MetaTag | null } {
+  // Em QUALQUER posição: o modelo às vezes escreve a tag no meio da resposta; só
+  // reconhecê-la no fim a deixava vazar para o cliente e a foto não saía.
+  const achadas = [...reply.matchAll(/\[META:\s*([^\]]*)\]/gi)];
+  if (achadas.length === 0) return { texto: reply.trim(), meta: null };
 
   const meta: MetaTag = {};
-  for (const par of m[1].split(';')) {
-    const idx = par.indexOf('=');
-    if (idx < 0) continue;
-    const chave = par.slice(0, idx).trim().toLowerCase();
-    const valor = par.slice(idx + 1).trim();
-    if (!valor) continue;
-    if ((CHAVES_META as readonly string[]).includes(chave)) {
-      (meta as Record<string, string>)[chave] = valor;
+  for (const m of achadas) {
+    for (const par of m[1].split(';')) {
+      const idx = par.indexOf('=');
+      if (idx < 0) continue;
+      const chave = par.slice(0, idx).trim().toLowerCase();
+      const valor = par.slice(idx + 1).trim();
+      if (!valor) continue;
+      if ((CHAVES_META as readonly string[]).includes(chave)) {
+        (meta as Record<string, string>)[chave] = valor;
+      }
     }
   }
-  return { texto: reply.slice(0, m.index).trim(), meta };
+  const texto = reply.replace(/\[META:\s*([^\]]*)\]/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+  return { texto, meta };
+}
+
+/** O modelo às vezes escreve "[imagem: chave]" no próprio texto (imitando como a
+ *  foto aparece no histórico) em vez de usar a tag META — a foto não sai e a
+ *  marcação vai parar na tela do cliente. Tira do texto e converte em imagem=. */
+function extraiMeta(reply: string): { texto: string; meta: MetaTag | null } {
+  const { texto, meta } = extraiMetaTag(reply);
+  const marca = texto.match(/\[imagem:\s*(\w+)\]/i);
+  if (!marca) return { texto, meta };
+  return {
+    texto: texto.replace(/\[imagem:\s*\w+\]/gi, '').replace(/\n{3,}/g, '\n\n').trim(),
+    meta: { ...(meta ?? {}), imagem: meta?.imagem ?? marca[1].toLowerCase() },
+  };
 }
 
 async function transcreverAudio(audioId: string): Promise<string> {
@@ -401,17 +542,55 @@ async function transcreverAudio(audioId: string): Promise<string> {
   return data.text.trim();
 }
 
+type LinhaMsg = { direction: string; body: string | null; created_at: string };
+
+/** A foto enviada pela Olivia é gravada como "[imagem: chave]". Devolvida assim ao
+ *  modelo, ele imita o formato no texto e a foto nunca sai. Reescreve no formato
+ *  real do protocolo: a tag META anexada à resposta anterior. */
+function historicoParaIA(linhas: LinhaMsg[]): { role: 'user' | 'assistant'; content: string }[] {
+  const saida: { role: 'user' | 'assistant'; content: string }[] = [];
+  for (const m of linhas) {
+    if (!m.body || m.body.startsWith('[Áudio recebido')) continue;
+    const foto = m.direction === 'outbound' ? m.body.match(/^\[imagem:\s*(\w+)\]$/) : null;
+    if (foto) {
+      const anterior = saida[saida.length - 1];
+      if (anterior?.role === 'assistant') anterior.content += `\n[META: imagem=${foto[1]}]`;
+      continue;
+    }
+    const inbound = m.direction === 'inbound';
+    saida.push({
+      role: inbound ? 'user' : 'assistant',
+      // respostas antigas que já saíram com a marcação no texto não podem servir de modelo
+      content: inbound ? m.body : m.body.replace(/\[imagem:\s*\w+\]\s*/gi, '').trim(),
+    });
+  }
+  return saida;
+}
+
+/** Horas entre a última mensagem NOSSA e a volta da pessoa (primeira mensagem do
+ *  bloco final de inbound). null se ainda não respondemos nada a ela. */
+function horasDeSilencio(linhas: LinhaMsg[]): number | null {
+  let i = linhas.length - 1;
+  while (i >= 0 && linhas[i].direction === 'inbound') i--;
+  if (i < 0 || i === linhas.length - 1) return null;
+  const voltou = new Date(linhas[i + 1].created_at).getTime();
+  const ultimaNossa = new Date(linhas[i].created_at).getTime();
+  return (voltou - ultimaNossa) / 3_600_000;
+}
+
 async function responderComIA(supabase: SupabaseClient, conv: ConversaRow, mensagemAtual?: string) {
   const { data: historico } = await supabase
     .from('messages')
-    .select('direction, body')
+    .select('direction, body, created_at')
     .eq('conversation_id', conv.id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(40);
 
-  const mensagens = (historico ?? [])
-    .filter(m => m.body && !m.body.startsWith('[Áudio recebido'))
-    .map(m => ({ role: m.direction === 'inbound' ? 'user' as const : 'assistant' as const, content: m.body as string }));
+  // As 40 mais RECENTES (ascendente + limit pegava as 40 mais antigas e cortava
+  // justamente o fim de conversas longas), devolvidas em ordem cronológica.
+  const linhas = ((historico ?? []) as LinhaMsg[]).reverse();
+  const mensagens = historicoParaIA(linhas);
+  const silencio = horasDeSilencio(linhas);
 
   if (mensagemAtual) mensagens.push({ role: 'user', content: mensagemAtual });
 
@@ -421,8 +600,8 @@ async function responderComIA(supabase: SupabaseClient, conv: ConversaRow, mensa
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
-    system: SYSTEM_PROMPT_LEAD,
-    messages: mensagens,
+    system: promptLead(silencio),
+    messages: comNotaDeRetorno(mensagens, silencio),
   });
 
   const bruto = response.content[0]?.type === 'text' ? response.content[0].text : '';
