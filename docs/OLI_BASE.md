@@ -111,7 +111,8 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 | Site (LP) e cartão de visita | — | ✅ |
 | ~~Conversa com contador e com advogado~~ — fora por enquanto (05/out) | — | — |
 | Impressão | — | ✅ |
-| Recepção (agendamento, cobrança, retorno) | — | ✅ |
+| **Agendamento das consultas pela recepção** | — | ✅ |
+| **Cobrança dos pacientes pela recepção** | — | ✅ |
 | **Endereço comercial** (sem endereço fiscal, a princípio) | — | ✅ |
 | ~~Emissão de nota fiscal~~ — substituída pela cobrança dos pacientes, que já está na recepção (05/out) | — | — |
 

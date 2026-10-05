@@ -138,12 +138,12 @@ export const FEATURES: Feature[] = [
     plans:    { START: 'no', BASE: 'no', PRO: 'yes', VIP: 'yes' },
   },
   {
-    label:    'Gestão de agenda pela recepção OLI',
+    label:    'Recepção agenda as consultas dos seus pacientes',
     category: 'GESTÃO PRO',
     plans:    { START: 'no', BASE: 'no', PRO: 'yes', VIP: 'yes' },
   },
   {
-    label:    'Cobrança dos pacientes pela recepção OLI',
+    label:    'Recepção cobra os seus pacientes',
     category: 'GESTÃO PRO',
     plans:    { START: 'no', BASE: 'no', PRO: 'yes', VIP: 'yes' },
   },
