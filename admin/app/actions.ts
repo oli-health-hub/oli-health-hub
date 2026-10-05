@@ -527,7 +527,8 @@ export async function toggleCoupon(formData: FormData) {
   revalidatePath('/cupons');
 }
 
-/** Apaga um cupom. Cupom já resgatado fica só desativável: os resgates são auditoria. */
+/** Apaga um cupom. Resgate pendente/cancelado some junto; cupom com resgate
+ *  confirmado só pode ser desativado (auditoria) — a tela nem oferece o botão. */
 export async function deleteCoupon(formData: FormData) {
   const id = formData.get('id') as string;
 
@@ -535,9 +536,14 @@ export async function deleteCoupon(formData: FormData) {
   const { count, error: countError } = await supabase
     .from('coupon_redemptions')
     .select('id', { count: 'exact', head: true })
-    .eq('coupon_id', id);
+    .eq('coupon_id', id)
+    .eq('status', 'confirmed');
   if (countError) throw new Error(countError.message);
-  if (count && count > 0) throw new Error('Cupom já foi resgatado: desative em vez de apagar.');
+  if (count && count > 0) return;
+
+  const { error: redError } = await supabase
+    .from('coupon_redemptions').delete().eq('coupon_id', id);
+  if (redError) throw new Error(redError.message);
 
   const { error } = await supabase.from('coupons').delete().eq('id', id);
   if (error) throw new Error(error.message);

@@ -43,6 +43,11 @@ export default async function CuponsPage() {
     .select('*')
     .order('created_at', { ascending: false });
   const coupons = (data ?? []) as Coupon[];
+  const { data: confirmed } = await supabase
+    .from('coupon_redemptions')
+    .select('coupon_id')
+    .eq('status', 'confirmed');
+  const comResgate = new Set((confirmed ?? []).map((r) => r.coupon_id as string));
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -144,7 +149,7 @@ export default async function CuponsPage() {
                       {c.ativo ? 'Desativar' : 'Ativar'}
                     </button>
                   </form>
-                  {c.usos === 0 && (
+                  {c.usos === 0 && !comResgate.has(c.id) && (
                     <form action={deleteCoupon} className="mt-1">
                       <input type="hidden" name="id" value={c.id} />
                       <button type="submit" className="text-xs text-red-500 underline hover:text-red-700">
