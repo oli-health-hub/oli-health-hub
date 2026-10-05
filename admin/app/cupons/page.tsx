@@ -1,5 +1,5 @@
 import { createSupabaseAdmin } from '@/lib/supabase-server';
-import { createCoupon, toggleCoupon } from '@/app/actions';
+import { createCoupon, toggleCoupon, deleteCoupon } from '@/app/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,6 +144,14 @@ export default async function CuponsPage() {
                       {c.ativo ? 'Desativar' : 'Ativar'}
                     </button>
                   </form>
+                  {c.usos === 0 && (
+                    <form action={deleteCoupon} className="mt-1">
+                      <input type="hidden" name="id" value={c.id} />
+                      <button type="submit" className="text-xs text-red-500 underline hover:text-red-700">
+                        Apagar
+                      </button>
+                    </form>
+                  )}
                 </td>
               </tr>
             ))}

@@ -424,6 +424,9 @@ export default function CheckoutModal({
                 <>
                   <View style={styles.payIconBlock}>
                     <Text style={styles.payTitle}>Pague com PIX</Text>
+                    <Text style={styles.pixAmount} accessibilityLabel={`Valor do PIX ${formatPrice(result.value)}`}>
+                      {formatPrice(result.value)}
+                    </Text>
                     {secondsLeft > 0 ? (
                       <View style={styles.countdownRow}>
                         <Ionicons name="time-outline" size={15} color={colors.oliGold} />
@@ -738,6 +741,7 @@ const styles = StyleSheet.create({
     marginBottom:   spacing.xs,
   },
   payTitle:   { fontSize: 20, fontWeight: '700', color: colors.oliDarkGray },
+  pixAmount:  { fontSize: 28, fontWeight: '800', color: colors.oliGreen, marginTop: spacing.xs },
   paySubtext: { fontSize: 14, color: colors.gray, textAlign: 'center', lineHeight: 20 },
 
   openLinkBtn: {

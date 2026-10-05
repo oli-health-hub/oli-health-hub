@@ -527,6 +527,23 @@ export async function toggleCoupon(formData: FormData) {
   revalidatePath('/cupons');
 }
 
+/** Apaga um cupom. Cupom já resgatado fica só desativável: os resgates são auditoria. */
+export async function deleteCoupon(formData: FormData) {
+  const id = formData.get('id') as string;
+
+  const supabase = await createSupabaseAdmin();
+  const { count, error: countError } = await supabase
+    .from('coupon_redemptions')
+    .select('id', { count: 'exact', head: true })
+    .eq('coupon_id', id);
+  if (countError) throw new Error(countError.message);
+  if (count && count > 0) throw new Error('Cupom já foi resgatado: desative em vez de apagar.');
+
+  const { error } = await supabase.from('coupons').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/cupons');
+}
+
 /** Apaga um post da comunidade (moderação) */
 export async function deletePost(formData: FormData) {
   const postId = formData.get('post_id') as string;

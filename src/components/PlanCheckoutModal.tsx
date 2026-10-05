@@ -320,6 +320,9 @@ export default function PlanCheckoutModal({
                 <>
                   <View style={s.pixCard}>
                     <Text style={s.pixTitle}>QR Code PIX</Text>
+                    <Text style={s.pixAmount} accessibilityLabel={`Valor do PIX R$ ${result.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}>
+                      {`R$ ${result.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    </Text>
                     {result.pixQrCode ? (
                       <Image
                         source={{ uri: `data:image/png;base64,${result.pixQrCode}` }}
@@ -520,6 +523,7 @@ const s = StyleSheet.create({
   pixCard:     { alignItems: 'center', backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg, ...shadows.card, marginBottom: spacing.md },
   pixTitle:    { fontSize: 16, fontWeight: '700', color: colors.oliDarkGray, marginBottom: spacing.sm },
   qrImage:     { width: 200, height: 200, marginVertical: spacing.sm },
+  pixAmount:   { fontSize: 28, fontWeight: '800', color: colors.oliGreen, marginBottom: spacing.sm },
   pixCountdown:{ fontSize: 13, color: colors.gray, marginTop: spacing.xs },
 
   copyBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.oliGreen, borderRadius: radius.md, paddingVertical: 12, marginBottom: spacing.md },
