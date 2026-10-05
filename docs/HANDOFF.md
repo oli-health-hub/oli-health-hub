@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 02/Outubro/2026.
+> Última atualização: 05/Outubro/2026.
 >
 > **Chegou agora? Comece pela §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
@@ -2961,14 +2961,16 @@ Em 01/10 foram deployados direto no Supabase, sem commit: `chat` v34 (15h18), `w
 - Deletados no worktree e sem commit: `OLD/fotos-brutas/print-screen-app-ios/` (4 PNG) e `assets/Print App material Impresso/` (4 PNG). Confirmar que foram removidos de propósito antes de commitar a deleção.
 - `docs/OLI_DOSSIE.json` e a §75 foram commitados (`a53a283`); o aviso de "não commitado" na §75 está desatualizado.
 
-### 76.6 Pendências abertas desta varredura
+### 76.6 Pendências abertas (estado em 05/10, fim do dia)
 
-1. **Publicar:** EAS Update do app (sem ele a sessão ainda cobra o valor antigo) e o site no Netlify. Termos e contrato mudaram de valor; avisar quem já aceitou os valores antigos é decisão jurídica sua.
-1b. **Decidir:** se os pacotes de 20h e 40h voltam; se o compromisso de 6 meses do START continua (76.7); **refazer o PDF de planos**.
-2. Puxar `chat`, `whatsapp-webhook` e `test-lead-ai` deployados para o git e atualizar `docs/IA_ATENDIMENTO_WHATSAPP.md` (76.2).
-3. Commitar o admin da revisita e a migration reconstruída (76.3), depois testar com login de admin.
-4. Decidir o destino dos arquivos soltos (76.5).
-5. `src/models/oli-plans.ts` segue defasado (já era pendência desde 26/ago); agora piora com os preços de outubro.
+1. **Builds das lojas:** iOS `3fd76fe8-311e-4b61-b4c8-6b882d3e3d5c` e Android `484ccbd1-dee2-4221-9d3e-a32291cca98e` na fila do EAS (76.8). **Falta conferir se terminaram e, com ordem do fundador, enviar à App Store e à Play Store.** Próximo build: número 4.
+2. **Reserva da Solange:** conferir às 17h05 se cobrança de uso, desconto de minutos e status "concluído" chegaram; se não, lançar manualmente (76.8).
+3. **Decidir:** pacotes de 20h e 40h (desativados no banco, mas citados pela Olivia); destino do compromisso de 6 meses do START e do diagnóstico contábil/jurídico que ele promete no app; promoção de outubro (6h no PRO mensal, desligada, sem lógica de crédito).
+4. **Contrato e termos:** a **Ana** está cuidando do contrato. No app, o contrato e os termos só tiveram os valores trocados; o texto de "condições congeladas" dos termos ficou inconsistente (ninguém mais está congelado).
+5. **Refazer o PDF** `OLI_Planos_Out2026.pdf` (preço certo, mas estacionamento, conforto médico, endereço fiscal, contador/advogado e site/cartão estão defasados). Não enviar o atual.
+6. **Admin da revisita** (76.3) foi para a Vercel em 05/10 sem teste com login de admin. Conferir `/leads`.
+7. **Arquivos soltos (76.5):** resumos matinais, `.serena/`, PNGs deletados e o PDF ainda não tratados.
+8. **Inconsistências restantes:** "Impressão" na matriz do app e no `OLI_BASE.md` como benefício do PRO (os prompts proíbem afirmar); `BASE` ainda ativo em `oli-plans.ts` (pendência de 26/ago); linha "Endereço Fiscal" na vitrine de `financeiro.tsx`.
 
 ### 76.7 Decisões de produto de 05/10 (matriz de benefícios START x PRO, "a princípio")
 
@@ -2986,6 +2988,8 @@ Ditadas pelo fundador em 05/10, em sequência. **Matriz vigente:**
 
 - **Desfaz** a ampliação do endereço fiscal da §67/§68/§69 e o benefício de diagnóstico contábil e jurídico da §43. Restringir estacionamento ao PRO (02/set) também foi revertido.
 - **Aplicado:** prompts da Olivia (`chat` v38, `whatsapp-webhook` v49 conferido por diff com o repo, `test-lead-ai` v42), `landing/index.html`, `docs/OLI_BASE.md` (matriz §5), `CLAUDE.md`, `docs/IA_ATENDIMENTO_WHATSAPP.md`, `src/models/oli-plans.ts` (`feature_conforto_medico` do START) e a matriz `FEATURES` de `app/meu-plano.tsx` (conforto médico com rótulos por plano, estacionamento e endereço comercial novos, página pessoal e cartão só no PRO, diagnósticos removidos). `tsc` limpo.
+- **Recepção em dois itens (05/10):** o fundador quer **agendamento** e **cobrança** destacados como serviços diferentes. Site: "A recepção agenda as suas consultas" e "A recepção cobra os seus pacientes". App: "Recepção agenda as consultas dos seus pacientes" e "Recepção cobra os seus pacientes". `OLI_BASE.md`: duas linhas. **Os prompts da Olivia não foram alterados** (já dizem "agendamento, cobrança e confirmação de consulta").
+- **Nota fiscal:** fica a **cobrança** no lugar da emissão de NF (a linha "Emissão de NF gerenciada pela OLI" do app virou a cobrança; no `OLI_BASE.md` a NF está riscada).
 - **A "Página pessoal + cartão de visita digital" do app** estava marcada como incluída no START e passou a PRO-only. Se o "Site (LP) e cartão de visita" da decisão for outra coisa que não essa página, ajustar. A frase do fundador foi interpretada assim.
 - **Fora do que foi decidido, ainda inconsistente:** a matriz do app e o `OLI_BASE.md` ainda listam "Impressão" (PRO) e "Emissão de nota fiscal" como benefícios do PRO, enquanto os prompts proíbem afirmar os dois; `app/escolher-plano.tsx` (linhas 64 e 105) e `app/contrato-servico.tsx` (linha 27) ainda prometem **diagnóstico contábil e jurídico gratuitos** a quem aceita o compromisso de 6 meses no START (mecanismo `activate_start_plan(p_wants_commitment)`), o que contradiz "contador e advogado fora". Não mexidos: o contrato é texto jurídico e o compromisso é um recurso separado. Decidir se o compromisso de 6 meses continua e com qual contrapartida.
 - **PDF** `OLI_Planos_Out2026.pdf` (estacionamento só no PRO, endereço comercial e fiscal, contador e advogado) está desatualizado em quatro pontos. Refazer antes de enviar.
@@ -2995,9 +2999,17 @@ Ditadas pelo fundador em 05/10, em sequência. **Matriz vigente:**
 
 - **Caso:** a Solange Fiore se cadastrou em 05/10 e reservou pelo app das 16h às 17h; o app confirmou, mas a reserva **não existe em `reservations`** (última reserva do banco: 01/09). O servidor aceita reservas dela (testado em transação revertida, sem resíduo) e a RLS e as travas estão corretas.
 - **Causa provável (não provada):** o binário das lojas é de 23/06 e, na **primeira sessão de um cadastro novo**, roda o JS embutido dessa data (a OTA só vale a partir da abertura seguinte). Nesse código `addReservation` grava em segundo plano com `createReservation(...).catch(() => {})`, ou seja, **engole qualquer erro** e deixa a reserva só na memória do app. O código atual desfaz a reserva da tela e mostra erro.
-- **Correção da reserva dela:** criar pelo admin (service_role ignora a trava de saldo). Sala ainda não informada.
+- **Correção da reserva dela (feita em 05/10, ~16h04 BRT):** criada pelo SQL a reserva `6fb09833-9e5f-49b4-8865-dd6233a488da` (Sala 5, 16h–17h), que gerou a notificação "Nova reserva" no admin, e depois marcada `em_uso` com `consultation_started_at` = 16h (horário da reserva, não o real). A hora usada só entra no admin no **encerramento** (`logUsageCharge` grava `usage_charges` e desconta `hour_balance`); no app dela a reserva existe só em memória, com outro id, então o status final pode falhar em silêncio. **Conferência agendada para 17h05** (cron da sessão, some se o Claude Code fechar): se faltar cobrança/desconto, lançar a mão com o tempo real a START R$ 1,29/min.
 - **Build novo:** `eas build --platform all --profile production` com `buildNumber` 3 / `versionCode` 3 e `version` 1.0.0 (o `runtimeVersion` segue 1.0.0, então as OTAs continuam valendo). iOS `3fd76fe8-311e-4b61-b4c8-6b882d3e3d5c`, Android `484ccbd1-dee2-4221-9d3e-a32291cca98e`. **Não enviado às lojas.** O próximo build precisa de `buildNumber`/`versionCode` 4.
 - **Acompanhar:** a mesma classe de erro (falha silenciosa) pode existir em outros pontos do binário antigo, como `updateReservation(...).catch(() => {})` ao iniciar a sessão.
+
+### 76.9 Publicações de 05/10
+
+- **Site (Netlify, push da `main`):** preços, matriz START x PRO, recepção em dois itens. Conferido em olihealthhub.com.br (START R$ 1,29, "Endereço comercial", sem BASE). Último push `95d9d0a` (handoff); site em `d8ca029`.
+- **App (EAS Update, runtime 1.0.0):** 1ª rodada (preços + matriz) `production` `1025b641-63bd-4e63-aacc-7dd65602e53d`, `preview` `0424384e-2e2a-47ac-bd58-75b833ab1af8`. 2ª rodada (recepção em dois itens) `production` `acaa7c77-9702-4b26-8a18-25fcc32e187f`, `preview` `ef6c8473-bb3c-4b30-8945-3264303f9c22`. O app só aplica a atualização na abertura **seguinte** ao download.
+- **Admin (Vercel):** o push levou junto o filtro de Revisita (76.3).
+- **Edge functions:** `whatsapp-webhook` v49, `chat` v38, `test-lead-ai` v42 (76.7). Migrations aplicadas: `precos_outubro_2026` e `libera_taxa_congelada_precos_outubro` (taxa congelada zerada nos 25 perfis).
+- **Efeito dos preços na cobrança por minuto:** o app instalado só cobra o valor novo depois de receber a OTA; quem tem build antigo e não abriu o app ainda cobra o antigo.
 
 ## 13. Comandos úteis
 
@@ -3128,3 +3140,5 @@ node --experimental-strip-types scripts/test-communicare.ts
 **Resumo de 1 linha (23/set):** Montado o **dossiê consolidado do projeto** (§75): quem é quem com o Guilherme como CEO contratado desde 16/09 (não sócio) e a Nathalia no comercial, produto e preço vigentes, **números medidos no banco hoje** (617 leads, 518 nos últimos 30 dias; 9 visitas agendadas, 1 proposta, **0 conversões, 0 PRO, receita real de sala R$ 0** — as 7 cobranças de sala são de perfis founder em demonstração), tecnologia, linha do tempo, plano dos 100 dias e governança, decisões e pendências abertas. Versão estruturada em `docs/OLI_DOSSIE.json`. Sem código alterado, sem OTA; gravado no disco e **não commitado** (shell da máquina fora do ar).
 
 **Resumo de 1 linha (02/out):** Varredura de git, banco, edge functions e disco para ver o que o handoff não tinha (§76). Achados: **três tabelas de preço em conflito** (banco e `CLAUDE.md` com START R$ 1,90 / PRO R$ 599-499 / R$ 1,45; PDF de outubro com START R$ 1,29 e PRO R$ 299-199 / R$ 0,79; prompts da Olivia com START R$ 1,50 e o PRO do PDF), prompts de `chat`, `whatsapp-webhook` e `test-lead-ai` **deployados em 01/10 sem commit** com novo posicionamento ("coworking humanizado", app como apoio), e a **revisita da base herdada** (migration de 22/09 aplicada no banco sem arquivo no repo, agora reconstruído; 475 leads em fila; admin com filtro e gravação, sem commit). Fundador confirmou que os preços novos (mais baixos) valem; falta definir o START (R$ 1,29 ou R$ 1,50) e propagar para banco e documentos. Sem OTA, sem deploy, sem commit.
+
+**Resumo de 1 linha (05/out):** Dia de produto e preço. Preços de outubro (START R$ 1,29; PRO R$ 299/199/0,79) no banco, app, termos, contrato (só valores; a Ana cuida do texto), site e Olivia, **sem congelamento de taxa para ninguém**. Matriz START x PRO redefinida pelo fundador: estacionamento nos dois, conforto médico por plano, site e cartão só no PRO, **endereço só comercial**, **sem contador e advogado**, cobrança no lugar de nota fiscal, e recepção em dois itens (agendamento e cobrança). Site e OTA publicados; `whatsapp-webhook` v49, `chat` v38, `test-lead-ai` v42 conferidos contra o repo. **Bug de campo:** a reserva da Solange (cadastro novo) "confirmou" no app e não gravou; causa provável é o binário das lojas de 23/06, que engole erros ao gravar a reserva. Reserva criada à mão (Sala 5, 16h–17h) e **builds novos das lojas na fila (iOS e Android, build 3), ainda não enviados**. Conferência da sessão dela agendada para 17h05. Detalhes e pendências em §76.6 a §76.9.
