@@ -2991,6 +2991,14 @@ Ditadas pelo fundador em 05/10, em sequência. **Matriz vigente:**
 - **PDF** `OLI_Planos_Out2026.pdf` (estacionamento só no PRO, endereço comercial e fiscal, contador e advogado) está desatualizado em quatro pontos. Refazer antes de enviar.
 - `app/(tabs)/financeiro.tsx` tem uma linha "Endereço Fiscal" na vitrine de "valor de mercado"; não foi alterada.
 
+### 76.8 Reserva que "confirmou" sem gravar e novo build das lojas (05/10)
+
+- **Caso:** a Solange Fiore se cadastrou em 05/10 e reservou pelo app das 16h às 17h; o app confirmou, mas a reserva **não existe em `reservations`** (última reserva do banco: 01/09). O servidor aceita reservas dela (testado em transação revertida, sem resíduo) e a RLS e as travas estão corretas.
+- **Causa provável (não provada):** o binário das lojas é de 23/06 e, na **primeira sessão de um cadastro novo**, roda o JS embutido dessa data (a OTA só vale a partir da abertura seguinte). Nesse código `addReservation` grava em segundo plano com `createReservation(...).catch(() => {})`, ou seja, **engole qualquer erro** e deixa a reserva só na memória do app. O código atual desfaz a reserva da tela e mostra erro.
+- **Correção da reserva dela:** criar pelo admin (service_role ignora a trava de saldo). Sala ainda não informada.
+- **Build novo:** `eas build --platform all --profile production` com `buildNumber` 3 / `versionCode` 3 e `version` 1.0.0 (o `runtimeVersion` segue 1.0.0, então as OTAs continuam valendo). iOS `3fd76fe8-311e-4b61-b4c8-6b882d3e3d5c`, Android `484ccbd1-dee2-4221-9d3e-a32291cca98e`. **Não enviado às lojas.** O próximo build precisa de `buildNumber`/`versionCode` 4.
+- **Acompanhar:** a mesma classe de erro (falha silenciosa) pode existir em outros pontos do binário antigo, como `updateReservation(...).catch(() => {})` ao iniciar a sessão.
+
 ## 13. Comandos úteis
 
 ```bash
