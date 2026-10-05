@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 05/Outubro/2026.
+> Última atualização: 05/Outubro/2026 (fim da tarde, ver §76.10).
 >
 > **Chegou agora? Comece pela §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
@@ -3010,6 +3010,15 @@ Ditadas pelo fundador em 05/10, em sequência. **Matriz vigente:**
 - **Admin (Vercel):** o push levou junto o filtro de Revisita (76.3).
 - **Edge functions:** `whatsapp-webhook` v49, `chat` v38, `test-lead-ai` v42 (76.7). Migrations aplicadas: `precos_outubro_2026` e `libera_taxa_congelada_precos_outubro` (taxa congelada zerada nos 25 perfis).
 - **Efeito dos preços na cobrança por minuto:** o app instalado só cobra o valor novo depois de receber a OTA; quem tem build antigo e não abriu o app ainda cobra o antigo.
+
+### 76.10 Pacotes de 20h e 40h, cupons e valor do PIX (05/10, tarde)
+
+- **Verificação das cobranças Asaas (só leitura, sem acesso ao painel do Asaas):** funções `create-charge` v28, `create-subscription` v27, `create-hour-package` v23 e `asaas-webhook` v29 ativas; `admin-asaas-summary` respondeu 200. **Nenhuma compra real pelo app desde a validação de 18/jun:** 44 assinaturas ativas, todas START sem ID do Asaas, nenhum PRO; nenhuma linha de `hour_balance` com `asaas_charge_id` (todas cortesia/indicação); o único aviso `hour_package_purchased` (02/09) não gerou saldo; módulo em `pending_payment` desde 22/06; zero chamadas às funções de cobrança nas últimas 24h. **Não confirmado:** webhook ativo no painel do Asaas, chave PIX cadastrada, validade dos secrets. O único teste conclusivo é uma compra real de baixo valor (avulso de 1h no START, R$ 77,40), **não feita**. O `preco_anual` do PRO em `plans` segue R$ 5.990 (valor antigo).
+- **Pacotes de horas (decisão do fundador):** 20h com **+15% = 3h de bônus** (23h creditadas) e 40h com **+20% = 8h** (48h). `hour_packages`: os dois passaram a `ativo=true`, `bonus_horas` 3 e 8 (aplicado direto no banco, sem migration em arquivo). O 10h segue em +1h (10%). Preço da compra sai de `taxa_min × 60 × horas`: START 20h R$ 1.548 / 40h R$ 3.096; PRO 20h R$ 948 / 40h R$ 1.896. O campo `valor` do catálogo (R$ 2.400 e R$ 4.800) está na taxa antiga, só catálogo. `HOUR_PACKAGES` em `src/models/oli-plans.ts` alinhada (commit `62ac7b8`). **Isso resolve o item 3 da 76.6 sobre os pacotes de 20h e 40h.** Não atualizados: `docs/IA_ATENDIMENTO_WHATSAPP.md` e o PDF (a Olivia já citava 20h+3 e 40h+8, que agora batem com o banco).
+- **Cupons apagáveis no admin (`/cupons`):** botão "Apagar" e ação `deleteCoupon` em `admin/app/actions.ts`. Apaga o cupom e seus resgates pendentes ou cancelados; cupom com resgate **confirmado** não mostra o botão (só desativa, por auditoria). A primeira versão (`723768f`) lançava erro quando havia resgate pendente com `usos=0` (`TESTE_COB` e `TESTE50`), o que em produção aparece como "Application error: a server-side exception"; corrigido em `8691167`. Lição: `usos` só sobe na confirmação, então não serve para decidir se há resgate.
+- **Valor na tela do PIX:** `CheckoutModal`, `HourCheckoutModal` e `PlanCheckoutModal` exibem o valor da cobrança (`result.value`, já com cupom) abaixo do título. `tsc` limpo no app e no admin. Não testado em tela.
+- **Publicações:** push `723768f` e `8691167` na `main`; Vercel (admin e landing) `success` para `8691167`. OTA `production` `7d649897-300d-4391-a6ce-ce3884f9299b` e `preview` `42dd2c49-d184-4995-b2ae-f5079ad0319b` (valor do PIX); segunda OTA `production` `79cfcb62-034e-41f1-8d4f-16d007b747cb` e `preview` `5c391726-43c3-4e92-aeef-ae9ed2c33032`, sem mudança de código do app.
+- **Pendente:** testar `/cupons` (apagar `TESTE_COB`/`TESTE50`) com login de admin; compra real de teste para validar o fluxo Asaas; conferir builds das lojas e a reserva da Solange (76.6, itens 1 e 2).
 
 ## 13. Comandos úteis
 
