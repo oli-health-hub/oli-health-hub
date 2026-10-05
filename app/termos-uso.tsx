@@ -36,8 +36,8 @@ export default function TermosUsoScreen() {
         </Section>
 
         <Section title="5. Planos, cobrança e minutagem">
-          <BulletItem>START — sem mensalidade, R$ 1,90/minuto de sala utilizada</BulletItem>
-          <BulletItem>PRO — R$ 599,00/mês (ciclo mensal) ou R$ 499,00/mês (ciclo semestral, cobrado mês a mês, com compromisso de permanência de 6 meses), R$ 1,45/minuto</BulletItem>
+          <BulletItem>START — sem mensalidade, R$ 1,29/minuto de sala utilizada</BulletItem>
+          <BulletItem>PRO — R$ 299,00/mês (ciclo mensal) ou R$ 199,00/mês (ciclo semestral, cobrado mês a mês, com compromisso de permanência de 6 meses), R$ 0,79/minuto</BulletItem>
           <BulletItem>O uso de sala é cobrado por minuto efetivamente utilizado, conforme a tarifa do plano ativo, via Asaas</BulletItem>
           <BulletItem>O pacote de 10 horas pré-pago concede 10% de horas em bônus (10h → 11h); horas são debitadas por minuto e não reembolsáveis após o uso</BulletItem>
           <BulletItem>Alteração de plano tem efeito imediato; condições já em vigor para quem já é assinante permanecem congeladas mesmo após mudanças de tabela</BulletItem>

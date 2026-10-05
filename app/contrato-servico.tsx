@@ -25,13 +25,13 @@ export default function ContratoServicoScreen() {
 
         <Section title="3. Planos e mensalidade">
           <BulletItem>START — sem mensalidade. Opcionalmente, o Profissional pode aderir a um compromisso de permanência de 6 meses, que dá direito a diagnóstico contábil e jurídico como cortesia única na contratação</BulletItem>
-          <BulletItem>PRO — R$ 599,00/mês no ciclo mensal, ou R$ 499,00/mês no ciclo semestral (cobrado mês a mês, com compromisso de permanência de 6 meses)</BulletItem>
+          <BulletItem>PRO — R$ 299,00/mês no ciclo mensal, ou R$ 199,00/mês no ciclo semestral (cobrado mês a mês, com compromisso de permanência de 6 meses)</BulletItem>
           {'\n'}Os valores e recursos de cada plano estão descritos na tela Ecossistema do app e podem ser reajustados mediante aviso prévio de 30 dias. Condições já em vigor para assinantes existentes permanecem congeladas mesmo após mudanças de tabela.
         </Section>
 
         <Section title="4. Minutagem e uso de salas">
-          <BulletItem>START — R$ 1,90/minuto de sala utilizada</BulletItem>
-          <BulletItem>PRO — R$ 1,45/minuto</BulletItem>
+          <BulletItem>START — R$ 1,29/minuto de sala utilizada</BulletItem>
+          <BulletItem>PRO — R$ 0,79/minuto</BulletItem>
           {'\n'}A cobrança é calculada pelo tempo real de sessão, medido pelo timer do app desde o check-in até o encerramento da reserva. O pacote de 10 horas pré-pago concede 10% de horas em bônus (10h → 11h) e é debitado por minuto, consumido antes da cobrança avulsa.
         </Section>
 

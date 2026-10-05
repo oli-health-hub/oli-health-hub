@@ -90,7 +90,7 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 
 ## 5. Planos e preços
 
-> Fonte em código: `src/models/oli-plans.ts` (preços de START e PRO atualizados em 02/out; `plan_base` ainda aparece como ativo, pendência de 26/ago). **Preços de outubro/2026 definidos pelo fundador em 02/10** — a tabela `plans` do banco, as telas do app, os termos e o site podem ainda mostrar os valores anteriores até serem propagados (ver `HANDOFF.md` §76).
+> Fonte em código: `src/models/oli-plans.ts` (preços de START e PRO atualizados em 02/out; `plan_base` ainda aparece como ativo, pendência de 26/ago). **Preços de outubro/2026 definidos pelo fundador em 02/10** — banco (`plans`), app, termos, site e prompts da Olivia já foram atualizados em 02 e 05/10; o app só passa a cobrar o valor novo na sessão depois do OTA (ver `HANDOFF.md` §76). Vale para todos os assinantes: o congelamento de taxa foi removido em 05/10.
 
 | Plano | Mensalidade | R$/min | Hora cheia | Status |
 |---|---|---|---|---|

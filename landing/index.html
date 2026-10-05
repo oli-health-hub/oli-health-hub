@@ -344,8 +344,8 @@
         /* ─── PLANOS ────────────────────────────────── */
         .planos-wrapper {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            min-height: 680px;
+            grid-template-columns: repeat(2, 1fr);
+            min-height: 620px;
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 32px 80px rgba(0,0,0,0.12);
@@ -954,49 +954,49 @@
     <div class="section-header centered">
         <div class="section-label">Quanto custa</div>
         <h2 class="section-title">Comece grátis.<br>Compre horas e use por minuto.</h2>
-        <p class="section-sub">As horas são vendidas em blocos de uma hora e consumidas por minuto — o tempo que sobrar continua no seu saldo. No plano gratuito, a hora sai por R$ 120. No mês em que você não atender, você não paga.</p>
+        <p class="section-sub">As horas são vendidas em blocos de uma hora e consumidas por minuto — o tempo que sobrar continua no seu saldo. No START, a hora de sala sai por R$ 77,40 e, no mês em que você não atender, você não paga nada. O plano semestral do PRO exige fidelidade de 6 meses.</p>
     </div>
 
     <!-- Sem style inline aqui: um `grid-template-columns` inline vence qualquer
-         media query e travava os 3 planos lado a lado até em 320px. As colunas
-         vêm do CSS (3 no desktop, 1 abaixo de 1024px). -->
+         media query e travava os planos lado a lado até em 320px. As colunas
+         vêm do CSS (2 no desktop, 1 abaixo de 1024px). -->
     <div class="planos-wrapper">
 
         <!-- PLANO START -->
         <div class="plano-painel base">
             <h3>START</h3>
-            <p class="plano-tagline">Sem mensalidade. Você compra horas e usa por minuto.</p>
+            <p class="plano-tagline">Para atendimentos pontuais ou para quem está começando. Sem mensalidade e sem fidelidade.</p>
             <div class="plano-preco">
                 <span class="valor">Grátis</span>
             </div>
-            <div class="plano-minuto">R$ 2,00 por minuto · a hora de sala sai por R$ 120</div>
+            <div class="plano-minuto">R$ 1,29 por minuto · a hora de sala sai por R$ 77,40</div>
             <div class="plano-divider"></div>
             <ul class="plano-features">
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>Sala quando você quiser</strong>
-                        <span>Reserve a partir de 30 minutos, sem mensalidade</span>
+                        <strong>Sala equipada e pronta para atender</strong>
+                        <span>Reserve a partir de 30 minutos</span>
                     </span>
                 </li>
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>Aplicativo do OLI</strong>
-                        <span>Agenda, cronômetro da sessão e ficha dos seus pacientes</span>
+                        <strong>Reservas e controle do tempo pelo app</strong>
+                        <span>Cronômetro da sessão e agenda no aplicativo do OLI</span>
                     </span>
                 </li>
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>Recepção do OLI</strong>
-                        <span>A nossa equipe recebe o seu paciente</span>
+                        <strong>Cadastro dos seus pacientes</strong>
+                        <span>Ficha de cada paciente no aplicativo</span>
                     </span>
                 </li>
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>Encontros do OLI</strong>
+                        <strong>Comunidade e eventos do OLI</strong>
                         <span>Palestras e rodas de conversa com quem atende aqui</span>
                     </span>
                 </li>
@@ -1004,94 +1004,51 @@
             <a href="#contato" class="btn btn-ghost">Começar grátis</a>
         </div>
 
-        <!-- PLANO BASE -->
-        <div class="plano-painel base destaque">
-            <h3>BASE</h3>
-            <p class="plano-tagline">Para quem já atende toda semana. Compensa a partir de 10 horas de sala por mês.</p>
+        <!-- PLANO PRO -->
+        <div class="plano-painel vip">
+            <div class="plano-badge">✦ Mais completo</div>
+            <h3>PRO</h3>
+            <p class="plano-tagline">Para agendas recorrentes, com apoio na rotina. Compensa a partir de cerca de 10 horas de sala por mês.</p>
             <div class="plano-preco">
                 <span class="valor">R$ 299</span>
                 <span class="periodo">/mês</span>
             </div>
-            <div class="plano-minuto">R$ 1,50 por minuto · 25% mais barato</div>
+            <div class="plano-minuto">ou R$ 199/mês no plano semestral · R$ 0,79 por minuto · a hora de sala sai por R$ 47,40</div>
             <div class="plano-divider"></div>
             <ul class="plano-features">
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
                         <strong>Tudo do START</strong>
-                        <span>Sala, aplicativo, recepção e encontros</span>
+                        <span>Com o minuto de sala bem mais barato</span>
                     </span>
                 </li>
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>Minuto 25% mais barato</strong>
-                        <span>A mensalidade se paga com 10 horas de sala no mês</span>
+                        <strong>Estacionamento durante o atendimento</strong>
+                        <span>Vaga no prédio enquanto você atende</span>
                     </span>
                 </li>
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>Conversa com contador e advogado</strong>
-                        <span>Uma sessão sobre a sua PJ, um contrato ou um convênio</span>
+                        <strong>Recepção para a sua rotina</strong>
+                        <span>Agendamento, cobrança e retorno dos seus pacientes</span>
                     </span>
                 </li>
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>Copa e lounge</strong>
-                        <span>Lugar para descansar entre um atendimento e outro</span>
-                    </span>
-                </li>
-            </ul>
-            <a href="#contato" class="btn btn-ghost">Conhecer o BASE</a>
-        </div>
-
-        <!-- PLANO PRO -->
-        <div class="plano-painel vip">
-            <div class="plano-badge">✦ Mais completo</div>
-            <h3>PRO</h3>
-            <p class="plano-tagline">O OLI cuida da sua agenda, da cobrança e das suas notas. Compensa a partir de 25 horas por mês.</p>
-            <div class="plano-preco">
-                <span class="valor">R$ 599</span>
-                <span class="periodo">/mês</span>
-            </div>
-            <div class="plano-minuto">R$ 1,30 por minuto · 35% mais barato</div>
-            <div class="plano-divider"></div>
-            <ul class="plano-features">
-                <li>
-                    <span class="feat-icon">✓</span>
-                    <span class="feat-text">
-                        <strong>Tudo do BASE</strong>
-                        <span>Com o minuto ainda mais barato</span>
+                        <strong>Uma conversa com contador e uma com advogado</strong>
+                        <span>Sobre a sua PJ, um contrato ou um convênio</span>
                     </span>
                 </li>
                 <li>
                     <span class="feat-icon">✓</span>
                     <span class="feat-text">
-                        <strong>O OLI cuida da sua agenda</strong>
-                        <span>A recepção marca e confirma os seus atendimentos</span>
-                    </span>
-                </li>
-                <li>
-                    <span class="feat-icon">✓</span>
-                    <span class="feat-text">
-                        <strong>As suas notas saem sozinhas</strong>
-                        <span>O OLI emite a nota fiscal no seu CNPJ</span>
-                    </span>
-                </li>
-                <li>
-                    <span class="feat-icon">✓</span>
-                    <span class="feat-text">
-                        <strong>Prontuário e agenda pela internet</strong>
-                        <span>Ficha do paciente e horários acessíveis de onde você estiver</span>
-                    </span>
-                </li>
-                <li>
-                    <span class="feat-icon">✓</span>
-                    <span class="feat-text">
-                        <strong>Impressão inclusa</strong>
-                        <span>Imprima receita e atestado aqui, sem pagar à parte</span>
+                        <strong>Endereço comercial e fiscal</strong>
+                        <span>Use o endereço do OLI no seu cadastro profissional</span>
                     </span>
                 </li>
             </ul>

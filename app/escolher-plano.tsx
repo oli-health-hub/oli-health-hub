@@ -23,8 +23,8 @@ import type { PlanType } from '../src/models/types';
 const PRO_PLAN_ID = '19fcea22-4f61-4a5f-a80e-f120144ac54e';
 
 const PRO_PRICES: Record<'MONTHLY' | 'SEMESTRAL', number> = {
-  MONTHLY:   599,
-  SEMESTRAL: 499,
+  MONTHLY:   299,
+  SEMESTRAL: 199,
 };
 
 function benefits(plan: PlanType): string[] {
@@ -89,7 +89,7 @@ export default function EscolherPlanoScreen() {
             <Text style={[s.planName, { color: colors.oliDarkGray }]}>START</Text>
             <Text style={s.planPrice}>Grátis</Text>
           </View>
-          <Text style={s.planRate}>R$ 1,90/min de sessão</Text>
+          <Text style={s.planRate}>R$ 1,29/min de sessão</Text>
 
           {benefits('START').map(label => (
             <View key={label} style={s.benefitRow}>
@@ -139,7 +139,7 @@ export default function EscolherPlanoScreen() {
               <Text style={s.planPricePeriod}>/mês</Text>
             </Text>
           </View>
-          <Text style={s.planRate}>R$ 1,45/min de sessão</Text>
+          <Text style={s.planRate}>R$ 0,79/min de sessão</Text>
 
           <View style={s.cicloRow}>
             {(['MONTHLY', 'SEMESTRAL'] as const).map(c => (

@@ -47,7 +47,7 @@ const PLANS: PlanMeta[] = [
     id:         null,
     name:       'START',
     price:      0,
-    taxaMin:    1.90,
+    taxaMin:    1.29,
     color:      colors.oliLightGray,
     hasCiclo:   false,
     available:  true,
@@ -55,11 +55,11 @@ const PLANS: PlanMeta[] = [
   {
     id:         '19fcea22-4f61-4a5f-a80e-f120144ac54e',
     name:       'PRO',
-    price:      599,
-    taxaMin:    1.45,
+    price:      299,
+    taxaMin:    0.79,
     color:      colors.oliGold,
     hasCiclo:   true,
-    precoSemestral: 499,
+    precoSemestral: 199,
     available:  true,
   },
 ];
@@ -359,7 +359,7 @@ export default function MeuPlanoScreen() {
   };
 
   // Preço exibido (cabeçalho + detalhe) já reflete o ciclo escolhido —
-  // evita mostrar 599 fixo com o 499 só numa nota abaixo.
+  // evita mostrar 299 fixo com o 199 só numa nota abaixo.
   const activePrice = (plan: PlanMeta) =>
     plan.hasCiclo && selectedCiclo === 'SEMESTRAL' ? (plan.precoSemestral ?? plan.price) : plan.price;
 
