@@ -115,7 +115,7 @@ MONTHLY_PRICE   = { START: 0, PRO: 299.00 }   // PRO semestral: 199.00/mês, fid
 - **BASE**: desativado (`ativo=false`), zero assinantes, fora da vitrine — preservado só por histórico.
 - **VIP**: nunca lançado — não comercializar nem implementar lógica.
 - ⚠️ **`src/models/oli-plans.ts`**: preços de START e PRO atualizados em 02/10; `plan_base` ainda aparece como ativo (pendência desde 26/ago). A tabela `plans` do banco já está nos valores de out/2026; `taxa_min_congelada` foi zerada em todos os perfis (05/10).
-- Benefícios por plano: matriz em `docs/OLI_BASE.md` §5. Estacionamento vale nos dois planos (05/out); endereço comercial e fiscal é exclusivo do PRO.
+- Benefícios por plano: matriz em `docs/OLI_BASE.md` §5. Estacionamento vale nos dois planos (05/out); endereço comercial (sem endereço fiscal, a princípio) é exclusivo do PRO.
 
 ## Olivia — assistente única de IA
 As 5 personas antigas (Ana Luiza, Isabella, Amanda, Ronaldo, Olivia) foram **reduzidas a uma** em 19/ago — nenhuma tinha ponto de entrada ativo no app. A Edge Function `chat` não recebe mais `persona` no body.

@@ -107,13 +107,15 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 | App (agenda, tempo de sala, pacientes) | ✅ | ✅ |
 | Comunidade e eventos | ✅ | ✅ |
 | Vaga de estacionamento durante o atendimento | ✅ | ✅ |
-| Conversa com contador e com advogado (cortesia na assinatura) | — | ✅ |
+| Conforto médico | nos dias de atendimento | acesso completo |
+| Site (LP) e cartão de visita | — | ✅ |
+| ~~Conversa com contador e com advogado~~ — fora por enquanto (05/out) | — | — |
 | Impressão | — | ✅ |
 | Recepção (agendamento, cobrança, retorno) | — | ✅ |
-| **Endereço comercial e fiscal** | — | ✅ |
+| **Endereço comercial** (sem endereço fiscal, a princípio) | — | ✅ |
 | Emissão de nota fiscal | — | ✅ |
 
-> O **endereço comercial e fiscal** é o único diferencial do PRO **sem custo marginal para a OLI** — serve para divulgar (Instagram, Google, material) e para domiciliar a empresa. Entrou em 31/ago com escopo só de divulgação e foi ampliado em 02/set.
+> O **endereço comercial** é o único diferencial do PRO **sem custo marginal para a OLI** — serve para divulgar (Instagram, Google, material) e **não** para domiciliar a empresa. Entrou em 31/ago com escopo só de divulgação, foi ampliado para comercial e fiscal em 02/set e **voltou a só comercial em 05/out** (decisão do fundador, a princípio).
 >
 > O **estacionamento** valeu nos dois planos entre 31/ago e 02/set, foi restrito ao PRO e **voltou a valer nos dois planos em 05/out** (decisão do fundador, a princípio).
 >

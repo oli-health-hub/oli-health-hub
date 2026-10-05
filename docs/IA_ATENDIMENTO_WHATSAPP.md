@@ -191,9 +191,10 @@ uma vez. Ela segue a resposta do lead:
   especialidade?"
 - **Atendimentos recorrentes ou comparação solicitada:** "Para uma agenda mais
   recorrente, o PRO pode ser mais adequado: R$ 299/mês, ou R$ 199/mês com fidelidade de seis meses,
-  mais R$ 0,79 por minuto. Inclui os serviços de recepção (agendamento,
-  cobrança e confirmação de consulta), além de endereço comercial e fiscal.
-  Qual é a sua especialidade?"
+  mais R$ 0,79 por minuto. Inclui acesso completo ao conforto médico, site e
+  cartão de visita, os serviços de recepção (agendamento, cobrança e
+  confirmação de consulta), além de endereço comercial. Qual é a sua
+  especialidade?"
 - **Depois da especialidade:** informa que há salas que podem ser apropriadas
   para aquele atendimento e pergunta somente se a pessoa prefere receber uma foto ou
   agendar uma visita. Para visita, envia o Calendly; para foto, usa uma imagem

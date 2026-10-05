@@ -86,7 +86,7 @@ export const PLANS: Record<PlanId, Plan> = {
     highlighted: false,
     badge: null,
     features: {
-      feature_conforto_medico: false,
+      feature_conforto_medico: true, // START: só nos dias de atendimento (05/out),
       feature_impressao: false,
       feature_comunidade: true,
       feature_app_timer: true,

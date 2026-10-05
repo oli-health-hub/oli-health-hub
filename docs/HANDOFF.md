@@ -2922,7 +2922,7 @@ Varredura feita comparando git, banco, edge functions deployadas e arquivos solt
 - **Promoção de outubro** (PRO mensal com 6h creditadas até 31/10): está no prompt do `whatsapp-webhook` mas **desligada** por padrão, só vale com o secret `PROMO_OUTUBRO_ATIVA=true`. No `test-lead-ai` ela entra sempre. Não há lógica de crédito de 6h no banco ou no checkout; confirmar quem credita antes de ligar.
 - **Também propagado em 05/10:** `test-lead-ai` v41 (sincronizado com o webhook, conferido por leitura do deployado), `app/escolher-plano.tsx`, `app/meu-plano.tsx`, `app/termos-uso.tsx`, `app/contrato-servico.tsx` (`tsc --noEmit` limpo) e `landing/index.html`. **Pendente: EAS Update (OTA) do app** e publicar o site (Netlify); nada foi publicado.
 - **Site:** a seção de planos estava na versão de agosto (START R$ 2,00, BASE R$ 299, PRO R$ 599 com nota fiscal, prontuário e impressão). Foi refeita com START e PRO e os textos da peça `OLI_Planos_Out2026.pdf`; o BASE e as três promessas que o produto não tem mais saíram. Grade de 3 para 2 colunas. Conferido no navegador (2 painéis de mesma largura); não revisado em celular.
-- **Estacionamento (decidido em 05/10): vaga nos dois planos, "a princípio"** (a mensagem do fundador veio cortada nessa palavra; ver se havia condição). Os prompts da Olivia já diziam isso e ficam como estão. Corrigidos para bater: `OLI_BASE.md` (matriz §5), `CLAUDE.md` e o site (a vaga passou para o START e saiu da lista do PRO). **Desatualizado:** o PDF `landing/Claude outputs/OLI_Planos_Out2026.pdf` ainda lista a vaga só no PRO; refazer antes de enviar a qualquer pessoa.
+- **Endereço, estacionamento, conforto médico, contador e advogado:** ver 76.7.
 - **Ainda no valor antigo:** só `tmp/pdfs/build_olivia_flow.py` (material de apoio, não é produto).
 
 ### 76.2 Prompts da Olivia em produção sem versão no git
@@ -2964,11 +2964,32 @@ Em 01/10 foram deployados direto no Supabase, sem commit: `chat` v34 (15h18), `w
 ### 76.6 Pendências abertas desta varredura
 
 1. **Publicar:** EAS Update do app (sem ele a sessão ainda cobra o valor antigo) e o site no Netlify. Termos e contrato mudaram de valor; avisar quem já aceitou os valores antigos é decisão jurídica sua.
-1b. **Decidir:** se os pacotes de 20h e 40h voltam; **refazer o PDF de planos** (estacionamento nos dois).
+1b. **Decidir:** se os pacotes de 20h e 40h voltam; se o compromisso de 6 meses do START continua (76.7); **refazer o PDF de planos**.
 2. Puxar `chat`, `whatsapp-webhook` e `test-lead-ai` deployados para o git e atualizar `docs/IA_ATENDIMENTO_WHATSAPP.md` (76.2).
 3. Commitar o admin da revisita e a migration reconstruída (76.3), depois testar com login de admin.
 4. Decidir o destino dos arquivos soltos (76.5).
 5. `src/models/oli-plans.ts` segue defasado (já era pendência desde 26/ago); agora piora com os preços de outubro.
+
+### 76.7 Decisões de produto de 05/10 (matriz de benefícios START x PRO, "a princípio")
+
+Ditadas pelo fundador em 05/10, em sequência. **Matriz vigente:**
+
+| Benefício | START | PRO |
+|---|:--:|:--:|
+| Sala equipada, reservas e timer pelo app, cadastro de pacientes, comunidade e eventos | sim | sim |
+| Vaga de estacionamento durante o atendimento | **sim** | sim |
+| Conforto médico | **só nos dias de atendimento** | **acesso completo** |
+| Site (LP) e cartão de visita | não | **sim (novo)** |
+| Recepção (agendamento, cobrança, retorno/confirmação) | não | sim |
+| Endereço **comercial** | não | sim, **sem endereço fiscal** |
+| Conversa com contador e advogado | não | **fora por enquanto** |
+
+- **Desfaz** a ampliação do endereço fiscal da §67/§68/§69 e o benefício de diagnóstico contábil e jurídico da §43. Restringir estacionamento ao PRO (02/set) também foi revertido.
+- **Aplicado:** prompts da Olivia (`chat` v38, `whatsapp-webhook` v49 conferido por diff com o repo, `test-lead-ai` v42), `landing/index.html`, `docs/OLI_BASE.md` (matriz §5), `CLAUDE.md`, `docs/IA_ATENDIMENTO_WHATSAPP.md`, `src/models/oli-plans.ts` (`feature_conforto_medico` do START) e a matriz `FEATURES` de `app/meu-plano.tsx` (conforto médico com rótulos por plano, estacionamento e endereço comercial novos, página pessoal e cartão só no PRO, diagnósticos removidos). `tsc` limpo.
+- **A "Página pessoal + cartão de visita digital" do app** estava marcada como incluída no START e passou a PRO-only. Se o "Site (LP) e cartão de visita" da decisão for outra coisa que não essa página, ajustar. A frase do fundador foi interpretada assim.
+- **Fora do que foi decidido, ainda inconsistente:** a matriz do app e o `OLI_BASE.md` ainda listam "Impressão" (PRO) e "Emissão de nota fiscal" como benefícios do PRO, enquanto os prompts proíbem afirmar os dois; `app/escolher-plano.tsx` (linhas 64 e 105) e `app/contrato-servico.tsx` (linha 27) ainda prometem **diagnóstico contábil e jurídico gratuitos** a quem aceita o compromisso de 6 meses no START (mecanismo `activate_start_plan(p_wants_commitment)`), o que contradiz "contador e advogado fora". Não mexidos: o contrato é texto jurídico e o compromisso é um recurso separado. Decidir se o compromisso de 6 meses continua e com qual contrapartida.
+- **PDF** `OLI_Planos_Out2026.pdf` (estacionamento só no PRO, endereço comercial e fiscal, contador e advogado) está desatualizado em quatro pontos. Refazer antes de enviar.
+- `app/(tabs)/financeiro.tsx` tem uma linha "Endereço Fiscal" na vitrine de "valor de mercado"; não foi alterada.
 
 ## 13. Comandos úteis
 

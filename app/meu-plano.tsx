@@ -84,7 +84,6 @@ export interface Feature {
 const FEATURE_CATEGORIES = [
   'INFRAESTRUTURA FÍSICA',
   'APP E COMUNIDADE',
-  'DIAGNÓSTICOS COM PARCEIROS',
   'GESTÃO PRO',
   'SERVIÇOS VIP (EM BREVE)',
 ] as const;
@@ -99,7 +98,14 @@ export const FEATURES: Feature[] = [
   {
     label:    'Conforto médico',
     category: 'INFRAESTRUTURA FÍSICA',
-    plans:    { START: 'no', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
+    plans:    { START: 'yes', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
+    planLabel:       { START: 'Nos dias de atendimento', PRO: 'Acesso completo' },
+    planLabelColor:  { START: colors.oliGold, PRO: colors.oliGold },
+  },
+  {
+    label:    'Vaga de estacionamento durante o atendimento',
+    category: 'INFRAESTRUTURA FÍSICA',
+    plans:    { START: 'yes', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
   },
   {
     label:      'Impressão e digitalização',
@@ -122,22 +128,15 @@ export const FEATURES: Feature[] = [
   {
     label:    'Página pessoal + cartão de visita digital',
     category: 'APP E COMUNIDADE',
-    plans:    { START: 'yes', BASE: 'yes', PRO: 'yes', VIP: 'soon' },
+    plans:    { START: 'no', BASE: 'yes', PRO: 'yes', VIP: 'soon' },
   },
-  // ── DIAGNÓSTICOS COM PARCEIROS ──
-  {
-    label:    'Diagnóstico Contábil — Contábil Mello',
-    detail:   '1 sessão de avaliação inclusa',
-    category: 'DIAGNÓSTICOS COM PARCEIROS',
-    plans:    { START: 'no', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
-  },
-  {
-    label:    'Diagnóstico Jurídico — Dra. Ana',
-    detail:   '1 sessão de avaliação inclusa',
-    category: 'DIAGNÓSTICOS COM PARCEIROS',
-    plans:    { START: 'no', BASE: 'yes', PRO: 'yes', VIP: 'yes' },
-  },
+  // Diagnósticos com parceiros (contador e advogado) fora do PRO por enquanto — 05/out.
   // ── GESTÃO PRO ──
+  {
+    label:    'Endereço comercial',
+    category: 'GESTÃO PRO',
+    plans:    { START: 'no', BASE: 'no', PRO: 'yes', VIP: 'yes' },
+  },
   {
     label:    'Gestão de agenda pela recepção OLI',
     category: 'GESTÃO PRO',
