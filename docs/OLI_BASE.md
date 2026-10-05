@@ -113,7 +113,7 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 | Impressão | — | ✅ |
 | Recepção (agendamento, cobrança, retorno) | — | ✅ |
 | **Endereço comercial** (sem endereço fiscal, a princípio) | — | ✅ |
-| Emissão de nota fiscal | — | ✅ |
+| ~~Emissão de nota fiscal~~ — substituída pela cobrança dos pacientes, que já está na recepção (05/out) | — | — |
 
 > O **endereço comercial** é o único diferencial do PRO **sem custo marginal para a OLI** — serve para divulgar (Instagram, Google, material) e **não** para domiciliar a empresa. Entrou em 31/ago com escopo só de divulgação, foi ampliado para comercial e fiscal em 02/set e **voltou a só comercial em 05/out** (decisão do fundador, a princípio).
 >

@@ -143,7 +143,7 @@ export const FEATURES: Feature[] = [
     plans:    { START: 'no', BASE: 'no', PRO: 'yes', VIP: 'yes' },
   },
   {
-    label:    'Emissão de NF gerenciada pela OLI',
+    label:    'Cobrança dos pacientes pela recepção OLI',
     category: 'GESTÃO PRO',
     plans:    { START: 'no', BASE: 'no', PRO: 'yes', VIP: 'yes' },
   },
