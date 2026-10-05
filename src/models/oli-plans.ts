@@ -254,12 +254,14 @@ export interface HourPackage {
  *
  *  Corrigida em 07/ago: dizia `20h → +3` enquanto o banco tinha `+2`, e não
  *  listava o pacote de 40h que existe no banco. O padrão real é **10% de
- *  horas de bônus** em todos os pacotes. */
+ *  horas de bônus** em todos os pacotes.
+ *
+ *  Atualizado em 05/out (fundador): 10h → +10%, 20h → +15% (+3h), 40h → +20% (+8h). */
 export const HOUR_PACKAGES: HourPackage[] = [
   { paidHours: 1,  bonusHours: 0, totalHours: 1  },  // avulso, sem bônus
   { paidHours: 10, bonusHours: 1, totalHours: 11 },
-  { paidHours: 20, bonusHours: 2, totalHours: 22 },
-  { paidHours: 40, bonusHours: 4, totalHours: 44 },
+  { paidHours: 20, bonusHours: 3, totalHours: 23 },  // +15%
+  { paidHours: 40, bonusHours: 8, totalHours: 48 },  // +20%
 ];
 
 /**
