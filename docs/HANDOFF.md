@@ -2922,7 +2922,7 @@ Varredura feita comparando git, banco, edge functions deployadas e arquivos solt
 - **Promoção de outubro** (PRO mensal com 6h creditadas até 31/10): está no prompt do `whatsapp-webhook` mas **desligada** por padrão, só vale com o secret `PROMO_OUTUBRO_ATIVA=true`. No `test-lead-ai` ela entra sempre. Não há lógica de crédito de 6h no banco ou no checkout; confirmar quem credita antes de ligar.
 - **Também propagado em 05/10:** `test-lead-ai` v41 (sincronizado com o webhook, conferido por leitura do deployado), `app/escolher-plano.tsx`, `app/meu-plano.tsx`, `app/termos-uso.tsx`, `app/contrato-servico.tsx` (`tsc --noEmit` limpo) e `landing/index.html`. **Pendente: EAS Update (OTA) do app** e publicar o site (Netlify); nada foi publicado.
 - **Site:** a seção de planos estava na versão de agosto (START R$ 2,00, BASE R$ 299, PRO R$ 599 com nota fiscal, prontuário e impressão). Foi refeita com START e PRO e os textos da peça `OLI_Planos_Out2026.pdf`; o BASE e as três promessas que o produto não tem mais saíram. Grade de 3 para 2 colunas. Conferido no navegador (2 painéis de mesma largura); não revisado em celular.
-- **Divergência a decidir (estacionamento):** `CLAUDE.md`, `OLI_BASE.md`, o PDF de outubro e o site dizem que a vaga é **exclusiva do PRO**; os prompts da Olivia (`chat`, `whatsapp-webhook`, `test-lead-ai`) dizem que está **nos dois planos**. Vem da §31 (31/08) e nunca foi corrigido nos prompts depois da §68. Hoje a Olivia promete vaga a quem está no START.
+- **Estacionamento (decidido em 05/10): vaga nos dois planos, "a princípio"** (a mensagem do fundador veio cortada nessa palavra; ver se havia condição). Os prompts da Olivia já diziam isso e ficam como estão. Corrigidos para bater: `OLI_BASE.md` (matriz §5), `CLAUDE.md` e o site (a vaga passou para o START e saiu da lista do PRO). **Desatualizado:** o PDF `landing/Claude outputs/OLI_Planos_Out2026.pdf` ainda lista a vaga só no PRO; refazer antes de enviar a qualquer pessoa.
 - **Ainda no valor antigo:** só `tmp/pdfs/build_olivia_flow.py` (material de apoio, não é produto).
 
 ### 76.2 Prompts da Olivia em produção sem versão no git
@@ -2964,7 +2964,7 @@ Em 01/10 foram deployados direto no Supabase, sem commit: `chat` v34 (15h18), `w
 ### 76.6 Pendências abertas desta varredura
 
 1. **Publicar:** EAS Update do app (sem ele a sessão ainda cobra o valor antigo) e o site no Netlify. Termos e contrato mudaram de valor; avisar quem já aceitou os valores antigos é decisão jurídica sua.
-1b. **Decidir:** estacionamento (só PRO ou nos dois, 76.1) e se os pacotes de 20h e 40h voltam.
+1b. **Decidir:** se os pacotes de 20h e 40h voltam; **refazer o PDF de planos** (estacionamento nos dois).
 2. Puxar `chat`, `whatsapp-webhook` e `test-lead-ai` deployados para o git e atualizar `docs/IA_ATENDIMENTO_WHATSAPP.md` (76.2).
 3. Commitar o admin da revisita e a migration reconstruída (76.3), depois testar com login de admin.
 4. Decidir o destino dos arquivos soltos (76.5).

@@ -106,7 +106,7 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 | Sala equipada, sob demanda | ✅ | ✅ |
 | App (agenda, tempo de sala, pacientes) | ✅ | ✅ |
 | Comunidade e eventos | ✅ | ✅ |
-| Vaga de estacionamento durante o atendimento | — | ✅ |
+| Vaga de estacionamento durante o atendimento | ✅ | ✅ |
 | Conversa com contador e com advogado (cortesia na assinatura) | — | ✅ |
 | Impressão | — | ✅ |
 | Recepção (agendamento, cobrança, retorno) | — | ✅ |
@@ -115,7 +115,7 @@ Pagantes necessários conforme o mix (recalculado após a reforma de agosto):
 
 > O **endereço comercial e fiscal** é o único diferencial do PRO **sem custo marginal para a OLI** — serve para divulgar (Instagram, Google, material) e para domiciliar a empresa. Entrou em 31/ago com escopo só de divulgação e foi ampliado em 02/set.
 >
-> O **estacionamento** valeu nos dois planos entre 31/ago e 02/set; hoje é exclusivo do PRO.
+> O **estacionamento** valeu nos dois planos entre 31/ago e 02/set, foi restrito ao PRO e **voltou a valer nos dois planos em 05/out** (decisão do fundador, a princípio).
 >
 > **Prontuário eletrônico não é benefício de plano nenhum** — é serviço do parceiro Communicare, apenas indicado (ver §8).
 
