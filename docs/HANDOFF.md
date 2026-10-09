@@ -1,9 +1,9 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 05/Outubro/2026 (fim da tarde, ver §76.10).
+> Última atualização: 08/Outubro/2026 (migração de contas para o OLI, ver §77).
 >
-> **Chegou agora? Comece pela §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
+> **Chegou agora? Leia primeiro a §77** — a infraestrutura mudou de conta (GitHub, Vercel, Supabase, DNS) e a regra de deploy mudou. **Depois a §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
 ---
 
@@ -39,9 +39,9 @@
 | App scheme (deep link) | `olihealthhub://` (ex.: `olihealthhub://login`) |
 | Bundle iOS | `com.oli.healthhub` |
 | EAS canais | `production` (TestFlight) + `preview` |
-| Admin (Vercel) | projeto `admin`, root dir = `admin/` |
-| Site (Vercel) | projeto `oli-landing`, root dir = `landing/`, domínio `olihealthhub.com.br` (A → `216.198.79.1`), team "Guilherme's projects" (Hobby) |
-| Repo | `github.com/guipasquetti/oli-health-hub` |
+| Admin (Vercel) | projeto `admin`, root dir = `admin/`, domínio `admin.olihealthhub.com.br`, conta `contato-9866's projects` (Hobby) desde 08/10 (§77) |
+| Site (Vercel) | projeto `oli-landing`, root dir = `landing/`, domínio `olihealthhub.com.br`, conta `contato-9866's projects` (Hobby) desde 08/10 (§77) |
+| Repo | `github.com/oli-health-hub/oli-health-hub` (conta GitHub do tipo usuário, não organização; §77) |
 
 > ⚠️ **O site NÃO está mais na Netlify** desde 21/jul (ver §14). A conta Netlify estourou o crédito, os builds foram parados e o domínio desassociado. Qualquer recurso Netlify-specific (**Netlify Forms**, `_redirects`, `_headers`) **não funciona** — o equivalente na Vercel é `vercel.json`, e captura de formulário é via Supabase (ver §15).
 >
@@ -49,8 +49,8 @@
 
 **Regra de deploy:**
 - Mudança no **app** → `eas update` nos DOIS canais (`production` + `preview`). Reportar os 2 update group IDs.
-- Mudança no **admin** → `git push` (Vercel auto-deploy).
-- Mudança no **site/landing** → `git push` (Vercel auto-deploy, projeto `oli-landing`).
+- Mudança no **admin** → `git push` (Vercel auto-deploy). **Atenção (§77.5):** no plano Hobby a Vercel bloqueia o deploy de commits cujo autor não seja o dono da conta; os commits precisam sair com o e-mail do GitHub `oli-health-hub`.
+- Mudança no **site/landing** → `git push` (Vercel auto-deploy, projeto `oli-landing`). Mesma ressalva.
 - Mudança em **edge function** → deploy via Supabase MCP / CLI.
 
 ## 4. Planos e preços (ATUAL — sem VIP por enquanto)
@@ -3019,6 +3019,66 @@ Ditadas pelo fundador em 05/10, em sequência. **Matriz vigente:**
 - **Valor na tela do PIX:** `CheckoutModal`, `HourCheckoutModal` e `PlanCheckoutModal` exibem o valor da cobrança (`result.value`, já com cupom) abaixo do título. `tsc` limpo no app e no admin. Não testado em tela.
 - **Publicações:** push `723768f` e `8691167` na `main`; Vercel (admin e landing) `success` para `8691167`. OTA `production` `7d649897-300d-4391-a6ce-ce3884f9299b` e `preview` `42dd2c49-d184-4995-b2ae-f5079ad0319b` (valor do PIX); segunda OTA `production` `79cfcb62-034e-41f1-8d4f-16d007b747cb` e `preview` `5c391726-43c3-4e92-aeef-ae9ed2c33032`, sem mudança de código do app.
 - **Pendente:** testar `/cupons` (apagar `TESTE_COB`/`TESTE50`) com login de admin; compra real de teste para validar o fluxo Asaas; conferir builds das lojas e a reserva da Solange (76.6, itens 1 e 2).
+
+## 77. Migração de contas para o OLI: GitHub, Vercel, Supabase e DNS (07 e 08/10)
+
+Continuação da migração de contas conduzida pelo Igor desde 17/09 (`docs/OLI_DOSSIE.json`, `migracao_de_contas`). Esta seção registra o que foi **conferido e movido** em 07 e 08/10, e o que falta. Nenhuma troca de chave foi feita: o app instalado, as Edge Functions e os crons seguem funcionando sem rebuild.
+
+### 77.1 Estado por serviço (08/10)
+
+| Serviço | Estado | Onde |
+|---|---|---|
+| **Supabase** | **Feito.** Projeto `oli-health-hub` (`xwcarrurjvfxisuaihid`, sa-east-1) transferido para a organização **`oli-health-hub`** (`pbrshckqemwfycdpthgq`). **O ref não mudou**, então nenhum arquivo do código precisou ser alterado. O MCP do Supabase da sessão já está logado na conta do OLI. | dashboard do Supabase |
+| **GitHub** | **Feito.** Repositório transferido para `github.com/oli-health-hub/oli-health-hub` (privado). `oli-health-hub` é uma **conta de usuário**, não uma organização: só existem dono e colaboradores, e o papel de admin não existe. A conta `guipasquetti` entrou como colaboradora com `push` (sem admin, não cria repositório lá). | GitHub |
+| **Vercel** | **Feito.** `admin` e `oli-landing` foram **recriados** (importados do repositório novo) na conta **`contato-9866's projects`** (plano **Hobby**). Os projetos antigos seguem na conta `Guilherme's projects` como plano de reversão. | Vercel |
+| **DNS / domínio** | **Feito, com ajuste pendente.** Ver 77.3. | registro.br + Vercel |
+| **EAS / Expo** | **Não migrado.** Projeto `@guipasquetti/oli-health-hub` (`projectId` `86281f73-3b5b-4e6c-adfe-8909137f86d5`), `owner: "guipasquetti"` em `app.json`. | expo.dev |
+| **Apple, Google Play, Meta/WhatsApp, Asaas, RD Station, Resend, Sentry, Anthropic/OpenAI, Calendly, Trello, Google Ads** | **Não conferidos.** Titularidade a verificar em cada painel. | painéis |
+
+### 77.2 Supabase e variáveis (conferido, só leitura)
+
+- **Projeto vazio por engano:** `oli-health-hub's Project` (`urevvoubvknejezodfez`, us-west-2, criado em 28/09) existe na mesma organização, **sem nenhuma tabela**, e nada no repositório o usa. **Não apagado**; apagar no dashboard.
+- **Nada aponta para ele.** A URL e a chave `anon` do app estão **fixas em `src/services/supabase.ts` (linhas 6 e 7)**, com o ref `xwcarrurjvfxisuaihid`. As variáveis do EAS (`production` e `preview`) têm **só** `EXPO_PUBLIC_SENTRY_DSN`; o ambiente `development` não tem nenhuma.
+- **Banco:** o `vault` guarda `supabase_url` e `service_role_key`; `supabase_url` aponta para o projeto certo. Os 4 crons que chamam funções (`rd-vincular-deals`, `rd-reprocessar-falhas-sync`, `whatsapp-nudge-silencio`, `whatsapp-nutricao-comercial`) leem esse valor, e o gatilho `on_profile_created` também aponta para o projeto certo.
+- **Edge Functions:** 27 ativas no projeto certo. Os **secrets** (31 nomes usados no código, entre eles `ASAAS_API_KEY`, `WHATSAPP_ACCESS_TOKEN`, `RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) **não podem ser lidos pelo MCP**. Presumem-se preservados pela transferência; confirmar em Edge Functions > Secrets.
+- **`supabase/.temp/linked-project.json`** ainda mostra a organização antiga (cache da CLI). A CLI não está instalada nesta máquina; ao instalar, rodar `supabase link --project-ref xwcarrurjvfxisuaihid`.
+- **Chaves de API:** o admin e o app usam as chaves **legadas** (`anon` e `service_role`, formato `eyJ…`), e várias funções têm `verify_jwt: true`. **Não desativar as chaves legadas** ("Disable legacy API keys") sem plano: derruba o app instalado, o admin e as funções. Existe uma secret key nova chamada `asaas_api_kei` (com erro de digitação) cujo uso é desconhecido; verificar e revogar se não for do OLI.
+
+### 77.3 Vercel e DNS
+
+- **Variáveis do `admin`** (5, em Production e Preview, marcadas Sensitive): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ASAAS_API_KEY`, `ASAAS_ENV`. As do projeto antigo eram só Production. A `ASAAS_API_KEY` foi recolocada com a chave de produção salva pelo fundador (o painel antigo não revela valores Sensitive). **Validado:** login e Financeiro funcionam no admin novo.
+- **`admin.olihealthhub.com.br`:** movido e validado (certificado Let's Encrypt válido, HTML idêntico ao da URL temporária `admin-two-ashy-45.vercel.app`).
+- **`olihealthhub.com.br` e `www`:** o `oli-landing` novo (URL temporária `oli-landing-seven.vercel.app`) foi conferido antes da troca: `/`, `/baixar`, `/confirmado`, `/privacidade` e `/consentimento` com HTML idêntico ao de produção. O domínio estava ligado à conta antiga, então a Vercel pediu verificação por TXT.
+- **Registros criados no registro.br (zona com 23 entradas):** CNAME `www` → `0448685f379136cc.vercel-dns-017.com.`; TXT `_vercel` do apex (`a118b63f…`) e do `www` (`8356ba11…`). **Removido:** CNAME `www` → `apex-loadbalancer.netlify.com` (Netlify parada desde 21/07). Os registros foram confirmados nos servidores oficiais (`b.sec.dns.br`, `c.sec.dns.br`) e no 8.8.8.8.
+- **Não tocar na zona:** MX `smtp.google.com`; SPF, Zoho, `google-site-verification`, `_dmarc`; DKIM (`dkim._domainkey`, `google._domainkey`, `resend._domainkey`, `s1`/`s2._domainkey` do SendGrid); `relacionamento` (SendGrid), `send` (MX e SPF da Amazon SES, Resend); `lp` (`pages.rdstation.com.br`, RD Station); `admin` (CNAME `e62ff5fc9c17c901.vercel-dns-017.com.`). Os TXT `_vercel` antigos (`c6c49421…` do apex, `57a78afa…` e `9aa648fc…` do admin) ficam até o fim da migração.
+- **Pendente (importante):** após a mudança, a Vercel deixou o apex com **308 → `www.olihealthhub.com.br`**. O endereço oficial é o apex (QR code, anúncios, WhatsApp). Ajustar no projeto `oli-landing` > Domains: apex em **Connect to Production** (sem redirect) e `www` com **Redirect to** `olihealthhub.com.br`. Estado em 08/10: apex 308, `www` 200.
+- **Titularidade do domínio (registro.br):** titular OLI HEALTH HUB SOLUÇÕES EM SAÚDE LTDA (CNPJ 62.446.600/0001-35), responsável Cesar Pereira Soares de Oliveira. Os três contatos (administrativo, técnico e cobrança) estão no handle `GULPA76` (Guilherme). **Passar para o Igor** (decisão do fundador, "depois"): administrativo e cobrança primeiro; técnico por último, para não perder a edição da zona no meio do trabalho. O Igor precisa do próprio ID no registro.br. Domínio vence em **13/03/2027**.
+
+### 77.4 Segurança
+
+- **`admin/e2e/.auth/admin.json`** (sessão de login do admin do teste e2e) estava **versionado**. Saiu do versionamento no commit `4edb348` e `e2e/.auth/` entrou em `admin/.gitignore`; o arquivo segue no disco. **O conteúdo continua no histórico do git**, então o que protege de fato é **encerrar a sessão do admin** (Supabase > Authentication > Users > sign out, ou trocar a senha). **Pendente.** O conteúdo do arquivo não foi lido.
+- O `landing/` só contém a chave `anon` pública do Supabase (conferido: sem `service_role`, Asaas, Resend nem SendGrid, nem no histórico).
+
+### 77.5 Regra de deploy e decisão sobre o desenvolvedor externo
+
+- **Bloqueio da Vercel Hobby:** o commit `4edb348` (autor `guilherme.pasquetti@gmail.com`, conta GitHub `guipasquetti`) apareceu como **Blocked** no `oli-landing` (e o `admin` deve ter o mesmo). No Hobby a Vercel só publica commits de quem é o dono da conta, e a conta nova está ligada ao GitHub `oli-health-hub`. **O site em produção não foi afetado** (o commit só mexeu em `admin/`).
+- **Decisão do fundador (08/10):** **sem plano Pro e sem desenvolvedor externo**; todas as alterações do site e do admin são feitas pelas sessões do Claude Code, neste repositório.
+- **Solução aplicada, não validada:** `git config --local user.email "335147493+oli-health-hub@users.noreply.github.com"` neste repositório (o `user.name` e a configuração global não mudaram), para os próximos commits serem reconhecidos como do dono da conta. **O próximo `git push` confirma.** Se continuar Blocked: Redeploy manual pelo painel da Vercel (logado como dono) ou um Deploy Hook.
+- **Repositório `oli-health-hub/oli-landing`** (privado) foi criado e populado com `landing/` e o histórico (29 commits, `73de34a`), para um desenvolvedor externo trabalhar só no site. Com a decisão acima, **ficou sem uso**: a Vercel segue ligada ao repositório principal com root dir `landing/`. **Decidir apagar** (só o dono da conta `oli-health-hub` consegue; a `guipasquetti` não é admin) para não existirem duas cópias que divergem. Se um dia houver dev externo: a pasta é autocontida e GitHub não restringe por diretório, então o repositório separado é o caminho, mas exige o plano Pro (ou trabalho por pull request com merge do dono).
+- **`origin` local** ainda usa a URL antiga (`guipasquetti/oli-health-hub`), que o GitHub redireciona; o push funciona. Trocar com `git remote set-url origin https://github.com/oli-health-hub/oli-health-hub.git` (a sessão não conseguiu: o classificador de permissões negou).
+
+### 77.6 Pendências, em ordem
+
+1. **Redirect apex/`www`** no `oli-landing` (77.3). Mais urgente: muda o endereço oficial do site.
+2. **Encerrar a sessão do admin** no Supabase (77.4).
+3. **Confirmar que o auto-deploy da Vercel deixa de bloquear** após o próximo push com o e-mail do `oli-health-hub` (77.5); conferir `admin` e `oli-landing`.
+4. **Passar os contatos do domínio** no registro.br para o Igor (77.3).
+5. **Apagar** o projeto Supabase vazio `urevvoubvknejezodfez` e o repositório `oli-landing`; apagar os projetos antigos da Vercel só depois de alguns dias de uso sem problema.
+6. **EAS/Expo:** criar a organização e transferir o projeto; depois trocar `owner` em `app.json`. O `projectId` não muda; conferir se as credenciais de iOS e Android acompanharam.
+7. **Apple Developer e Google Play:** verificar de quem é a conta (se individual, o app fica preso à pessoa; Play já teve um sumiço em 21/07 e o e-mail da conta de desenvolvedor não estava acessível).
+8. **Meta/WhatsApp** (portfólio "OLI health hub", app "OLI WPP", 3 WABAs duplicadas), **Asaas, RD Station, Resend, Sentry, Anthropic/OpenAI:** conferir titularidade e, se rotacionar chaves, atualizar os secrets das funções.
+9. **Atualizar `docs/OLI_DOSSIE.json`** (`migracao_de_contas`): ainda lista só o que o Igor concluiu até 17/09 e não reflete esta seção. O `Checklist_Migracao_Contas_OLI.pdf` não está no repositório.
+10. **Plano Hobby:** a Vercel o define como uso não comercial. Reavaliar o Pro quando houver mais de uma pessoa publicando.
 
 ## 13. Comandos úteis
 
