@@ -20,6 +20,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { assinaturaConfere, baixarMidiaWhatsApp, enviarTexto, enviarImagem, enviarTemplate } from '../_shared/whatsapp.ts';
+import { ehRemetenteAutorizado, revisarTexto, MSG_SO_TEXTO, MSG_FALHA } from '../_shared/revisao-oli.ts';
 
 // Implementa docs/IA_ATENDIMENTO_WHATSAPP.md — qualquer mudança de
 // comportamento passa pelo manual primeiro, este prompt é a aplicação dele.
@@ -751,6 +752,46 @@ async function aindaCabeResponder(
   return atual?.status === 'ia';
 }
 
+// Revisão OLI (docs/REVISAO_OLI.md): mensagem vinda de número autorizado é um
+// texto a revisar, não um lead. Roda ANTES de resolveConversa para não criar
+// lead nem conversa, e não persiste o conteúdo. Nada vai ao destinatário final.
+// Dedupe best-effort por wamid (reenvio do Meta) — a revisão não grava no banco.
+const revisoesFeitas = new Set<string>();
+
+async function processarRevisaoOli(msg: { id: string; from: string; type: string; text?: { body: string } }) {
+  if (revisoesFeitas.has(msg.id)) return;
+  revisoesFeitas.add(msg.id);
+  if (revisoesFeitas.size > 500) revisoesFeitas.delete(revisoesFeitas.values().next().value as string);
+
+  const mascara = `***${msg.from.slice(-4)}`;
+  let resposta = MSG_SO_TEXTO;
+  if (msg.type === 'text' && msg.text?.body) {
+    try {
+      const client = new Anthropic();
+      const r = await revisarTexto(msg.text.body, async (system, usuario) => {
+        const out = await client.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 800,
+          temperature: 0.2,
+          system,
+          messages: [{ role: 'user', content: usuario }],
+        });
+        return out.content[0]?.type === 'text' ? out.content[0].text : '';
+      });
+      resposta = r.texto;
+      console.log(`[whatsapp-webhook] revisao_oli ok remetente=${mascara} sensivel=${r.sensivel}`);
+    } catch (err) {
+      resposta = MSG_FALHA;
+      console.error(`[whatsapp-webhook] revisao_oli erro remetente=${mascara}:`, err);
+    }
+  } else {
+    console.log(`[whatsapp-webhook] revisao_oli tipo_nao_suportado=${msg.type} remetente=${mascara}`);
+  }
+  // Falha de envio é só registrada: lançar faria o Meta reenviar e duplicar a revisão.
+  await enviarTexto({ to: msg.from, body: resposta }).catch(err =>
+    console.error(`[whatsapp-webhook] revisao_oli falha ao enviar remetente=${mascara}:`, err));
+}
+
 async function processarMensagem(
   supabase: SupabaseClient,
   msg: {
@@ -759,6 +800,9 @@ async function processarMensagem(
     interactive?: { type: string; button_reply?: { title: string }; list_reply?: { title: string } };
   },
 ) {
+  if (ehRemetenteAutorizado(msg.from, Deno.env.get('REVISAO_OLI_NUMEROS'))) {
+    return processarRevisaoOli(msg);
+  }
   const conv = await resolveConversa(supabase, msg.from);
   // Botão de resposta rápida do template (quick reply, ex.: "Quero conhecer")
   // chega como type='button'; botão de mensagem interativa livre chega como
