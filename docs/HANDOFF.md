@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 09/Outubro/2026 (GTM e preços fora do site, ver §78; migração de contas, §77).
+> Última atualização: 13/Outubro/2026 (varredura de 10 a 13/10 sem mudanças, ver §79; GTM e preços fora do site, §78; migração de contas, §77).
 >
 > **Chegou agora? Leia primeiro a §77** (e a §78: o site não exibe mais preços) — a infraestrutura mudou de conta (GitHub, Vercel, Supabase, DNS) e a regra de deploy mudou. **Depois a §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
@@ -3094,6 +3094,22 @@ Pedido do fundador a partir de mensagem da Mirele (CWK, 09/10, 11h48): instalar 
 - **Publicação:** commit `f470f96` na `main` de `oli-health-hub/oli-health-hub` (autor com o e-mail noreply de `oli-health-hub`, então a Vercel Hobby não bloqueou). O **push foi feito pela conta `guipasquetti`** (colaboradora): o `gh` desta máquina só tem essa conta. O fundador pediu que o acesso fosse como `oli-health-hub`; para isso é preciso `gh auth login` com essa conta, feito por ele no terminal.
 - **Verificado no ar:** deploy `oli-landing` (conta `contato-9866's projects`, Production) `success` às 14:58 UTC; `olihealthhub.com.br` (308 para `www`) e `oli-landing-seven.vercel.app` servem as duas tags; 0 ocorrências de R$ 299, R$ 1,29 e R$ 77 na home. O `admin` reconstruiu junto, sem mudança de código.
 - **Armadilha:** o fundador não viu o deploy na Vercel. Os projetos antigos (`Guilherme's projects`) **não recebem mais deploy**; o deploy novo aparece só em `contato-9866's projects`. Conferir o seletor de conta antes de concluir que não publicou.
+
+## 79. Varredura de 10 a 13/10: sem mudança de código nem de banco (13/10)
+
+Conferido em 13/10 no GitHub, no Supabase (projeto `xwcarrurjvfxisuaihid`) e nos registros de deploy da Vercel (via API de deployments do GitHub; a Vercel não foi consultada direto, sem CLI nem MCP nesta máquina).
+
+- **Código:** nenhum commit na `main` entre `f470f96` (09/10) e o do handoff (`76cecad`, 13/10). Nenhum PR novo (o último é o nº 10, de agosto).
+- **Banco:** a última migration segue `20261005175048` (`libera_taxa_congelada_precos_outubro`, 05/10). Nenhuma migration nova desde então.
+- **Edge Functions:** nenhuma nova nem republicada depois de 05/10. `chat` (v38), `whatsapp-webhook` (v49) e `test-lead-ai` (v42) foram atualizadas por último em 05/10, entre 18:08 e 18:13 UTC.
+- **Deploys (Vercel):** só `oli-landing` e `admin`. O último de código foi `f470f96`, em 09/10 (`oli-landing` 14:58 UTC, `admin` 14:59 UTC). O de 13/10 (`oli-landing`, 15:00 UTC) é só o commit do handoff, sem mudança no site.
+- **Supabase, projeto vazio:** `urevvoubvknejezodfez` aparece como `INACTIVE` (pausado). Ainda não foi apagado (§77, item 5 dos pendentes).
+- **Dados, desde 09/10 12:00 UTC:**
+  - 9 leads novos, **todos de origem `whatsapp`**. Quatro são de 10 a 13/10 (um em 10/10, dois em 12/10 e um em 13/10); três deles estão em `contatado` e um em `descartado`.
+  - A tabela `leads` chegou a **719 registros**.
+  - 37 mensagens e 9 conversas novas, a última em 13/10 às 05:05 UTC.
+  - **Zero** novos perfis, reservas, assinaturas, cupons ou pacotes de horas. O app segue com **43 perfis**.
+- **Ainda aberto** (nada resolvido nesse período): os pendentes da §77 e o item da §78 sobre o container do GTM, que precisa estar publicado pela Mirele. Se algo mudou fora do repositório e do Supabase (painel da Vercel, EAS, DNS, GTM), não aparece aqui; registrar manualmente.
 
 ## 13. Comandos úteis
 
