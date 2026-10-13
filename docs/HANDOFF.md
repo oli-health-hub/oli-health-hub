@@ -1,9 +1,9 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 08/Outubro/2026 (migração de contas para o OLI, ver §77).
+> Última atualização: 09/Outubro/2026 (GTM e preços fora do site, ver §78; migração de contas, §77).
 >
-> **Chegou agora? Leia primeiro a §77** — a infraestrutura mudou de conta (GitHub, Vercel, Supabase, DNS) e a regra de deploy mudou. **Depois a §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
+> **Chegou agora? Leia primeiro a §77** (e a §78: o site não exibe mais preços) — a infraestrutura mudou de conta (GitHub, Vercel, Supabase, DNS) e a regra de deploy mudou. **Depois a §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
 ---
 
@@ -3063,7 +3063,7 @@ Continuação da migração de contas conduzida pelo Igor desde 17/09 (`docs/OLI
 
 - **Bloqueio da Vercel Hobby:** o commit `4edb348` (autor `guilherme.pasquetti@gmail.com`, conta GitHub `guipasquetti`) apareceu como **Blocked** no `oli-landing` (e o `admin` deve ter o mesmo). No Hobby a Vercel só publica commits de quem é o dono da conta, e a conta nova está ligada ao GitHub `oli-health-hub`. **O site em produção não foi afetado** (o commit só mexeu em `admin/`).
 - **Decisão do fundador (08/10):** **sem plano Pro e sem desenvolvedor externo**; todas as alterações do site e do admin são feitas pelas sessões do Claude Code, neste repositório.
-- **Solução aplicada, não validada:** `git config --local user.email "335147493+oli-health-hub@users.noreply.github.com"` neste repositório (o `user.name` e a configuração global não mudaram), para os próximos commits serem reconhecidos como do dono da conta. **O próximo `git push` confirma.** Se continuar Blocked: Redeploy manual pelo painel da Vercel (logado como dono) ou um Deploy Hook.
+- **Solução aplicada e validada em 09/10:** `git config --local user.email "335147493+oli-health-hub@users.noreply.github.com"` neste repositório (o `user.name` e a configuração global não mudaram), para os commits serem reconhecidos como do dono da conta. O commit `f089e79` (autor com esse e-mail) **não foi bloqueado**: `oli-landing` e `admin` terminaram em `success`, enquanto `4edb348` (e-mail antigo) ficou `Blocked` nos dois. **Vale só para commits feitos com essa configuração**: em outra máquina ou clone, repetir o `git config --local`. Se voltar a bloquear: Redeploy manual pelo painel da Vercel (logado como dono) ou um Deploy Hook.
 - **Repositório `oli-health-hub/oli-landing`** (privado) foi criado e populado com `landing/` e o histórico (29 commits, `73de34a`), para um desenvolvedor externo trabalhar só no site. Com a decisão acima, **ficou sem uso**: a Vercel segue ligada ao repositório principal com root dir `landing/`. **Decidir apagar** (só o dono da conta `oli-health-hub` consegue; a `guipasquetti` não é admin) para não existirem duas cópias que divergem. Se um dia houver dev externo: a pasta é autocontida e GitHub não restringe por diretório, então o repositório separado é o caminho, mas exige o plano Pro (ou trabalho por pull request com merge do dono).
 - **`origin` local** ainda usa a URL antiga (`guipasquetti/oli-health-hub`), que o GitHub redireciona; o push funciona. Trocar com `git remote set-url origin https://github.com/oli-health-hub/oli-health-hub.git` (a sessão não conseguiu: o classificador de permissões negou).
 
@@ -3071,7 +3071,7 @@ Continuação da migração de contas conduzida pelo Igor desde 17/09 (`docs/OLI
 
 1. **Redirect apex/`www`** no `oli-landing` (77.3). Mais urgente: muda o endereço oficial do site.
 2. **Encerrar a sessão do admin** no Supabase (77.4).
-3. **Confirmar que o auto-deploy da Vercel deixa de bloquear** após o próximo push com o e-mail do `oli-health-hub` (77.5); conferir `admin` e `oli-landing`.
+3. ~~Confirmar que o auto-deploy da Vercel deixa de bloquear~~ ✅ **Validado em 09/10** (77.5): `f089e79` em `success` nos dois projetos.
 4. **Passar os contatos do domínio** no registro.br para o Igor (77.3).
 5. **Apagar** o projeto Supabase vazio `urevvoubvknejezodfez` e o repositório `oli-landing`; apagar os projetos antigos da Vercel só depois de alguns dias de uso sem problema.
 6. **EAS/Expo:** criar a organização e transferir o projeto; depois trocar `owner` em `app.json`. O `projectId` não muda; conferir se as credenciais de iOS e Android acompanharam.
@@ -3079,6 +3079,21 @@ Continuação da migração de contas conduzida pelo Igor desde 17/09 (`docs/OLI
 8. **Meta/WhatsApp** (portfólio "OLI health hub", app "OLI WPP", 3 WABAs duplicadas), **Asaas, RD Station, Resend, Sentry, Anthropic/OpenAI:** conferir titularidade e, se rotacionar chaves, atualizar os secrets das funções.
 9. **Atualizar `docs/OLI_DOSSIE.json`** (`migracao_de_contas`): ainda lista só o que o Igor concluiu até 17/09 e não reflete esta seção. O `Checklist_Migracao_Contas_OLI.pdf` não está no repositório.
 10. **Plano Hobby:** a Vercel o define como uso não comercial. Reavaliar o Pro quando houver mais de uma pessoa publicando.
+
+## 78. Site: Google Tag Manager e preços fora da home (09/10)
+
+Pedido do fundador a partir de mensagem da Mirele (CWK, 09/10, 11h48): instalar o GTM e tirar os preços visíveis do site.
+
+- **GTM `GTM-K4G3JCV6`** instalado nas 6 páginas públicas de `landing/`: `index`, `consultorio`, `baixar`, `confirmado`, `consentimento`, `privacidade`. Script no topo do `<head>` (antes do `<meta charset>`) e `<noscript>` logo após o `<body>`, idênticos ao snippet recebido. `_template-pagina-confirmacao.html` ficou de fora (é só template de e-mail/confirmação). **Pendente do lado da Mirele:** o container precisa estar **publicado** no GTM; conferir no Tag Assistant.
+- **Preços removidos de `landing/index.html`** (eram os únicos 4 pontos com "R$" nas páginas do site):
+  - START: saiu "R$ 1,29 por minuto · a hora de sala sai por R$ 77,40" e a frase equivalente do subtítulo da seção de planos. Permanece "Grátis" (mensalidade).
+  - PRO: saíram R$ 299/mês, R$ 199/mês semestral, R$ 0,79/min e R$ 47,40/hora. O valor exibido virou **"Consulte"**, com a linha "Mensal ou semestral, com o minuto de sala mais barato".
+  - **Isto contradiz o §76.1 e o §76.9** (que diziam o site com os preços novos). Os preços continuam valendo no banco, no app e na Olivia; só o site deixou de exibi-los. Ao reescrever copy do site, não reintroduzir valores sem decisão do fundador.
+  - **Não removido, decidir:** o subtítulo do PRO ainda diz "Compensa a partir de cerca de 10 horas de sala por mês" (não é preço, mas permite deduzir).
+  - **Fora do escopo, ainda exibem preço:** app (`meu-plano`, `escolher-plano`, checkout), respostas da Olivia no app e no WhatsApp, e o PDF `OLI_Planos_Out2026.pdf`.
+- **Publicação:** commit `f470f96` na `main` de `oli-health-hub/oli-health-hub` (autor com o e-mail noreply de `oli-health-hub`, então a Vercel Hobby não bloqueou). O **push foi feito pela conta `guipasquetti`** (colaboradora): o `gh` desta máquina só tem essa conta. O fundador pediu que o acesso fosse como `oli-health-hub`; para isso é preciso `gh auth login` com essa conta, feito por ele no terminal.
+- **Verificado no ar:** deploy `oli-landing` (conta `contato-9866's projects`, Production) `success` às 14:58 UTC; `olihealthhub.com.br` (308 para `www`) e `oli-landing-seven.vercel.app` servem as duas tags; 0 ocorrências de R$ 299, R$ 1,29 e R$ 77 na home. O `admin` reconstruiu junto, sem mudança de código.
+- **Armadilha:** o fundador não viu o deploy na Vercel. Os projetos antigos (`Guilherme's projects`) **não recebem mais deploy**; o deploy novo aparece só em `contato-9866's projects`. Conferir o seletor de conta antes de concluir que não publicou.
 
 ## 13. Comandos úteis
 
