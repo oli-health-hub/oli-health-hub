@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, Alert, Switch, ActivityIndicator, Image, Modal, FlatList,
+  StyleSheet, Alert, Switch, ActivityIndicator, Image, Modal, FlatList, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -356,7 +356,14 @@ export default function PerfilScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
 
         {/* ── Avatar + Nome ── */}
         <View style={styles.avatarSection}>
@@ -740,6 +747,7 @@ export default function PerfilScreen() {
           </Text>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <OlicoinsToast visible={!!olicoinsToast} amount={olicoinsToast?.amount ?? 0} />
     </SafeAreaView>
@@ -914,6 +922,7 @@ function SelectRow<T extends string>({
 
 const styles = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: colors.oliBackground },
+  flex:    { flex: 1 },
   content: { paddingBottom: 48 },
 
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Alert, Image,
+  StyleSheet, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -43,7 +43,15 @@ export default function MFASetupScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
 
           <View style={styles.iconWrap}>
             <Ionicons name="shield-checkmark" size={40} color={colors.oliGreen} />
@@ -147,6 +155,7 @@ export default function MFASetupScreen() {
           </TouchableOpacity>
 
         </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -154,6 +163,7 @@ export default function MFASetupScreen() {
 
 const styles = StyleSheet.create({
   safe:      { flex: 1, backgroundColor: colors.oliBackground },
+  flex:      { flex: 1 },
   header:    { padding: spacing.md, alignItems: 'flex-end' },
   closeText: { fontSize: 15, color: colors.oliGreen, fontWeight: '600' },
 

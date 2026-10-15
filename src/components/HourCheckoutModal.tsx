@@ -13,8 +13,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -238,7 +240,10 @@ export default function HourCheckoutModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         {/* ── Header ── */}
         <View style={styles.header}>
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -565,7 +570,7 @@ export default function HourCheckoutModal({
             </View>
           )}
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

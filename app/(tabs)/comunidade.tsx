@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, RefreshControl, Modal, Image, Linking, Alert, ActivityIndicator, Animated, PanResponder,
+  StyleSheet, RefreshControl, Modal, Image, Linking, Alert, ActivityIndicator, Animated, PanResponder, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -651,9 +651,17 @@ export default function ComunidadeScreen() {
         {...panResponder.panHandlers}
       >
       {activeTab === 'feed' ? (
-        <ScrollView contentContainerStyle={styles.feedScroll}>
-          <PostFeed />
-        </ScrollView>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            contentContainerStyle={styles.feedScroll}
+            keyboardShouldPersistTaps="handled"
+          >
+            <PostFeed />
+          </ScrollView>
+        </KeyboardAvoidingView>
       ) : (
         <>
           {/* Busca */}
@@ -900,6 +908,7 @@ const CARD_WIDTH = '47%';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.oliBackground },
+  flex: { flex: 1 },
 
   header: {
     flexDirection:     'row',

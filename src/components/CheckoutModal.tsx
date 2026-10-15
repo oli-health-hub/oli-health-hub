@@ -17,8 +17,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -245,7 +247,10 @@ export default function CheckoutModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         {/* ── Header ── */}
         <View style={styles.header}>
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -563,7 +568,7 @@ export default function CheckoutModal({
             </View>
           )}
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

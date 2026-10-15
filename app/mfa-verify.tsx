@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -44,7 +44,10 @@ export default function MFAVerifyScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
+        <KeyboardAvoidingView
+          style={styles.content}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.iconWrap}>
             <Ionicons name="shield-checkmark" size={48} color={colors.oliGreen} />
           </View>
@@ -90,7 +93,7 @@ export default function MFAVerifyScreen() {
           <Text style={styles.hint}>
             O código é gerado a cada 30 segundos no app autenticador (Google Authenticator, Authy, etc.)
           </Text>
-        </View>
+        </KeyboardAvoidingView>
 
       </SafeAreaView>
     </SafeAreaProvider>

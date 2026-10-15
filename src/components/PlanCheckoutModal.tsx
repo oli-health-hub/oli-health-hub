@@ -12,8 +12,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -200,7 +202,10 @@ export default function PlanCheckoutModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={s.root}>
+      <KeyboardAvoidingView
+        style={s.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         {/* Header */}
         <View style={s.header}>
           <View>
@@ -214,7 +219,11 @@ export default function PlanCheckoutModal({
           )}
         </View>
 
-        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
 
           {/* ── PHASE: select ── */}
           {phase === 'select' && (
@@ -429,7 +438,7 @@ export default function PlanCheckoutModal({
           )}
 
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
