@@ -108,12 +108,13 @@ export default function FinanceiroScreen() {
   // Prioriza a taxa congelada do perfil (assinante de antes da reforma de
   // planos de 13/ago) — senão a estimativa mostrada aqui destoa do valor
   // realmente cobrado pela edge function create-hour-package.
+  const hourRate = profile?.taxa_min_congelada
+    ?? COST_PER_MINUTE[profile?.plan as keyof typeof COST_PER_MINUTE]
+    ?? COST_PER_MINUTE.START;
+
   useEffect(() => {
-    const rate = profile?.taxa_min_congelada
-      ?? COST_PER_MINUTE[profile?.plan as keyof typeof COST_PER_MINUTE]
-      ?? COST_PER_MINUTE.START;
-    fetchHourPackages(rate).then(setHourPackages).catch(() => {});
-  }, [profile?.plan, profile?.taxa_min_congelada]);
+    fetchHourPackages(hourRate).then(setHourPackages).catch(() => {});
+  }, [hourRate]);
 
   // ── Valores derivados (todos reais) ──
   const oliCost      = usageSummary?.totalValor   ?? 0;
@@ -419,6 +420,7 @@ export default function FinanceiroScreen() {
       {/* Package picker modal */}
       <HourPackagePickerModal
         packages={hourPackages}
+        ratePerMinute={hourRate}
         visible={showPackagePicker}
         onClose={() => setShowPackagePicker(false)}
         onSelect={(pkg) => {
@@ -537,8 +539,8 @@ const pacoteStyles = StyleSheet.create({
 // ── HourPackagePickerModal ────────────────────────────────────────────────────
 
 function HourPackagePickerModal({
-  packages, visible, onClose, onSelect,
-}: { packages: HourPackage[]; visible: boolean; onClose: () => void; onSelect: (pkg: HourPackage) => void }) {
+  packages, ratePerMinute, visible, onClose, onSelect,
+}: { packages: HourPackage[]; ratePerMinute: number; visible: boolean; onClose: () => void; onSelect: (pkg: HourPackage) => void }) {
   const [selected, setSelected] = useState<number | null>(null);
 
   const handleContinue = () => {
@@ -546,7 +548,7 @@ function HourPackagePickerModal({
     if (pkg) onSelect(pkg);
   };
 
-  const pricePerHour = packages.length > 0 ? packages[0].price / packages[0].hours : 140;
+  const pricePerHour = packages.length > 0 ? packages[0].price / packages[0].hours : ratePerMinute * 60;
   const hasBonus     = packages.some(p => p.bonusHours > 0);
 
   return (
