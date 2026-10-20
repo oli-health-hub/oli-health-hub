@@ -1,9 +1,9 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 13/Outubro/2026 (varredura de 10 a 13/10 sem mudanças, ver §79; GTM e preços fora do site, §78; migração de contas, §77).
+> Última atualização: 20/Outubro/2026 (erro "non-2xx" na cobrança do PRO, recebimento em dinheiro, fluxo de caixa e remoção de horas, ver §80; varredura de 10 a 13/10, §79; GTM e preços fora do site, §78; migração de contas, §77).
 >
-> **Chegou agora? Leia primeiro a §77** (e a §78: o site não exibe mais preços) — a infraestrutura mudou de conta (GitHub, Vercel, Supabase, DNS) e a regra de deploy mudou. **Depois a §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
+> **Cobrança do app falhando ou dinheiro/horas no Admin? Leia a §80 antes de tudo** (tem o que está publicado e o que ainda depende de deploy). **Chegou agora? Leia primeiro a §77** (e a §78: o site não exibe mais preços) — a infraestrutura mudou de conta (GitHub, Vercel, Supabase, DNS) e a regra de deploy mudou. **Depois a §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
 ---
 
@@ -3110,6 +3110,56 @@ Conferido em 13/10 no GitHub, no Supabase (projeto `xwcarrurjvfxisuaihid`) e nos
   - 37 mensagens e 9 conversas novas, a última em 13/10 às 05:05 UTC.
   - **Zero** novos perfis, reservas, assinaturas, cupons ou pacotes de horas. O app segue com **43 perfis**.
 - **Ainda aberto** (nada resolvido nesse período): os pendentes da §77 e o item da §78 sobre o container do GTM, que precisa estar publicado pela Mirele. Se algo mudou fora do repositório e do Supabase (painel da Vercel, EAS, DNS, GTM), não aparece aqui; registrar manualmente.
+
+## 80. Erro "non-2xx" na compra do PRO, pagamento em dinheiro, fluxo de caixa e remoção de horas (20/10)
+
+Começou com a queixa de que a compra do PRO no app dava "Erro no pagamento: non-2xx". Terminou com quatro frentes. **Leia o fim desta seção (o que não está no ar) antes de assumir que algo funciona.**
+
+### 80.1 Causa do erro
+- `create-subscription` respondia 500. O log da função (`function_logs`) mostra o erro real, que o app escondia: `Asaas: falha na assinatura — Para criar esta cobrança é necessário preencher o CPF ou CNPJ do cliente.` Foram 4 falhas em 20/10, entre 18:32 e 18:35 UTC.
+- **Três defeitos encadeados:** (1) o Asaas exige CPF/CNPJ em **qualquer** forma de pagamento, inclusive cartão, mas o campo era "opcional" no plano e **nem aparecia** para cartão nos modais de módulo e de horas; (2) a 1ª tentativa sem CPF criou o cliente no Asaas **sem documento**; (3) `findOrCreateCustomer` (`supabase/functions/_shared/asaas.ts`) reaproveitava esse cliente e **nunca atualizava o CPF**, então as tentativas seguintes, já com CPF, falhavam igual.
+- O app mostrava só "non-2xx" porque `checkoutService.ts` lia `error.message` do supabase-js e descartava o corpo da resposta (`{ error: ... }`, em `error.context`).
+- **Não era** preço nem plano: PRO está ativo (R$ 299 mensal, R$ 199 semestral) na tabela `plans`.
+
+### 80.2 O que mudou no app (`f585b0e`)
+- CPF/CNPJ obrigatório e **validado com dígitos verificadores** (`src/utils/cpfCnpj.ts`) nos 3 checkouts (`PlanCheckoutModal`, `CheckoutModal`, `HourCheckoutModal`). O botão fica desabilitado até o documento ser válido; o app envia só os dígitos.
+- **Boleto removido das opções de pagamento** (pedido do fundador). `BillingType` no app agora é `'CREDIT_CARD' | 'PIX'`. **Só a interface mudou:** as edge functions ainda aceitam `BOLETO_BANCARIO`.
+- O app passa a mostrar o erro real da função (helper `functionErrorMessage` em `checkoutService.ts`).
+- `_shared/asaas.ts`: cliente Asaas existente **sem** CPF recebe o documento via `PUT /customers/{id}`.
+
+### 80.3 Pagamento em dinheiro no Admin (`884638c`)
+- **Banco (aplicado em produção em 20/10):** tabela `cash_receipts` (RLS só admin, via `is_oli_admin()`) e função `register_cash_receipt`, que **numa transação** ativa o que foi pago e grava o recebimento:
+  - Plano: cria `subscriptions` em `active` (`ends_at` = hoje + N meses; `fidelidade_ate` = +183 dias no semestral) e atualiza `profiles.plan`, `plan_id` e `pre_paid_ok`, igual ao `asaas-webhook`.
+  - Pacote de horas: cria `hour_balance` com `horas + bonus_horas` (o pacote de 10h entrega 11h) e a validade do pacote.
+- `/recebimentos`: formulário (profissional, o que foi pago, valor, data, meses cobertos, observação), histórico e total do mês. **Estorno** com motivo (`reverse_cash_receipt`): cancela a assinatura e devolve o perfil ao plano da assinatura ativa mais recente que sobrar (todo assinante START tem uma), ou retira as horas ainda não usadas do pacote. A linha fica para auditoria (`estornado_em`, `estorno_motivo`, `estornado_por`) e sai dos totais.
+- As funções só executam para o `service_role`. `anon` e `authenticated` não têm acesso.
+
+### 80.4 Fluxo de caixa (`/fluxo-de-caixa`)
+- Antes **não existia** tela de fluxo de caixa. O Financeiro mostrava só o resumo do Asaas e `usage_charges`; `financial_entries` existia no banco, sem nenhuma tela.
+- Agora: últimos 6 meses com **entradas** (Asaas liquidado, líquido de taxas, pela data de pagamento, + dinheiro de `cash_receipts` sem estornados), **saídas** pagas (`financial_entries` com `tipo='pagar'`, `status='pago'`, por `pago_em`) e saldo. Tem formulário de saída (pago ou a pagar) e lista de contas a pagar com "marcar como paga hoje".
+- `lib/asaas.ts` (`getPaymentsByReceiptDate`) usava `paymentDateStart/End`, nomes que a API **ignora**. Corrigido para `paymentDate[ge]`/`[le]` (confirmado na documentação do Asaas; **não** executado contra a API, sem chave nesta máquina).
+- **Limite:** pagamento de cartão `CONFIRMED` ainda sem `paymentDate` (não liquidado) não entra nas entradas do Asaas. Se o Asaas falhar, a tela avisa e mostra R$ 0,00 nessa coluna.
+
+### 80.5 Remover horas com aviso ao cliente
+- Ficha do profissional (`/medicos/[id]`): seção "Remover horas (ajuste)". **Motivo obrigatório** (mín. 10 caracteres), confirmação antes de enviar. Função `remove_hours`: só mexe no saldo **não expirado**, consumindo primeiro o pacote que vence antes; reduz `minutos_total` (nunca abaixo do usado). Se esvazia um pacote sem uso, **expira** a linha em vez de zerar, porque `hour_balance` tem `CHECK (minutos_total > 0)`.
+- O registro fica em `hour_adjustments`: motivo, mensagem enviada, pacotes afetados (`detalhe`), `push_status` e `whatsapp_enviado_em`.
+- **Aviso:** push via `send-push` (texto formal) e, abaixo do histórico de ajustes, botão de WhatsApp com a mensagem pronta + "Marcar WhatsApp como enviado". **Só 10 dos 43 assinantes têm token de push**, então para a maioria o status será "Push não entregue (sem o app instalado)" e o aviso depende do envio manual pelo WhatsApp. O app **não tem caixa de avisos**: o cliente só vê o push.
+- O trigger `notify_saldo_baixo_horas` também dispara em `UPDATE` de `hour_balance`: uma remoção que cruze 2h de saldo pode mandar um segundo push, o "Suas horas estão acabando". Não foi suprimido.
+
+### 80.6 Como foi testado (e o que o teste pegou)
+Funções do banco testadas com blocos `DO` que terminam em `RAISE EXCEPTION` (rollback total; contagens conferidas depois, sem resíduo). O teste pegou **três bugs antes de ir ao ar**: zerar pacote violava o `CHECK`; o estorno de plano não voltava ao START (a checagem "sem assinatura ativa" nunca era verdadeira); e a ordem de consumo do saldo. `tsc` do app e do Admin e `next build` do Admin passam.
+
+### 80.7 O que NÃO está no ar ou NÃO foi verificado
+1. **Edge functions não publicadas.** O `deploy_edge_function` foi **negado pelo classificador de permissões do Claude Code** (sem explicação) e não foi contornado. **`create-subscription`, `create-charge` e `create-hour-package` ainda têm o helper antigo.** Isso importa: o cliente Asaas de quem tentou comprar em 20/10 foi criado sem CPF e **só passa a funcionar depois desse deploy**, mesmo com o app corrigido. Ao publicar `create-hour-package`: o arquivo local tem fallback `taxa_min ?? 1.29` e a versão no ar (v25) tem `?? 1.90`. Publicar o local muda esse fallback; manter o de produção a menos que seja desejado. Layout de arquivos que já funciona: `<função>/index.ts` + `_shared/asaas.ts` + `_shared/coupon.ts`, `verify_jwt=false`.
+2. **OTA do app não foi publicado.** As mudanças do §80.2 estão só no git. Rodar `eas update` nos dois canais (`production` + `preview`) e reportar os update group IDs.
+3. **Admin: push feito, deploy não conferido.** O push foi em `main` (`49222f7..884638c`); não consultei a Vercel. Conferir `admin` na conta `contato-9866's projects` (§77.5, §78).
+4. **Telas não abertas no navegador** (o Admin exige login com senha). Validado só por compilação e pelo teste das funções no banco. O envio de push de `removerHoras` (service role chamando `send-push`) **não foi exercitado**.
+5. `src/models/database.types.ts` e `admin/lib/database.types.ts` **não foram regenerados** (tabelas novas `cash_receipts` e `hour_adjustments`). O Admin usa cliente sem tipos, então compila.
+6. O boleto segue aceito no backend. `docs/OLI_BASE.md` e o `CLAUDE.md` não foram atualizados com o fluxo de dinheiro nem com a remoção do boleto.
+7. A tela `/horas` e o card "Saldo de horas" da ficha ainda somam pacotes **expirados** em "restante"; só a seção de remoção usa o saldo realmente disponível. Não foi alterado.
+8. Estorno de pacote de horas **não avisa** o cliente (é correção de lançamento errado). Só a remoção de horas avisa.
+
+Migrations no histórico do Supabase: `cash_receipts`, `hour_adjustments_e_estorno`, `hour_functions_respeitam_check_total`, `estorno_volta_para_plano_anterior`. No repositório estão consolidadas em dois arquivos (`20261020_cash_receipts.sql`, `20261020_hour_adjustments_e_estorno.sql`) **já com as funções finais**.
 
 ## 13. Comandos úteis
 
