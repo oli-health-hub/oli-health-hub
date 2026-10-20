@@ -1,11 +1,13 @@
 import { createSupabaseServer, createSupabaseAdmin } from '@/lib/supabase-server';
-import { changePlan, addHours, linkPatientToReservation, generatePatientCharge, triggerPatientMessage } from '@/app/actions';
+import { changePlan, addHours, marcarAvisoWhatsapp, linkPatientToReservation, generatePatientCharge, triggerPatientMessage } from '@/app/actions';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MedicoManagementCard } from './MedicoManagementCard';
 import { DocumentsCard } from './DocumentsCard';
 import { AsaasAccountCard } from './AsaasAccountCard';
 import { ReservaBillingActions } from './ReservaBillingActions';
+import RemoverHorasForm from './RemoverHorasForm';
+import BotaoWhatsApp from '@/components/BotaoWhatsApp';
 
 export const dynamic = 'force-dynamic';
 
@@ -128,7 +130,7 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
   const { data: p } = await supabase
     .from('profiles')
     .select(`
-      id, nome, crm, especialidade, plan, plan_id, bio, foto_url, tratamento,
+      id, nome, whatsapp, crm, especialidade, plan, plan_id, bio, foto_url, tratamento,
       consultation_duration_minutes, created_at, onboarding_complete, user_type,
       situacao_juridica, faturamento_range, atividade_exercida, possui_clt,
       local_atuacao, num_locais, cidade_uf, notas_fiscais_range,
@@ -180,6 +182,14 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
     .select('id, minutos_total, minutos_usados, expira_em, created_at')
     .eq('professional_id', params.id)
     .order('created_at', { ascending: false });
+
+  // Ajustes de horas (remoções com aviso ao cliente)
+  const { data: adjustments } = await supabase
+    .from('hour_adjustments')
+    .select('id, minutos_removidos, motivo, mensagem, push_status, whatsapp_enviado_em, created_at')
+    .eq('professional_id', params.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
 
   // Sessões recentes (usage_charges)
   const { data: sessions } = await supabase
@@ -240,6 +250,12 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
   const totalMin  = (balances ?? []).reduce((s, b) => s + b.minutos_total, 0);
   const usadoMin  = (balances ?? []).reduce((s, b) => s + b.minutos_usados, 0);
   const restante  = totalMin - usadoMin;
+
+  // Saldo que de fato pode ser removido: só pacotes não expirados
+  const agoraMs = Date.now();
+  const disponivelMin = (balances ?? [])
+    .filter(b => b.expira_em && new Date(b.expira_em).getTime() > agoraMs)
+    .reduce((s, b) => s + Math.max(b.minutos_total - b.minutos_usados, 0), 0);
 
   // NPS médio
   const npsScores = (npsResponses ?? []).map(n => n.score);
@@ -439,6 +455,18 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
             </form>
           </Section>
 
+          {/* Remover horas */}
+          <Section title="Remover horas (ajuste)">
+            <p className="text-[11px] text-oli-red mb-3 font-medium">
+              Reduz o saldo do profissional e envia um aviso com o motivo. O ajuste fica registrado no histórico.
+            </p>
+            <RemoverHorasForm
+              professionalId={p.id}
+              disponivelTexto={fmt(disponivelMin)}
+              disponivelMin={disponivelMin}
+            />
+          </Section>
+
           <AsaasAccountCard professionalId={p.id} account={asaasAccount ?? null} />
 
         </div>
@@ -601,6 +629,47 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             )}
           </Section>
+
+          {/* Ajustes de horas */}
+          {(adjustments ?? []).length > 0 && (
+            <Section title={`Ajustes de horas (${adjustments?.length})`}>
+              <div className="space-y-3">
+                {(adjustments ?? []).map(a => (
+                  <div key={a.id} className="py-2 border-b border-oli-border last:border-0 space-y-1.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-oli-red">− {fmt(a.minutos_removidos)}</span>
+                      <span className="text-xs text-oli-lgray">{new Date(a.created_at).toLocaleString('pt-BR')}</span>
+                    </div>
+                    <p className="text-sm text-oli-dark">{a.motivo}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className={`font-semibold px-2 py-0.5 rounded-full ${a.push_status === 'enviado' ? 'bg-green-50 text-oli-green' : 'bg-amber-50 text-amber-700'}`}>
+                        {a.push_status === 'enviado' && 'Push enviado'}
+                        {a.push_status === 'sem_dispositivo' && 'Push não entregue (sem o app instalado)'}
+                        {a.push_status === 'falhou' && 'Push falhou'}
+                        {a.push_status === 'pendente' && 'Push pendente'}
+                      </span>
+                      {a.whatsapp_enviado_em ? (
+                        <span className="font-semibold px-2 py-0.5 rounded-full bg-green-50 text-oli-green">
+                          WhatsApp enviado em {new Date(a.whatsapp_enviado_em).toLocaleString('pt-BR')}
+                        </span>
+                      ) : (
+                        <>
+                          <BotaoWhatsApp numero={p.whatsapp ?? null} texto={a.mensagem} tamanho="pequeno" />
+                          <form action={marcarAvisoWhatsapp}>
+                            <input type="hidden" name="id" value={a.id} />
+                            <input type="hidden" name="professional_id" value={p.id} />
+                            <button type="submit" className="font-semibold px-2 py-0.5 rounded-lg border border-oli-border text-oli-lgray hover:text-oli-dark transition-colors">
+                              Marcar WhatsApp como enviado
+                            </button>
+                          </form>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
           {/* Reservas recentes */}
           {(reservations ?? []).length > 0 && (

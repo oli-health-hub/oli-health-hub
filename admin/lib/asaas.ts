@@ -119,8 +119,8 @@ export async function getPaymentsByReceiptDate(params: {
   limit?:  number;
 }) {
   return asaasFetch<AsaasList<AsaasPayment>>('/payments', {
-    paymentDateStart: params.paymentDateFrom,
-    paymentDateEnd:   params.paymentDateTo,
+    'paymentDate[ge]': params.paymentDateFrom,
+    'paymentDate[le]': params.paymentDateTo,
     limit:  String(params.limit  ?? 100),
     offset: String(params.offset ?? 0),
   });
