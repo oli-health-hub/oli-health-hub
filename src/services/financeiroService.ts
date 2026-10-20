@@ -95,7 +95,10 @@ const LOW_BALANCE_MINUTES = 120;  // 2h
 
 /**
  * Busca o saldo de horas ativo do profissional.
- * Retorna null se não houver pacote de horas ativo.
+ * Soma todos os pacotes não expirados (podem coexistir: compras, cortesias,
+ * indicação). Retorna null se não houver nenhum.
+ * `expiraEm` é o vencimento do pacote que expira primeiro entre os que ainda
+ * têm minutos livres.
  */
 export async function fetchHourBalance(
   professionalId: string,
@@ -107,21 +110,22 @@ export async function fetchHourBalance(
     .select('minutos_total, minutos_usados, expira_em')
     .eq('professional_id', professionalId)
     .gt('expira_em', now)
-    .order('expira_em', { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order('expira_em', { ascending: true });
 
   if (error) throw error;
-  if (!data) return null;
+  if (!data || data.length === 0) return null;
 
-  const minutosLivres = data.minutos_total - data.minutos_usados;
+  const minutosTotal  = data.reduce((sum, r) => sum + r.minutos_total, 0);
+  const minutosUsados = data.reduce((sum, r) => sum + r.minutos_usados, 0);
+  const minutosLivres = minutosTotal - minutosUsados;
+  const proximo       = data.find(r => r.minutos_total > r.minutos_usados) ?? data[0];
 
   return {
-    minutosTotal:  data.minutos_total,
-    minutosUsados: data.minutos_usados,
+    minutosTotal,
+    minutosUsados,
     minutosLivres,
     horasLivres:   parseFloat((minutosLivres / 60).toFixed(1)),
-    expiraEm:      data.expira_em,
+    expiraEm:      proximo.expira_em,
     baixo:         minutosLivres < LOW_BALANCE_MINUTES,
   };
 }
