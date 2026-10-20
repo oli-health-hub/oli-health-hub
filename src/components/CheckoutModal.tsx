@@ -2,14 +2,13 @@
  * CheckoutModal — OLI Health Hub
  *
  * Modal de checkout para contratação de módulos.
- * Suporta Cartão de Crédito (padrão), PIX e Boleto.
+ * Suporta Cartão de Crédito (padrão) e PIX.
  *
  * Fluxo:
  *   select → processing → pay → [polling] → success | error
  *
  * Cartão: abre a página hospedada do Asaas no browser (PCI compliant).
  * PIX:    exibe QR code + copia-e-cola + countdown de 30 min.
- * Boleto: exibe data de vencimento + botão para abrir no browser.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -33,6 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore }           from '../store/authStore';
 import { CouponField }            from './CouponField';
 import { colors, radius, shadows, spacing } from '../theme/designSystem';
+import { isValidCpfCnpj, onlyDigits } from '../utils/cpfCnpj';
 import {
   BillingType,
   ModuleChargeResult,
@@ -70,13 +70,6 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     description: 'QR Code válido por 30 minutos',
     recommended: false,
   },
-  {
-    type:        'BOLETO_BANCARIO',
-    label:       'Boleto Bancário',
-    icon:        'barcode-outline',
-    description: 'Vencimento em 3 dias úteis',
-    recommended: false,
-  },
 ];
 
 const PIX_TIMEOUT_S = 30 * 60; // 30 minutos
@@ -105,6 +98,9 @@ export default function CheckoutModal({
   const [secondsLeft, setSecondsLeft] = useState(PIX_TIMEOUT_S);
   const [copied,      setCopied]      = useState(false);
   const [couponCode,  setCouponCode]  = useState<string | null>(null);
+
+  const cpfDigits = onlyDigits(cpfCnpj);
+  const cpfValido = isValidCpfCnpj(cpfCnpj);
 
   const pollTimer      = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -165,12 +161,13 @@ export default function CheckoutModal({
   };
 
   const handleConfirm = async () => {
+    if (!cpfValido) return;
     setPhase('processing');
     try {
       const charge = await createModuleCharge(
         module.id,
         billing,
-        cpfCnpj.trim() || undefined,
+        cpfDigits,
         couponCode ?? undefined,
       );
       setResult(charge);
@@ -193,14 +190,6 @@ export default function CheckoutModal({
     await Clipboard.setStringAsync(result.pixCopiaECola);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
-  };
-
-  const handleOpenBoleto = async () => {
-    const url = result?.bankSlipUrl ?? result?.invoiceUrl;
-    if (!url) return;
-    const ok = await Linking.canOpenURL(url);
-    if (ok) await Linking.openURL(url);
-    else Alert.alert('Erro', 'Não foi possível abrir o boleto.');
   };
 
   const handleOpenCard = async () => {
@@ -228,11 +217,6 @@ export default function CheckoutModal({
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
-  };
-
-  const formatDueDate = (iso: string) => {
-    const d = new Date(`${iso}T12:00:00`);
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   };
 
   const formatPrice = (value: number) =>
@@ -327,25 +311,25 @@ export default function CheckoutModal({
                 </TouchableOpacity>
               ))}
 
-              {/* CPF — necessário para PIX/Boleto em produção */}
-              {(billing === 'PIX' || billing === 'BOLETO_BANCARIO') && (
-                <View style={styles.cpfSection}>
-                  <Text style={styles.sectionLabel}>CPF / CNPJ</Text>
-                  <TextInput
-                    style={styles.cpfInput}
-                    value={cpfCnpj}
-                    onChangeText={setCpfCnpj}
-                    placeholder="000.000.000-00"
-                    placeholderTextColor={colors.gray}
-                    keyboardType="numeric"
-                    maxLength={18}
-                    accessibilityLabel="CPF ou CNPJ para pagamento"
-                  />
-                  <Text style={styles.cpfHint}>
-                    Necessário para PIX e Boleto em produção.
-                  </Text>
-                </View>
-              )}
+              {/* CPF/CNPJ — obrigatório no Asaas para qualquer forma de pagamento */}
+              <View style={styles.cpfSection}>
+                <Text style={styles.sectionLabel}>CPF / CNPJ *</Text>
+                <TextInput
+                  style={styles.cpfInput}
+                  value={cpfCnpj}
+                  onChangeText={setCpfCnpj}
+                  placeholder="000.000.000-00"
+                  placeholderTextColor={colors.gray}
+                  keyboardType="numeric"
+                  maxLength={18}
+                  accessibilityLabel="CPF ou CNPJ para pagamento"
+                />
+                {cpfDigits.length >= 11 && !cpfValido ? (
+                  <Text style={styles.cpfError}>CPF ou CNPJ inválido. Confira os números.</Text>
+                ) : (
+                  <Text style={styles.cpfHint}>Obrigatório para qualquer forma de pagamento.</Text>
+                )}
+              </View>
 
               {/* Cupom de desconto */}
               {module.pricing.amount !== undefined && user?.id && (
@@ -361,8 +345,9 @@ export default function CheckoutModal({
 
               {/* CTA */}
               <TouchableOpacity
-                style={styles.confirmBtn}
+                style={[styles.confirmBtn, !cpfValido && styles.confirmBtnDisabled]}
                 onPress={handleConfirm}
+                disabled={!cpfValido}
                 accessibilityLabel="Confirmar pagamento"
               >
                 <Ionicons name="lock-closed" size={16} color={colors.white} />
@@ -491,36 +476,6 @@ export default function CheckoutModal({
                 </>
               )}
 
-              {/* ── Boleto ── */}
-              {billing === 'BOLETO_BANCARIO' && (
-                <>
-                  <View style={styles.payIconBlock}>
-                    <View style={[styles.payIconCircle, { backgroundColor: `${colors.oliGold}15` }]}>
-                      <Ionicons name="document-text" size={40} color={colors.oliGold} />
-                    </View>
-                    <Text style={styles.payTitle}>Boleto Gerado</Text>
-                    {result.dueDate && (
-                      <Text style={styles.paySubtext}>
-                        Vencimento: {formatDueDate(result.dueDate)}
-                      </Text>
-                    )}
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.openLinkBtn}
-                    onPress={handleOpenBoleto}
-                    accessibilityLabel="Abrir boleto bancário"
-                  >
-                    <Ionicons name="open-outline" size={16} color={colors.oliGold} />
-                    <Text style={[styles.openLinkText, { color: colors.oliGold }]}>Abrir Boleto</Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.pollingRow}>
-                    <ActivityIndicator size="small" color={colors.oliGold} />
-                    <Text style={styles.pollingText}>Aguardando confirmação do pagamento…</Text>
-                  </View>
-                </>
-              )}
             </>
           )}
 
@@ -702,6 +657,7 @@ const styles = StyleSheet.create({
     color:           colors.oliDarkGray,
   },
   cpfHint: { fontSize: 12, color: colors.gray },
+  cpfError: { fontSize: 12, color: colors.oliRed },
 
   // ── action buttons ──
   confirmBtn: {
@@ -715,6 +671,7 @@ const styles = StyleSheet.create({
     marginTop:      spacing.xs,
   },
   confirmBtnText: { fontSize: 16, fontWeight: '700', color: colors.white },
+  confirmBtnDisabled: { opacity: 0.5 },
   cancelBtn: {
     alignItems:     'center',
     justifyContent: 'center',

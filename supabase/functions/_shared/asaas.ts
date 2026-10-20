@@ -34,7 +34,23 @@ export async function findOrCreateCustomer(
   // Tenta encontrar cliente existente pelo externalReference
   const searchRes  = await fetch(`${base}/customers?externalReference=${professionalId}&limit=1`, { headers });
   const searchData = await searchRes.json();
-  if (searchData.data?.length > 0) return searchData.data[0].id as string;
+  if (searchData.data?.length > 0) {
+    const existing = searchData.data[0] as { id: string; cpfCnpj?: string | null };
+    // Cliente criado numa tentativa anterior sem CPF/CNPJ: Asaas recusa a
+    // cobrança até o documento ser preenchido, então completa o cadastro.
+    if (!existing.cpfCnpj && cpfCnpj) {
+      const updateRes = await fetch(`${base}/customers/${existing.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ cpfCnpj }),
+      });
+      const updated = await updateRes.json();
+      if (!updated.id) {
+        throw new Error(`Asaas: falha ao atualizar cliente — ${JSON.stringify(updated)}`);
+      }
+    }
+    return existing.id;
+  }
 
   // Cria novo cliente
   const body: Record<string, string> = { name, email, externalReference: professionalId };

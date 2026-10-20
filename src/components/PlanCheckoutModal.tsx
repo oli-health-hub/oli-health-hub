@@ -2,7 +2,7 @@
  * PlanCheckoutModal — OLI Health Hub
  *
  * Modal de checkout para assinatura de plano (BASE / PRO / VIP).
- * Suporta PIX, Boleto e Cartão de Crédito.
+ * Suporta Cartão de Crédito e PIX.
  *
  * Fluxo: select → processing → pay → [polling] → success | error
  */
@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore }               from '../store/authStore';
 import { CouponField }                from './CouponField';
 import { colors, radius, shadows, spacing } from '../theme/designSystem';
+import { isValidCpfCnpj, onlyDigits } from '../utils/cpfCnpj';
 import {
   BillingType,
   SubscriptionResult,
@@ -52,7 +53,6 @@ interface PaymentMethod {
 const PAYMENT_METHODS: PaymentMethod[] = [
   { type: 'CREDIT_CARD',    label: 'Cartão de Crédito', icon: 'card-outline',    description: 'Pague com segurança na página do Asaas', recommended: true  },
   { type: 'PIX',            label: 'PIX',               icon: 'qr-code-outline', description: 'QR Code válido por 30 minutos',           recommended: false },
-  { type: 'BOLETO_BANCARIO',label: 'Boleto Bancário',   icon: 'barcode-outline', description: 'Vencimento em 3 dias úteis',              recommended: false },
 ];
 
 const PIX_TIMEOUT_S = 30 * 60;
@@ -89,6 +89,9 @@ export default function PlanCheckoutModal({
   const [secondsLeft, setSecondsLeft] = useState(PIX_TIMEOUT_S);
   const [copied,      setCopied]      = useState(false);
   const [couponCode,  setCouponCode]  = useState<string | null>(null);
+
+  const cpfDigits = onlyDigits(cpfCnpj);
+  const cpfValido = isValidCpfCnpj(cpfCnpj);
 
   const pollTimer      = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -144,13 +147,14 @@ export default function PlanCheckoutModal({
   };
 
   const handleConfirm = async () => {
+    if (!cpfValido) return;
     setPhase('processing');
     try {
       const sub = await createPlanSubscription(
         planId,
         ciclo,
         billing,
-        cpfCnpj.trim() || undefined,
+        cpfDigits,
         couponCode ?? undefined,
       );
       setResult(sub);
@@ -173,14 +177,6 @@ export default function PlanCheckoutModal({
     await Clipboard.setStringAsync(result.pixCopiaECola);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
-  };
-
-  const handleOpenBoleto = async () => {
-    const url = result?.bankSlipUrl ?? result?.invoiceUrl;
-    if (!url) return;
-    const ok = await Linking.canOpenURL(url);
-    if (ok) await Linking.openURL(url);
-    else Alert.alert('Erro', 'Não foi possível abrir o boleto.');
   };
 
   const handleOpenCard = async () => {
@@ -263,16 +259,22 @@ export default function PlanCheckoutModal({
                 </TouchableOpacity>
               ))}
 
-              <Text style={[s.label, { marginTop: spacing.lg }]}>CPF / CNPJ (opcional)</Text>
+              <Text style={[s.label, { marginTop: spacing.lg }]}>CPF / CNPJ *</Text>
               <TextInput
                 style={s.input}
-                placeholder="Preencher para emissão de NF"
+                placeholder="000.000.000-00"
                 placeholderTextColor={colors.gray}
                 value={cpfCnpj}
                 onChangeText={setCpfCnpj}
                 keyboardType="numeric"
+                maxLength={18}
                 accessibilityLabel="CPF ou CNPJ"
               />
+              {cpfDigits.length >= 11 && !cpfValido ? (
+                <Text style={s.cpfError}>CPF ou CNPJ inválido. Confira os números.</Text>
+              ) : (
+                <Text style={s.cpfHint}>Obrigatório para qualquer forma de pagamento.</Text>
+              )}
 
               <View style={s.summaryCard}>
                 <View style={s.summaryRow}>
@@ -303,8 +305,9 @@ export default function PlanCheckoutModal({
               )}
 
               <TouchableOpacity
-                style={s.confirmBtn}
+                style={[s.confirmBtn, !cpfValido && s.confirmBtnDisabled]}
                 onPress={handleConfirm}
+                disabled={!cpfValido}
                 accessibilityLabel={`Confirmar assinatura do plano ${planName}`}
               >
                 <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
@@ -354,25 +357,6 @@ export default function PlanCheckoutModal({
                     </TouchableOpacity>
                   ) : null}
                 </>
-              )}
-
-              {/* Boleto */}
-              {billing === 'BOLETO_BANCARIO' && (
-                <View style={s.boletoCard}>
-                  <Ionicons name="barcode-outline" size={40} color={colors.oliGreen} />
-                  <Text style={s.boletoTitle}>Boleto gerado</Text>
-                  <Text style={s.boletoDesc}>
-                    Vencimento: {result.dueDate}
-                  </Text>
-                  <TouchableOpacity
-                    style={s.boletoBtn}
-                    onPress={handleOpenBoleto}
-                    accessibilityLabel="Abrir boleto bancário"
-                  >
-                    <Ionicons name="open-outline" size={18} color={colors.white} />
-                    <Text style={s.boletoBtnText}>Abrir Boleto</Text>
-                  </TouchableOpacity>
-                </View>
               )}
 
               {/* Cartão */}
@@ -498,6 +482,8 @@ const s = StyleSheet.create({
     backgroundColor: colors.white,
     marginBottom:    spacing.sm,
   },
+  cpfHint:  { fontSize: 12, color: colors.gray, marginBottom: spacing.sm },
+  cpfError: { fontSize: 12, color: colors.oliRed, marginBottom: spacing.sm },
 
   summaryCard: {
     backgroundColor: colors.white,
@@ -525,6 +511,7 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   confirmBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  confirmBtnDisabled: { opacity: 0.5 },
 
   center:        { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl, gap: spacing.md },
   processingText:{ fontSize: 15, color: colors.oliDarkGray, marginTop: spacing.md },

@@ -12,7 +12,7 @@ import { supabase } from './supabase';
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type BillingType = 'CREDIT_CARD' | 'PIX' | 'BOLETO_BANCARIO';
+export type BillingType = 'CREDIT_CARD' | 'PIX';
 
 export interface ModuleChargeResult {
   chargeId:      string;
@@ -79,6 +79,24 @@ export interface SubscriptionResult {
 // EDGE FUNCTION CALLS
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * O supabase-js devolve só "Edge Function returned a non-2xx status code" quando
+ * a função responde 4xx/5xx. A mensagem útil vem no corpo da resposta
+ * (`{ error: '...' }`), em `error.context`.
+ */
+async function functionErrorMessage(error: unknown, fallback: string): Promise<string> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context instanceof Response) {
+    try {
+      const body = await context.clone().json() as { error?: unknown };
+      if (typeof body.error === 'string' && body.error) return body.error;
+    } catch {
+      // corpo sem JSON: cai no fallback
+    }
+  }
+  return fallback;
+}
+
 /** Cria cobrança avulsa no Asaas para compra de módulo */
 export async function createModuleCharge(
   moduleSlug:  string,
@@ -89,7 +107,7 @@ export async function createModuleCharge(
   const { data, error } = await supabase.functions.invoke('create-charge', {
     body: { moduleSlug, billingType, cpfCnpj, couponCode },
   });
-  if (error) throw new Error(error.message ?? 'Erro ao criar cobrança');
+  if (error) throw new Error(await functionErrorMessage(error, 'Erro ao criar cobrança. Tente novamente.'));
   if (data?.error) throw new Error(data.error as string);
   return data as ModuleChargeResult;
 }
@@ -105,7 +123,7 @@ export async function createPlanSubscription(
   const { data, error } = await supabase.functions.invoke('create-subscription', {
     body: { planId, ciclo, billingType, cpfCnpj, couponCode },
   });
-  if (error) throw new Error(error.message ?? 'Erro ao criar assinatura');
+  if (error) throw new Error(await functionErrorMessage(error, 'Erro ao criar assinatura. Tente novamente.'));
   if (data?.error) throw new Error(data.error as string);
   return data as SubscriptionResult;
 }
@@ -139,7 +157,7 @@ export async function createHourPackageCharge(
   const { data, error } = await supabase.functions.invoke('create-hour-package', {
     body: { hours, billingType, cpfCnpj, couponCode },
   });
-  if (error) throw new Error(error.message ?? 'Erro ao criar cobrança');
+  if (error) throw new Error(await functionErrorMessage(error, 'Erro ao criar cobrança. Tente novamente.'));
   if (data?.error) throw new Error(data.error as string);
   return data as ModuleChargeResult;
 }
