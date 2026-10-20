@@ -1402,7 +1402,7 @@ export async function criarPromocao(formData: FormData): Promise<ActionResult> {
     if (error) throw new Error(error.message);
 
     revalidatePath('/promocoes');
-    return 'Promoção criada e ativa. Vale para os próximos recebimentos em dinheiro.';
+    return 'Promoção criada e ativa. Vale para os próximos pagamentos em dinheiro, cartão e PIX.';
   });
 }
 

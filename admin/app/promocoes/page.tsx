@@ -77,10 +77,11 @@ export default async function PromocoesPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        <b>Onde a promoção é aplicada hoje:</b> nos recebimentos em dinheiro registrados em Recebimentos.
-        Pagamentos pelo app (cartão e PIX, via Asaas) <b>ainda não aplicam</b> promoção: dependem de uma alteração no
-        webhook do Asaas, que ainda não foi publicada. Enquanto isso, esses casos precisam de crédito manual.
+      <div className="rounded-xl border border-oli-border bg-white px-4 py-3 text-sm text-oli-gray">
+        <b className="text-oli-dark">Onde a promoção é aplicada:</b> nos recebimentos em dinheiro (Recebimentos) e nos
+        pagamentos pelo app, em cartão e PIX, assim que o Asaas confirma o pagamento. Cada pagamento rende uma vez, e
+        a renovação do mês seguinte rende de novo, a menos que a promoção seja marcada como &quot;uma vez por
+        profissional&quot;. Só vale para pagamentos feitos <b>depois</b> de a promoção existir.
       </div>
 
       {/* ── Nova promoção ── */}

@@ -1,44 +1,70 @@
 /**
  * Edge Function: asaas-webhook
- *
  * Recebe notificações de pagamento do Asaas e atualiza o banco.
- *
- * Eventos tratados:
- *   PAYMENT_CONFIRMED / PAYMENT_RECEIVED
- *     → assinatura de plano  → ativa subscriptions + profiles.pre_paid_ok
- *     → compra de módulo     → ativa user_modules
- *
  * Validação: header `asaas-access-token` deve bater com ASAAS_WEBHOOK_TOKEN.
+ *
+ * Promoções: ao confirmar o pagamento de um plano ou de um pacote de horas, chama
+ * apply_promotions (origem 'asaas', origem_ref = id do pagamento). É idempotente
+ * por pagamento: o Asaas manda PAYMENT_CONFIRMED e depois PAYMENT_RECEIVED para o
+ * mesmo pagamento, e a promoção só rende uma vez.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const CONFIRMED_EVENTS = new Set(['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED']);
 
-/** SHA-256 hex — usado para lookup de subscription sem expor asaas_id_plain */
 async function sha256hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Concede as horas das promoções ativas que casam com o produto pago.
+ *  Nunca derruba o webhook: a ativação do que foi pago já aconteceu. */
+async function aplicarPromocoes(
+  supabase:       ReturnType<typeof createClient>,
+  professionalId: string,
+  aplicaA:        'plano' | 'pacote_horas',
+  planId:         string | null,
+  ciclo:          string | null,
+  packageId:      string | null,
+  paymentId:      string,
+): Promise<void> {
+  try {
+    const { data, error } = await supabase.rpc('apply_promotions', {
+      p_professional_id: professionalId,
+      p_aplica_a:        aplicaA,
+      p_plan_id:         planId,
+      p_ciclo:           ciclo,
+      p_package_id:      packageId,
+      p_origem:          'asaas',
+      p_origem_ref:      paymentId,
+    });
+    if (error) {
+      console.error(`[webhook] promoções: erro ao aplicar (pagamento ${paymentId}):`, error.message);
+      return;
+    }
+    if (Number(data) > 0) {
+      console.log(`[webhook] promoções: +${data} min para ${professionalId} (pagamento ${paymentId})`);
+    }
+  } catch (err) {
+    console.error(`[webhook] promoções: exceção (pagamento ${paymentId}):`, err);
+  }
+}
+
 Deno.serve(async (req: Request) => {
-  // Asaas envia GET para validar o endpoint na configuração do webhook
   if (req.method === 'GET') {
     return new Response('ok', { status: 200 });
   }
-
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  // ── 1. Valida token ──────────────────────────────────────────────────────
   const token = req.headers.get('asaas-access-token');
   if (token !== Deno.env.get('ASAAS_WEBHOOK_TOKEN')) {
     console.warn('asaas-webhook: token inválido');
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // ── 2. Parse body ────────────────────────────────────────────────────────
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -49,7 +75,6 @@ Deno.serve(async (req: Request) => {
   const event   = body.event   as string | undefined;
   const payment = body.payment as Record<string, unknown> | undefined;
 
-  // Ignora eventos que não são de pagamento confirmado
   if (!event || !CONFIRMED_EVENTS.has(event) || !payment?.id) {
     return new Response('ok', { status: 200 });
   }
@@ -62,9 +87,7 @@ Deno.serve(async (req: Request) => {
   const paymentId      = payment.id           as string;
   const subscriptionId = payment.subscription as string | undefined;
 
-  // ── 2b. Confirma resgate de cupom + incrementa uso ───────────────────────
-  // O resgate é gravado como 'pending' na criação da cobrança/assinatura,
-  // referenciado por asaas_id (paymentId p/ módulo/pacote, subscriptionId p/ plano).
+  // ── Confirma resgate de cupom + incrementa uso ──────────────────────
   {
     const refs = [paymentId, subscriptionId].filter(Boolean) as string[];
     const { data: redemption } = await supabase
@@ -82,13 +105,13 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── 3. Assinatura de plano ────────────────────────────────────────────────
+  // ── Assinatura de plano ─────────────────────────────────────────
   if (subscriptionId) {
     const hashKey = await sha256hex(subscriptionId);
 
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('id, professional_id, plan_id')
+      .select('id, professional_id, plan_id, ciclo')
       .eq('asaas_id_hash', hashKey)
       .maybeSingle();
 
@@ -106,35 +129,29 @@ Deno.serve(async (req: Request) => {
         .single();
 
       await Promise.all([
-        supabase
-          .from('subscriptions')
-          .update({ status: 'active' })
-          .eq('id', sub.id),
-
-        supabase
-          .from('profiles')
-          .update({
-            pre_paid_ok: true,
-            plan_id:     sub.plan_id,
-            plan:        plan?.name ?? 'BASE',
-          })
-          .eq('id', sub.professional_id),
-
+        supabase.from('subscriptions').update({ status: 'active' }).eq('id', sub.id),
+        supabase.from('profiles').update({
+          pre_paid_ok: true,
+          plan_id:     sub.plan_id,
+          plan:        plan?.name ?? 'BASE',
+        }).eq('id', sub.professional_id),
         supabase.from('admin_notifications').insert({
           type:            'plan_activated',
           professional_id: sub.professional_id,
           title:           `Plano ativado: ${plan?.name ?? 'BASE'}`,
-          body:            `${profile?.nome ?? 'Médico'} ativou o plano ${plan?.name ?? 'BASE'}`,
+          body:            `${profile?.nome ?? 'Profissional'} ativou o plano ${plan?.name ?? 'BASE'}`,
           metadata:        { plan: plan?.name, subscription_id: sub.id, payment_id: paymentId },
         }),
       ]);
+
+      await aplicarPromocoes(supabase, sub.professional_id, 'plano', sub.plan_id, sub.ciclo, null, paymentId);
 
       console.log(`[webhook] assinatura ${sub.id} ativada — profissional ${sub.professional_id}`);
       return new Response('ok', { status: 200 });
     }
   }
 
-  // ── 4. Compra de pacote de horas ─────────────────────────────────────────
+  // ── Compra de pacote de horas ───────────────────────────────────
   const externalRef = payment.externalReference as string | undefined;
 
   if (externalRef?.startsWith('hour_package::')) {
@@ -143,6 +160,10 @@ Deno.serve(async (req: Request) => {
     const packageId = parts[2];
 
     if (userId && packageId) {
+      // 🐛 Corrigido em 07/ago: `bonus_horas` existia na tabela mas NÃO era lido
+      // aqui — o saldo creditado saía sem o bônus. Comprovado em produção: a
+      // única compra real de Starter 10h creditou 600 min em vez de 660.
+      // O bônus era anunciado no material comercial e nunca entregue.
       const { data: pkg } = await supabase
         .from('hour_packages')
         .select('horas, bonus_horas, validade_dias')
@@ -150,36 +171,57 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (pkg) {
+        // O Asaas manda PAYMENT_CONFIRMED e depois PAYMENT_RECEIVED para o mesmo
+        // cartão (a 2ª, dias depois). Sem esta checagem o pacote era creditado
+        // duas vezes: hour_balance não tem restrição única por asaas_charge_id.
+        const { data: jaCreditado } = await supabase
+          .from('hour_balance')
+          .select('id')
+          .eq('asaas_charge_id', paymentId)
+          .limit(1);
+
+        if (jaCreditado && jaCreditado.length > 0) {
+          console.log(`[webhook] pacote do pagamento ${paymentId} já creditado — evento ${event} ignorado`);
+          await aplicarPromocoes(supabase, userId, 'pacote_horas', null, null, packageId, paymentId);
+          return new Response('ok', { status: 200 });
+        }
+
         const expiraEm = new Date();
         expiraEm.setDate(expiraEm.getDate() + (pkg.validade_dias ?? 365));
-        const horasTotais = pkg.horas + (pkg.bonus_horas ?? 0);
+
+        const horasPagas = Number(pkg.horas);
+        const horasBonus = Number(pkg.bonus_horas ?? 0);
+        const horasTotal = horasPagas + horasBonus;
 
         await Promise.all([
           supabase.from('hour_balance').insert({
             professional_id: userId,
             package_id:      packageId,
-            minutos_total:   horasTotais * 60,
+            minutos_total:   Math.round(horasTotal * 60),
             minutos_usados:  0,
             expira_em:       expiraEm.toISOString(),
             asaas_charge_id: paymentId,
           }),
-
           supabase.from('admin_notifications').insert({
             type:            'hour_package_activated',
             professional_id: userId,
-            title:           `Pacote de horas ativado: ${horasTotais}h`,
-            body:            `Pacote de ${pkg.horas}h + ${pkg.bonus_horas ?? 0}h bônus ativado via pagamento confirmado`,
-            metadata:        { package_id: packageId, payment_id: paymentId, horas: pkg.horas, bonus_horas: pkg.bonus_horas ?? 0 },
+            title:           `Pacote de horas ativado: ${horasTotal}h`,
+            body:            horasBonus > 0
+              ? `Pacote de ${horasPagas}h + ${horasBonus}h de bônus ativado via pagamento confirmado`
+              : `Pacote de ${horasPagas}h ativado via pagamento confirmado`,
+            metadata:        { package_id: packageId, payment_id: paymentId, horas: horasPagas, bonus: horasBonus, total: horasTotal },
           }),
         ]);
 
-        console.log(`[webhook] pacote ${packageId} ativado — profissional ${userId} — ${horasTotais}h (${pkg.horas}h + ${pkg.bonus_horas ?? 0}h bônus)`);
+        await aplicarPromocoes(supabase, userId, 'pacote_horas', null, null, packageId, paymentId);
+
+        console.log(`[webhook] pacote ${packageId} ativado — profissional ${userId} — ${horasPagas}h + ${horasBonus}h bônus`);
         return new Response('ok', { status: 200 });
       }
     }
   }
 
-  // ── 5. Compra avulsa de módulo ────────────────────────────────────────────
+  // ── Compra avulsa de módulo ─────────────────────────────────────
   const { data: userModule } = await supabase
     .from('user_modules')
     .select('id, professional_id, module_id')
@@ -200,19 +242,15 @@ Deno.serve(async (req: Request) => {
       .single();
 
     await Promise.all([
-      supabase
-        .from('user_modules')
-        .update({
-          status:       'active',
-          activated_at: new Date().toISOString(),
-        })
-        .eq('id', userModule.id),
-
+      supabase.from('user_modules').update({
+        status:       'active',
+        activated_at: new Date().toISOString(),
+      }).eq('id', userModule.id),
       supabase.from('admin_notifications').insert({
         type:            'module_activated',
         professional_id: userModule.professional_id,
         title:           `Módulo ativado: ${module?.nome ?? 'Módulo'}`,
-        body:            `${profile?.nome ?? 'Médico'} ativou ${module?.nome ?? 'módulo'} via pagamento confirmado`,
+        body:            `${profile?.nome ?? 'Profissional'} ativou ${module?.nome ?? 'módulo'} via pagamento confirmado`,
         metadata:        { module_id: userModule.module_id, payment_id: paymentId },
       }),
     ]);
