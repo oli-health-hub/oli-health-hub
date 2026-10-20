@@ -1,7 +1,7 @@
 # OLI Health Hub — Handoff Completo
 
 > Documento de contexto para replicar o estado do projeto em outro chat.
-> Última atualização: 20/Outubro/2026 (erro "non-2xx" na cobrança do PRO, recebimento em dinheiro, fluxo de caixa e remoção de horas, ver §80; varredura de 10 a 13/10, §79; GTM e preços fora do site, §78; migração de contas, §77).
+> Última atualização: 20/Outubro/2026 (erro "non-2xx" na cobrança do PRO, recebimento em dinheiro, fluxo de caixa e remoção de horas, ver §80 (botão sem retorno e recebimento duplicado, §80.8); varredura de 10 a 13/10, §79; GTM e preços fora do site, §78; migração de contas, §77).
 >
 > **Cobrança do app falhando ou dinheiro/horas no Admin? Leia a §80 antes de tudo** (tem o que está publicado e o que ainda depende de deploy). **Chegou agora? Leia primeiro a §77** (e a §78: o site não exibe mais preços) — a infraestrutura mudou de conta (GitHub, Vercel, Supabase, DNS) e a regra de deploy mudou. **Depois a §75 (Dossiê consolidado)** — retrato de todo o projeto com números medidos no banco em 23/09/2026. **Depois leia a §76** — o que mudou entre 23/09 e 02/10, incluindo **três tabelas de preço em conflito** e prompts da Olivia em produção que não estão no git.
 
@@ -3152,14 +3152,27 @@ Funções do banco testadas com blocos `DO` que terminam em `RAISE EXCEPTION` (r
 ### 80.7 O que NÃO está no ar ou NÃO foi verificado
 1. **Edge functions não publicadas.** O `deploy_edge_function` foi **negado pelo classificador de permissões do Claude Code** (sem explicação) e não foi contornado. **`create-subscription`, `create-charge` e `create-hour-package` ainda têm o helper antigo.** Isso importa: o cliente Asaas de quem tentou comprar em 20/10 foi criado sem CPF e **só passa a funcionar depois desse deploy**, mesmo com o app corrigido. Ao publicar `create-hour-package`: o arquivo local tem fallback `taxa_min ?? 1.29` e a versão no ar (v25) tem `?? 1.90`. Publicar o local muda esse fallback; manter o de produção a menos que seja desejado. Layout de arquivos que já funciona: `<função>/index.ts` + `_shared/asaas.ts` + `_shared/coupon.ts`, `verify_jwt=false`.
 2. **OTA do app não foi publicado.** As mudanças do §80.2 estão só no git. Rodar `eas update` nos dois canais (`production` + `preview`) e reportar os update group IDs.
-3. **Admin: push feito, deploy não conferido.** O push foi em `main` (`49222f7..884638c`); não consultei a Vercel. Conferir `admin` na conta `contato-9866's projects` (§77.5, §78).
-4. **Telas não abertas no navegador** (o Admin exige login com senha). Validado só por compilação e pelo teste das funções no banco. O envio de push de `removerHoras` (service role chamando `send-push`) **não foi exercitado**.
+3. **Admin: push feito, deploy não conferido.** Pushes em `main`: `49222f7..884638c`, `884638c..53ded00` (handoff) e `53ded00..77d9bd6` (§80.8); não consultei a Vercel. Conferir `admin` na conta `contato-9866's projects` (§77.5, §78).
+4. **Telas nunca abertas no navegador pelo Claude** (o Admin exige login com senha), e foi exatamente isso que deixou passar o problema do §80.8. Validado só por compilação e pelo teste das funções no banco; **testar clicando** antes de dar a tela por boa. O envio de push de `removerHoras` (service role chamando `send-push`) **não foi exercitado**.
 5. `src/models/database.types.ts` e `admin/lib/database.types.ts` **não foram regenerados** (tabelas novas `cash_receipts` e `hour_adjustments`). O Admin usa cliente sem tipos, então compila.
 6. O boleto segue aceito no backend. `docs/OLI_BASE.md` e o `CLAUDE.md` não foram atualizados com o fluxo de dinheiro nem com a remoção do boleto.
 7. A tela `/horas` e o card "Saldo de horas" da ficha ainda somam pacotes **expirados** em "restante"; só a seção de remoção usa o saldo realmente disponível. Não foi alterado.
 8. Estorno de pacote de horas **não avisa** o cliente (é correção de lançamento errado). Só a remoção de horas avisa.
 
 Migrations no histórico do Supabase: `cash_receipts`, `hour_adjustments_e_estorno`, `hour_functions_respeitam_check_total`, `estorno_volta_para_plano_anterior`. No repositório estão consolidadas em dois arquivos (`20261020_cash_receipts.sql`, `20261020_hour_adjustments_e_estorno.sql`) **já com as funções finais**.
+
+### 80.8 Botão "Registrar recebimento" sem retorno e o recebimento duplicado (20/10, tarde)
+
+- **Sintoma relatado:** "o botão não está funcionando, está estático". **Causa: o botão funcionava, mas não dava retorno nenhum.** O formulário usava `<form action={serverAction}>` direto: sem mensagem, sem limpar os campos, sem estado de carregamento. Quem clica não percebe que deu certo e clica de novo.
+- **Dano em produção:** dois recebimentos idênticos de R$ 299,00 (plano PRO mensal) para Rose Lemos, às 19:03:18 e 19:03:25 UTC, com **duas assinaturas PRO ativas** e R$ 598,00 no fluxo de caixa. O plano do perfil ficou PRO (o resultado desejado).
+- **Correção dos dados (autorizada pelo fundador):** estorno do segundo recebimento (`089692ac-5973-48ce-b24f-85a180040897`, 19:03:25) por `reverse_cash_receipt`, com o motivo gravado. Conferido depois: o de 19:03:18 segue válido com a assinatura `active`, o de 19:03:25 ficou `estornado` com a assinatura `cancelled`, o perfil continua PRO. Rose Lemos paga **R$ 299,00 uma vez**.
+- **Correção do código (`77d9bd6`):**
+  - `admin/components/ActionForm.tsx`: formulário padrão para ações do Admin. Botão **desabilitado enquanto processa** ("Registrando…"), **mensagem de sucesso ou de erro na tela** e campos limpos ao concluir. **Qualquer formulário novo do Admin que chame server action deve usá-lo.**
+  - As ações `registrarRecebimentoDinheiro`, `registrarSaida`, `quitarSaida`, `removerHoras`, `marcarAvisoWhatsapp` e `estornarRecebimento` agora **devolvem `{ ok, message }`** em vez de lançar. Em produção, erro lançado numa server action vira mensagem genérica ou nada na tela.
+  - **Trava de duplicidade no servidor:** recebimento, saída e remoção de horas idênticos em até 2 minutos são recusados (checagem em TypeScript, não no banco; não é atômica contra dois pedidos simultâneos, mas o botão travado cobre o caso real).
+  - Remover horas agora diz na tela se o push chegou ou se o aviso depende do WhatsApp.
+- **Não verificado:** a tela corrigida não foi aberta nem clicada (sem login no navegador do Claude); validação por `tsc` e `next build`. Conferir a Vercel (`admin`, conta `contato-9866's projects`) e recarregar com Cmd+Shift+R antes de testar, para não pegar a versão antiga em cache.
+- **Lição:** formulário sem retorno visível parece quebrado e causa clique duplicado, e em operação financeira isso vira lançamento repetido. Foi o segundo defeito de um mesmo tipo nesta semana, depois da compra que só mostrava "non-2xx" (§80.1): erro e sucesso precisam aparecer para quem está operando.
 
 ## 13. Comandos úteis
 
