@@ -1035,6 +1035,19 @@ export async function ensurePartnerReferralCode(formData: FormData) {
   revalidatePath(`/equipe/${partnerId}`);
 }
 
+/** Resultado devolvido às telas: mensagem de sucesso ou o erro legível. */
+export type ActionResult = { ok: boolean; message: string };
+
+/** Executa a ação e devolve o resultado em vez de lançar: erro lançado numa
+ *  server action em produção vira uma mensagem genérica (ou nada na tela). */
+async function comFeedback(fn: () => Promise<string>): Promise<ActionResult> {
+  try {
+    return { ok: true, message: await fn() };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : 'Erro inesperado. Tente novamente.' };
+  }
+}
+
 /** Converte "299", "299,00" ou "1.299,50" em número. NaN se inválido. */
 function parseValorBR(raw: string): number {
   const s = raw.trim().replace(/\s/g, '');
@@ -1044,97 +1057,142 @@ function parseValorBR(raw: string): number {
 
 const DATA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Janela em que um lançamento idêntico é tratado como clique duplicado. */
+const JANELA_DUPLICIDADE_MS = 2 * 60 * 1000;
+
 /** Registra recebimento em dinheiro e ativa o que foi pago (plano PRO ou
  *  pacote de horas), tudo numa transação via RPC `register_cash_receipt`.
  *  Campo `item`: "plano:<plan_id>:<mensal|semestral>" ou "pacote:<package_id>". */
-export async function registrarRecebimentoDinheiro(formData: FormData) {
-  const professionalId = formData.get('professional_id') as string;
-  const item           = formData.get('item')            as string;
-  const valor          = parseValorBR(formData.get('valor') as string);
-  const recebidoEm     = formData.get('recebido_em')     as string;
-  const meses          = parseInt((formData.get('meses') as string) || '1', 10);
-  const observacoes    = (formData.get('observacoes') as string | null)?.trim() || null;
+export async function registrarRecebimentoDinheiro(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const professionalId = formData.get('professional_id') as string;
+    const item           = formData.get('item')            as string;
+    const valor          = parseValorBR(formData.get('valor') as string);
+    const recebidoEm     = formData.get('recebido_em')     as string;
+    const meses          = parseInt((formData.get('meses') as string) || '1', 10);
+    const observacoes    = (formData.get('observacoes') as string | null)?.trim() || null;
 
-  if (!professionalId) throw new Error('Selecione o profissional.');
-  if (!item)           throw new Error('Selecione o que foi pago.');
-  if (!Number.isFinite(valor) || valor <= 0) throw new Error('Informe um valor maior que zero.');
-  if (!DATA_ISO.test(recebidoEm)) throw new Error('Data de recebimento inválida.');
+    if (!professionalId) throw new Error('Selecione o profissional.');
+    if (!item)           throw new Error('Selecione o que foi pago.');
+    if (!Number.isFinite(valor) || valor <= 0) throw new Error('Informe um valor maior que zero.');
+    if (!DATA_ISO.test(recebidoEm)) throw new Error('Data de recebimento inválida.');
 
-  const [kind, refId, ciclo] = item.split(':');
-  const isPlano = kind === 'plano';
-  if (!isPlano && kind !== 'pacote') throw new Error('Item inválido.');
+    const [kind, refId, ciclo] = item.split(':');
+    const isPlano = kind === 'plano';
+    if (!isPlano && kind !== 'pacote') throw new Error('Item inválido.');
+    const tipo = isPlano ? 'plano' : 'pacote_horas';
 
-  const { data: { user } } = await (await createSupabaseServer()).auth.getUser();
+    const { data: { user } } = await (await createSupabaseServer()).auth.getUser();
+    const supabase = await createSupabaseAdmin();
 
-  const supabase = await createSupabaseAdmin();
-  const { error } = await supabase.rpc('register_cash_receipt', {
-    p_professional_id: professionalId,
-    p_tipo:            isPlano ? 'plano' : 'pacote_horas',
-    p_valor:           valor,
-    p_recebido_em:     recebidoEm,
-    p_plan_id:         isPlano ? refId : null,
-    p_ciclo:           isPlano ? ciclo : null,
-    p_meses:           isPlano ? (Number.isFinite(meses) && meses >= 1 ? meses : 1) : null,
-    p_package_id:      isPlano ? null : refId,
-    p_observacoes:     observacoes,
-    p_created_by:      user?.id ?? null,
+    const { data: repetido } = await supabase
+      .from('cash_receipts')
+      .select('id')
+      .eq('professional_id', professionalId)
+      .eq('tipo', tipo)
+      .eq('valor', valor)
+      .is('estornado_em', null)
+      .gte('created_at', new Date(Date.now() - JANELA_DUPLICIDADE_MS).toISOString())
+      .limit(1);
+    if (repetido && repetido.length > 0) {
+      throw new Error('Já existe um recebimento idêntico registrado há menos de 2 minutos. Confira o histórico abaixo antes de repetir.');
+    }
+
+    const { error } = await supabase.rpc('register_cash_receipt', {
+      p_professional_id: professionalId,
+      p_tipo:            tipo,
+      p_valor:           valor,
+      p_recebido_em:     recebidoEm,
+      p_plan_id:         isPlano ? refId : null,
+      p_ciclo:           isPlano ? ciclo : null,
+      p_meses:           isPlano ? (Number.isFinite(meses) && meses >= 1 ? meses : 1) : null,
+      p_package_id:      isPlano ? null : refId,
+      p_observacoes:     observacoes,
+      p_created_by:      user?.id ?? null,
+    });
+    if (error) throw new Error(error.message);
+
+    revalidatePath('/recebimentos');
+    revalidatePath('/fluxo-de-caixa');
+    revalidatePath('/horas');
+    revalidatePath('/planos');
+    revalidatePath(`/medicos/${professionalId}`);
+
+    return isPlano
+      ? 'Recebimento registrado e plano ativado. Ele aparece no histórico abaixo.'
+      : 'Recebimento registrado e horas creditadas. Ele aparece no histórico abaixo.';
   });
-  if (error) throw new Error(error.message);
-
-  revalidatePath('/recebimentos');
-  revalidatePath('/fluxo-de-caixa');
-  revalidatePath('/horas');
-  revalidatePath('/planos');
-  revalidatePath(`/medicos/${professionalId}`);
 }
 
 /** Lança uma saída (conta a pagar) em financial_entries. "pago" grava pago_em
  *  na própria data; "pendente" fica como previsto até ser quitada. */
-export async function registrarSaida(formData: FormData) {
-  const descricao   = (formData.get('descricao') as string).trim();
-  const valor       = parseValorBR(formData.get('valor') as string);
-  const data        = formData.get('data')       as string;
-  const situacao    = formData.get('situacao')   as string;
-  const categoria   = (formData.get('categoria')   as string | null)?.trim() || null;
-  const supplierId  = (formData.get('supplier_id') as string | null) || null;
-  const observacoes = (formData.get('observacoes') as string | null)?.trim() || null;
+export async function registrarSaida(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const descricao   = ((formData.get('descricao') as string) ?? '').trim();
+    const valor       = parseValorBR(formData.get('valor') as string);
+    const data        = formData.get('data')       as string;
+    const situacao    = formData.get('situacao')   as string;
+    const categoria   = (formData.get('categoria')   as string | null)?.trim() || null;
+    const supplierId  = (formData.get('supplier_id') as string | null) || null;
+    const observacoes = (formData.get('observacoes') as string | null)?.trim() || null;
 
-  if (!descricao) throw new Error('Descrição obrigatória.');
-  if (!Number.isFinite(valor) || valor <= 0) throw new Error('Informe um valor maior que zero.');
-  if (!DATA_ISO.test(data)) throw new Error('Data inválida.');
-  if (situacao !== 'pago' && situacao !== 'pendente') throw new Error('Situação inválida.');
+    if (!descricao) throw new Error('Descrição obrigatória.');
+    if (!Number.isFinite(valor) || valor <= 0) throw new Error('Informe um valor maior que zero.');
+    if (!DATA_ISO.test(data)) throw new Error('Data inválida.');
+    if (situacao !== 'pago' && situacao !== 'pendente') throw new Error('Situação inválida.');
 
-  const supabase = await createSupabaseAdmin();
-  const { error } = await supabase.from('financial_entries').insert({
-    tipo:        'pagar',
-    descricao,
-    valor,
-    vencimento:  data,
-    pago_em:     situacao === 'pago' ? data : null,
-    status:      situacao,
-    supplier_id: supplierId,
-    categoria,
-    observacoes,
+    const supabase = await createSupabaseAdmin();
+
+    const { data: repetida } = await supabase
+      .from('financial_entries')
+      .select('id')
+      .eq('tipo', 'pagar')
+      .eq('descricao', descricao)
+      .eq('valor', valor)
+      .eq('vencimento', data)
+      .gte('created_at', new Date(Date.now() - JANELA_DUPLICIDADE_MS).toISOString())
+      .limit(1);
+    if (repetida && repetida.length > 0) {
+      throw new Error('Esta saída já foi lançada há menos de 2 minutos. Confira a lista antes de repetir.');
+    }
+
+    const { error } = await supabase.from('financial_entries').insert({
+      tipo:        'pagar',
+      descricao,
+      valor,
+      vencimento:  data,
+      pago_em:     situacao === 'pago' ? data : null,
+      status:      situacao,
+      supplier_id: supplierId,
+      categoria,
+      observacoes,
+    });
+    if (error) throw new Error(error.message);
+
+    revalidatePath('/fluxo-de-caixa');
+    return situacao === 'pago'
+      ? 'Saída lançada como paga e incluída no fluxo de caixa.'
+      : 'Saída lançada em contas a pagar.';
   });
-  if (error) throw new Error(error.message);
-
-  revalidatePath('/fluxo-de-caixa');
 }
 
 /** Marca uma saída pendente como paga hoje (data de São Paulo). */
-export async function quitarSaida(formData: FormData) {
-  const id = formData.get('id') as string;
-  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+export async function quitarSaida(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const id = formData.get('id') as string;
+    const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
 
-  const supabase = await createSupabaseAdmin();
-  const { error } = await supabase
-    .from('financial_entries')
-    .update({ status: 'pago', pago_em: hoje })
-    .eq('id', id)
-    .eq('tipo', 'pagar');
-  if (error) throw new Error(error.message);
+    const supabase = await createSupabaseAdmin();
+    const { error } = await supabase
+      .from('financial_entries')
+      .update({ status: 'pago', pago_em: hoje })
+      .eq('id', id)
+      .eq('tipo', 'pagar');
+    if (error) throw new Error(error.message);
 
-  revalidatePath('/fluxo-de-caixa');
+    revalidatePath('/fluxo-de-caixa');
+    return 'Conta marcada como paga.';
+  });
 }
 
 /** "2h 30min", "45min" ou "3h" — para textos enviados ao cliente. */
@@ -1150,100 +1208,126 @@ function formatarDuracao(minutos: number): string {
  *  acontecem numa transação via RPC `remove_hours`; o push vem depois e seu
  *  resultado fica gravado em `push_status`. Quem não recebe push (sem o app
  *  instalado) é avisado pelo WhatsApp, a partir da ficha do profissional. */
-export async function removerHoras(formData: FormData) {
-  const professionalId = formData.get('professional_id') as string;
-  const horas          = parseInt((formData.get('horas')   as string) || '0', 10);
-  const minutosExtra   = parseInt((formData.get('minutos') as string) || '0', 10);
-  const motivo         = ((formData.get('motivo') as string) ?? '').trim();
+export async function removerHoras(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const professionalId = formData.get('professional_id') as string;
+    const horas          = parseInt((formData.get('horas')   as string) || '0', 10);
+    const minutosExtra   = parseInt((formData.get('minutos') as string) || '0', 10);
+    const motivo         = ((formData.get('motivo') as string) ?? '').trim();
 
-  if (!professionalId) throw new Error('Profissional não informado.');
-  if (!Number.isFinite(horas) || horas < 0 || !Number.isFinite(minutosExtra) || minutosExtra < 0 || minutosExtra > 59) {
-    throw new Error('Quantidade inválida: use horas inteiras e minutos de 0 a 59.');
-  }
-  const minutos = horas * 60 + minutosExtra;
-  if (minutos <= 0) throw new Error('Informe ao menos 1 minuto para remover.');
-  if (motivo.length < 10) throw new Error('Informe o motivo (mínimo de 10 caracteres). Ele será enviado ao cliente.');
+    if (!professionalId) throw new Error('Profissional não informado.');
+    if (!Number.isFinite(horas) || horas < 0 || !Number.isFinite(minutosExtra) || minutosExtra < 0 || minutosExtra > 59) {
+      throw new Error('Quantidade inválida: use horas inteiras e minutos de 0 a 59.');
+    }
+    const minutos = horas * 60 + minutosExtra;
+    if (minutos <= 0) throw new Error('Informe ao menos 1 minuto para remover.');
+    if (motivo.length < 10) throw new Error('Informe o motivo (mínimo de 10 caracteres). Ele será enviado ao cliente.');
 
-  const supabase = await createSupabaseAdmin();
+    const supabase = await createSupabaseAdmin();
 
-  const { data: profile } = await supabase.from('profiles').select('nome').eq('id', professionalId).single();
-  if (!profile) throw new Error('Profissional não encontrado.');
+    const { data: profile } = await supabase.from('profiles').select('nome').eq('id', professionalId).single();
+    if (!profile) throw new Error('Profissional não encontrado.');
 
-  const primeiroNome = (profile.nome ?? '').trim().split(/\s+/)[0];
-  const duracao      = formatarDuracao(minutos);
-  const mensagem =
-    `Olá${primeiroNome ? `, ${primeiroNome}` : ''}. Ajustamos o seu saldo de horas no OLI Health Hub: ` +
-    `foram removidas ${duracao} do seu saldo. Motivo: ${motivo.replace(/[.\s]+$/, '')}. ` +
-    'Em caso de dúvida, responda esta mensagem ou fale com a recepção.';
+    const { data: repetido } = await supabase
+      .from('hour_adjustments')
+      .select('id')
+      .eq('professional_id', professionalId)
+      .eq('minutos_removidos', minutos)
+      .gte('created_at', new Date(Date.now() - JANELA_DUPLICIDADE_MS).toISOString())
+      .limit(1);
+    if (repetido && repetido.length > 0) {
+      throw new Error('Já existe uma remoção idêntica registrada há menos de 2 minutos. Confira o histórico de ajustes antes de repetir.');
+    }
 
-  const { data: { user } } = await (await createSupabaseServer()).auth.getUser();
+    const primeiroNome = (profile.nome ?? '').trim().split(/\s+/)[0];
+    const duracao      = formatarDuracao(minutos);
+    const mensagem =
+      `Olá${primeiroNome ? `, ${primeiroNome}` : ''}. Ajustamos o seu saldo de horas no OLI Health Hub: ` +
+      `foram removidas ${duracao} do seu saldo. Motivo: ${motivo.replace(/[.\s]+$/, '')}. ` +
+      'Em caso de dúvida, responda esta mensagem ou fale com a recepção.';
 
-  const { data: adjustmentId, error } = await supabase.rpc('remove_hours', {
-    p_professional_id: professionalId,
-    p_minutos:         minutos,
-    p_motivo:          motivo,
-    p_mensagem:        mensagem,
-    p_created_by:      user?.id ?? null,
-  });
-  if (error) throw new Error(error.message);
+    const { data: { user } } = await (await createSupabaseServer()).auth.getUser();
 
-  // A remoção já está feita e registrada; falha no push não a desfaz.
-  let pushStatus: 'enviado' | 'sem_dispositivo' | 'falhou' = 'falhou';
-  try {
-    const { data, error: pushError } = await supabase.functions.invoke('send-push', {
-      body: {
-        professionalId,
-        title: 'Ajuste no seu saldo de horas',
-        body:  `Removemos ${duracao} do seu saldo. Motivo: ${motivo}`.slice(0, 178),
-        data:  { type: 'ajuste_horas' },
-      },
+    const { data: adjustmentId, error } = await supabase.rpc('remove_hours', {
+      p_professional_id: professionalId,
+      p_minutos:         minutos,
+      p_motivo:          motivo,
+      p_mensagem:        mensagem,
+      p_created_by:      user?.id ?? null,
     });
-    if (!pushError) pushStatus = (data?.sent ?? 0) > 0 ? 'enviado' : 'sem_dispositivo';
-  } catch {
-    pushStatus = 'falhou';
-  }
-  await supabase.from('hour_adjustments').update({ push_status: pushStatus }).eq('id', adjustmentId as string);
+    if (error) throw new Error(error.message);
 
-  revalidatePath(`/medicos/${professionalId}`);
-  revalidatePath('/horas');
+    // A remoção já está feita e registrada; falha no push não a desfaz.
+    let pushStatus: 'enviado' | 'sem_dispositivo' | 'falhou' = 'falhou';
+    try {
+      const { data, error: pushError } = await supabase.functions.invoke('send-push', {
+        body: {
+          professionalId,
+          title: 'Ajuste no seu saldo de horas',
+          body:  `Removemos ${duracao} do seu saldo. Motivo: ${motivo}`.slice(0, 178),
+          data:  { type: 'ajuste_horas' },
+        },
+      });
+      if (!pushError) pushStatus = (data?.sent ?? 0) > 0 ? 'enviado' : 'sem_dispositivo';
+    } catch {
+      pushStatus = 'falhou';
+    }
+    await supabase.from('hour_adjustments').update({ push_status: pushStatus }).eq('id', adjustmentId as string);
+
+    revalidatePath(`/medicos/${professionalId}`);
+    revalidatePath('/horas');
+
+    const base = `${duracao} removidas do saldo.`;
+    if (pushStatus === 'enviado') return `${base} Aviso enviado por push.`;
+    if (pushStatus === 'sem_dispositivo') {
+      return `${base} O cliente não tem o app instalado, então o push não chegou: envie o aviso pelo WhatsApp (botão em "Ajustes de horas").`;
+    }
+    return `${base} O push falhou: envie o aviso pelo WhatsApp (botão em "Ajustes de horas").`;
+  });
 }
 
 /** Registra que o aviso de remoção de horas foi enviado por WhatsApp (envio manual). */
-export async function marcarAvisoWhatsapp(formData: FormData) {
-  const id             = formData.get('id') as string;
-  const professionalId = formData.get('professional_id') as string;
+export async function marcarAvisoWhatsapp(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const id             = formData.get('id') as string;
+    const professionalId = formData.get('professional_id') as string;
 
-  const supabase = await createSupabaseAdmin();
-  const { error } = await supabase
-    .from('hour_adjustments')
-    .update({ whatsapp_enviado_em: new Date().toISOString() })
-    .eq('id', id)
-    .is('whatsapp_enviado_em', null);
-  if (error) throw new Error(error.message);
+    const supabase = await createSupabaseAdmin();
+    const { error } = await supabase
+      .from('hour_adjustments')
+      .update({ whatsapp_enviado_em: new Date().toISOString() })
+      .eq('id', id)
+      .is('whatsapp_enviado_em', null);
+    if (error) throw new Error(error.message);
 
-  revalidatePath(`/medicos/${professionalId}`);
+    revalidatePath(`/medicos/${professionalId}`);
+    return 'Envio por WhatsApp registrado.';
+  });
 }
 
 /** Estorna um recebimento em dinheiro: desfaz a ativação (plano ou horas) e o
  *  tira do fluxo de caixa. A linha fica para auditoria. */
-export async function estornarRecebimento(formData: FormData) {
-  const id     = formData.get('id') as string;
-  const motivo = ((formData.get('motivo') as string) ?? '').trim();
-  if (motivo.length < 5) throw new Error('Informe o motivo do estorno (mínimo de 5 caracteres).');
+export async function estornarRecebimento(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const id     = formData.get('id') as string;
+    const motivo = ((formData.get('motivo') as string) ?? '').trim();
+    if (motivo.length < 5) throw new Error('Informe o motivo do estorno (mínimo de 5 caracteres).');
 
-  const { data: { user } } = await (await createSupabaseServer()).auth.getUser();
+    const { data: { user } } = await (await createSupabaseServer()).auth.getUser();
 
-  const supabase = await createSupabaseAdmin();
-  const { error } = await supabase.rpc('reverse_cash_receipt', {
-    p_receipt_id: id,
-    p_motivo:     motivo,
-    p_created_by: user?.id ?? null,
+    const supabase = await createSupabaseAdmin();
+    const { error } = await supabase.rpc('reverse_cash_receipt', {
+      p_receipt_id: id,
+      p_motivo:     motivo,
+      p_created_by: user?.id ?? null,
+    });
+    if (error) throw new Error(error.message);
+
+    revalidatePath('/recebimentos');
+    revalidatePath('/fluxo-de-caixa');
+    revalidatePath('/horas');
+    revalidatePath('/planos');
+    revalidatePath('/medicos', 'layout');
+    return 'Recebimento estornado.';
   });
-  if (error) throw new Error(error.message);
-
-  revalidatePath('/recebimentos');
-  revalidatePath('/fluxo-de-caixa');
-  revalidatePath('/horas');
-  revalidatePath('/planos');
-  revalidatePath('/medicos', 'layout');
 }

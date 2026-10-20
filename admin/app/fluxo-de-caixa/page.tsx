@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { registrarSaida, quitarSaida } from '@/app/actions';
+import ActionForm from '@/components/ActionForm';
 import { getPaymentsByReceiptDate, type AsaasPayment } from '@/lib/asaas';
 import KpiCard from '@/components/KpiCard';
 
@@ -206,7 +207,14 @@ export default async function FluxoDeCaixaPage() {
       {/* ── Nova saída ── */}
       <div className="bg-white rounded-2xl border border-oli-border p-6">
         <h2 className="text-sm font-bold text-oli-dark mb-4">Lançar saída</h2>
-        <form action={registrarSaida} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-4">
+        <ActionForm
+          action={registrarSaida}
+          formClassName="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-4"
+          footerClassName="md:col-span-2 xl:col-span-3"
+          buttonClassName="h-10 px-5 rounded-xl bg-oli-green text-white text-sm font-semibold hover:bg-oli-green/80 transition-colors"
+          submitLabel="Lançar saída"
+          pendingLabel="Lançando…"
+        >
           <div className="flex flex-col gap-1.5">
             <label htmlFor="descricao" className="block text-sm font-semibold text-oli-dark">Descrição *</label>
             <input id="descricao" name="descricao" required placeholder="Ex.: Aluguel da sala 3" className={INPUT} />
@@ -245,16 +253,7 @@ export default async function FluxoDeCaixaPage() {
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
             </select>
           </div>
-
-          <div className="md:col-span-2 xl:col-span-3">
-            <button
-              type="submit"
-              className="h-10 px-5 rounded-xl bg-oli-green text-white text-sm font-semibold hover:bg-oli-green/80 transition-colors"
-            >
-              Lançar saída
-            </button>
-          </div>
-        </form>
+        </ActionForm>
       </div>
 
       {/* ── Contas a pagar ── */}
@@ -283,15 +282,14 @@ export default async function FluxoDeCaixaPage() {
                       <td className="px-4 py-3 text-oli-gray">{r.categoria ?? '—'}</td>
                       <td className="px-4 py-3 font-semibold text-oli-dark whitespace-nowrap">{brl(Number(r.valor))}</td>
                       <td className="px-4 py-3">
-                        <form action={quitarSaida}>
+                        <ActionForm
+                          action={quitarSaida}
+                          buttonClassName="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors"
+                          submitLabel="Marcar como paga hoje"
+                          pendingLabel="Salvando…"
+                        >
                           <input type="hidden" name="id" value={r.id} />
-                          <button
-                            type="submit"
-                            className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors"
-                          >
-                            Marcar como paga hoje
-                          </button>
-                        </form>
+                        </ActionForm>
                       </td>
                     </tr>
                   );

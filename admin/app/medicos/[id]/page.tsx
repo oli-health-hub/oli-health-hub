@@ -8,6 +8,7 @@ import { AsaasAccountCard } from './AsaasAccountCard';
 import { ReservaBillingActions } from './ReservaBillingActions';
 import RemoverHorasForm from './RemoverHorasForm';
 import BotaoWhatsApp from '@/components/BotaoWhatsApp';
+import ActionForm from '@/components/ActionForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -655,13 +656,15 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
                       ) : (
                         <>
                           <BotaoWhatsApp numero={p.whatsapp ?? null} texto={a.mensagem} tamanho="pequeno" />
-                          <form action={marcarAvisoWhatsapp}>
+                          <ActionForm
+                            action={marcarAvisoWhatsapp}
+                            buttonClassName="font-semibold px-2 py-0.5 rounded-lg border border-oli-border text-oli-lgray hover:text-oli-dark transition-colors"
+                            submitLabel="Marcar WhatsApp como enviado"
+                            pendingLabel="Salvando…"
+                          >
                             <input type="hidden" name="id" value={a.id} />
                             <input type="hidden" name="professional_id" value={p.id} />
-                            <button type="submit" className="font-semibold px-2 py-0.5 rounded-lg border border-oli-border text-oli-lgray hover:text-oli-dark transition-colors">
-                              Marcar WhatsApp como enviado
-                            </button>
-                          </form>
+                          </ActionForm>
                         </>
                       )}
                     </div>

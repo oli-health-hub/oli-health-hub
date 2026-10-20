@@ -1,15 +1,15 @@
 'use client';
 
-import type { FormEvent } from 'react';
 import { removerHoras } from '@/app/actions';
+import ActionForm from '@/components/ActionForm';
 
 const INPUT = 'w-full text-sm border border-oli-border rounded-xl px-3 py-2 text-oli-dark focus:outline-none focus:ring-1 focus:ring-oli-red';
 
 /**
  * Remoção de horas com aviso ao cliente.
  *
- * Client component só para pedir confirmação antes de enviar: a ação diminui o
- * saldo do profissional e dispara um aviso, então não deve sair por clique acidental.
+ * A ação diminui o saldo do profissional e dispara um aviso, então pede confirmação
+ * antes de enviar e mostra o resultado (inclusive se o push chegou) na tela.
  */
 export default function RemoverHorasForm({
   professionalId,
@@ -20,19 +20,19 @@ export default function RemoverHorasForm({
   disponivelTexto: string;
   disponivelMin: number;
 }) {
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    const ok = window.confirm(
-      'Remover estas horas do saldo e enviar o aviso ao cliente? O motivo informado será enviado a ele.',
-    );
-    if (!ok) e.preventDefault();
-  };
-
   if (disponivelMin <= 0) {
     return <p className="text-sm text-oli-lgray">Sem saldo disponível para remover.</p>;
   }
 
   return (
-    <form action={removerHoras} onSubmit={handleSubmit} className="space-y-3">
+    <ActionForm
+      action={removerHoras}
+      formClassName="space-y-3"
+      buttonClassName="w-full text-sm font-semibold px-4 py-2 rounded-xl bg-oli-red text-white hover:bg-oli-red/80 transition-colors"
+      submitLabel="Remover horas e avisar o cliente"
+      pendingLabel="Removendo e avisando…"
+      confirmMessage="Remover estas horas do saldo e enviar o aviso ao cliente? O motivo informado será enviado a ele."
+    >
       <input type="hidden" name="professional_id" value={professionalId} />
 
       <p className="text-xs text-oli-lgray">
@@ -81,13 +81,6 @@ export default function RemoverHorasForm({
           Mínimo de 10 caracteres. Fica registrado no histórico de ajustes.
         </span>
       </div>
-
-      <button
-        type="submit"
-        className="w-full text-sm font-semibold px-4 py-2 rounded-xl bg-oli-red text-white hover:bg-oli-red/80 transition-colors"
-      >
-        Remover horas e avisar o cliente
-      </button>
-    </form>
+    </ActionForm>
   );
 }

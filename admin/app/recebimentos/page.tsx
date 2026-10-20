@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { registrarRecebimentoDinheiro } from '@/app/actions';
 import KpiCard from '@/components/KpiCard';
+import ActionForm from '@/components/ActionForm';
 import EstornarRecebimentoForm from './EstornarRecebimentoForm';
 
 export const dynamic = 'force-dynamic';
@@ -99,7 +100,14 @@ export default async function RecebimentosPage() {
       {/* ── Novo recebimento ── */}
       <div className="bg-white rounded-2xl border border-oli-border p-6">
         <h2 className="text-sm font-bold text-oli-dark mb-4">Novo recebimento</h2>
-        <form action={registrarRecebimentoDinheiro} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-4">
+        <ActionForm
+          action={registrarRecebimentoDinheiro}
+          formClassName="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-4"
+          footerClassName="md:col-span-2 xl:col-span-3"
+          buttonClassName="h-10 px-5 rounded-xl bg-oli-green text-white text-sm font-semibold hover:bg-oli-green/80 transition-colors"
+          submitLabel="Registrar recebimento e ativar"
+          pendingLabel="Registrando…"
+        >
           <div className="flex flex-col gap-1.5">
             <label htmlFor="professional_id" className="block text-sm font-semibold text-oli-dark">Profissional *</label>
             <select id="professional_id" name="professional_id" required defaultValue="" className={INPUT}>
@@ -154,16 +162,7 @@ export default async function RecebimentosPage() {
             <label htmlFor="observacoes" className="block text-sm font-semibold text-oli-dark">Observações</label>
             <input id="observacoes" name="observacoes" placeholder="Ex.: recebido na recepção, recibo nº 12" className={INPUT} />
           </div>
-
-          <div className="md:col-span-2 xl:col-span-3">
-            <button
-              type="submit"
-              className="h-10 px-5 rounded-xl bg-oli-green text-white text-sm font-semibold hover:bg-oli-green/80 transition-colors"
-            >
-              Registrar recebimento e ativar
-            </button>
-          </div>
-        </form>
+        </ActionForm>
       </div>
 
       {/* ── Histórico ── */}
