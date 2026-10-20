@@ -28,6 +28,8 @@ interface Props {
   asaas:          AsaasSummary | null;
   asaasError:     string | null;
   receitaMinMes:  number;
+  dinheiroMes:    number;
+  dinheiroMesAnterior: number;
   reservasMes:    number;
 }
 
@@ -48,11 +50,12 @@ const BILLING_LABEL: Record<string, string> = {
   UNDEFINED:       '—',
 };
 
-export function FinanceiroClient({ asaas, asaasError, receitaMinMes, reservasMes }: Props) {
+export function FinanceiroClient({ asaas, asaasError, receitaMinMes, dinheiroMes, dinheiroMesAnterior, reservasMes }: Props) {
   const [tab, setTab] = useState<Tab>('overview');
 
-  const totalRevenueMes = (asaas?.paymentsMonth ?? 0) + receitaMinMes;
-  const totalRevenueLastMes = asaas?.paymentsLastMonth ?? 0;
+  const recebidoMes = (asaas?.paymentsMonth ?? 0) + dinheiroMes;
+  const totalRevenueMes = recebidoMes + receitaMinMes;
+  const totalRevenueLastMes = (asaas?.paymentsLastMonth ?? 0) + dinheiroMesAnterior;
 
   return (
     <div className="p-7 space-y-6">
@@ -116,8 +119,8 @@ export function FinanceiroClient({ asaas, asaasError, receitaMinMes, reservasMes
               icon={<Receipt size={18} color="#f97316" />}
               iconBg="#FFF7ED"
               label="Recebido este mês"
-              value={asaas ? fmtBRL(asaas.paymentsMonth) : '—'}
-              sub={asaas ? `${asaas.paymentsMonthCount} pagamentos` : '—'}
+              value={fmtBRL(recebidoMes)}
+              sub={asaas ? `Asaas ${fmtBRL(asaas.paymentsMonth)} · dinheiro ${fmtBRL(dinheiroMes)}` : `só dinheiro (Asaas indisponível)`}
             />
             <KpiCard
               icon={<TrendingUp size={18} color="#a855f7" />}
@@ -133,6 +136,7 @@ export function FinanceiroClient({ asaas, asaasError, receitaMinMes, reservasMes
             <h2 className="text-sm font-bold text-oli-dark mb-4">Resumo financeiro do mês</h2>
             <div className="space-y-3">
               <RevenueRow label="Receita Asaas (assinaturas + módulos + horas)" value={asaas?.paymentsMonth ?? 0} />
+              <RevenueRow label="Recebido em dinheiro"                          value={dinheiroMes} />
               <RevenueRow label="Receita por minutagem"                          value={receitaMinMes} />
               <div className="pt-3 border-t border-oli-border">
                 <RevenueRow label="Receita TOTAL do mês" value={totalRevenueMes} bold />

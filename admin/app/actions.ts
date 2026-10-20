@@ -1098,7 +1098,7 @@ export async function registrarRecebimentoDinheiro(formData: FormData): Promise<
       throw new Error('Já existe um recebimento idêntico registrado há menos de 2 minutos. Confira o histórico abaixo antes de repetir.');
     }
 
-    const { error } = await supabase.rpc('register_cash_receipt', {
+    const { data: receiptId, error } = await supabase.rpc('register_cash_receipt', {
       p_professional_id: professionalId,
       p_tipo:            tipo,
       p_valor:           valor,
@@ -1118,9 +1118,20 @@ export async function registrarRecebimentoDinheiro(formData: FormData): Promise<
     revalidatePath('/planos');
     revalidatePath(`/medicos/${professionalId}`);
 
-    return isPlano
-      ? 'Recebimento registrado e plano ativado. Ele aparece no histórico abaixo.'
-      : 'Recebimento registrado e horas creditadas. Ele aparece no histórico abaixo.';
+    // Promoções aplicadas automaticamente pelo banco neste recebimento
+    const { data: resgates } = await supabase
+      .from('promotion_redemptions')
+      .select('minutos, promotions(nome)')
+      .eq('origem', 'dinheiro')
+      .eq('origem_ref', receiptId as string);
+    const promo = ((resgates ?? []) as unknown as { minutos: number; promotions: { nome: string } | null }[])
+      .map(r => `${r.promotions?.nome ?? 'Promoção'} (+${formatarDuracao(r.minutos)})`)
+      .join('; ');
+
+    const base = isPlano
+      ? 'Recebimento registrado e plano ativado.'
+      : 'Recebimento registrado e horas creditadas.';
+    return promo ? `${base} Promoção aplicada: ${promo}.` : `${base} Ele aparece no histórico abaixo.`;
   });
 }
 
@@ -1329,5 +1340,83 @@ export async function estornarRecebimento(formData: FormData): Promise<ActionRes
     revalidatePath('/planos');
     revalidatePath('/medicos', 'layout');
     return 'Recebimento estornado.';
+  });
+}
+
+/** Cria uma promoção: horas bônus concedidas quando o produto da condição é pago.
+ *  Aplicada automaticamente nos recebimentos em dinheiro (apply_promotions). */
+export async function criarPromocao(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const nome       = ((formData.get('nome') as string) ?? '').trim();
+    const descricao  = ((formData.get('descricao') as string) ?? '').trim() || null;
+    const aplicaA    = formData.get('aplica_a') as string;
+    const planId     = ((formData.get('plan_id') as string) ?? '') || null;
+    const ciclo      = ((formData.get('ciclo') as string) ?? '') || null;
+    const packageId  = ((formData.get('package_id') as string) ?? '') || null;
+    const horas      = parseValorBR((formData.get('horas_bonus') as string) ?? '');
+    const validade   = parseInt((formData.get('validade_dias') as string) || '365', 10);
+    const inicio     = ((formData.get('vigencia_inicio') as string) ?? '') || null;
+    const fim        = ((formData.get('vigencia_fim') as string) ?? '') || null;
+    const umaVez     = formData.get('uma_vez_por_profissional') === 'on';
+    const limiteRaw  = ((formData.get('limite_usos') as string) ?? '').trim();
+    const limite     = limiteRaw ? parseInt(limiteRaw, 10) : null;
+
+    if (nome.length < 3) throw new Error('Informe o nome da promoção (mínimo de 3 caracteres).');
+    if (aplicaA !== 'plano' && aplicaA !== 'pacote_horas') throw new Error('Escolha a que a promoção se aplica.');
+    if (aplicaA === 'plano' && !planId) throw new Error('Escolha o plano da promoção.');
+    if (!Number.isFinite(horas) || horas <= 0) throw new Error('Informe as horas de bônus (maior que zero).');
+    if (!Number.isFinite(validade) || validade < 1) throw new Error('Validade das horas inválida (mínimo de 1 dia).');
+    if (inicio && !DATA_ISO.test(inicio)) throw new Error('Data de início inválida.');
+    if (fim && !DATA_ISO.test(fim)) throw new Error('Data de fim inválida.');
+    if (inicio && fim && fim < inicio) throw new Error('A data de fim não pode ser anterior à de início.');
+    if (limite !== null && (!Number.isFinite(limite) || limite < 1)) throw new Error('Limite de usos inválido.');
+
+    const { data: { user } } = await (await createSupabaseServer()).auth.getUser();
+    const supabase = await createSupabaseAdmin();
+
+    const { data: repetida } = await supabase
+      .from('promotions')
+      .select('id')
+      .eq('nome', nome)
+      .gte('created_at', new Date(Date.now() - JANELA_DUPLICIDADE_MS).toISOString())
+      .limit(1);
+    if (repetida && repetida.length > 0) {
+      throw new Error('Esta promoção já foi criada há menos de 2 minutos. Confira a lista abaixo.');
+    }
+
+    const { error } = await supabase.from('promotions').insert({
+      nome,
+      descricao,
+      aplica_a:                 aplicaA,
+      plan_id:                  aplicaA === 'plano' ? planId : null,
+      ciclo:                    aplicaA === 'plano' ? ciclo : null,
+      package_id:               aplicaA === 'pacote_horas' ? packageId : null,
+      horas_bonus:              horas,
+      validade_dias:            validade,
+      vigencia_inicio:          inicio,
+      vigencia_fim:             fim,
+      uma_vez_por_profissional: umaVez,
+      limite_usos:              limite,
+      created_by:               user?.id ?? null,
+    });
+    if (error) throw new Error(error.message);
+
+    revalidatePath('/promocoes');
+    return 'Promoção criada e ativa. Vale para os próximos recebimentos em dinheiro.';
+  });
+}
+
+/** Pausa ou reativa uma promoção. Não afeta o que já foi concedido. */
+export async function alternarPromocao(formData: FormData): Promise<ActionResult> {
+  return comFeedback(async () => {
+    const id    = formData.get('id') as string;
+    const ativo = formData.get('ativo') === 'true';
+
+    const supabase = await createSupabaseAdmin();
+    const { error } = await supabase.from('promotions').update({ ativo }).eq('id', id);
+    if (error) throw new Error(error.message);
+
+    revalidatePath('/promocoes');
+    return ativo ? 'Promoção reativada.' : 'Promoção pausada.';
   });
 }

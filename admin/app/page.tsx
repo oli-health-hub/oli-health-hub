@@ -155,6 +155,13 @@ export default async function HomePage() {
   const lastMonthStart = new Date(monthStart); lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
   const lastMonthEnd   = new Date(monthStart); lastMonthEnd.setSeconds(-1);
 
+  // Meses (YYYY-MM) para somar o dinheiro recebido, que é uma coluna de data
+  const hojeSP      = new Date().toLocaleDateString('en-CA', { timeZone: SP });
+  const mesAtual    = hojeSP.slice(0, 7);
+  const [anoAtual, mesNum] = mesAtual.split('-').map(Number);
+  const anterior    = new Date(Date.UTC(anoAtual, mesNum - 2, 1));
+  const mesAnterior = `${anterior.getUTCFullYear()}-${String(anterior.getUTCMonth() + 1).padStart(2, '0')}`;
+
   const [
     { count: totalMedicos },
     { count: novosHoje },
@@ -168,6 +175,7 @@ export default async function HomePage() {
     { data: receitaMes },
     { data: receitaLastMes },
     { data: todasReservasHoje },
+    { data: dinheiroRows },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).not('user_type', 'in', '(admin,founder,specialist,partner,team)'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
@@ -181,10 +189,19 @@ export default async function HomePage() {
     supabase.from('usage_charges').select('valor_total').gte('iniciado_em', monthStart.toISOString()),
     supabase.from('usage_charges').select('valor_total').gte('iniciado_em', lastMonthStart.toISOString()).lte('iniciado_em', lastMonthEnd.toISOString()),
     supabase.from('reservations').select('id, room_name, status, start_time, end_time, profiles(nome)').gte('start_time', todayStart.toISOString()).lte('start_time', todayEnd.toISOString()).order('start_time', { ascending: true }).limit(20),
+    // Recebimentos em dinheiro (sem estornados): mês atual e anterior
+    supabase.from('cash_receipts').select('valor, recebido_em').is('estornado_em', null).gte('recebido_em', `${mesAnterior}-01`),
   ]);
+
+  const dinheiroMes         = (dinheiroRows ?? []).filter(r => (r.recebido_em as string).startsWith(mesAtual)).reduce((s, r) => s + Number(r.valor), 0);
+  const dinheiroMesAnterior = (dinheiroRows ?? []).filter(r => (r.recebido_em as string).startsWith(mesAnterior)).reduce((s, r) => s + Number(r.valor), 0);
 
   // ── Dados reais do Asaas (saldo + MRR real + recebido mês) ──────────────────
   const asaasSummary = await fetchAsaasSummary();
+
+  // Entradas do mês: tudo o que entrou (Asaas + dinheiro), com a divisão por origem
+  const recebidoMes         = (asaasSummary?.paymentsMonth ?? 0) + dinheiroMes;
+  const recebidoMesAnterior = (asaasSummary?.paymentsLastMonth ?? 0) + dinheiroMesAnterior;
 
   // ── MRR estimado (DB subscriptions) — fallback caso Asaas falhe ──────────
   const { data: activeSubs } = await supabase
@@ -291,11 +308,16 @@ export default async function HomePage() {
             <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Recebido no mês</p>
           </div>
           <p className="text-2xl font-extrabold text-oli-dark leading-none">
-            {asaasSummary ? fmtBRL(asaasSummary.paymentsMonth) : '—'}
+            {fmtBRL(recebidoMes)}
           </p>
-          {asaasSummary && asaasSummary.paymentsLastMonth > 0 && (
-            <p className={`text-[11px] font-semibold mt-1 ${getDeltaColor(pct(asaasSummary.paymentsMonth, asaasSummary.paymentsLastMonth))}`}>
-              {fmtDelta(pct(asaasSummary.paymentsMonth, asaasSummary.paymentsLastMonth))} vs mês passado
+          <p className="text-[11px] text-oli-lgray mt-1">
+            {asaasSummary
+              ? `Asaas ${fmtBRL(asaasSummary.paymentsMonth)} · dinheiro ${fmtBRL(dinheiroMes)}`
+              : `só dinheiro (Asaas indisponível)`}
+          </p>
+          {asaasSummary && recebidoMesAnterior > 0 && (
+            <p className={`text-[11px] font-semibold mt-1 ${getDeltaColor(pct(recebidoMes, recebidoMesAnterior))}`}>
+              {fmtDelta(pct(recebidoMes, recebidoMesAnterior))} vs mês passado
             </p>
           )}
         </div>

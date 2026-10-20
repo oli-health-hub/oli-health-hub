@@ -53,8 +53,15 @@ export default async function FinanceiroPage() {
   const nowSP = new Date(new Date().toLocaleString('en-US', { timeZone: SP }));
   const monthStart = new Date(nowSP); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
 
+  // Meses (YYYY-MM) para somar o dinheiro recebido, que é uma coluna de data
+  const hojeSP      = new Date().toLocaleDateString('en-CA', { timeZone: SP });
+  const mesAtual    = hojeSP.slice(0, 7);
+  const [anoAtual, mesNum] = mesAtual.split('-').map(Number);
+  const anterior    = new Date(Date.UTC(anoAtual, mesNum - 2, 1));
+  const mesAnterior = `${anterior.getUTCFullYear()}-${String(anterior.getUTCMonth() + 1).padStart(2, '0')}`;
+
   // Dados locais + Asaas em paralelo
-  const [asaasRes, receitaMesRes, reservasMesRes] = await Promise.all([
+  const [asaasRes, receitaMesRes, reservasMesRes, dinheiroRes] = await Promise.all([
     fetchAsaasSummary(),
     supabase.from('usage_charges').select('valor_total').gte('iniciado_em', monthStart.toISOString()),
     supabase
@@ -62,16 +69,22 @@ export default async function FinanceiroPage() {
       .select('id', { count: 'exact', head: true })
       .gte('start_time', monthStart.toISOString())
       .not('status', 'in', '("cancelled","cancelado","no_show","nao_compareceu")'),
+    // Recebimentos em dinheiro (sem estornados): mês atual e anterior
+    supabase.from('cash_receipts').select('valor, recebido_em').is('estornado_em', null).gte('recebido_em', `${mesAnterior}-01`),
   ]);
 
   const receitaMinMes = (receitaMesRes.data ?? []).reduce((s, r) => s + Number(r.valor_total ?? 0), 0);
   const reservasMes   = reservasMesRes.count ?? 0;
+  const dinheiroMes         = (dinheiroRes.data ?? []).filter(r => (r.recebido_em as string).startsWith(mesAtual)).reduce((s, r) => s + Number(r.valor), 0);
+  const dinheiroMesAnterior = (dinheiroRes.data ?? []).filter(r => (r.recebido_em as string).startsWith(mesAnterior)).reduce((s, r) => s + Number(r.valor), 0);
 
   return (
     <FinanceiroClient
       asaas={asaasRes.data}
       asaasError={asaasRes.error}
       receitaMinMes={receitaMinMes}
+      dinheiroMes={dinheiroMes}
+      dinheiroMesAnterior={dinheiroMesAnterior}
       reservasMes={reservasMes}
     />
   );
