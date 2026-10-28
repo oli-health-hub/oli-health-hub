@@ -59,6 +59,9 @@ export interface AsaasPayment {
   netValue:           number;
   dueDate:            string;          // YYYY-MM-DD
   paymentDate:        string | null;   // YYYY-MM-DD quando pago
+  confirmedDate?:     string | null;   // YYYY-MM-DD da confirmação (cartão)
+  creditDate?:        string | null;   // YYYY-MM-DD em que o valor entrou no saldo
+  estimatedCreditDate?: string | null; // YYYY-MM-DD previsto para entrar no saldo
   status:             AsaasPaymentStatus;
   billingType:        string;          // PIX | BOLETO | CREDIT_CARD | etc.
   description:        string | null;
@@ -124,6 +127,44 @@ export async function getPaymentsByReceiptDate(params: {
     limit:  String(params.limit  ?? 100),
     offset: String(params.offset ?? 0),
   });
+}
+
+/** Saldo disponível na conta Asaas (já liquidado, pronto para saque). */
+export async function getBalance() {
+  return asaasFetch<{ balance: number }>('/finance/balance');
+}
+
+/**
+ * Todos os pagamentos que casam com os filtros, paginando até o fim.
+ * Os filtros usam a notação do Asaas: 'paymentDate[ge]', 'dueDate[le]', 'status' etc.
+ */
+export async function getAllPayments(filters: Record<string, string>, maxPages = 20): Promise<AsaasPayment[]> {
+  const out: AsaasPayment[] = [];
+  for (let page = 0; page < maxPages; page++) {
+    const res = await asaasFetch<AsaasList<AsaasPayment>>('/payments', {
+      ...filters,
+      limit:  '100',
+      offset: String(page * 100),
+    });
+    out.push(...res.data);
+    if (!res.hasMore) break;
+  }
+  return out;
+}
+
+/** Todas as assinaturas ativas, paginando até o fim. */
+export async function getAllActiveSubscriptions(maxPages = 10): Promise<AsaasSubscription[]> {
+  const out: AsaasSubscription[] = [];
+  for (let page = 0; page < maxPages; page++) {
+    const res = await asaasFetch<AsaasList<AsaasSubscription>>('/subscriptions', {
+      status: 'ACTIVE',
+      limit:  '100',
+      offset: String(page * 100),
+    });
+    out.push(...res.data);
+    if (!res.hasMore) break;
+  }
+  return out;
 }
 
 /** Assinaturas ativas. */
