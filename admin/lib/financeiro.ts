@@ -164,7 +164,7 @@ export async function carregarFinanceiro(mes: string): Promise<FinanceiroMes> {
     tentar('Cobranças pendentes', () => getAllPayments({ status: 'PENDING' }), [] as AsaasPayment[]),
     tentar('Cobranças vencidas', () => getAllPayments({ status: 'OVERDUE' }), [] as AsaasPayment[]),
     tentar('Assinaturas', () => getAllActiveSubscriptions(), []),
-    supabase.from('cash_receipts').select('valor, recebido_em').is('estornado_em', null).gte('recebido_em', inicioAnt).lte('recebido_em', fimMes),
+    supabase.from('cash_receipts').select('id, valor, recebido_em, tipo, profiles(nome), plans(name), hour_packages(nome)').is('estornado_em', null).gte('recebido_em', inicioAnt).lte('recebido_em', fimMes),
     supabase.from('usage_charges').select('valor_total').gte('iniciado_em', `${inicioMes}T00:00:00-03:00`).lte('iniciado_em', `${fimMes}T23:59:59-03:00`),
     supabase
       .from('reservations')
@@ -251,7 +251,6 @@ export async function carregarFinanceiro(mes: string): Promise<FinanceiroMes> {
     f.bruto += l.bruto; f.count += 1; porForma[l.forma] = f;
     o.bruto += l.bruto; o.count += 1; porOrigem[l.origem] = o;
   });
-  recebimentos.sort((a, b) => b.data.localeCompare(a.data));
 
   // ── Posição atual ─────────────────────────────────────────────────────────
   const aLiberar = confirmados.reduce(somar, vazio());
@@ -272,12 +271,30 @@ export async function carregarFinanceiro(mes: string): Promise<FinanceiroMes> {
   const mrr = pagas.reduce((s, sub) => s + Number(sub.value) * cycleToMonthlyFactor(sub.cycle), 0);
 
   // ── Dinheiro (fora do Asaas) ──────────────────────────────────────────────
-  const dinheiro = (dinheiroRes.data ?? []) as Array<{ valor: number; recebido_em: string }>;
+  const dinheiro = (dinheiroRes.data ?? []) as unknown as Array<{
+    id: string; valor: number; recebido_em: string; tipo: 'plano' | 'pacote_horas';
+    profiles: { nome: string } | null;
+  }>;
   const doMes = dinheiro.filter(r => r.recebido_em.startsWith(mes));
   const dinheiroMes = { total: doMes.reduce((s, r) => s + Number(r.valor), 0), count: doMes.length };
   const dinheiroMesAnterior = dinheiro
     .filter(r => r.recebido_em.startsWith(mesAnterior))
     .reduce((s, r) => s + Number(r.valor), 0);
+
+  // Dinheiro entra na mesma lista e nos mesmos agrupamentos, para a aba bater com o total
+  doMes.forEach(r => {
+    const origem: OrigemPagamento = r.tipo === 'plano' ? 'Plano' : 'Pacote de horas';
+    const valor = Number(r.valor);
+    recebimentos.push({
+      id: r.id, data: r.recebido_em, cliente: r.profiles?.nome ?? '—',
+      origem, forma: 'Dinheiro', status: 'CASH', bruto: valor, liquido: valor,
+    });
+    const f = porForma['Dinheiro'] ?? { chave: 'Dinheiro', bruto: 0, count: 0 };
+    const o = porOrigem[origem]    ?? { chave: origem,    bruto: 0, count: 0 };
+    f.bruto += valor; f.count += 1; porForma['Dinheiro'] = f;
+    o.bruto += valor; o.count += 1; porOrigem[origem]   = o;
+  });
+  recebimentos.sort((a, b) => b.data.localeCompare(a.data));
 
   const minutagem = (minutagemRes.data ?? []) as Array<{ valor_total: number | null }>;
 

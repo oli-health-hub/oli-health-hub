@@ -22,6 +22,7 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   RECEIVED:         { label: 'Recebido',             cls: 'bg-green-50 text-green-700'   },
   CONFIRMED:        { label: 'Confirmado (a liberar)', cls: 'bg-blue-50 text-blue-700'   },
   RECEIVED_IN_CASH: { label: 'Recebido em caixa',    cls: 'bg-teal-50 text-teal-700'     },
+  CASH:             { label: 'Dinheiro',             cls: 'bg-teal-50 text-teal-700'     },
   PENDING:          { label: 'Pendente',             cls: 'bg-yellow-50 text-yellow-700' },
   OVERDUE:          { label: 'Vencido',              cls: 'bg-red-50 text-red-700'       },
 };
@@ -242,9 +243,8 @@ export function FinanceiroClient({ data }: { data: FinanceiroMes }) {
             </div>
 
             <div className="bg-white rounded-2xl border border-oli-border p-5 space-y-5">
-              <Breakdown titulo="Recebido por origem" itens={data.porOrigem} total={data.asaasMes.bruto} />
-              <Breakdown titulo="Recebido por forma de pagamento" itens={data.porForma} total={data.asaasMes.bruto} />
-              <p className="text-[11px] text-oli-lgray">Apenas Asaas. Dinheiro registrado manualmente não entra neste detalhamento.</p>
+              <Breakdown titulo="Recebido por origem" itens={data.porOrigem} total={totalBruto} />
+              <Breakdown titulo="Recebido por forma de pagamento" itens={data.porForma} total={totalBruto} />
             </div>
           </div>
 
@@ -287,10 +287,10 @@ export function FinanceiroClient({ data }: { data: FinanceiroMes }) {
           vazio="Nenhum recebimento no mês"
           colunaData="Pago em"
           linhas={data.recebimentos}
-          rodape={`${data.recebimentos.length} pagamentos · bruto ${fmtBRL(data.asaasMes.bruto)} · líquido ${fmtBRL(data.asaasMes.liquido)}`}
+          rodape={`${data.recebimentos.length} pagamentos · bruto ${fmtBRL(totalBruto)} · líquido ${fmtBRL(totalLiquido)}`}
           nota={
             <>
-              Só Asaas. Dinheiro registrado fica em{' '}
+              Asaas e dinheiro. Para lançar ou estornar dinheiro, use{' '}
               <Link href="/recebimentos" className="font-semibold text-oli-green hover:underline">Recebimentos em dinheiro</Link>.
             </>
           }
