@@ -33,3 +33,6 @@ caveman
 
 # Google Play service account (NUNCA commitar)
 google-services.json
+
+# Resumos matinais pessoais (dados pessoais e de leads) — nunca commitar
+resumo-matinal-*.html
