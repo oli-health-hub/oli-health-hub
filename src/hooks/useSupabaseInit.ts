@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import { usePatientStore } from '../store/patientStore';
@@ -61,4 +62,23 @@ export function useSupabaseInit() {
         setPatients(patients);
       });
   }, [session?.user?.id, profile]);
+
+  // Ao voltar do background, recarrega as reservas: o setTimeout de início do timer não roda
+  // com o app em segundo plano e `todayReservations` fica velho (ex.: app aberto desde o dia anterior).
+  // Novo array em `todayReservations` reexecuta o auto-start do dashboard.
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') return;
+      fetchUpcomingReservations(userId)
+        .then(setUpcomingReservations)
+        .catch(() => {
+          // Mantém dados locais em caso de falha de rede
+        });
+    });
+
+    return () => sub.remove();
+  }, [session?.user?.id, setUpcomingReservations]);
 }
