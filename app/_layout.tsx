@@ -9,7 +9,9 @@ import { colors } from '../src/theme/designSystem';
 import { useAuthStore } from '../src/store/authStore';
 import { useAppLock } from '../src/hooks/useAppLock';
 import { useSessionTimeout } from '../src/hooks/useSessionTimeout';
+import { useUpdatePrompt } from '../src/hooks/useUpdatePrompt';
 import { AppLockScreen } from '../src/components/AppLockScreen';
+import { UpdateAvailableModal } from '../src/components/UpdateAvailableModal';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { checkMFARequired } from '../src/hooks/useMFA';
 import {
@@ -32,6 +34,7 @@ export default function RootLayout() {
   const segments = useSegments();
   const { isLocked, unlock } = useAppLock();
   const { resetTimer } = useSessionTimeout(); // logout automático após 30 min de inatividade
+  const { visible: updateReady, apply: applyUpdate, dismiss: dismissUpdate } = useUpdatePrompt();
 
   useEffect(() => { initialize(); }, []);
 
@@ -220,6 +223,13 @@ export default function RootLayout() {
       {isLocked && session && (segments[0] as string) !== 'nova-senha' && (
         <AppLockScreen onUnlock={unlock} />
       )}
+
+      {/* Aviso de atualização do app (OTA já baixado) — só com sessão ativa e desbloqueada */}
+      <UpdateAvailableModal
+        visible={updateReady && !!session && !isLocked}
+        onUpdate={applyUpdate}
+        onLater={dismissUpdate}
+      />
       </View>
     </ErrorBoundary>
   );
