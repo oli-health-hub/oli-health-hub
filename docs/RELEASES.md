@@ -22,6 +22,8 @@ O binário de 23/06 (builds 1 e 2) engole erros ao gravar a reserva (§76.8 do h
 ## OTAs recentes (runtime 1.0.0, Android e iOS)
 | Data | Canal | Update group | Mensagem | Commits |
 |---|---|---|---|---|
+| 17/11/2026 | production | `e5cfe0f3-c748-480c-8434-21fb1b0f2fac` | OTA 2026-11-17: aviso de nova versao dentro do app | `312f59a` |
+| 17/11/2026 | preview | `03e41cae-2238-46ba-aa72-43d2234f0f12` | idem | `312f59a` |
 | 17/11/2026 | production | `75613c27-1513-4245-b1bf-197c4118d62c` | OTA 2026-11-17: reservas ate 21h (ultimo inicio 20h30) | `5cc7a95` |
 | 17/11/2026 | preview | `f265011c-e352-4af7-8475-a4a0bb6a6caa` | idem | `5cc7a95` |
 | 09/11/2026 | production | `a33ffaa4-725c-4cbf-9297-a01b8916d488` | OTA 2026-11-09: timer inicia ao voltar do background (recarrega reservas) | `30aa520` |
@@ -33,7 +35,9 @@ O binário de 23/06 (builds 1 e 2) engole erros ao gravar a reserva (§76.8 do h
 Os updates antigos não gravaram o hash do commit; a coluna "Commits" deles é inferência pela mensagem e pela data.
 
 ## Em produção hoje
-- **App:** build 3 da loja (05/10) + OTA de 17/11 (production), que inclui o de 09/11 (timer) e as reservas até 21h (último início às 20h30).
+- **App:** build 3 da loja (05/10) + OTA de 17/11 (production), que inclui o de 09/11 (timer), as reservas até 21h (último início às 20h30) e o aviso "Nova versão disponível" dentro do app.
+- **Aviso de atualização:** `useUpdatePrompt` + `UpdateAvailableModal` (em `app/_layout.tsx`). Vale a partir do OTA de 17/11 (`312f59a`): quem ainda não o recebeu não tem o aviso. Nas próximas atualizações o app baixa a versão nova e oferece "Atualizar agora".
+- **Push de 17/11:** enviado uma vez aos 11 perfis com token, 12 aparelhos, todos aceitos pelo Expo ("Atualização do app disponível — Agora você pode reservar salas até as 21h. Abra o app duas vezes para receber a atualização."), via `call_send_push`. Quem não tem token (39 perfis ativos) não foi avisado por push.
 - **Não vale para:** aparelhos com os builds 1 ou 2.
 
 ## Como publicar
