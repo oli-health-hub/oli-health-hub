@@ -33,13 +33,13 @@ function nextWeekdays(count: number): Date[] {
 }
 
 /**
- * Gera todos os slots de 30 min das 08:00 às 18:30.
+ * Gera todos os slots de 30 min das 08:00 às 20:30.
  * Para hoje, começa a partir do próximo slot futuro.
  */
 function buildAllSlots(date: Date): Date[] {
   const slots: Date[] = [];
   const dayStart = new Date(date); dayStart.setHours(8, 0, 0, 0);
-  const dayEnd   = new Date(date); dayEnd.setHours(18, 30, 0, 0);
+  const dayEnd   = new Date(date); dayEnd.setHours(20, 30, 0, 0);
 
   const now     = new Date();
   const isToday = date.toDateString() === now.toDateString();

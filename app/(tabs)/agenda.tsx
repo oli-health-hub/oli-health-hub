@@ -448,10 +448,10 @@ export default function AgendaScreen() {
                       />
                     ))}
                   </View>
-                  {/* Eixo: 08h e 19h */}
+                  {/* Eixo: 08h e 21h */}
                   <View style={styles.miniAxisRow}>
                     <Text style={styles.miniAxisLabel}>8h</Text>
-                    <Text style={styles.miniAxisLabel}>19h</Text>
+                    <Text style={styles.miniAxisLabel}>21h</Text>
                   </View>
                 </View>
 

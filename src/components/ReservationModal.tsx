@@ -35,7 +35,7 @@ function buildStartSlots(date: Date, reservations: Reservation[], roomName: stri
 
   const slots: Date[] = [];
   const dayStart = new Date(date); dayStart.setHours(8, 0, 0, 0);
-  const dayEnd   = new Date(date); dayEnd.setHours(18, 30, 0, 0);
+  const dayEnd   = new Date(date); dayEnd.setHours(20, 30, 0, 0);
 
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
@@ -63,7 +63,7 @@ function buildStartSlots(date: Date, reservations: Reservation[], roomName: stri
 
 function buildEndSlots(startTime: Date, date: Date, reservations: Reservation[], roomName: string): Date[] {
   const endSlots: Date[] = [];
-  const dayEnd = new Date(date); dayEnd.setHours(19, 0, 0, 0);
+  const dayEnd = new Date(date); dayEnd.setHours(21, 0, 0, 0);
   let cursor = new Date(startTime.getTime() + SLOT_MINUTES * 60_000);
 
   while (cursor <= dayEnd) {

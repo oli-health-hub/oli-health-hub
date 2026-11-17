@@ -3,8 +3,8 @@ import type { Reservation } from '../models/types';
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 export const DAY_START_MIN = 8 * 60;    // 08:00 → 480 min
-export const DAY_END_MIN   = 19 * 60;   // 19:00 → 1140 min
-export const DAY_TOTAL_MIN = DAY_END_MIN - DAY_START_MIN; // 660 min
+export const DAY_END_MIN   = 21 * 60;   // 21:00 → 1260 min
+export const DAY_TOTAL_MIN = DAY_END_MIN - DAY_START_MIN; // 780 min
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ function minToHHMM(minutes: number): string {
 
 /**
  * Retorna os segmentos livre/ocupado para uma sala num dia específico.
- * Sempre começa em 08:00 e termina em 19:00.
+ * Sempre começa em 08:00 e termina em 21:00.
  */
 export function buildDaySegments(
   date:         Date,
@@ -137,4 +137,4 @@ export function buildFreeBlocks(segments: Segment[], date: Date): FreeBlock[] {
 
 // ─── Marcadores de hora para o eixo da timeline ───────────────────────────────
 
-export const HOUR_MARKS = [8, 10, 12, 14, 16, 18] as const;
+export const HOUR_MARKS = [8, 10, 12, 14, 16, 18, 20] as const;
