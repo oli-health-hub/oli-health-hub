@@ -22,6 +22,8 @@ O binário de 23/06 (builds 1 e 2) engole erros ao gravar a reserva (§76.8 do h
 ## OTAs recentes (runtime 1.0.0, Android e iOS)
 | Data | Canal | Update group | Mensagem | Commits |
 |---|---|---|---|---|
+| 17/11/2026 | production | `75613c27-1513-4245-b1bf-197c4118d62c` | OTA 2026-11-17: reservas ate 21h (ultimo inicio 20h30) | `5cc7a95` |
+| 17/11/2026 | preview | `f265011c-e352-4af7-8475-a4a0bb6a6caa` | idem | `5cc7a95` |
 | 09/11/2026 | production | `a33ffaa4-725c-4cbf-9297-a01b8916d488` | OTA 2026-11-09: timer inicia ao voltar do background (recarrega reservas) | `30aa520` |
 | 09/11/2026 | preview | `7e7ec415-e929-4e15-9579-35a588ad61cc` | idem | `30aa520` |
 | ~20/10/2026 | production | `38c05a59-640e-4d51-981c-6a316f34fc89` | CPF obrigatório e sem boleto no checkout; saldo de horas soma todos os pacotes | `f585b0e`, `995431a` (inferido pela mensagem) |
@@ -31,7 +33,7 @@ O binário de 23/06 (builds 1 e 2) engole erros ao gravar a reserva (§76.8 do h
 Os updates antigos não gravaram o hash do commit; a coluna "Commits" deles é inferência pela mensagem e pela data.
 
 ## Em produção hoje
-- **App:** build 3 da loja (05/10) + OTA de 09/11 (production).
+- **App:** build 3 da loja (05/10) + OTA de 17/11 (production), que inclui o de 09/11 (timer) e as reservas até 21h (último início às 20h30).
 - **Não vale para:** aparelhos com os builds 1 ou 2.
 
 ## Como publicar
