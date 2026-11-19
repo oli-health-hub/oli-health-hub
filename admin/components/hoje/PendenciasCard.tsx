@@ -4,16 +4,26 @@ import { fmtDiaHora, plural } from './format';
 
 const LINK = 'shrink-0 text-xs font-semibold text-oli-green underline-offset-2 hover:underline';
 
-function Resolver({ href, rotulo }: { href: string | null; rotulo: string }) {
+function Resolver({ href, rotulo, texto = 'Abrir ficha' }: { href: string | null; rotulo: string; texto?: string }) {
   if (!href) return null;
   return (
     <Link href={href} className={LINK} aria-label={rotulo}>
-      Resolver
+      {texto}
     </Link>
   );
 }
 
-function Grupo({ titulo, tom, children }: { titulo: string; tom: 'red' | 'gold' | 'green'; children: React.ReactNode }) {
+function Grupo({
+  titulo,
+  tom,
+  dica,
+  children,
+}: {
+  titulo: string;
+  tom: 'red' | 'gold' | 'green';
+  dica?: string;
+  children: React.ReactNode;
+}) {
   const barra = tom === 'red' ? 'bg-oli-red' : tom === 'gold' ? 'bg-oli-gold' : 'bg-oli-green';
   return (
     <section className="py-3 first:pt-0 last:pb-0">
@@ -21,6 +31,7 @@ function Grupo({ titulo, tom, children }: { titulo: string; tom: 'red' | 'gold' 
         <span className={`h-2 w-2 rounded-full ${barra}`} aria-hidden="true" />
         {titulo}
       </h3>
+      {dica && <p className="mb-1 text-xs text-oli-gray">{dica}</p>}
       {children}
     </section>
   );
@@ -94,6 +105,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
             <Grupo
               tom="red"
               titulo={`${checkoutsAbertos.total} ${plural(checkoutsAbertos.total, 'check-out aberto', 'check-outs abertos')}`}
+              dica="O encerramento é feito pelo profissional no app. Confirme o uso com ele."
             >
               <ListaReservas lista={checkoutsAbertos} verbo="deveria ter terminado em" />
             </Grupo>
@@ -103,6 +115,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
             <Grupo
               tom="red"
               titulo={`${vencidasSemCheckin.total} ${plural(vencidasSemCheckin.total, 'reserva vencida sem check-in', 'reservas vencidas sem check-in')}`}
+              dica="Confirme com o profissional se a reserva foi usada."
             >
               <ListaReservas lista={vencidasSemCheckin} verbo="terminou em" />
             </Grupo>
@@ -123,7 +136,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
                 <span className="text-oli-dark">
                   {leadsAguardando} {plural(leadsAguardando, 'lead novo ou sem resposta', 'leads novos ou sem resposta')}
                 </span>
-                <Resolver href="/comercial" rotulo="Abrir os leads" />
+                <Resolver href="/comercial" rotulo="Abrir os leads" texto="Abrir leads" />
               </div>
             </Grupo>
           )}
@@ -135,7 +148,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
                   {conversasAguardando}{' '}
                   {plural(conversasAguardando, 'conversa aguardando nossa resposta', 'conversas aguardando nossa resposta')}
                 </span>
-                <Resolver href="/comercial/conversas" rotulo="Abrir as conversas" />
+                <Resolver href="/comercial/conversas" rotulo="Abrir as conversas" texto="Abrir conversas" />
               </div>
             </Grupo>
           )}

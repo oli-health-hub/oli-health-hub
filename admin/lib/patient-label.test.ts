@@ -46,3 +46,17 @@ test('ação de auditoria: valor define set e nulo define clear', () => {
   assert.equal(patientLabelAuditAction('Maria S.'), 'set_patient_label');
   assert.equal(patientLabelAuditAction(null), 'clear_patient_label');
 });
+
+test('rejeita documento com separadores incomuns (vírgula, underline, barra)', () => {
+  assert.deepEqual(sanitizePatientLabel('Maria 123,456,789,00'), { ok: false, message: MSG_DOCUMENTO });
+  assert.deepEqual(sanitizePatientLabel('Ana 123_456_789'), { ok: false, message: MSG_DOCUMENTO });
+  assert.deepEqual(sanitizePatientLabel('Ana 12/34/56/78'), { ok: false, message: MSG_DOCUMENTO });
+});
+
+test('dígitos espalhados que somam 8 ou mais também são recusados', () => {
+  assert.deepEqual(sanitizePatientLabel('Ana 123 Souza 45678'), { ok: false, message: MSG_DOCUMENTO });
+});
+
+test('até 7 dígitos no total continuam permitidos', () => {
+  assert.deepEqual(sanitizePatientLabel('João 1234567'), { ok: true, value: 'João 1234567' });
+});

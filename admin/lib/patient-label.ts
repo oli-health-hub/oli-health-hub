@@ -23,9 +23,8 @@ export function sanitizePatientLabel(input: string | null | undefined): PatientL
     return { ok: false, message: `Use no máximo ${PATIENT_LABEL_MAX} caracteres.` };
   }
 
-  // 8+ dígitos em sequência, ignorando pontuação e espaços entre eles, parece CPF ou telefone.
-  const semSeparadores = limpo.replace(/[.\-()\s]/g, '');
-  if (new RegExp(`\\d{${MIN_DIGITOS_DOCUMENTO},}`).test(semSeparadores)) {
+  // Nome + inicial nunca precisa de números: 8 ou mais dígitos no total (qualquer separador) parece CPF ou telefone.
+  if (limpo.replace(/\D/g, '').length >= MIN_DIGITOS_DOCUMENTO) {
     return { ok: false, message: 'Informe só o nome e a inicial do sobrenome, sem CPF ou telefone.' };
   }
 
