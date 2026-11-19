@@ -37,4 +37,5 @@ test('pares principais do spec', () => {
   assert.equal(mapa['/fluxo-de-caixa'], '/financeiro/fluxo');
   assert.equal(mapa['/catalogo'], '/configuracoes');
   assert.equal(mapa['/meu-recebimento'], '/configuracoes/meu-recebimento');
+  assert.equal(mapa['/fila'], '/');
 });

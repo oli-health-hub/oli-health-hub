@@ -12,6 +12,7 @@ import {
   assinaturaVencendo,
   limitarComTotal,
   startNoDia,
+  contarPendencias,
 } from './hoje.ts';
 
 const AGORA = new Date('2026-11-19T15:00:00.000Z');
@@ -108,4 +109,10 @@ test('startNoDia: reserva só é editável no dia de SP em que começa', () => {
   assert.equal(startNoDia('2026-11-19T02:30:00.000Z', agora), false); // 23:30 SP de ontem
   assert.equal(startNoDia('2026-11-20T03:00:00.000Z', agora), false); // 00:00 SP de amanhã
   assert.equal(startNoDia('2026-11-19T03:00:00.000Z', agora), true);  // 00:00 SP de hoje
+});
+
+test('contarPendencias: itens de reserva e assinatura contam um a um; leads e conversas contam como uma linha cada', () => {
+  assert.equal(contarPendencias({ checkouts: 2, vencidas: 3, assinaturas: 1, leads: 12, conversas: 4 }), 2 + 3 + 1 + 1 + 1);
+  assert.equal(contarPendencias({ checkouts: 0, vencidas: 0, assinaturas: 0, leads: 0, conversas: 0 }), 0);
+  assert.equal(contarPendencias({ checkouts: 0, vencidas: 0, assinaturas: 0, leads: 5, conversas: 0 }), 1);
 });

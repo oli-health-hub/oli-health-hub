@@ -1,11 +1,13 @@
 /**
  * Endereços antigos do Admin → endereços novos (reorganização de 19/11/2026).
  * Usado por `next.config.mjs` e pelo teste de redirects. Mantém links salvos funcionando.
- * `/` e `/financeiro` não aparecem: não mudaram de endereço. `/fila` entra na Task 9.
+ * `/` e `/financeiro` não aparecem como origem: não mudaram de endereço.
  *
  * @type {ReadonlyArray<{ source: string; destination: string }>}
  */
 export const LEGACY_REDIRECTS = [
+  // Hoje (a Fila virou a seção "Atividade recente")
+  { source: '/fila', destination: '/' },
   // Reservas
   { source: '/salas', destination: '/reservas' },
   { source: '/historico', destination: '/reservas/historico' },

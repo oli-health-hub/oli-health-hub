@@ -6,7 +6,7 @@ import { abrirWhatsApp } from '@/lib/whatsapp';
 
 type NotifType = 'new_signup' | 'reservation_created' | 'plan_subscribed' | 'plan_activated' | 'module_purchased' | 'module_activated' | 'hour_package_purchased' | 'hour_package_activated';
 
-interface QueueItem {
+export interface QueueItem {
   id:              string;
   type:            NotifType;
   title:           string;
@@ -86,7 +86,7 @@ export default function FilaClient({ initialItems }: { initialItems: QueueItem[]
     return (
       <div className="bg-white rounded-2xl border border-oli-border flex flex-col items-center justify-center py-16 text-oli-lgray text-sm gap-2">
         <span className="text-3xl">✅</span>
-        Fila vazia — nenhum item pendente!
+        Nenhuma atividade pendente.
       </div>
     );
   }

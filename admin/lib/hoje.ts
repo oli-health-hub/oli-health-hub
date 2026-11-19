@@ -65,3 +65,14 @@ export function startNoDia(startTime: string, now: Date): boolean {
   const { startISO, endISO } = spDayRange(now);
   return startTime >= startISO && startTime <= endISO;
 }
+
+/** Quantas pendências o cabeçalho anuncia: Comercial (leads, conversas) conta uma linha cada, o resto conta item a item. */
+export function contarPendencias(p: {
+  checkouts: number;
+  vencidas: number;
+  assinaturas: number;
+  leads: number;
+  conversas: number;
+}): number {
+  return p.checkouts + p.vencidas + p.assinaturas + (p.leads > 0 ? 1 : 0) + (p.conversas > 0 ? 1 : 0);
+}
