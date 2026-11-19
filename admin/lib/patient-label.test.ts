@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizePatientLabel } from './patient-label.ts';
+import { sanitizePatientLabel, patientLabelAuditAction } from './patient-label.ts';
 
 const MSG_DOCUMENTO = 'Informe só o nome e a inicial do sobrenome, sem CPF ou telefone.';
 
@@ -40,4 +40,9 @@ test('limite de 60 caracteres', () => {
 test('remove os caracteres < e > e os de controle', () => {
   assert.deepEqual(sanitizePatientLabel('<b>Ana</b> P.'), { ok: true, value: 'bAna/b P.' });
   assert.deepEqual(sanitizePatientLabel('Ana\u0000\u0007 P.'), { ok: true, value: 'Ana P.' });
+});
+
+test('ação de auditoria: valor define set e nulo define clear', () => {
+  assert.equal(patientLabelAuditAction('Maria S.'), 'set_patient_label');
+  assert.equal(patientLabelAuditAction(null), 'clear_patient_label');
 });

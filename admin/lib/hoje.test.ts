@@ -11,6 +11,7 @@ import {
   isVencidaSemCheckin,
   assinaturaVencendo,
   limitarComTotal,
+  startNoDia,
 } from './hoje.ts';
 
 const AGORA = new Date('2026-11-19T15:00:00.000Z');
@@ -99,4 +100,12 @@ test('limitarComTotal corta em 10 e informa o total real', () => {
 
 test('limitarComTotal com lista vazia', () => {
   assert.deepEqual(limitarComTotal([]), { itens: [], total: 0 });
+});
+
+test('startNoDia: reserva só é editável no dia de SP em que começa', () => {
+  const agora = new Date('2026-11-19T15:00:00.000Z'); // 12:00 em SP
+  assert.equal(startNoDia('2026-11-19T17:00:00.000Z', agora), true);  // 14:00 SP, hoje
+  assert.equal(startNoDia('2026-11-19T02:30:00.000Z', agora), false); // 23:30 SP de ontem
+  assert.equal(startNoDia('2026-11-20T03:00:00.000Z', agora), false); // 00:00 SP de amanhã
+  assert.equal(startNoDia('2026-11-19T03:00:00.000Z', agora), true);  // 00:00 SP de hoje
 });

@@ -31,3 +31,8 @@ export function sanitizePatientLabel(input: string | null | undefined): PatientL
 
   return { ok: true, value: limpo };
 }
+
+/** Ação gravada em audit_logs: `set` quando há texto, `clear` quando o rótulo é apagado. */
+export function patientLabelAuditAction(value: string | null): 'set_patient_label' | 'clear_patient_label' {
+  return value === null ? 'clear_patient_label' : 'set_patient_label';
+}

@@ -59,3 +59,9 @@ export function assinaturaVencendo(
 export function limitarComTotal<T>(itens: T[], limite: number = LIMITE_LINHAS): { itens: T[]; total: number } {
   return { itens: itens.slice(0, limite), total: itens.length };
 }
+
+/** A reserva começa dentro do dia de São Paulo de `now`? (regra de quais reservas aceitam rótulo de paciente) */
+export function startNoDia(startTime: string, now: Date): boolean {
+  const { startISO, endISO } = spDayRange(now);
+  return startTime >= startISO && startTime <= endISO;
+}
