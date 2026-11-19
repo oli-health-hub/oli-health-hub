@@ -3251,7 +3251,7 @@ O repositório é **público** (conferido com `gh`), e sua conta (`guipasquetti`
 - Coluna nova `reservations.patient_label` (texto, máx. 60), migration `supabase/migrations/20261119_reservations_patient_label.sql`. **Texto livre**, não `patient_id` (esse exige CPF e consentimento). Só nome e inicial do sobrenome; a validação (`lib/patient-label.ts`) recusa 8 ou mais dígitos.
 - Edição pela recepção na "Hoje" (`app/actions-hoje.ts`, só reservas de hoje, só admin). `audit_logs` recebe `set_patient_label`/`clear_patient_label` com **só ids e tamanho, nunca o texto**, e `view_patient_labels` no máximo uma vez por dia por admin.
 - Retenção de **7 dias** após `end_time`, job `pg_cron` `limpar_patient_label_reservas` (06:15 UTC).
-- **Migration pendente de aplicação em produção** (o modo Auto bloqueou o `apply_migration`). Enquanto não for aplicada, a "Hoje" funciona sem o campo de paciente.
+- **Migration aplicada em produção em 19/11/2026** (coluna `text` e job `limpar_patient_label_reservas` às `15 6 * * *` conferidos; o `CHECK` recusa 61 caracteres). Falta só a verificação pelo Admin: gravar e limpar um rótulo de teste na "Hoje" e conferir que `audit_logs` não guarda o texto.
 - O campo no app mobile (profissional informa ao reservar) **não foi feito**; a coluna e a RLS atual ("Reservas próprias") já permitem.
 
 ### 82.3 Não feito (próximas fases)
