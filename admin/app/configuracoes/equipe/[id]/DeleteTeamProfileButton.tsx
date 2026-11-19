@@ -16,7 +16,7 @@ export function DeleteTeamProfileButton({ userId, nome }: { userId: string; nome
           fd.append('user_id', userId);
           return fd;
         })());
-        window.location.href = '/equipe';
+        window.location.href = '/configuracoes/equipe';
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Erro ao apagar.');
       }

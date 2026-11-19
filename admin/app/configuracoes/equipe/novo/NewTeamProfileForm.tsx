@@ -38,7 +38,7 @@ export function NewTeamProfileForm() {
     startTransition(async () => {
       try {
         await createTeamProfile(fd);
-        router.push('/equipe');
+        router.push('/configuracoes/equipe');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao criar perfil.');
       }

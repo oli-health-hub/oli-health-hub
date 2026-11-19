@@ -182,7 +182,7 @@ export default async function ParceirosPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-400">{meusIndicados.length} indicação{meusIndicados.length === 1 ? '' : 'ões'}</p>
-                <a href={`/equipe/${partner.id}`} className="text-xs text-oli-green underline">Editar comissão →</a>
+                <a href={`/configuracoes/equipe/${partner.id}`} className="text-xs text-oli-green underline">Editar comissão →</a>
               </div>
             </div>
 

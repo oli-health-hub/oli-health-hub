@@ -289,7 +289,7 @@ export default async function ContasPage({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const tabBase = `/contas?year=${viewYear}&month=${viewMonth}`;
+  const tabBase = `/financeiro/contas?year=${viewYear}&month=${viewMonth}`;
 
   return (
     <div className="p-7 space-y-6">

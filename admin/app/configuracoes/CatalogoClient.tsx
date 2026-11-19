@@ -73,7 +73,7 @@ export function CatalogoClient({ plans, modules, hours }: Props) {
       {tab === 'planos' && (
         <div className="space-y-3">
           <p className="text-[12px] text-oli-lgray">
-            {plans.length} planos configurados. Edição completa em <Link href="/planos" className="text-oli-green font-semibold">/planos</Link>.
+            {plans.length} planos configurados. Edição completa em <Link href="/medicos/assinaturas" className="text-oli-green font-semibold">/planos</Link>.
           </p>
           <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
             <table className="w-full text-sm">
@@ -112,7 +112,7 @@ export function CatalogoClient({ plans, modules, hours }: Props) {
       {tab === 'modulos' && (
         <div className="space-y-3">
           <p className="text-[12px] text-oli-lgray">
-            {modules.length} módulos no catálogo. Edição completa em <Link href="/modulos" className="text-oli-green font-semibold">/modulos</Link>.
+            {modules.length} módulos no catálogo. Edição completa em <Link href="/medicos/modulos" className="text-oli-green font-semibold">/modulos</Link>.
           </p>
           <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
             <table className="w-full text-sm">
@@ -162,7 +162,7 @@ export function CatalogoClient({ plans, modules, hours }: Props) {
       {tab === 'horas' && (
         <div className="space-y-3">
           <p className="text-[12px] text-oli-lgray">
-            {hours.length} pacotes ofertados. Preço = taxa/min do plano do médico × 60 (não é fixo — varia pelo plano de quem compra). Vendas via app/admin/Asaas. Saldos por médico em <Link href="/horas" className="text-oli-green font-semibold">/horas</Link>.
+            {hours.length} pacotes ofertados. Preço = taxa/min do plano do médico × 60 (não é fixo — varia pelo plano de quem compra). Vendas via app/admin/Asaas. Saldos por médico em <Link href="/medicos/horas" className="text-oli-green font-semibold">/horas</Link>.
           </p>
           <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
             <div className="overflow-x-auto">

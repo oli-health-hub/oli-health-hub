@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default function NovoPerfilEquipePage() {
   return (
     <div className="p-7 max-w-2xl">
-      <Link href="/equipe" className="inline-flex items-center gap-1.5 text-sm text-oli-gray hover:text-oli-dark mb-4">
+      <Link href="/configuracoes/equipe" className="inline-flex items-center gap-1.5 text-sm text-oli-gray hover:text-oli-dark mb-4">
         <ArrowLeft size={14} /> Voltar pra Equipe
       </Link>
 

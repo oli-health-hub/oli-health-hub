@@ -180,7 +180,7 @@ export default async function PagamentosPage({
         Object.entries(overrides).map(([k, v]) => [k, String(v)])
       ),
     });
-    return `/pagamentos?${p.toString()}`;
+    return `/reservas/minutagem?${p.toString()}`;
   }
 
   const showUsage = tipo === 'all' || tipo === 'minutagem';
@@ -281,7 +281,7 @@ export default async function PagamentosPage({
             Filtrar
           </button>
           <a
-            href="/pagamentos"
+            href="/reservas/minutagem"
             className="text-sm font-semibold px-4 py-2 rounded-xl border border-oli-border text-oli-lgray hover:bg-stone-50 transition-colors"
           >
             Limpar

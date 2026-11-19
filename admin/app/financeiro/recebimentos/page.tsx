@@ -88,7 +88,7 @@ export default async function RecebimentosPage() {
         <h1 className="text-xl font-bold text-oli-dark">Recebimentos em dinheiro</h1>
         <p className="text-sm text-oli-lgray mt-0.5">
           Ao registrar, o plano PRO ou as horas são ativados na hora e o valor entra no{' '}
-          <Link href="/fluxo-de-caixa" className="text-oli-green font-semibold hover:underline">Fluxo de caixa</Link>.
+          <Link href="/financeiro/fluxo" className="text-oli-green font-semibold hover:underline">Fluxo de caixa</Link>.
         </p>
       </div>
 

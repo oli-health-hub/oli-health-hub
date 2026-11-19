@@ -223,7 +223,7 @@ export default async function UsuariosPage() {
                           </form>
                         ) : (
                           <a
-                            href={`/equipe/${p.id}`}
+                            href={`/configuracoes/equipe/${p.id}`}
                             className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                           >
                             Editar em Equipe →

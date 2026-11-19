@@ -630,7 +630,7 @@ export default async function HomePage() {
           <p className="text-white font-bold text-sm">Dica operacional</p>
           <p className="text-white/70 text-[12px] mt-0.5 leading-relaxed">
             Médicos com <strong className="text-white">saldo de horas zerado</strong> não conseguem iniciar sessões.
-            Verifique em <a href="/horas" className="text-white underline">Horas</a> quem está próximo do limite para agir proativamente.
+            Verifique em <a href="/medicos/horas" className="text-white underline">Horas</a> quem está próximo do limite para agir proativamente.
           </p>
         </div>
       </div>

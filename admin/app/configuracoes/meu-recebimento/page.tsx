@@ -108,7 +108,7 @@ export default async function MeuRecebimentoPage({
 
   function mesUrl(offset: number) {
     const d = new Date(ano, mesIdx + offset, 1);
-    return `/meu-recebimento?mes=${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return `/configuracoes/meu-recebimento?mes=${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
   return (
@@ -121,7 +121,7 @@ export default async function MeuRecebimentoPage({
         </div>
         <div className="flex items-center gap-2">
           <Link href={mesUrl(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg">‹</Link>
-          <Link href="/meu-recebimento" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">Mês atual</Link>
+          <Link href="/configuracoes/meu-recebimento" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">Mês atual</Link>
           <Link href={mesUrl(1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg">›</Link>
         </div>
       </div>

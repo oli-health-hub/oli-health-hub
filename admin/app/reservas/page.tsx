@@ -120,9 +120,9 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
       }).replace(/^\w/, c => c.toUpperCase());
 
   const navStepMs  = (viewMode === 'week' ? 7 : 1) * 86400000;
-  const prevHref    = `/salas?view=${viewMode}&date=${isoDay(new Date(new Date(`${selDate}T12:00:00`).getTime() - navStepMs))}`;
-  const nextHref    = `/salas?view=${viewMode}&date=${isoDay(new Date(new Date(`${selDate}T12:00:00`).getTime() + navStepMs))}`;
-  const resetHref   = `/salas?view=${viewMode}`;
+  const prevHref    = `/reservas?view=${viewMode}&date=${isoDay(new Date(new Date(`${selDate}T12:00:00`).getTime() - navStepMs))}`;
+  const nextHref    = `/reservas?view=${viewMode}&date=${isoDay(new Date(new Date(`${selDate}T12:00:00`).getTime() + navStepMs))}`;
+  const resetHref   = `/reservas?view=${viewMode}`;
   const isThisWeek  = viewMode === 'week' && weekDays.includes(isoDay(nowSP));
 
   return (
@@ -139,13 +139,13 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
           {/* Toggle Dia/Semana */}
           <div className="flex items-center bg-stone-100 rounded-xl p-1 text-xs font-bold">
             <Link
-              href={`/salas?date=${selDate}`}
+              href={`/reservas?date=${selDate}`}
               className={`px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'day' ? 'bg-white text-oli-dark shadow-sm' : 'text-oli-lgray hover:text-oli-dark'}`}
             >
               Dia
             </Link>
             <Link
-              href={`/salas?view=week&date=${selDate}`}
+              href={`/reservas?view=week&date=${selDate}`}
               className={`px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'week' ? 'bg-white text-oli-dark shadow-sm' : 'text-oli-lgray hover:text-oli-dark'}`}
             >
               Semana
@@ -225,7 +225,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                     return (
                       <th key={day} className="text-center px-2 py-2 min-w-[130px] border-l border-oli-border">
                         <Link
-                          href={`/salas?date=${day}`}
+                          href={`/reservas?date=${day}`}
                           className={`inline-flex flex-col items-center px-2 py-1 rounded-lg transition-colors hover:bg-stone-100 ${isCurrentDay ? 'bg-oli-green/10' : ''}`}
                         >
                           <span className="text-[10px] font-bold text-oli-lgray uppercase">
@@ -268,7 +268,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                                   return (
                                     <Link
                                       key={r.id}
-                                      href={`/salas?date=${day}`}
+                                      href={`/reservas?date=${day}`}
                                       title={`${profile?.nome ?? '?'} — ${STATUS_LABEL[r.status] ?? r.status}`}
                                       className={`block rounded-md border px-1.5 py-1 text-[10px] leading-tight truncate transition-opacity hover:opacity-80 ${
                                         inSess ? 'bg-green-100 border-green-300 text-green-900' :

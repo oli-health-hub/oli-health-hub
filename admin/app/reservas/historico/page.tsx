@@ -147,7 +147,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
       ...(status ? { status } : {}),
     };
     Object.entries(params).forEach(([k, v]) => { if (v) base[k] = String(v); else delete base[k]; });
-    return '/historico?' + new URLSearchParams(base).toString();
+    return '/reservas/historico?' + new URLSearchParams(base).toString();
   }
 
   return (
@@ -179,7 +179,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
       </div>
 
       {/* Filters */}
-      <form method="GET" action="/historico" className="bg-white rounded-2xl border border-oli-border p-4">
+      <form method="GET" action="/reservas/historico" className="bg-white rounded-2xl border border-oli-border p-4">
         <div className="flex flex-wrap gap-3 items-end">
           <div>
             <label className="block text-[10px] font-bold text-oli-lgray uppercase tracking-wider mb-1">De</label>
@@ -218,7 +218,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
             className="text-sm font-semibold px-4 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">
             Filtrar
           </button>
-          <Link href="/historico"
+          <Link href="/reservas/historico"
             className="text-sm font-semibold px-4 py-1.5 rounded-lg border border-oli-border text-oli-gray hover:bg-stone-50 transition-colors">
             Limpar
           </Link>

@@ -36,7 +36,7 @@ export default async function EquipePage() {
           </p>
         </div>
         <Link
-          href="/equipe/novo"
+          href="/configuracoes/equipe/novo"
           className="text-sm font-bold bg-oli-green text-white px-4 py-2 rounded-lg hover:bg-oli-green/90 transition-colors"
         >
           + Novo perfil
@@ -59,7 +59,7 @@ export default async function EquipePage() {
               {(equipe ?? []).map(m => (
                 <tr key={m.id} className="hover:bg-stone-50 transition-colors">
                   <td className="px-4 py-3">
-                    <Link href={`/equipe/${m.id}`} className="font-semibold text-oli-dark hover:text-oli-green transition-colors">
+                    <Link href={`/configuracoes/equipe/${m.id}`} className="font-semibold text-oli-dark hover:text-oli-green transition-colors">
                       {m.nome ?? '—'}
                     </Link>
                   </td>

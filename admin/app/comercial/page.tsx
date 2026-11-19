@@ -332,7 +332,7 @@ export default async function LeadsPage({
     if (rv !== 'todos') query.set('revisita', rv);
     if (b)              query.set('q', b);
     const qs = query.toString();
-    return qs ? `/leads?${qs}` : '/leads';
+    return qs ? `/comercial?${qs}` : '/comercial';
   };
 
   // Mais largo que o max-w-6xl das outras telas de propósito: esta tem 7 colunas.
@@ -347,7 +347,7 @@ export default async function LeadsPage({
           URL sozinho e a página server component faz o resto — mesmo padrão
           dos chips abaixo. Campos ocultos preservam os outros filtros
           ativos, senão buscar reseta a situação/atendente/origem escolhidos. */}
-      <form action="/leads" method="get" className="flex items-center gap-2">
+      <form action="/comercial" method="get" className="flex items-center gap-2">
         <input type="hidden" name="status" value={filtro} />
         <input type="hidden" name="atendente" value={filtroAtd} />
         <input type="hidden" name="origem" value={filtroOrig} />

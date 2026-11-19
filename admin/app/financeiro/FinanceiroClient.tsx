@@ -291,7 +291,7 @@ export function FinanceiroClient({ data }: { data: FinanceiroMes }) {
           nota={
             <>
               Asaas e dinheiro. Para lançar ou estornar dinheiro, use{' '}
-              <Link href="/recebimentos" className="font-semibold text-oli-green hover:underline">Recebimentos em dinheiro</Link>.
+              <Link href="/financeiro/recebimentos" className="font-semibold text-oli-green hover:underline">Recebimentos em dinheiro</Link>.
             </>
           }
         />
@@ -316,7 +316,7 @@ export function FinanceiroClient({ data }: { data: FinanceiroMes }) {
         <ExternalRedirect
           title="Faturas / Contas a Receber"
           description="Cobranças por vencimento: assinaturas, avulsos, despesas operacionais."
-          href="/contas"
+          href="/financeiro/contas"
         />
       )}
 
@@ -325,7 +325,7 @@ export function FinanceiroClient({ data }: { data: FinanceiroMes }) {
         <ExternalRedirect
           title="Fornecedores"
           description="Cadastro e gestão de fornecedores para contas a pagar."
-          href="/fornecedores"
+          href="/financeiro/fornecedores"
         />
       )}
     </div>

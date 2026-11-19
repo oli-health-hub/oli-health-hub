@@ -148,7 +148,7 @@ export default async function FluxoDeCaixaPage() {
         <h1 className="text-xl font-bold text-oli-dark">Fluxo de caixa</h1>
         <p className="text-sm text-oli-lgray mt-0.5">
           Entradas realizadas (Asaas liquidado + dinheiro registrado em{' '}
-          <Link href="/recebimentos" className="text-oli-green font-semibold hover:underline">Recebimentos</Link>
+          <Link href="/financeiro/recebimentos" className="text-oli-green font-semibold hover:underline">Recebimentos</Link>
           ) menos saídas pagas, nos últimos {MESES_EXIBIDOS} meses.
         </p>
       </div>
