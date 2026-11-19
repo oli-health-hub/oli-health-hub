@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Módulos (/modulos)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/modulos');
+    await page.goto('/medicos/modulos');
   });
 
   test('renders page title', async ({ page }) => {

@@ -8,7 +8,8 @@ export default defineConfig({
   workers: 1,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
-    baseURL: 'https://admin.olihealthhub.com.br',
+    // Aponte E2E_BASE_URL para o preview da Vercel para testar uma branch antes do merge.
+    baseURL: process.env.E2E_BASE_URL ?? 'https://admin.olihealthhub.com.br',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',

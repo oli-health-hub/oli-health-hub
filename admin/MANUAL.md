@@ -8,113 +8,54 @@
 
 ---
 
-## Navegação (sidebar)
+## Navegação (menu de 6 itens)
 
-| Item | Rota | Status |
-|------|------|--------|
-| Dashboard | `/` | ✅ Implementado |
-| Fila de Trabalho | `/fila` | ✅ Implementado |
-| Médicos | `/medicos` | ✅ Implementado |
-| Salas | `/salas` | ✅ Implementado |
-| Histórico | `/historico` | ✅ Implementado |
-| Horas | `/horas` | ✅ Implementado |
-| Planos | `/planos` | ✅ Implementado |
-| Módulos | `/modulos` | ✅ Implementado |
-| Pagamentos | `/pagamentos` | ✅ Implementado |
-| Usuários | `/usuarios` | ✅ Implementado |
+Reorganizado em 19/11/2026. Cada item do menu é um grupo; as telas do grupo são **abas** na barra abaixo do topo.
+Os endereços antigos continuam funcionando (redirecionam para o novo).
 
----
+| Item | Rota base | Abas |
+|------|-----------|------|
+| **Hoje** | `/` | — (pendências, reservas do dia com paciente, salas agora, atividade recente) |
+| **Reservas** | `/reservas` | Mapa das salas · Histórico (`/reservas/historico`) · Minutagem (`/reservas/minutagem`) |
+| **Profissionais** | `/medicos` | Profissionais · Horas · Assinaturas · Módulos contratados · Excluídas (todas em `/medicos/...`; a ficha `/medicos/[id]` não tem abas) |
+| **Comercial** | `/comercial` | Leads · Conversas · Cupons · Promoções |
+| **Financeiro** | `/financeiro` | Resumo · Recebimentos · Contas · Fluxo de caixa · Fornecedores |
+| **Configurações** | `/configuracoes` | Catálogo · Usuários · Equipe · Parceiros · Notificações · Comunidade · Totem QR · Meu Recebimento (só o fundador) |
 
-## 1. Dashboard (`/`)
+### Onde foi parar cada tela antiga
 
-Visão executiva do dia. Executa **12 queries em paralelo** (`Promise.all`) a cada request.
+| Antes | Agora |
+|-------|-------|
+| `/` Dashboard, `/fila` Fila | **Hoje** (`/`) |
+| `/salas` · `/historico` · `/pagamentos` | `/reservas` · `/reservas/historico` · `/reservas/minutagem` |
+| `/horas` · `/planos` · `/modulos` | `/medicos/horas` · `/medicos/assinaturas` · `/medicos/modulos` |
+| `/leads` · `/conversas` · `/cupons` · `/promocoes` | `/comercial` · `/comercial/conversas` · `/comercial/cupons` · `/comercial/promocoes` |
+| `/recebimentos` · `/contas` · `/fluxo-de-caixa` · `/fornecedores` | `/financeiro/recebimentos` · `/financeiro/contas` · `/financeiro/fluxo` · `/financeiro/fornecedores` |
+| `/catalogo` · `/usuarios` · `/equipe` · `/parceiros` · `/notificacoes` · `/comunidade` · `/totem` · `/meu-recebimento` | `/configuracoes` e `/configuracoes/<mesmo nome>` |
 
-### 1.1 Top Bar
-- Saudação dinâmica: **Bom dia** (0–11h) / **Boa tarde** (12–17h) / **Boa noite** (18–23h)
-- Data formatada em pt-BR: `"Terça-feira, 27 de maio"`
-- Hora atual no fuso SP
-- Badge pulsante **"Tempo real"** (indica que a página não é cacheada)
-
-### 1.2 KPIs (5 cartões)
-
-| Cartão | Fonte de dados | Delta |
-|--------|---------------|-------|
-| **Receita hoje** | `usage_charges.valor_total` do dia atual | vs. ontem (mesmo período) |
-| **Reservas hoje** | `reservations` do dia, excluindo `cancelled` e `no_show` | vs. ontem |
-| **Salas em uso** | `reservations` onde `start_time ≤ agora ≤ end_time` (ativas agora) | — |
-| **Médicos** | `profiles` com `user_type ≠ 'admin'` (total cadastrado) | novos hoje no subtítulo |
-| **Próxima reserva** | próxima `reservation` futura, mais cedo | tempo em min ou horas até início |
-
-Delta exibe `+X%` verde / `-X%` vermelho vs. período equivalente ontem.  
-Se não há dados ontem e hoje, delta é omitido.
-
-### 1.3 Gráficos (linha de 3 colunas)
-
-#### Reservas do dia — Status (barra horizontal)
-Decompõe as reservas de hoje por status:
-- **Em sessão** (verde) — `status = 'active'`
-- **Agendadas** (azul) — `status = 'scheduled'`
-- **Concluídas** (verde OLI) — `status = 'completed'`
-- **No-show** (laranja) — `status = 'no_show'`
-- **Canceladas** (vermelho) — `status = 'cancelled'`
-
-Cada barra mostra largura proporcional ao total de reservas do dia.
-
-#### Reservas por sala — Donut (hoje)
-- Gráfico CSS puro (`conic-gradient`), sem biblioteca JS
-- Centro exibe total de reservas
-- Legenda lateral com nome da sala e % do total
-- Máximo 7 salas na legenda
-- Paleta: verde OLI, dourado, variações da paleta OLI
-
-#### Salas mais utilizadas — Ranking
-- Lista ordenada por número de reservas hoje
-- Numeração (1º, 2º...) + cor da paleta + contagem
-
-### 1.4 Reservas do dia + Receita (linha de 3 colunas)
-
-#### Tabela de reservas (2/3 da largura)
-- Lista cronológica das reservas do dia (máx. 8 exibidas)
-- Colunas: horário início/fim · divisor · nome do médico + sala · badge de status
-- Estado vazio: ícone `CalendarX` + mensagem
-
-**Badges de status:**
-
-| Status | Label | Cor |
-|--------|-------|-----|
-| `active` | Em sessão | Verde |
-| `scheduled` | Agendada | Azul |
-| `completed` | Concluída | Cinza |
-| `cancelled` | Cancelada | Vermelho |
-| `no_show` | No-show | Laranja |
-
-#### Receita (1/3 da largura)
-- Receita hoje (valor em R$) + delta vs. ontem
-- Receita do mês atual + delta vs. mês passado
-- Estatísticas rápidas: reservas do mês · ticket médio · médicos ativos
-
-### 1.5 Resumo do mês (4 métricas)
-
-| Métrica | Cálculo |
-|---------|---------|
-| Receita total | Soma `usage_charges` desde dia 1 do mês |
-| Reservas | Contagem de reservas do mês (excluindo canceladas/no-show) |
-| Ticket médio | Receita total ÷ número de reservas |
-| Novos médicos | Profiles criados hoje (`created_at` = hoje) |
-
-### 1.6 Dica operacional
-Card verde fixo com alerta sobre médicos com saldo zerado de horas, com link para `/horas`.
+> Este manual descreve em detalhe as telas originais (seções 3 em diante). Comercial, Financeiro e Configurações ainda não têm descrição aqui (pendente).
 
 ---
 
-## 2. Fila de Trabalho (`/fila`)
+## 1. Hoje (`/`)
 
-Notificações não lidas da tabela `admin_notifications`.
+Tela da recepção. Server Component `force-dynamic`, fuso America/Sao_Paulo. Substitui o Dashboard e a Fila.
 
-- Exibe até 100 notificações pendentes (`read_at IS NULL`)
-- Cada item mostra: nome do médico, CRM, especialidade, plano, tipo de notificação
-- Componente client-side (`FilaClient`) para ações inline (marcar como lida etc.)
-- Badge vermelho com contagem de pendentes no header
+- **Cabeçalho:** data por extenso, "N reservas · M pendências" e atalho "Abrir Totem QR".
+- **Pendências** (só o que exige ação; cada linha leva a quem resolve). Tolerância de **30 min** após o fim da reserva:
+  - **Check-out aberto:** reserva `em_uso` que já devia ter terminado.
+  - **Reserva vencida sem check-in:** `agendado` que já passou, nos últimos 14 dias (até 10 linhas, com "e mais N").
+  - **Assinaturas PRO** ativas que terminam em até 7 dias (precisa faturar).
+  - **Comercial:** contagem de leads `novo`/`sem_resposta` e de conversas aguardando nossa resposta (últimos 7 dias), com link; sem listar linhas.
+- **Reservas do dia:** horário, sala, profissional, status e o campo **Paciente**.
+  - Texto livre: **só nome e inicial do sobrenome** (ex.: "Maria S."), até 60 caracteres, sem CPF ou telefone (a validação recusa 8 ou mais dígitos).
+  - Só reservas que começam **hoje** aceitam rótulo. Salvar vazio apaga.
+  - **LGPD:** apagado automaticamente 7 dias após o fim da reserva (job `pg_cron` `limpar_patient_label_reservas`). O texto nunca vai para `audit_logs`; a auditoria guarda só ids e tamanho (`set_patient_label`, `clear_patient_label`) e a visualização, uma vez por dia por admin (`view_patient_labels`).
+  - Se a coluna `reservations.patient_label` ainda não existir no banco, o campo some e o resto da tela funciona.
+- **Salas agora:** as 9 salas da tabela `rooms`, "Livre" ou "Em uso · profissional até HH:MM".
+- **Atividade recente:** as 10 notificações operacionais não lidas mais recentes (cadastro, reserva, plano, módulo, pacote de horas), com WhatsApp e Dispensar.
+
+Status de reserva: o banco usa `agendado`, `em_uso`, `concluido` (e `cancelado`). O helper `lib/reservation-status.ts` converte também os nomes antigos em inglês e é a fonte única de rótulo e cor.
 
 ---
 
@@ -131,7 +72,7 @@ Lista completa de profissionais cadastrados.
 
 ---
 
-## 4. Salas (`/salas`)
+## 4. Salas (`/reservas`)
 
 Timeline visual de ocupação das 7 salas para o dia atual.
 
@@ -144,7 +85,7 @@ Timeline visual de ocupação das 7 salas para o dia atual.
 
 ---
 
-## 5. Histórico (`/historico`)
+## 5. Histórico (`/reservas/historico`)
 
 Log completo de reservas com paginação.
 
@@ -157,7 +98,7 @@ Log completo de reservas com paginação.
 
 ---
 
-## 6. Horas (`/horas`)
+## 6. Horas (`/medicos/horas`)
 
 Gestão de saldo de pacotes de horas por profissional.
 
@@ -170,7 +111,7 @@ Gestão de saldo de pacotes de horas por profissional.
 
 ---
 
-## 7. Planos (`/planos`)
+## 7. Planos (`/medicos/assinaturas`)
 
 Assinaturas ativas e médicos sem plano.
 
@@ -182,7 +123,7 @@ Assinaturas ativas e médicos sem plano.
 
 ---
 
-## 8. Módulos (`/modulos`)
+## 8. Módulos (`/medicos/modulos`)
 
 Módulos adicionais contratados por médicos.
 
@@ -194,7 +135,7 @@ Módulos adicionais contratados por médicos.
 
 ---
 
-## 9. Pagamentos (`/pagamentos`)
+## 9. Minutagem por Sessão (`/reservas/minutagem`)
 
 Cobranças de minutagem (`usage_charges`).
 
@@ -205,7 +146,7 @@ Cobranças de minutagem (`usage_charges`).
 
 ---
 
-## 10. Usuários (`/usuarios`)
+## 10. Usuários (`/configuracoes/usuarios`)
 
 Gerenciamento de perfis e permissões.
 

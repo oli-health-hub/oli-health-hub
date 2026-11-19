@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Mapa das Salas (/salas)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/salas');
+    await page.goto('/reservas');
   });
 
   test('renders page title', async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('Mapa das Salas (/salas)', () => {
   test('"Hoje" button returns to today when on different date', async ({ page }) => {
     await page.goto('/salas?date=2026-05-20');
     await page.getByText('Hoje').click();
-    await expect(page).toHaveURL('/salas');
+    await expect(page).toHaveURL('/reservas');
   });
 
   test('date picker submits via form', async ({ page }) => {

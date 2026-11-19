@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Histórico (/historico)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/historico');
+    await page.goto('/reservas/historico');
   });
 
   test('renders page title', async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('Histórico (/historico)', () => {
   test('"Limpar" button resets filters', async ({ page }) => {
     await page.goto('/historico?start_date=2026-01-01&end_date=2026-01-31&room=Sala+1');
     await page.getByText('Limpar').click();
-    await expect(page).toHaveURL('/historico');
+    await expect(page).toHaveURL('/reservas/historico');
   });
 
   test('table shows reservation records', async ({ page }) => {
