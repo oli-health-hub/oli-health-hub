@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
+import { isFounder } from '@/lib/founder';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,6 @@ export const dynamic = 'force-dynamic';
  * Página pessoal do founder — visão de salário + comissão por ocupação.
  * Acesso restrito por e-mail (não aparece na sidebar pra outros admins).
  */
-const FOUNDER_EMAIL = 'guilherme.pasquetti@gmail.com';
 
 const SP = 'America/Sao_Paulo';
 const GRID_HOURS = 15; // mesma janela 07h-22h usada em /salas
@@ -48,7 +48,7 @@ export default async function MeuRecebimentoPage({
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (user?.email !== FOUNDER_EMAIL) {
+  if (!isFounder(user?.email)) {
     notFound();
   }
 
