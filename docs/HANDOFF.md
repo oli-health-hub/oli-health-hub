@@ -3237,7 +3237,7 @@ O repositório é **público** (conferido com `gh`), e sua conta (`guipasquetti`
 
 ## 82. Reorganização do Admin, Fase 1: menu de 6 itens e tela "Hoje" (19/11)
 
-**Por quê.** O Admin tinha 29 rotas e 21 itens de menu; a equipe (Cláudia, Igor) não entendia onde entra cada coisa. Design em `docs/superpowers/specs/2026-11-19-admin-reorganizacao-design.md`, plano em `docs/superpowers/plans/2026-11-19-admin-reorganizacao-fase-1.md`. Branch `feat/admin-reorganizacao` (**não mesclada na `main`**; preview da Vercel para revisão).
+**Por quê.** O Admin tinha 29 rotas e 21 itens de menu; a equipe (Cláudia, Igor) não entendia onde entra cada coisa. Design em `docs/superpowers/specs/2026-11-19-admin-reorganizacao-design.md`, plano em `docs/superpowers/plans/2026-11-19-admin-reorganizacao-fase-1.md`. Branch `feat/admin-reorganizacao`, **mesclada na `main` em 19/11/2026** (PR #11, merge commit `2e2f86d`).
 
 ### 82.1 O que mudou
 - **Menu de 6 itens:** Hoje, Reservas, Profissionais, Comercial, Financeiro, Configurações. As telas antigas viraram **abas** do grupo (componente `TabNav`, um `layout.tsx` por grupo). Tabela de rotas em `admin/MANUAL.md`.
@@ -3251,7 +3251,7 @@ O repositório é **público** (conferido com `gh`), e sua conta (`guipasquetti`
 - Coluna nova `reservations.patient_label` (texto, máx. 60), migration `supabase/migrations/20261119_reservations_patient_label.sql`. **Texto livre**, não `patient_id` (esse exige CPF e consentimento). Só nome e inicial do sobrenome; a validação (`lib/patient-label.ts`) recusa 8 ou mais dígitos.
 - Edição pela recepção na "Hoje" (`app/actions-hoje.ts`, só reservas de hoje, só admin). `audit_logs` recebe `set_patient_label`/`clear_patient_label` com **só ids e tamanho, nunca o texto**, e `view_patient_labels` no máximo uma vez por dia por admin.
 - Retenção de **7 dias** após `end_time`, job `pg_cron` `limpar_patient_label_reservas` (06:15 UTC).
-- **Migration aplicada em produção em 19/11/2026** (coluna `text` e job `limpar_patient_label_reservas` às `15 6 * * *` conferidos; o `CHECK` recusa 61 caracteres). Falta só a verificação pelo Admin: gravar e limpar um rótulo de teste na "Hoje" e conferir que `audit_logs` não guarda o texto.
+- **Migration aplicada em produção em 19/11/2026** (coluna `text` e job `limpar_patient_label_reservas` às `15 6 * * *` conferidos; o `CHECK` recusa 61 caracteres). **Verificado pelo Admin em 19/11:** gravar, reler e limpar um rótulo na "Hoje" gerou `set_patient_label` (`length` 10), `view_patient_labels` (`count` 1) e `clear_patient_label` (`length` 0) no `audit_logs`, sem o texto; a reserva voltou a `NULL`.
 - O campo no app mobile (profissional informa ao reservar) **não foi feito**; a coluna e a RLS atual ("Reservas próprias") já permitem.
 
 ### 82.3 Não feito (próximas fases)
@@ -3259,8 +3259,10 @@ Fase 2 Financeiro unificado (hoje as abas ainda repetem conteúdo e as abas inte
 
 ### 82.4 Verificação e riscos
 - `tsc`, `next build` e testes unitários (`npm run test:unit`, `node --test`, 43 casos) passam. Redirects conferidos com `curl` no `next start` (query e subcaminhos preservados).
-- **Não verificado em navegador:** o login admin não estava disponível na sessão. A "Hoje", as abas e o layout em celular dependem de revisão no preview. Atenção a páginas de altura total (Conversas) com a barra de abas acima.
-- Testes e2e (`admin/e2e`) atualizados para as rotas novas; rodam contra produção por padrão, ou contra o preview com `E2E_BASE_URL`.
+- **Verificado no preview em 19/11:** sem rolagem horizontal em 375px e 1280px nas 7 rotas principais. Conversas tinha defeito (barra de abas somada a `100vh-2rem` fazia o `main` rolar e cortar as abas); corrigido em `0f4c1e0` (layout de Comercial com abas fixas e `h-full` na página) e conferido no preview.
+- **Menores abertos (celular, Conversas):** o botão "Enviar" do campo de mensagem aparece cortado à direita e o botão flutuante do menu cobre o clipe de anexo (layout do campo, anterior à Fase 1); o título fica colado na barra de abas.
+- Testes e2e (`admin/e2e`) atualizados para as rotas novas; rodam contra produção por padrão, ou contra o preview com `E2E_BASE_URL`. **Credenciais por ambiente** (`E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`, em `admin/.env.e2e`, ignorado pelo git); preview protegido exige `VERCEL_AUTOMATION_BYPASS_SECRET` (Vercel, Deployment Protection). A conta antiga `test-playwright@…` não existe mais, mas a senha antiga continua no histórico público; a conta atual é `e2e-admin@…`, com `is_admin`.
+- **e2e no preview:** 94 passaram, 12 falharam; 4 eram da Fase 1 e foram corrigidos. **8 já estavam desatualizados antes da Fase 1 e seguem assim:** `04-salas` ("Sala Digital"), `06-medicos` ("Cesar de Oliveira"), `07-planos` (heading "Sem assinatura") e 5 de `11-usuarios` (o texto agora é "N com acesso ao painel").
 
 
 ## 13. Comandos úteis
