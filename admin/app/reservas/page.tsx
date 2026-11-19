@@ -1,6 +1,12 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
 import { ReservationBlock } from '@/components/ReservationBlock';
+import {
+  CANCELLED_STATUS_VALUES,
+  normalizeReservationStatus,
+  reservationStatusClass,
+  reservationStatusLabel,
+} from '@/lib/reservation-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,13 +22,8 @@ const PALETTE = [
   { free: 'bg-cyan-50',    occ: 'bg-cyan-200',    border: 'border-cyan-300',    dot: 'bg-cyan-500',    text: 'text-cyan-900'    },
 ];
 
-const STATUS_LABEL: Record<string, string> = {
-  agendado:  'Agendado',
-  confirmed: 'Confirmado',
-  completed: 'Concluído',
-  no_show:   'No-show',
-  cancelled: 'Cancelado',
-};
+const statusLabel = (raw: string | null) => reservationStatusLabel(normalizeReservationStatus(raw));
+const FILTRO_CANCELADAS = `(${CANCELLED_STATUS_VALUES.map(v => `"${v}"`).join(',')})`;
 
 const SP = 'America/Sao_Paulo';
 const GRID_START = 7;
@@ -87,7 +88,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
       .select('id, room_name, start_time, end_time, status, arrived_at, consultation_started_at, consultation_ended_at, professional_id, profiles(nome, plan)')
       .gte('start_time', utcStart)
       .lte('start_time', utcEnd)
-      .not('status', 'in', '("cancelled")')
+      .not('status', 'in', FILTRO_CANCELADAS)
       .order('start_time', { ascending: true }),
   ]);
 
@@ -264,12 +265,12 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                                 {dayRecs.map(r => {
                                   const profile = (r.profiles as unknown) as { nome: string; plan: string } | null;
                                   const inSess  = r.consultation_started_at && !r.consultation_ended_at;
-                                  const done    = r.status === 'completed' || !!r.consultation_ended_at;
+                                  const done    = normalizeReservationStatus(r.status) === 'concluido' || !!r.consultation_ended_at;
                                   return (
                                     <Link
                                       key={r.id}
                                       href={`/reservas?date=${day}`}
-                                      title={`${profile?.nome ?? '?'} — ${STATUS_LABEL[r.status] ?? r.status}`}
+                                      title={`${profile?.nome ?? '?'} — ${statusLabel(r.status)}`}
                                       className={`block rounded-md border px-1.5 py-1 text-[10px] leading-tight truncate transition-opacity hover:opacity-80 ${
                                         inSess ? 'bg-green-100 border-green-300 text-green-900' :
                                         done   ? 'bg-gray-100 border-gray-300 text-gray-500' :
@@ -371,7 +372,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                       );
 
                       const inSess = r.consultation_started_at && !r.consultation_ended_at;
-                      const done   = r.status === 'completed' || !!r.consultation_ended_at;
+                      const done   = normalizeReservationStatus(r.status) === 'concluido' || !!r.consultation_ended_at;
 
                       const profile = (r.profiles as unknown) as { nome: string; plan: string } | null;
 
@@ -386,7 +387,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                           startTime={r.start_time}
                           endTime={r.end_time}
                           status={r.status}
-                          statusLabel={STATUS_LABEL[r.status] ?? r.status}
+                          statusLabel={statusLabel(r.status)}
                           arrivedAt={r.arrived_at ?? null}
                           consultationStartedAt={r.consultation_started_at ?? null}
                           consultationEndedAt={r.consultation_ended_at ?? null}
@@ -408,7 +409,7 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                       <span className="text-[10px] font-bold text-red-600">● Em sessão</span>
                     ) : roomRecs.some(r => {
                       const sp = toSPDate(r.start_time);
-                      return sp > nowSP && r.status !== 'cancelled';
+                      return sp > nowSP && normalizeReservationStatus(r.status) !== 'cancelado';
                     }) ? (
                       <span className="text-[10px] font-semibold text-yellow-600">Próxima</span>
                     ) : (
@@ -476,12 +477,9 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          inSess            ? 'bg-green-100 text-green-700' :
-                          r.status === 'completed' ? 'bg-gray-100 text-gray-500' :
-                          r.status === 'no_show'   ? 'bg-red-50 text-red-600' :
-                          'bg-blue-50 text-blue-700'
+                          inSess ? 'bg-green-100 text-green-700' : reservationStatusClass(normalizeReservationStatus(r.status))
                         }`}>
-                          {inSess ? 'Em sessão' : STATUS_LABEL[r.status] ?? r.status}
+                          {inSess ? 'Em sessão' : statusLabel(r.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-oli-gray text-xs">

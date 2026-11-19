@@ -5,6 +5,7 @@ import {
   reservationStatusLabel,
   reservationStatusClass,
   CANCELLED_STATUS_VALUES,
+  RESERVATION_STATUS_FILTER_OPTIONS,
 } from './reservation-status.ts';
 
 test('normaliza os status reais do banco', () => {
@@ -49,4 +50,14 @@ test('lista de cancelados cobre as duas grafias', () => {
   assert.ok(CANCELLED_STATUS_VALUES.includes('cancelled'));
   assert.ok(CANCELLED_STATUS_VALUES.includes('no_show'));
   assert.ok(CANCELLED_STATUS_VALUES.includes('nao_compareceu'));
+});
+
+test('opções do filtro de status usam os valores reais do banco e rótulos formais', () => {
+  assert.deepEqual(RESERVATION_STATUS_FILTER_OPTIONS, [
+    { value: 'agendado', label: 'Agendada' },
+    { value: 'em_uso', label: 'Em sessão' },
+    { value: 'concluido', label: 'Concluída' },
+    { value: 'cancelado', label: 'Cancelada' },
+    { value: 'nao_compareceu', label: 'Não compareceu' },
+  ]);
 });

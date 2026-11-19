@@ -1,25 +1,17 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
+import {
+  RESERVATION_STATUS_FILTER_OPTIONS,
+  normalizeReservationStatus,
+  reservationStatusClass,
+  reservationStatusLabel,
+} from '@/lib/reservation-status';
 
 export const dynamic = 'force-dynamic';
 
 const PER_PAGE = 50;
 const SP = 'America/Sao_Paulo';
 
-const STATUS_LABEL: Record<string, string> = {
-  agendado:  'Agendado',
-  confirmed: 'Confirmado',
-  completed: 'Concluído',
-  no_show:   'No-show',
-  cancelled: 'Cancelado',
-};
-const STATUS_COLOR: Record<string, string> = {
-  agendado:  'bg-blue-50 text-blue-700',
-  confirmed: 'bg-green-50 text-oli-green',
-  completed: 'bg-gray-100 text-gray-500',
-  no_show:   'bg-red-50 text-oli-red',
-  cancelled: 'bg-red-50 text-oli-red',
-};
 const PLAN_COLOR: Record<string, string> = {
   START: 'bg-blue-50 text-blue-600',
   BASE:  'bg-gray-100 text-gray-600',
@@ -123,8 +115,8 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
     .lte('start_time', utcEnd.toISOString());
 
   const totalReservations = statsData?.length ?? 0;
-  const completedCount    = (statsData ?? []).filter(r => r.status === 'completed').length;
-  const noShowCount       = (statsData ?? []).filter(r => r.status === 'no_show').length;
+  const completedCount    = (statsData ?? []).filter(r => normalizeReservationStatus(r.status) === 'concluido').length;
+  const noShowCount       = (statsData ?? []).filter(r => normalizeReservationStatus(r.status) === 'nao_compareceu').length;
   const totalScheduledMin = (statsData ?? []).reduce((s, r) => {
     return s + (new Date(r.end_time).getTime() - new Date(r.start_time).getTime()) / 60000;
   }, 0);
@@ -206,7 +198,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
             <select name="status" defaultValue={status}
               className="text-sm border border-oli-border rounded-lg px-3 py-1.5 text-oli-dark bg-white focus:outline-none focus:ring-1 focus:ring-oli-green">
               <option value="">Todos</option>
-              {Object.entries(STATUS_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              {RESERVATION_STATUS_FILTER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-36">
@@ -282,8 +274,8 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
                     <td className="px-4 py-3 text-oli-gray">{r.room_name}</td>
                     <td className="px-4 py-3 text-oli-gray">{fmtDur(durMin)}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[r.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                        {STATUS_LABEL[r.status] ?? r.status}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${reservationStatusClass(normalizeReservationStatus(r.status))}`}>
+                        {reservationStatusLabel(normalizeReservationStatus(r.status))}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-oli-gray whitespace-nowrap">

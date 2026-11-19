@@ -67,3 +67,12 @@ export const CANCELLED_STATUS_VALUES: readonly string[] = [
   'no_show',
   'nao_compareceu',
 ];
+
+/** Opções do filtro de status (valores reais do banco). */
+export const RESERVATION_STATUS_FILTER_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'agendado', label: ROTULO.agendado },
+  { value: 'em_uso', label: ROTULO.em_uso },
+  { value: 'concluido', label: ROTULO.concluido },
+  { value: 'cancelado', label: ROTULO.cancelado },
+  { value: 'nao_compareceu', label: ROTULO.nao_compareceu },
+];
