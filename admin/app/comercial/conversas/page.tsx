@@ -24,7 +24,7 @@ export default async function ConversasPage({
     .limit(200);
 
   return (
-    <div className="p-7 h-[calc(100vh-2rem)]">
+    <div className="p-7 h-full">
       <h1 className="text-2xl font-bold text-oli-dark mb-1">Conversas</h1>
       <p className="text-sm text-oli-lgray mb-5">
         WhatsApp — número único da OLI. Leads (recrutamento) respondidos por IA dentro do escopo; pacientes sempre atendidos pela recepção.
