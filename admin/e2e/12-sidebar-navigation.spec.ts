@@ -57,7 +57,8 @@ test.describe('Redirects dos endereços antigos', () => {
     const origem = source.replace('/:path*', '/exemplo');
     const destino = destination.replace('/:path*', '/exemplo');
     test(`${origem} → ${destino}`, async ({ page }) => {
-      await page.goto(origem);
+      // Só a URL importa: esperar o evento `load` estoura o tempo em páginas pesadas (ex.: Leads).
+      await page.goto(origem, { waitUntil: 'commit' });
       const esperado = destino === '/' ? '/' : destino;
       await expect(page).toHaveURL(new RegExp(`${esperado === '/' ? '/$' : esperado}(\\?.*)?$`));
     });

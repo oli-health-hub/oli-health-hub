@@ -42,8 +42,10 @@ test.describe('Mapa das Salas (/salas)', () => {
 
   test('"Hoje" button returns to today when on different date', async ({ page }) => {
     await page.goto('/salas?date=2026-05-20');
-    await page.getByText('Hoje').click();
-    await expect(page).toHaveURL('/reservas');
+    // Escopo no conteúdo: o item "Hoje" do menu lateral também casaria com o texto.
+    await page.getByRole('main').getByText('Hoje', { exact: true }).click();
+    // O botão leva a `/reservas?view=day` (sem `date`), que é o dia de hoje.
+    await expect(page).toHaveURL(/\/reservas(\?view=day)?$/);
   });
 
   test('date picker submits via form', async ({ page }) => {

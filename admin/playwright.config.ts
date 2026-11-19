@@ -10,6 +10,13 @@ export default defineConfig({
   use: {
     // Aponte E2E_BASE_URL para o preview da Vercel para testar uma branch antes do merge.
     baseURL: process.env.E2E_BASE_URL ?? 'https://admin.olihealthhub.com.br',
+    // Preview da Vercel protegido: o token vem do ambiente, nunca do repositório.
+    extraHTTPHeaders: process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? {
+          'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+          'x-vercel-set-bypass-cookie': 'true',
+        }
+      : {},
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',

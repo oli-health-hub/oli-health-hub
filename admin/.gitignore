@@ -5,3 +5,6 @@ node_modules/
 .vercel
 tsconfig.tsbuildinfo
 e2e/.auth/
+
+# credenciais do e2e (nunca versionar)
+.env.e2e
