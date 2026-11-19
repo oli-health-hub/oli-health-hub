@@ -2,11 +2,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Pagamentos (/pagamentos)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/pagamentos');
+    await page.goto('/reservas/minutagem');
   });
 
   test('renders page title', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Pagamentos');
+    await expect(page.locator('h1')).toContainText('Minutagem por Sessão');
   });
 
   test('shows period label', async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe('Pagamentos (/pagamentos)', () => {
   test('"Limpar" button resets to default', async ({ page }) => {
     await page.goto('/pagamentos?tipo=modulos&q=cesar');
     await page.getByText('Limpar').click();
-    await expect(page).toHaveURL('/pagamentos');
+    await expect(page).toHaveURL('/reservas/minutagem');
   });
 
   test('filter by date range updates URL', async ({ page }) => {

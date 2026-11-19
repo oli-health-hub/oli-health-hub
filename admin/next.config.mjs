@@ -1,3 +1,5 @@
+import { LEGACY_REDIRECTS } from './lib/legacy-redirects.mjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Painel é 100% force-dynamic (dados operacionais) — o Router Cache do
@@ -7,6 +9,14 @@ const nextConfig = {
   // status). Zerado pra sempre buscar fresco. Ver docs/HANDOFF.md §45/§49.
   experimental: {
     staleTimes: { dynamic: 0 },
+  },
+  // Reorganização do Admin (19/11/2026): endereços antigos → novos.
+  async redirects() {
+    return LEGACY_REDIRECTS.map(({ source, destination }) => ({
+      source,
+      destination,
+      permanent: false,
+    }));
   },
 };
 export default nextConfig;

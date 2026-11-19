@@ -18,7 +18,7 @@ export async function changePlan(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath(`/medicos/${professionalId}`);
-  revalidatePath('/planos');
+  revalidatePath('/medicos/assinaturas');
   revalidatePath('/medicos');
 }
 
@@ -48,8 +48,8 @@ export async function addHours(formData: FormData) {
   // No-op pra perfil que não é médico (founder/specialist/partner/team) —
   // essa rota não existe pra eles. Revalida mesmo assim: é de lá (modo
   // demonstração em /equipe/[id]) que este action também é chamado.
-  revalidatePath(`/equipe/${professionalId}`);
-  revalidatePath('/horas');
+  revalidatePath(`/configuracoes/equipe/${professionalId}`);
+  revalidatePath('/medicos/horas');
 }
 
 /** Zera na hora o saldo de horas de um perfil — usado pelo "Modo
@@ -69,9 +69,9 @@ export async function desativarHorasDemonstracao(formData: FormData) {
     .gt('expira_em', agora);
 
   if (error) throw new Error(error.message);
-  revalidatePath(`/equipe/${professionalId}`);
+  revalidatePath(`/configuracoes/equipe/${professionalId}`);
   revalidatePath(`/medicos/${professionalId}`);
-  revalidatePath('/horas');
+  revalidatePath('/medicos/horas');
 }
 
 /** Convida usuário por e-mail via Supabase Auth */
@@ -84,7 +84,7 @@ export async function inviteUser(formData: FormData) {
     redirectTo: 'https://admin.olihealthhub.com.br/definir-senha',
   });
   if (error) throw new Error(error.message);
-  revalidatePath('/usuarios');
+  revalidatePath('/configuracoes/usuarios');
 }
 
 /** Altera user_type de um usuário */
@@ -107,7 +107,7 @@ export async function setUserType(formData: FormData) {
     await supabase.from('partner_commission_config').upsert({ partner_id: userId }, { onConflict: 'partner_id', ignoreDuplicates: true });
   }
 
-  revalidatePath('/usuarios');
+  revalidatePath('/configuracoes/usuarios');
 }
 
 /** Concede/revoga acesso ao painel admin — independente do user_type (papel na Comunidade) */
@@ -122,7 +122,7 @@ export async function toggleAdminAccess(formData: FormData) {
     .eq('id', userId);
 
   if (error) throw new Error(error.message);
-  revalidatePath('/usuarios');
+  revalidatePath('/configuracoes/usuarios');
 }
 
 /** Ativa / desativa um módulo de um médico */
@@ -137,7 +137,7 @@ export async function setModuleStatus(formData: FormData) {
     .eq('id', userModuleId);
 
   if (error) throw new Error(error.message);
-  revalidatePath('/modulos');
+  revalidatePath('/medicos/modulos');
 }
 
 /** Cria ou atualiza um fornecedor */
@@ -163,7 +163,7 @@ export async function upsertSupplier(formData: FormData) {
     const { error } = await supabase.from('suppliers').insert(payload);
     if (error) throw new Error(error.message);
   }
-  revalidatePath('/fornecedores');
+  revalidatePath('/financeiro/fornecedores');
 }
 
 /** Desativa (soft-delete) um fornecedor */
@@ -172,7 +172,7 @@ export async function deactivateSupplier(formData: FormData) {
   const supabase = await createSupabaseAdmin();
   const { error } = await supabase.from('suppliers').update({ ativo: false }).eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/fornecedores');
+  revalidatePath('/financeiro/fornecedores');
 }
 
 /** Cria ou atualiza uma conta a pagar / receber */
@@ -202,7 +202,7 @@ export async function upsertFinancialEntry(formData: FormData) {
     const { error } = await supabase.from('financial_entries').insert(payload);
     if (error) throw new Error(error.message);
   }
-  revalidatePath('/contas');
+  revalidatePath('/financeiro/contas');
 }
 
 /** Marca uma conta como paga */
@@ -215,7 +215,7 @@ export async function markEntryPaid(formData: FormData) {
     .update({ status: 'pago', pago_em })
     .eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/contas');
+  revalidatePath('/financeiro/contas');
 }
 
 /** Cancela uma conta */
@@ -227,7 +227,7 @@ export async function cancelEntry(formData: FormData) {
     .update({ status: 'cancelado' })
     .eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/contas');
+  revalidatePath('/financeiro/contas');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -354,7 +354,7 @@ export async function softDeleteUser(formData: FormData) {
 
   revalidatePath('/medicos');
   revalidatePath(`/medicos/${userId}`);
-  revalidatePath('/equipe');
+  revalidatePath('/configuracoes/equipe');
 }
 
 /** Hard delete: apaga completamente do auth + todos os dados relacionados (irreversível). */
@@ -374,7 +374,7 @@ export async function hardDeleteUser(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath('/medicos');
-  revalidatePath('/equipe');
+  revalidatePath('/configuracoes/equipe');
 }
 
 // ─── Cobrança de paciente via subconta Asaas ───────────────────────────────────
@@ -513,7 +513,7 @@ export async function createCoupon(formData: FormData) {
     descricao,
   });
   if (error) throw new Error(error.message);
-  revalidatePath('/cupons');
+  revalidatePath('/comercial/cupons');
 }
 
 /** Ativa/desativa um cupom (recebe o estado atual e inverte) */
@@ -524,7 +524,7 @@ export async function toggleCoupon(formData: FormData) {
   const supabase = await createSupabaseAdmin();
   const { error } = await supabase.from('coupons').update({ ativo: !ativoAtual }).eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/cupons');
+  revalidatePath('/comercial/cupons');
 }
 
 /** Apaga um cupom. Resgate pendente/cancelado some junto; cupom com resgate
@@ -547,7 +547,7 @@ export async function deleteCoupon(formData: FormData) {
 
   const { error } = await supabase.from('coupons').delete().eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/cupons');
+  revalidatePath('/comercial/cupons');
 }
 
 /** Apaga um post da comunidade (moderação) */
@@ -557,7 +557,7 @@ export async function deletePost(formData: FormData) {
   const supabase = await createSupabaseAdmin();
   const { error } = await supabase.from('community_posts').delete().eq('id', postId);
   if (error) throw new Error(error.message);
-  revalidatePath('/comunidade');
+  revalidatePath('/configuracoes/comunidade');
 }
 
 /** Envia push broadcast (ou pra 1 médico) pra todos os tokens registrados.
@@ -590,7 +590,7 @@ export async function sendBroadcastPush(formData: FormData) {
     sent += result.data?.filter((t) => t.status === 'ok').length ?? 0;
   }
 
-  revalidatePath('/notificacoes');
+  revalidatePath('/configuracoes/notificacoes');
   return { sent, total: messages.length };
 }
 
@@ -670,7 +670,7 @@ export async function createTeamProfile(formData: FormData) {
     await supabase.from('partner_commission_config').insert({ partner_id: userId });
   }
 
-  revalidatePath('/equipe');
+  revalidatePath('/configuracoes/equipe');
 }
 
 /** Atualiza dados de um perfil de equipe (founder/especialista/parceiro) */
@@ -713,8 +713,8 @@ export async function updateTeamProfileFields(formData: FormData) {
   const supabase = await createSupabaseAdmin();
   const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/equipe/${userId}`);
-  revalidatePath('/equipe');
+  revalidatePath(`/configuracoes/equipe/${userId}`);
+  revalidatePath('/configuracoes/equipe');
 }
 
 /** Atualiza etapa, qualificação e observações de um lead (site ou Meta Ads) */
@@ -753,7 +753,7 @@ export async function updateLead(formData: FormData) {
     })
     .eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/leads');
+  revalidatePath('/comercial');
 }
 
 /** Registra o opt-in de WhatsApp do lead e inicia a régua comercial pela
@@ -805,8 +805,8 @@ export async function optInLeadWhatsapp(formData: FormData) {
   });
   if (invokeError) console.error(`[optInLeadWhatsapp] invoke falhou pro lead ${id}:`, invokeError.message);
 
-  revalidatePath('/leads');
-  revalidatePath('/conversas');
+  revalidatePath('/comercial');
+  revalidatePath('/comercial/conversas');
 }
 
 /** Pausa a régua: marca opt-out e cancela toda etapa ainda não enviada.
@@ -825,7 +825,7 @@ export async function pauseLeadWhatsappNutricao(formData: FormData) {
     .eq('lead_id', id).eq('status', 'agendada');
   if (etapaError) throw new Error(etapaError.message);
 
-  revalidatePath('/leads');
+  revalidatePath('/comercial');
 }
 
 /* Mesma sequência de PROXIMA_ETAPA da edge function whatsapp-nutricao-comercial
@@ -880,7 +880,7 @@ export async function resumeLeadWhatsappNutricao(formData: FormData) {
   }
   // status 'agendada': já está no lugar certo, retomar só limpou o opt-out.
 
-  revalidatePath('/leads');
+  revalidatePath('/comercial');
 }
 
 /** Registra o pagamento de uma comissão de parceiro (Programa de Indicação de
@@ -904,7 +904,7 @@ export async function registerCommissionPayment(formData: FormData) {
     observacoes,
   });
   if (error) throw new Error(error.message);
-  revalidatePath('/parceiros');
+  revalidatePath('/configuracoes/parceiros');
 }
 
 /** Atualiza a regra de comissão de um parceiro (comissiona sim/não + valores
@@ -930,8 +930,8 @@ export async function updatePartnerCommissionConfig(formData: FormData) {
   const { error } = await supabase.from('partner_commission_config').upsert(config, { onConflict: 'partner_id' });
   if (error) throw new Error(error.message);
 
-  revalidatePath('/parceiros');
-  revalidatePath(`/equipe/${partnerId}`);
+  revalidatePath('/configuracoes/parceiros');
+  revalidatePath(`/configuracoes/equipe/${partnerId}`);
 }
 
 // ─── Conversas WhatsApp (leads + pacientes, número único da OLI) ──────────────
@@ -950,7 +950,7 @@ export async function sendConversationReply(formData: FormData) {
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
 
-  revalidatePath('/conversas');
+  revalidatePath('/comercial/conversas');
 }
 
 /** Envia uma foto anexada pela equipe numa conversa — mesma janela de 24h do
@@ -972,7 +972,7 @@ export async function sendConversationImage(formData: FormData) {
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
 
-  revalidatePath('/conversas');
+  revalidatePath('/comercial/conversas');
 }
 
 /** Marca a conversa como vista pela equipe agora — usado pelo /conversas pra
@@ -1000,7 +1000,7 @@ export async function toggleConversationMode(formData: FormData) {
   const supabase = await createSupabaseAdmin();
   const { error } = await supabase.from('conversations').update({ status: novoStatus }).eq('id', conversationId);
   if (error) throw new Error(error.message);
-  revalidatePath('/conversas');
+  revalidatePath('/comercial/conversas');
 }
 
 /** Dispara mensagem de template pro paciente (confirmação/lembrete) a partir
@@ -1018,7 +1018,7 @@ export async function triggerPatientMessage(formData: FormData) {
   if (data?.error) throw new Error(data.error);
 
   revalidatePath(`/medicos/${professionalId}`);
-  revalidatePath('/conversas');
+  revalidatePath('/comercial/conversas');
 }
 
 /** Gera o código de indicação de um parceiro que ainda não tem (fallback pra
@@ -1032,7 +1032,7 @@ export async function ensurePartnerReferralCode(formData: FormData) {
   if (error) throw new Error(error.message);
   await supabase.from('partner_commission_config').upsert({ partner_id: partnerId }, { onConflict: 'partner_id', ignoreDuplicates: true });
 
-  revalidatePath(`/equipe/${partnerId}`);
+  revalidatePath(`/configuracoes/equipe/${partnerId}`);
 }
 
 /** Resultado devolvido às telas: mensagem de sucesso ou o erro legível. */
@@ -1112,10 +1112,10 @@ export async function registrarRecebimentoDinheiro(formData: FormData): Promise<
     });
     if (error) throw new Error(error.message);
 
-    revalidatePath('/recebimentos');
-    revalidatePath('/fluxo-de-caixa');
-    revalidatePath('/horas');
-    revalidatePath('/planos');
+    revalidatePath('/financeiro/recebimentos');
+    revalidatePath('/financeiro/fluxo');
+    revalidatePath('/medicos/horas');
+    revalidatePath('/medicos/assinaturas');
     revalidatePath(`/medicos/${professionalId}`);
 
     // Promoções aplicadas automaticamente pelo banco neste recebimento
@@ -1180,7 +1180,7 @@ export async function registrarSaida(formData: FormData): Promise<ActionResult> 
     });
     if (error) throw new Error(error.message);
 
-    revalidatePath('/fluxo-de-caixa');
+    revalidatePath('/financeiro/fluxo');
     return situacao === 'pago'
       ? 'Saída lançada como paga e incluída no fluxo de caixa.'
       : 'Saída lançada em contas a pagar.';
@@ -1201,7 +1201,7 @@ export async function quitarSaida(formData: FormData): Promise<ActionResult> {
       .eq('tipo', 'pagar');
     if (error) throw new Error(error.message);
 
-    revalidatePath('/fluxo-de-caixa');
+    revalidatePath('/financeiro/fluxo');
     return 'Conta marcada como paga.';
   });
 }
@@ -1286,7 +1286,7 @@ export async function removerHoras(formData: FormData): Promise<ActionResult> {
     await supabase.from('hour_adjustments').update({ push_status: pushStatus }).eq('id', adjustmentId as string);
 
     revalidatePath(`/medicos/${professionalId}`);
-    revalidatePath('/horas');
+    revalidatePath('/medicos/horas');
 
     const base = `${duracao} removidas do saldo.`;
     if (pushStatus === 'enviado') return `${base} Aviso enviado por push.`;
@@ -1334,10 +1334,10 @@ export async function estornarRecebimento(formData: FormData): Promise<ActionRes
     });
     if (error) throw new Error(error.message);
 
-    revalidatePath('/recebimentos');
-    revalidatePath('/fluxo-de-caixa');
-    revalidatePath('/horas');
-    revalidatePath('/planos');
+    revalidatePath('/financeiro/recebimentos');
+    revalidatePath('/financeiro/fluxo');
+    revalidatePath('/medicos/horas');
+    revalidatePath('/medicos/assinaturas');
     revalidatePath('/medicos', 'layout');
     return 'Recebimento estornado.';
   });
@@ -1401,7 +1401,7 @@ export async function criarPromocao(formData: FormData): Promise<ActionResult> {
     });
     if (error) throw new Error(error.message);
 
-    revalidatePath('/promocoes');
+    revalidatePath('/comercial/promocoes');
     return 'Promoção criada e ativa. Vale para os próximos pagamentos em dinheiro, cartão e PIX.';
   });
 }
@@ -1416,7 +1416,7 @@ export async function alternarPromocao(formData: FormData): Promise<ActionResult
     const { error } = await supabase.from('promotions').update({ ativo }).eq('id', id);
     if (error) throw new Error(error.message);
 
-    revalidatePath('/promocoes');
+    revalidatePath('/comercial/promocoes');
     return ativo ? 'Promoção reativada.' : 'Promoção pausada.';
   });
 }

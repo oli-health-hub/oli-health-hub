@@ -56,7 +56,8 @@ test.describe('Médico detail (/medicos/[id])', () => {
 
   test('shows breadcrumb back to /medicos', async ({ page }) => {
     await page.goto(`/medicos/${medicoid}`);
-    await expect(page.getByRole('link', { name: 'Profissionais' })).toHaveAttribute('href', '/medicos');
+    // Escopo no conteúdo: o menu lateral também tem um link "Profissionais".
+    await expect(page.getByRole('main').getByRole('link', { name: 'Profissionais' })).toHaveAttribute('href', '/medicos');
   });
 
   test('shows plan change form', async ({ page }) => {

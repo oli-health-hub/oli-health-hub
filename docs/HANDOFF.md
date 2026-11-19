@@ -3235,6 +3235,34 @@ Passou a existir `docs/RELEASES.md`, com o build da loja, os OTAs e o que está 
 ### 81.6 Higiene do repositório (público)
 O repositório é **público** (conferido com `gh`), e sua conta (`guipasquetti`) não tem permissão de admin: só um dono da org `oli-health-hub` consegue torná-lo privado (e a Vercel Hobby não faz deploy de repositório privado de organização, conferir antes). Quatro arquivos `resumo-matinal-*.html` de agosto, com dados pessoais e nomes de leads, estavam versionados desde `2a33d6f`; foram desversionados em `4ac5f54` e `resumo-matinal-*.html` entrou no `.gitignore`. **Eles continuam no histórico** (em `main`, `claude/olivia-planos-precos`, `feat/revisao-oli` e nas referências de PR). Limpar exige reescrever o histórico (`git filter-repo`) com force-push e pedido de limpeza de cache ao suporte do GitHub; não foi feito.
 
+## 82. Reorganização do Admin, Fase 1: menu de 6 itens e tela "Hoje" (19/11)
+
+**Por quê.** O Admin tinha 29 rotas e 21 itens de menu; a equipe (Cláudia, Igor) não entendia onde entra cada coisa. Design em `docs/superpowers/specs/2026-11-19-admin-reorganizacao-design.md`, plano em `docs/superpowers/plans/2026-11-19-admin-reorganizacao-fase-1.md`. Branch `feat/admin-reorganizacao` (**não mesclada na `main`**; preview da Vercel para revisão).
+
+### 82.1 O que mudou
+- **Menu de 6 itens:** Hoje, Reservas, Profissionais, Comercial, Financeiro, Configurações. As telas antigas viraram **abas** do grupo (componente `TabNav`, um `layout.tsx` por grupo). Tabela de rotas em `admin/MANUAL.md`.
+- **Redirects** de todos os endereços antigos para os novos em `admin/lib/legacy-redirects.mjs` (usado em `next.config.mjs`, não permanentes). `/equipe/:path*` cobre `novo` e `[id]`. Todos os `href` e `revalidatePath` foram atualizados.
+- **Tela "Hoje" (`/`)** substitui Dashboard e Fila: pendências acionáveis, reservas do dia com **paciente**, salas agora (tabela `rooms`, 9 salas), atividade recente (as 8 notificações operacionais da antiga Fila, 10 mais recentes). Saíram a rosca, o ranking de salas, "Receita hoje/mês" (somava `usage_charges.valor_total`, que não é dinheiro recebido) e a "Dica operacional".
+- **Badge da Fila removido do menu** (eram 46 não lidas, quase todas informativas). O número "559" que circulou numa análise anterior era o total da tabela `admin_notifications`, que inclui lead e WhatsApp, tipos que a Fila e o badge já excluíam.
+- **Status de reserva corrigidos:** o banco usa `agendado`/`em_uso`/`concluido`, mas Dashboard, Mapa e Histórico comparavam com `scheduled`/`active`/`completed`/`cancelled`/`no_show`. Novo `lib/reservation-status.ts` (fonte única) usado em Hoje, Mapa e Histórico.
+- **Meu Recebimento** continua só para o fundador (regra única em `lib/founder.ts`; a página mantém o `notFound()`).
+
+### 82.2 Paciente na reserva (LGPD)
+- Coluna nova `reservations.patient_label` (texto, máx. 60), migration `supabase/migrations/20261119_reservations_patient_label.sql`. **Texto livre**, não `patient_id` (esse exige CPF e consentimento). Só nome e inicial do sobrenome; a validação (`lib/patient-label.ts`) recusa 8 ou mais dígitos.
+- Edição pela recepção na "Hoje" (`app/actions-hoje.ts`, só reservas de hoje, só admin). `audit_logs` recebe `set_patient_label`/`clear_patient_label` com **só ids e tamanho, nunca o texto**, e `view_patient_labels` no máximo uma vez por dia por admin.
+- Retenção de **7 dias** após `end_time`, job `pg_cron` `limpar_patient_label_reservas` (06:15 UTC).
+- **Migration aplicada em produção em 19/11/2026** (coluna `text` e job `limpar_patient_label_reservas` às `15 6 * * *` conferidos; o `CHECK` recusa 61 caracteres). Falta só a verificação pelo Admin: gravar e limpar um rótulo de teste na "Hoje" e conferir que `audit_logs` não guarda o texto.
+- O campo no app mobile (profissional informa ao reservar) **não foi feito**; a coluna e a RLS atual ("Reservas próprias") já permitem.
+
+### 82.3 Não feito (próximas fases)
+Fase 2 Financeiro unificado (hoje as abas ainda repetem conteúdo e as abas internas do Resumo continuam); Fase 3 Leads e Conversas num inbox só; Fase 4 ficha do profissional com abas e extrato de horas; perfis de acesso (`recepcao`/`financeiro`/`dono`); faturamento mensal e conciliação do Inter; correção do fluxo de check-in/out e do bug de saldo (`logUsageCharge`).
+
+### 82.4 Verificação e riscos
+- `tsc`, `next build` e testes unitários (`npm run test:unit`, `node --test`, 43 casos) passam. Redirects conferidos com `curl` no `next start` (query e subcaminhos preservados).
+- **Não verificado em navegador:** o login admin não estava disponível na sessão. A "Hoje", as abas e o layout em celular dependem de revisão no preview. Atenção a páginas de altura total (Conversas) com a barra de abas acima.
+- Testes e2e (`admin/e2e`) atualizados para as rotas novas; rodam contra produção por padrão, ou contra o preview com `E2E_BASE_URL`.
+
+
 ## 13. Comandos úteis
 
 ```bash
