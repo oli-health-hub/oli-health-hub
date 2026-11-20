@@ -71,50 +71,64 @@ test.describe('Médico detail (/medicos/[id])', () => {
   });
 
   test('shows plan change form', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=plano`);
     await expect(page.getByText('Alterar plano')).toBeVisible();
     await expect(page.locator('select[name="plan_id"]')).toBeVisible();
   });
 
   test('shows add hours form', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=plano`);
     await expect(page.getByText('Adicionar horas')).toBeVisible();
     await expect(page.locator('input[name="horas"]')).toBeVisible();
   });
 
   test('shows professional data section', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=cadastro`);
     await expect(page.getByText('Dados profissionais')).toBeVisible();
   });
 
   test('shows fiscal data section', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=cadastro`);
     await expect(page.getByText('Ficha cadastral')).toBeVisible();
   });
 
   test('shows acquisitions section', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=cadastro`);
     await expect(page.getByText('Aquisição')).toBeVisible();
   });
 
   test('shows subscriptions section', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=plano`);
     await expect(page.getByText(/Assinaturas/)).toBeVisible();
   });
 
   test('shows hour balance section', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=plano`);
     await expect(page.getByRole('heading', { name: /Saldo de horas/ })).toBeVisible();
   });
 
   test('shows reservations section', async ({ page }) => {
-    await page.goto(`/medicos/${medicoid}`);
+    await page.goto(`/medicos/${medicoid}?aba=atividade`);
     // Section shows only if the doctor has reservations
     const section = page.getByText(/Reservas recentes/);
     const hasSection = await section.isVisible().catch(() => false);
     if (hasSection) {
       await expect(page.locator('thead').getByText('Sala')).toBeVisible();
     }
+  });
+
+  test('a ficha abre no resumo e tem as cinco abas', async ({ page }) => {
+    await page.goto(`/medicos/${medicoid}`);
+    const abas = page.getByRole('navigation', { name: 'Seções da ficha' });
+    for (const nome of ['Resumo', 'Cadastro', 'Plano e horas', 'Atividade', 'Conta e documentos']) {
+      await expect(abas.getByRole('link', { name: new RegExp(nome) })).toBeVisible();
+    }
+    await expect(abas.getByRole('link', { name: /Resumo/ })).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('a aba Conta mostra a gestão da conta', async ({ page }) => {
+    await page.goto(`/medicos/${medicoid}?aba=conta`);
+    await expect(page.getByRole('navigation', { name: 'Seções da ficha' }).getByRole('link', { name: /Conta e documentos/ })).toHaveAttribute('aria-current', 'page');
   });
 
   test('invalid doctor id returns 404', async ({ page }) => {

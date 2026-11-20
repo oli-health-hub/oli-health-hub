@@ -9,6 +9,8 @@ import { ReservaBillingActions } from './ReservaBillingActions';
 import RemoverHorasForm from './RemoverHorasForm';
 import BotaoWhatsApp from '@/components/BotaoWhatsApp';
 import ActionForm from '@/components/ActionForm';
+import FichaAbas, { type AbaId } from './FichaAbas';
+import { Clock, Users, Star, Wallet, AlertTriangle, CheckCircle2, Crown, Sprout, Layers, CalendarDays, Mail, Phone, MapPin, KeyRound, type LucideIcon } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +67,7 @@ const COMO_CONHECEU: Record<string, string> = {
 const PLAN_COLOR: Record<string, string> = {
   START: 'bg-blue-50 text-blue-600',
   BASE:  'bg-gray-100 text-gray-600',
-  PRO:   'bg-green-50 text-oli-green',
+  PRO:   'bg-oli-gold/15 text-oli-gold',
   VIP:   'bg-yellow-50 text-yellow-700',
 };
 const STATUS_COLOR: Record<string, string> = {
@@ -103,12 +105,12 @@ function label<T extends string>(map: Record<string, string>, val: T | null | un
 
 // ── Small layout helpers ──
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, duasColunas }: { title: string; children: React.ReactNode; duasColunas?: boolean }) {
   return (
-    <div className="bg-white rounded-2xl border border-oli-border p-5">
+    <section className="bg-white rounded-2xl border border-oli-border p-5">
       <h3 className="text-sm font-bold text-oli-dark mb-4">{title}</h3>
-      {children}
-    </div>
+      <div className={duasColunas ? 'grid gap-x-8 md:grid-cols-2' : undefined}>{children}</div>
+    </section>
   );
 }
 
@@ -123,7 +125,16 @@ function Field({ label: l, value }: { label: string; value: React.ReactNode }) {
 
 // ── Page ──
 
-export default async function MedicoDetailPage({ params }: { params: { id: string } }) {
+const ABAS_VALIDAS: AbaId[] = ['resumo', 'cadastro', 'plano', 'atividade', 'conta'];
+
+export default async function MedicoDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: Record<string, string | undefined>;
+}) {
+  const aba: AbaId = ABAS_VALIDAS.includes(searchParams.aba as AbaId) ? (searchParams.aba as AbaId) : 'resumo';
   const supabase      = await createSupabaseServer();
   const supabaseAdmin = await createSupabaseAdmin();
 
@@ -285,8 +296,50 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
   };
   const pExt = p as ProfileExt;
 
+
+  const contaStatus = pExt.account_status ?? 'active';
+  const CONTA_LABEL: Record<string, { label: string; cls: string }> = {
+    active:    { label: 'Conta ativa',    cls: 'bg-green-50 text-oli-green' },
+    paused:    { label: 'Conta pausada',  cls: 'bg-amber-50 text-amber-700' },
+    suspended: { label: 'Conta suspensa', cls: 'bg-orange-50 text-orange-700' },
+    banned:    { label: 'Conta banida',   cls: 'bg-red-50 text-oli-red' },
+  };
+  const contaMeta = CONTA_LABEL[contaStatus] ?? CONTA_LABEL.active;
+  const PlanIcone: LucideIcon = p.plan === 'PRO' ? Crown : Sprout;
+
+  const subAtiva = (subscriptions ?? []).find(s => s.status === 'active');
+  const subAtivaPlano = subAtiva?.plans as unknown as { name: string } | null | undefined;
+  const venceEmDias = subAtiva?.ends_at ? Math.ceil((new Date(subAtiva.ends_at).getTime() - agoraMs) / 86_400_000) : null;
+  const modulosAtivos = (userModules ?? []).filter(m => m.status === 'active');
+  const pctUsado = totalMin > 0 ? Math.min(Math.round((usadoMin / totalMin) * 100), 100) : 0;
+
+  // Pontos de atenção: só o que pede uma decisão da equipe.
+  const atencao: { texto: string; aba: AbaId }[] = [];
+  if (!p.onboarding_complete) atencao.push({ texto: 'O profissional ainda não concluiu o cadastro (onboarding).', aba: 'cadastro' });
+  if (contaStatus !== 'active') atencao.push({ texto: `${contaMeta.label}${pExt.status_reason ? `: ${pExt.status_reason}` : '.'}`, aba: 'conta' });
+  if (venceEmDias !== null && venceEmDias <= 7) {
+    atencao.push({ texto: venceEmDias < 0 ? 'A assinatura venceu.' : `A assinatura vence em ${venceEmDias} ${venceEmDias === 1 ? 'dia' : 'dias'}.`, aba: 'plano' });
+  }
+  if ((balances ?? []).length > 0 && restante <= 60) atencao.push({ texto: 'O saldo de horas está em 1h ou menos.', aba: 'plano' });
+  if (pExt.comunidade_banned) atencao.push({ texto: 'Banido da comunidade.', aba: 'conta' });
+
+  const KPIS: { icone: LucideIcon; rotulo: string; valor: string; tom: string }[] = [
+    { icone: Clock, rotulo: 'Saldo de horas', valor: fmt(restante), tom: 'bg-oli-green/10 text-oli-green' },
+    { icone: Users, rotulo: 'Pacientes', valor: String(patientCount ?? 0), tom: 'bg-sky-50 text-sky-700' },
+    { icone: Star, rotulo: 'NPS médio', valor: npsMedia ?? '—', tom: 'bg-oli-gold/15 text-oli-gold' },
+    { icone: Wallet, rotulo: 'Receita total', valor: brl(receitaTotal), tom: 'bg-gray-100 text-oli-gray' },
+  ];
+
+  const abas: { id: AbaId; label: string; contagem?: number }[] = [
+    { id: 'resumo', label: 'Resumo' },
+    { id: 'cadastro', label: 'Cadastro' },
+    { id: 'plano', label: 'Plano e horas' },
+    { id: 'atividade', label: 'Atividade', contagem: reservations?.length ?? 0 },
+    { id: 'conta', label: 'Conta e documentos' },
+  ];
+
   return (
-    <div className="p-7 space-y-6 max-w-6xl">
+    <div className="mx-auto max-w-6xl space-y-5 p-4 md:p-7">
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-oli-lgray">
@@ -295,95 +348,148 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
         <span className="text-oli-dark font-medium">{p.nome}</span>
       </div>
 
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-oli-border p-6">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="w-16 h-16 rounded-full bg-oli-green flex items-center justify-center text-white font-bold text-2xl shrink-0">
+      {/* Cabeçalho */}
+      <div className="rounded-2xl border border-oli-border bg-white p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-oli-green text-xl font-bold text-white">
               {p.nome?.[0]?.toUpperCase() ?? '?'}
             </div>
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-oli-dark break-words">{p.nome}</h1>
-              <p className="text-sm text-oli-gray mt-0.5">
-                {[p.especialidade, p.crm ? `CRM ${p.crm}` : null].filter(Boolean).join(' · ')}
+              <h1 className="break-words text-xl font-bold text-oli-dark md:text-2xl">{p.nome}</h1>
+              <p className="mt-0.5 text-sm text-oli-gray">
+                {[p.especialidade, p.crm ? `CRM ${p.crm}` : null].filter(Boolean).join(' · ') || 'Sem especialidade informada'}
               </p>
-              {email && (
-                <p className="text-sm text-oli-lgray mt-0.5 break-all">{email}</p>
-              )}
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${PLAN_COLOR[p.plan] ?? 'bg-gray-100 text-gray-600'}`}>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${PLAN_COLOR[p.plan] ?? 'bg-gray-100 text-gray-600'}`}>
+                  <PlanIcone className="h-3 w-3" aria-hidden="true" />
                   {p.plan}
                 </span>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.onboarding_complete ? 'bg-green-50 text-oli-green' : 'bg-yellow-50 text-yellow-700'}`}>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${contaMeta.cls}`}>{contaMeta.label}</span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${p.onboarding_complete ? 'bg-green-50 text-oli-green' : 'bg-yellow-50 text-yellow-700'}`}>
                   {p.onboarding_complete ? 'Onboarding completo' : 'Onboarding pendente'}
                 </span>
                 {p.pre_paid_ok && (
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
-                    Pré-pago OK
-                  </span>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">Pré-pago OK</span>
                 )}
               </div>
             </div>
           </div>
+          <BotaoWhatsApp numero={p.whatsapp ?? null} texto={`Olá, ${p.nome?.split(' ')[0] ?? ''}! Aqui é do time OLI Health Hub.`} />
+        </div>
 
-          {/* KPIs rápidos */}
-          <div className="flex flex-wrap gap-x-6 gap-y-3 text-center">
-            <div>
-              <p className="text-2xl font-bold text-oli-dark">{fmt(restante)}</p>
-              <p className="text-xs text-oli-lgray mt-0.5">Saldo de horas</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-oli-dark">{patientCount ?? 0}</p>
-              <p className="text-xs text-oli-lgray mt-0.5">Pacientes</p>
-            </div>
-            {npsMedia && (
-              <div>
-                <p className={`text-2xl font-bold ${Number(npsMedia) >= 8 ? 'text-oli-green' : Number(npsMedia) >= 6 ? 'text-yellow-600' : 'text-oli-red'}`}>
-                  {npsMedia}
-                </p>
-                <p className="text-xs text-oli-lgray mt-0.5">NPS médio</p>
+        <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          {KPIS.map(k => (
+            <div key={k.rotulo} className="flex items-center gap-3 rounded-xl border border-oli-border bg-oli-bg/40 p-3">
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${k.tom}`} aria-hidden="true">
+                <k.icone className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-lg font-bold leading-tight text-oli-dark">{k.valor}</p>
+                <p className="truncate text-[11px] text-oli-lgray">{k.rotulo}</p>
               </div>
-            )}
-            <div>
-              <p className="text-2xl font-bold text-oli-dark">{brl(receitaTotal)}</p>
-              <p className="text-xs text-oli-lgray mt-0.5">Receita total</p>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* ── Gestão da conta + contrato + documentos ── */}
-      <MedicoManagementCard
-        userId={p.id}
-        nome={p.nome}
-        email={email ?? ''}
-        accountStatus={pExt.account_status ?? 'active'}
-        statusReason={pExt.status_reason}
-        comunidadeBanned={pExt.comunidade_banned ?? false}
-        comunidadeBanReason={pExt.comunidade_ban_reason}
-        contractStartDate={pExt.contract_start_date}
-        contractEndDate={pExt.contract_end_date}
-        contractDocUrl={pExt.contract_doc_url}
-        adminNotes={pExt.admin_notes}
-        crm={p.crm}
-        especialidade={p.especialidade}
-        tratamento={pExt.tratamento}
-        cidadeUf={p.cidade_uf}
-      />
+      <FichaAbas profissionalId={p.id} abas={abas} atual={aba} />
 
-      <DocumentsCard
-        userId={p.id}
-        documents={(docs ?? []) as never[]}
-      />
-
-      {/* Grid principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ── Coluna esquerda: ações ── */}
+      {aba === 'resumo' && (
         <div className="space-y-4">
+          <section aria-labelledby="atencao-titulo" className={`rounded-2xl border p-5 ${atencao.length ? 'border-oli-gold/40 bg-oli-gold/10' : 'border-oli-green/30 bg-oli-green/10'}`}>
+            <h3 id="atencao-titulo" className="mb-2 flex items-center gap-2 text-sm font-bold text-oli-dark">
+              {atencao.length ? <AlertTriangle className="h-4 w-4 text-oli-gold" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4 text-oli-green" aria-hidden="true" />}
+              {atencao.length ? 'Pontos de atenção' : 'Nenhum ponto de atenção'}
+            </h3>
+            {atencao.length > 0 && (
+              <ul className="space-y-1.5">
+                {atencao.map(a => (
+                  <li key={a.texto} className="flex flex-wrap items-center justify-between gap-2 text-sm text-oli-dark">
+                    <span>{a.texto}</span>
+                    <Link href={`/medicos/${p.id}?aba=${a.aba}`} className="text-xs font-semibold text-oli-green underline-offset-2 hover:underline">
+                      Resolver
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-          {/* Acesso */}
-          <Section title="Acesso">
+          <div className="grid gap-4 md:grid-cols-3">
+            <section className="rounded-2xl border border-oli-border bg-white p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-oli-dark"><Crown className="h-4 w-4 text-oli-gold" aria-hidden="true" />Plano</h3>
+              <p className="text-2xl font-bold text-oli-dark">{p.plan}</p>
+              <p className="mt-1 text-xs text-oli-gray">
+                {subAtiva
+                  ? `${subAtivaPlano?.name ?? 'Assinatura'} · ${subAtiva.ciclo === 'YEARLY' ? 'anual' : 'mensal'}${subAtiva.ends_at ? ` · vence ${new Date(subAtiva.ends_at).toLocaleDateString('pt-BR')}` : ''}`
+                  : 'Sem assinatura ativa'}
+              </p>
+              <Link href={`/medicos/${p.id}?aba=plano`} className="mt-3 inline-block text-xs font-semibold text-oli-green underline-offset-2 hover:underline">Alterar plano e horas</Link>
+            </section>
+
+            <section className="rounded-2xl border border-oli-border bg-white p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-oli-dark"><Clock className="h-4 w-4 text-oli-green" aria-hidden="true" />Horas</h3>
+              <p className="text-2xl font-bold text-oli-dark">{fmt(restante)}</p>
+              <p className="mt-1 text-xs text-oli-gray">de {fmt(totalMin)} compradas · {pctUsado}% usado</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                <div className={`h-full rounded-full ${pctUsado >= 80 ? 'bg-oli-red' : 'bg-oli-green'}`} style={{ width: `${pctUsado}%` }} />
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-oli-border bg-white p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-oli-dark"><Layers className="h-4 w-4 text-oli-gray" aria-hidden="true" />Módulos</h3>
+              <p className="text-2xl font-bold text-oli-dark">{modulosAtivos.length}</p>
+              <p className="mt-1 truncate text-xs text-oli-gray">
+                {modulosAtivos.length
+                  ? modulosAtivos.map(m => (m.modules as unknown as { nome: string } | null)?.nome).filter(Boolean).join(', ')
+                  : 'Nenhum módulo ativo'}
+              </p>
+            </section>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <section className="rounded-2xl border border-oli-border bg-white p-5">
+              <h3 className="mb-3 text-sm font-bold text-oli-dark">Contato e acesso</h3>
+              <ul className="space-y-2 text-sm text-oli-dark">
+                <li className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-oli-lgray" aria-hidden="true" /><span className="break-all">{email ?? '—'}</span></li>
+                <li className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-oli-lgray" aria-hidden="true" />{p.whatsapp ?? '—'}</li>
+                <li className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-oli-lgray" aria-hidden="true" />{p.cidade_uf ?? '—'}</li>
+                <li className="flex items-center gap-2"><KeyRound className="h-4 w-4 shrink-0 text-oli-lgray" aria-hidden="true" />Último acesso: {lastSignIn ? new Date(lastSignIn).toLocaleString('pt-BR') : '—'}</li>
+                <li className="flex items-center gap-2"><CalendarDays className="h-4 w-4 shrink-0 text-oli-lgray" aria-hidden="true" />Cadastrado em {new Date(p.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</li>
+              </ul>
+            </section>
+
+            <section className="rounded-2xl border border-oli-border bg-white p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-oli-dark">Últimas reservas</h3>
+                <Link href={`/medicos/${p.id}?aba=atividade`} className="text-xs font-semibold text-oli-green underline-offset-2 hover:underline">Ver tudo</Link>
+              </div>
+              {(reservations ?? []).length === 0 ? (
+                <p className="text-sm text-oli-lgray">Nenhuma reserva ainda.</p>
+              ) : (
+                <ul className="divide-y divide-oli-border">
+                  {(reservations ?? []).slice(0, 4).map(r => (
+                    <li key={r.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <span className="min-w-0 truncate text-oli-dark">
+                        <span className="font-medium">{r.room_name}</span>
+                        <span className="text-oli-gray"> · {new Date(r.start_time).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                      </span>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLOR[r.status ?? ''] ?? 'bg-gray-100 text-gray-500'}`}>
+                        {STATUS_LABEL[r.status ?? ''] ?? r.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        </div>
+      )}
+
+      {aba === 'cadastro' && (
+        <div className="space-y-4">
+          <Section title="Acesso e contato" duasColunas>
             <div className="space-y-0">
               <Field label="E-mail" value={email} />
               <Field label="E-mail confirmado" value={yn(!!emailConfirmed)} />
@@ -391,8 +497,49 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               <Field label="Cadastrado em" value={new Date(p.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} />
             </div>
           </Section>
+          <Section title="Dados profissionais" duasColunas>
+            <Field label="Nome completo"       value={p.nome} />
+            <Field label="Especialidade"       value={p.especialidade} />
+            <Field label="CRM"                 value={p.crm} />
+            <Field label="Duração consulta"    value={p.consultation_duration_minutes ? `${p.consultation_duration_minutes} min` : null} />
+            {p.bio && <Field label="Bio"        value={p.bio} />}
+            <Field label="Tipo de atendimento" value={label(TIPO_ATENDIMENTO, p.tipo_atendimento)} />
+            <Field label="O que busca no OLI"  value={label(OBJETIVO_OLI, p.objetivo_oli)} />
+            {(p.convenios as string[] | null)?.length ? (
+              <Field label="Convênios" value={(p.convenios as string[]).join(', ')} />
+            ) : null}
+          </Section>
+          <Section title="Ficha cadastral (fiscal)" duasColunas>
+            <Field label="Situação jurídica"     value={label(SITUACAO_JURIDICA, p.situacao_juridica)} />
+            <Field label="Possui CLT?"            value={yn(p.possui_clt)} />
+            <Field label="Possui sócios?"         value={yn(p.possui_socios)} />
+            <Field label="Atividade exercida"     value={p.atividade_exercida} />
+            <Field label="Local de atuação"       value={label(LOCAL_ATUACAO, p.local_atuacao)} />
+            <Field label="Nº de locais"           value={label(NUM_LOCAIS, p.num_locais)} />
+            <Field label="Cidade / UF"            value={p.cidade_uf} />
+            <Field label="Faturamento mensal"     value={label(FATURAMENTO, p.faturamento_range)} />
+            <Field label="Notas fiscais / mês"    value={label(NOTAS_FISCAIS, p.notas_fiscais_range)} />
+            <Field label="Possui funcionários?"   value={yn(p.possui_funcionarios)} />
+            {p.possui_funcionarios === false && (
+              <Field label="Previsão de contratação?" value={yn(p.previsao_contratacao)} />
+            )}
+          </Section>
+          <Section title="Aquisição">
+            <Field label="Como conheceu OLI" value={label(COMO_CONHECEU, p.como_conheceu)} />
+            {referidoPorNome && (
+              <Field label="Indicado por" value={
+                <Link href={`/medicos/${p.referido_por}`} className="text-oli-green hover:underline">
+                  {referidoPorNome}
+                </Link>
+              } />
+            )}
+          </Section>
+        </div>
+      )}
 
-          {/* Trocar plano */}
+      {aba === 'plano' && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="space-y-4">
           <Section title="Alterar plano">
             <p className="text-xs text-oli-lgray mb-3">
               Plano atual: <span className="font-semibold text-oli-dark">{p.plan}</span>
@@ -424,8 +571,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </button>
             </form>
           </Section>
-
-          {/* Adicionar horas */}
           <Section title="Adicionar horas (cortesia / sem custo)">
             <p className="text-xs text-oli-lgray mb-3">
               Saldo: <span className="font-semibold text-oli-dark">{fmt(restante)}</span>
@@ -455,8 +600,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </button>
             </form>
           </Section>
-
-          {/* Remover horas */}
           <Section title="Remover horas (ajuste)">
             <p className="text-[11px] text-oli-red mb-3 font-medium">
               Reduz o saldo do profissional e envia um aviso com o motivo. O ajuste fica registrado no histórico.
@@ -467,58 +610,8 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               disponivelMin={disponivelMin}
             />
           </Section>
-
-          <AsaasAccountCard professionalId={p.id} account={asaasAccount ?? null} />
-
-        </div>
-
-        {/* ── Coluna direita: dados ── */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* Dados profissionais */}
-          <Section title="Dados profissionais">
-            <Field label="Nome completo"       value={p.nome} />
-            <Field label="Especialidade"       value={p.especialidade} />
-            <Field label="CRM"                 value={p.crm} />
-            <Field label="Duração consulta"    value={p.consultation_duration_minutes ? `${p.consultation_duration_minutes} min` : null} />
-            {p.bio && <Field label="Bio"        value={p.bio} />}
-            <Field label="Tipo de atendimento" value={label(TIPO_ATENDIMENTO, p.tipo_atendimento)} />
-            <Field label="O que busca no OLI"  value={label(OBJETIVO_OLI, p.objetivo_oli)} />
-            {(p.convenios as string[] | null)?.length ? (
-              <Field label="Convênios" value={(p.convenios as string[]).join(', ')} />
-            ) : null}
-          </Section>
-
-          {/* Ficha cadastral — onboarding fiscal */}
-          <Section title="Ficha cadastral (fiscal)">
-            <Field label="Situação jurídica"     value={label(SITUACAO_JURIDICA, p.situacao_juridica)} />
-            <Field label="Possui CLT?"            value={yn(p.possui_clt)} />
-            <Field label="Possui sócios?"         value={yn(p.possui_socios)} />
-            <Field label="Atividade exercida"     value={p.atividade_exercida} />
-            <Field label="Local de atuação"       value={label(LOCAL_ATUACAO, p.local_atuacao)} />
-            <Field label="Nº de locais"           value={label(NUM_LOCAIS, p.num_locais)} />
-            <Field label="Cidade / UF"            value={p.cidade_uf} />
-            <Field label="Faturamento mensal"     value={label(FATURAMENTO, p.faturamento_range)} />
-            <Field label="Notas fiscais / mês"    value={label(NOTAS_FISCAIS, p.notas_fiscais_range)} />
-            <Field label="Possui funcionários?"   value={yn(p.possui_funcionarios)} />
-            {p.possui_funcionarios === false && (
-              <Field label="Previsão de contratação?" value={yn(p.previsao_contratacao)} />
-            )}
-          </Section>
-
-          {/* Como conheceu */}
-          <Section title="Aquisição">
-            <Field label="Como conheceu OLI" value={label(COMO_CONHECEU, p.como_conheceu)} />
-            {referidoPorNome && (
-              <Field label="Indicado por" value={
-                <Link href={`/medicos/${p.referido_por}`} className="text-oli-green hover:underline">
-                  {referidoPorNome}
-                </Link>
-              } />
-            )}
-          </Section>
-
-          {/* Assinaturas */}
+          </div>
+          <div className="space-y-4 lg:col-span-2">
           <Section title={`Assinaturas (${subscriptions?.length ?? 0})`}>
             {(subscriptions ?? []).length === 0 ? (
               <p className="text-sm text-oli-lgray">Sem assinatura de plano</p>
@@ -550,8 +643,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             )}
           </Section>
-
-          {/* Módulos contratados */}
           <Section title={`Módulos contratados (${userModules?.length ?? 0})`}>
             {(userModules ?? []).length === 0 ? (
               <p className="text-sm text-oli-lgray">Nenhum módulo contratado</p>
@@ -592,8 +683,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             )}
           </Section>
-
-          {/* Saldo de horas */}
           <Section title={`Saldo de horas (${balances?.length ?? 0} pacotes)`}>
             <div className="flex gap-6 text-xs text-oli-lgray mb-4">
               <span>Total: <b className="text-oli-dark">{fmt(totalMin)}</b></span>
@@ -630,8 +719,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             )}
           </Section>
-
-          {/* Ajustes de horas */}
           {(adjustments ?? []).length > 0 && (
             <Section title={`Ajustes de horas (${adjustments?.length})`}>
               <div className="space-y-3">
@@ -673,8 +760,17 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             </Section>
           )}
+          </div>
+        </div>
+      )}
 
-          {/* Reservas recentes */}
+      {aba === 'atividade' && (
+        <div className="space-y-4">
+          {(reservations ?? []).length === 0 && (sessions ?? []).length === 0 && (npsResponses ?? []).length === 0 && (
+            <p className="rounded-2xl border border-oli-border bg-white px-4 py-10 text-center text-sm text-oli-lgray">
+              Nenhuma atividade registrada para este profissional.
+            </p>
+          )}
           {(reservations ?? []).length > 0 && (
             <Section title={`Reservas recentes (últimas ${reservations?.length})`}>
               <div className="overflow-x-auto">
@@ -705,8 +801,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             </Section>
           )}
-
-          {/* Cobrança e mensagens de paciente — só reservas concluídas */}
           {(reservations ?? []).some(r => r.status === 'concluido') && (
             <Section title="Cobrança e mensagens (consultas concluídas)">
               <div className="space-y-4">
@@ -730,8 +824,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             </Section>
           )}
-
-          {/* Sessões / cobranças */}
           {(sessions ?? []).length > 0 && (
             <Section title={`Sessões cobradas (últimas ${sessions?.length})`}>
               <div className="overflow-x-auto">
@@ -759,8 +851,6 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             </Section>
           )}
-
-          {/* NPS */}
           {(npsResponses ?? []).length > 0 && (
             <Section title={`NPS (${npsResponses?.length} resposta${npsResponses?.length !== 1 ? 's' : ''} · média ${npsMedia})`}>
               <div className="space-y-3">
@@ -780,9 +870,37 @@ export default async function MedicoDetailPage({ params }: { params: { id: strin
               </div>
             </Section>
           )}
-
         </div>
-      </div>
+      )}
+
+      {aba === 'conta' && (
+        <div className="space-y-4">
+          <MedicoManagementCard
+            userId={p.id}
+            nome={p.nome}
+            email={email ?? ''}
+            accountStatus={pExt.account_status ?? 'active'}
+            statusReason={pExt.status_reason}
+            comunidadeBanned={pExt.comunidade_banned ?? false}
+            comunidadeBanReason={pExt.comunidade_ban_reason}
+            contractStartDate={pExt.contract_start_date}
+            contractEndDate={pExt.contract_end_date}
+            contractDocUrl={pExt.contract_doc_url}
+            adminNotes={pExt.admin_notes}
+            crm={p.crm}
+            especialidade={p.especialidade}
+            tratamento={pExt.tratamento}
+            cidadeUf={p.cidade_uf}
+          />
+
+          <DocumentsCard
+            userId={p.id}
+            documents={(docs ?? []) as never[]}
+          />
+
+                    <AsaasAccountCard professionalId={p.id} account={asaasAccount ?? null} />
+        </div>
+      )}
     </div>
   );
 }
