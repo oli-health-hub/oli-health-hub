@@ -42,33 +42,46 @@ Os endereços antigos continuam funcionando (redirecionam para o novo).
 Tela da recepção. Server Component `force-dynamic`, fuso America/Sao_Paulo. Substitui o Dashboard e a Fila.
 
 - **Cabeçalho:** data por extenso, "N reservas · M pendências" e atalho "Abrir Totem QR".
+- **Cartões de resumo** (clicáveis, com ícone e cor por estado): Reservas hoje (e a próxima), Pendências (vermelho se houver), Salas livres (X/total) e Aguardando resposta (leads + conversas).
 - **Pendências** (só o que exige ação; cada linha leva a quem resolve). Tolerância de **30 min** após o fim da reserva:
   - **Check-out aberto:** reserva `em_uso` que já devia ter terminado.
   - **Reserva vencida sem check-in:** `agendado` que já passou, nos últimos 14 dias (até 10 linhas, com "e mais N").
   - **Assinaturas PRO** ativas que terminam em até 7 dias (precisa faturar).
   - **Comercial:** contagem de leads `novo`/`sem_resposta` e de conversas aguardando nossa resposta (últimos 7 dias), com link; sem listar linhas.
-- **Reservas do dia:** horário, sala, profissional, status e o campo **Paciente**.
+- **Reservas do dia:** linha do tempo com faixa colorida pelo status, horário, inicial do profissional, sala, status e o campo **Paciente**.
   - Texto livre: **só nome e inicial do sobrenome** (ex.: "Maria S."), até 60 caracteres, sem CPF ou telefone (a validação recusa 8 ou mais dígitos).
   - Só reservas que começam **hoje** aceitam rótulo. Salvar vazio apaga.
   - **LGPD:** apagado automaticamente 7 dias após o fim da reserva (job `pg_cron` `limpar_patient_label_reservas`). O texto nunca vai para `audit_logs`; a auditoria guarda só ids e tamanho (`set_patient_label`, `clear_patient_label`) e a visualização, uma vez por dia por admin (`view_patient_labels`).
   - Se a coluna `reservations.patient_label` ainda não existir no banco, o campo some e o resto da tela funciona.
-- **Salas agora:** as 9 salas da tabela `rooms`, "Livre" ou "Em uso · profissional até HH:MM".
+- **Salas agora:** grade com as 9 salas da tabela `rooms`; verde "Livre", dourado "Em uso · profissional até HH:MM".
 - **Atividade recente:** as 10 notificações operacionais não lidas mais recentes (cadastro, reserva, plano, módulo, pacote de horas), com WhatsApp e Dispensar.
 
 Status de reserva: o banco usa `agendado`, `em_uso`, `concluido` (e `cancelado`). O helper `lib/reservation-status.ts` converte também os nomes antigos em inglês e é a fonte única de rótulo e cor.
 
 ---
 
-## 3. Médicos (`/medicos`)
+## 3. Profissionais (`/medicos`)
 
-Lista completa de profissionais cadastrados.
+Lista dos profissionais cadastrados (os clientes da OLI), em linhas compactas.
 
-- Ordenado por data de cadastro (mais recente primeiro)
-- Máx. 200 registros
-- Campos: nome · CRM · especialidade · plano (badge colorido) · data de cadastro · módulos ativos
-- Badge de plano: `BASE` cinza · `PRO` verde · `VIP` dourado
-- Contagem de módulos ativos por médico (join `user_modules`)
-- Link para página de detalhe: `/medicos/[id]`
+- Ordenado por cadastro (mais recente primeiro); máx. 200 registros.
+- **Linha:** inicial, nome, especialidade · CRM, selo de plano (START com ícone de broto, PRO dourado com coroa) e selo de status (Ativa, Pausada, Suspensa, Banida, com ícone e cor). O botão da linha abre os detalhes: e-mail, módulos ativos, cadastro e as 4 assessorias (Contabilidade, Jurídica, Convênios, Marketing; "não possui" é oportunidade de oferta). O ícone de link à direita abre a ficha `/medicos/[id]`.
+- **Filtros** (botão "Filtros", agrupados): Assinatura (plano), Situação da conta (status) e Perfil profissional (especialidade); mais a busca por nome, e-mail ou CRM. Plano e status são seleções visuais com ícone, cor e contagem. Os filtros ativos aparecem como chips removíveis e cada combinação tem endereço próprio (`?plano=PRO&status=active&especialidade=…&q=…`).
+- Sem plano gravado conta como START.
+
+---
+
+## Leads (`/comercial`)
+
+- **Filtros** em listas suspensas atrás do botão "Filtros", agrupadas: Fila de trabalho (atendimento, revisita, atendente), Qualificação (situação, temperatura, perfil) e Origem; mais a busca. Chips removíveis mostram o que está ativo.
+- **Linha compacta** por lead: nome, situação, temperatura, revisita, atendente (ou "Sem atendente"), régua de nutrição, especialidade, origem, telefone e data; barra lateral colorida pela temperatura. Botões WhatsApp e "Iniciar com Olivia" na linha. "Detalhes e edição" abre o restante (e-mail, fonte, anúncio, perfil) e o formulário de edição; nada do que se edita mudou.
+
+## Conversas (`/comercial/conversas`)
+
+- Visual do WhatsApp: lista com avatar e hora, cabeçalho do contato, bolhas (equipe verde, Olivia azul clara, contato branca) com tiques de entrega e separador de dia, fundo bege e campo de mensagem com botão redondo de enviar.
+- **Etiquetas** derivadas dos dados que já existem (sem tabela nova): Aguardando resposta, quem atende (Olivia, Equipe, Paciente, Encerrada), temperatura, situação do lead, origem e "Fora da janela 24h". A linha da lista mostra as duas mais importantes; o botão à direita (`+N`) expande as demais. O cabeçalho da conversa mostra todas.
+- **Filtros** (botão "Filtros" na lista): vez de responder, atendimento, temperatura, situação do lead e origem, mais a busca por nome ou telefone.
+- Etiquetas manuais (livres) ainda não existem; exigiriam tabela própria.
 
 ---
 

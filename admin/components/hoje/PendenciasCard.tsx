@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LogOut, CalendarX, CalendarClock, Users, MessageCircle, CheckCircle2, type LucideIcon } from 'lucide-react';
 import type { HojeData, PendenciaReserva, PendenciaAssinatura, ListaComTotal } from '@/lib/hoje-data';
 import { fmtDiaHora, plural } from './format';
 
@@ -13,26 +14,36 @@ function Resolver({ href, rotulo, texto = 'Abrir ficha' }: { href: string | null
   );
 }
 
+const TONS = {
+  red: { tile: 'bg-oli-red/10 text-oli-red', borda: 'border-oli-red/30' },
+  gold: { tile: 'bg-oli-gold/15 text-oli-gold', borda: 'border-oli-gold/40' },
+  green: { tile: 'bg-oli-green/10 text-oli-green', borda: 'border-oli-green/30' },
+} as const;
+
 function Grupo({
   titulo,
   tom,
+  icone: Icone,
   dica,
   children,
 }: {
   titulo: string;
-  tom: 'red' | 'gold' | 'green';
+  tom: keyof typeof TONS;
+  icone: LucideIcon;
   dica?: string;
   children: React.ReactNode;
 }) {
-  const barra = tom === 'red' ? 'bg-oli-red' : tom === 'gold' ? 'bg-oli-gold' : 'bg-oli-green';
+  const t = TONS[tom];
   return (
-    <section className="py-3 first:pt-0 last:pb-0">
-      <h3 className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-oli-dark">
-        <span className={`h-2 w-2 rounded-full ${barra}`} aria-hidden="true" />
+    <section className={`rounded-xl border bg-white p-3 ${t.borda}`}>
+      <h3 className="mb-1.5 flex items-center gap-2.5 text-sm font-semibold text-oli-dark">
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${t.tile}`} aria-hidden="true">
+          <Icone className="h-4 w-4" />
+        </span>
         {titulo}
       </h3>
-      {dica && <p className="mb-1 text-xs text-oli-gray">{dica}</p>}
-      {children}
+      {dica && <p className="mb-1 pl-[2.625rem] text-xs text-oli-gray">{dica}</p>}
+      <div className="pl-[2.625rem]">{children}</div>
     </section>
   );
 }
@@ -94,16 +105,22 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
   const { checkoutsAbertos, vencidasSemCheckin, assinaturasVencendo, leadsAguardando, conversasAguardando } = data;
 
   return (
-    <div className="rounded-2xl border border-oli-border bg-white p-5">
-      <h2 className="mb-3 text-sm font-bold text-oli-dark">Pendências</h2>
+    <section id="pendencias" aria-labelledby="pendencias-titulo" className="scroll-mt-4 rounded-2xl border border-oli-border bg-white p-5">
+      <h2 id="pendencias-titulo" className="mb-3 text-sm font-bold text-oli-dark">
+        Pendências
+      </h2>
 
       {total === 0 ? (
-        <p className="text-sm text-oli-gray">Nenhuma pendência. Tudo em dia.</p>
+        <p className="flex items-center gap-2 rounded-xl bg-oli-green/10 px-3 py-3 text-sm font-medium text-oli-green">
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Nenhuma pendência. Tudo em dia.
+        </p>
       ) : (
-        <div className="divide-y divide-oli-border">
+        <div className="grid gap-3 lg:grid-cols-2">
           {checkoutsAbertos.total > 0 && (
             <Grupo
               tom="red"
+              icone={LogOut}
               titulo={`${checkoutsAbertos.total} ${plural(checkoutsAbertos.total, 'check-out aberto', 'check-outs abertos')}`}
               dica="O encerramento é feito pelo profissional no app. Confirme o uso com ele."
             >
@@ -114,6 +131,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
           {vencidasSemCheckin.total > 0 && (
             <Grupo
               tom="red"
+              icone={CalendarX}
               titulo={`${vencidasSemCheckin.total} ${plural(vencidasSemCheckin.total, 'reserva vencida sem check-in', 'reservas vencidas sem check-in')}`}
               dica="Confirme com o profissional se a reserva foi usada."
             >
@@ -124,6 +142,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
           {assinaturasVencendo.total > 0 && (
             <Grupo
               tom="gold"
+              icone={CalendarClock}
               titulo={`${assinaturasVencendo.total} ${plural(assinaturasVencendo.total, 'assinatura PRO termina', 'assinaturas PRO terminam')} em até 7 dias`}
             >
               <ListaAssinaturas lista={assinaturasVencendo} />
@@ -131,7 +150,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
           )}
 
           {leadsAguardando > 0 && (
-            <Grupo tom="green" titulo="Comercial">
+            <Grupo tom="green" icone={Users} titulo="Comercial">
               <div className="flex items-center justify-between gap-3 py-1 text-sm">
                 <span className="text-oli-dark">
                   {leadsAguardando} {plural(leadsAguardando, 'lead novo ou sem resposta', 'leads novos ou sem resposta')}
@@ -142,7 +161,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
           )}
 
           {conversasAguardando > 0 && (
-            <Grupo tom="green" titulo="Conversas">
+            <Grupo tom="green" icone={MessageCircle} titulo="Conversas">
               <div className="flex items-center justify-between gap-3 py-1 text-sm">
                 <span className="text-oli-dark">
                   {conversasAguardando}{' '}
@@ -154,6 +173,6 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }

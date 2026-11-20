@@ -1,7 +1,9 @@
-import Link from 'next/link';
+import { ChevronDown } from 'lucide-react';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { updateLead, optInLeadWhatsapp, pauseLeadWhatsappNutricao, resumeLeadWhatsappNutricao } from '@/app/actions';
 import BotaoWhatsApp from '@/components/BotaoWhatsApp';
+import { ORIGEM_LABEL, STATUS_LABEL, TEMPERATURA_LABEL } from '@/lib/lead-labels';
+import PainelFiltros, { type CampoPainel, type SecaoPainel } from '@/components/PainelFiltros';
 import { mensagemLead } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
@@ -56,36 +58,6 @@ function nomeCurto(nome: string): string {
   const p = nome.trim().split(/\s+/);
   return p.length === 1 ? p[0] : `${p[0]} ${p[1][0]}.`;
 }
-
-const ORIGEM_LABEL: Record<string, string> = {
-  site:       'Site',
-  rd_station: 'RD Station',
-  meta_ads:   'Meta Ads',
-  whatsapp:  'WhatsApp',
-  indicacao: 'Indicação',
-  evento:    'Evento',
-  outro:     'Outro',
-};
-
-/* Ordem = ordem da esteira. O `select` do formulário lê daqui, então mexer aqui
-   muda a ordem na tela também. */
-const STATUS_LABEL: Record<string, { label: string; bg: string; text: string }> = {
-  novo:               { label: 'Novo',                bg: 'bg-blue-50',   text: 'text-blue-600'   },
-  contatado:          { label: 'Contatado',           bg: 'bg-yellow-50', text: 'text-yellow-700' },
-  sem_resposta:       { label: 'Não consegui falar',  bg: 'bg-orange-50', text: 'text-orange-700' },
-  aguardando_retorno: { label: 'Aguardando retorno',  bg: 'bg-amber-50',  text: 'text-amber-700'  },
-  visita_agendada:    { label: 'Visita agendada',     bg: 'bg-purple-50', text: 'text-purple-600' },
-  visita_realizada:   { label: 'Visita realizada',    bg: 'bg-indigo-50', text: 'text-indigo-600' },
-  proposta_enviada:   { label: 'Proposta enviada',    bg: 'bg-teal-50',   text: 'text-teal-700'   },
-  convertido:         { label: 'Convertido',          bg: 'bg-green-50',  text: 'text-oli-green'  },
-  descartado:         { label: 'Descartado',          bg: 'bg-gray-100',  text: 'text-gray-400'   },
-};
-
-const TEMPERATURA_LABEL: Record<string, { label: string; bg: string; text: string }> = {
-  quente: { label: '🔥 Quente', bg: 'bg-red-50',    text: 'text-red-600'  },
-  morno:  { label: 'Morno',     bg: 'bg-orange-50', text: 'text-orange-600' },
-  frio:   { label: 'Frio',      bg: 'bg-sky-50',    text: 'text-sky-600'  },
-};
 
 const PERFIL_LABEL: Record<string, { label: string; bg: string; text: string }> = {
   dentro:      { label: 'Dentro do perfil', bg: 'bg-green-50', text: 'text-oli-green' },
@@ -311,666 +283,321 @@ export default async function LeadsPage({
     return acc;
   }, {});
 
-  // Preserva os outros filtros ao montar cada link, senão clicar num chip
-  // descarta silenciosamente as escolhas anteriores.
-  const href = (p: { status?: string; atendente?: string; origem?: string; atendimento?: string; temperatura?: string; perfil?: string; revisita?: string; q?: string }) => {
-    const query = new URLSearchParams();
-    const s  = p.status      ?? filtro;
-    const a  = p.atendente   ?? filtroAtd;
-    const o  = p.origem      ?? filtroOrig;
-    const at = p.atendimento ?? filtroAtend;
-    const t  = p.temperatura ?? filtroTemp;
-    const pf = p.perfil      ?? filtroPerfil;
-    const rv = p.revisita    ?? filtroRev;
-    const b  = p.q           ?? searchParams.q ?? '';
-    if (s  !== 'todos') query.set('status', s);
-    if (a  !== 'todos') query.set('atendente', a);
-    if (o  !== 'todos') query.set('origem', o);
-    if (at !== 'todos') query.set('atendimento', at);
-    if (t  !== 'todos') query.set('temperatura', t);
-    if (pf !== 'todos') query.set('perfil', pf);
-    if (rv !== 'todos') query.set('revisita', rv);
-    if (b)              query.set('q', b);
-    const qs = query.toString();
-    return qs ? `/comercial?${qs}` : '/comercial';
-  };
+  const campo = (c: Omit<CampoPainel, 'tipo'>): CampoPainel => ({ ...c, tipo: 'select' });
+  const secoes: SecaoPainel[] = [
+    {
+      titulo: 'Fila de trabalho',
+      campos: [
+        campo({
+          nome: 'atendimento', rotulo: 'Atendimento', atual: filtroAtend, todos: `Todos (${baseAtend.length})`,
+          opcoes: [
+            { valor: 'pendente', label: 'Falta atender', n: contagemAtend['pendente'] ?? 0 },
+            { valor: 'atendido', label: 'Já atendido', n: contagemAtend['atendido'] ?? 0 },
+          ],
+        }),
+        campo({
+          nome: 'revisita', rotulo: 'Revisita', atual: filtroRev, todos: `Todas (${baseRev.length})`,
+          opcoes: [
+            ...Object.entries(REVISITA_LABEL).map(([valor, m]) => ({ valor, label: m.label, n: contagemRev[valor] ?? 0 })),
+            { valor: 'fora', label: 'Fora da varredura', n: contagemRev['fora'] ?? 0 },
+          ].filter(o => o.n > 0 || o.valor === filtroRev),
+        }),
+        // Olivia não é um profile com acesso ao painel — é a IA da régua comercial, mas conta como
+        // atendente. "Sem atendente" é a fila de quem não tem dono e aparece mesmo zerada, de propósito.
+        campo({
+          nome: 'atendente', rotulo: 'Atendente', atual: filtroAtd, todos: `Todos (${baseAtd.length})`,
+          opcoes: [
+            { valor: 'olivia', label: 'Olivia (IA)', n: contagemAtd['olivia'] ?? 0 },
+            ...atendentes.map(a => ({ valor: a.id, label: nomeCurto(a.nome), n: contagemAtd[a.id] ?? 0 })),
+            { valor: 'sem', label: 'Sem atendente', n: contagemAtd['sem'] ?? 0 },
+          ],
+        }),
+      ],
+    },
+    {
+      titulo: 'Qualificação',
+      campos: [
+        campo({
+          nome: 'status', rotulo: 'Situação', atual: filtro, todos: `Todas (${baseStatus.length})`,
+          opcoes: Object.entries(STATUS_LABEL)
+            .map(([valor, m]) => ({ valor, label: m.label, n: contagem[valor] ?? 0 }))
+            .filter(o => o.n > 0 || o.valor === filtro),
+        }),
+        campo({
+          nome: 'temperatura', rotulo: 'Temperatura', atual: filtroTemp, todos: `Todas (${baseTemp.length})`,
+          opcoes: [
+            ...Object.entries(TEMPERATURA_LABEL).map(([valor, m]) => ({ valor, label: m.label.replace('🔥 ', ''), n: contagemTemp[valor] ?? 0 })),
+            { valor: 'sem', label: 'Sem avaliação', n: contagemTemp['sem'] ?? 0 },
+          ].filter(o => o.n > 0 || o.valor === filtroTemp),
+        }),
+        campo({
+          nome: 'perfil', rotulo: 'Perfil', atual: filtroPerfil, todos: `Todos (${basePerfil.length})`,
+          opcoes: [
+            ...Object.entries(PERFIL_LABEL).map(([valor, m]) => ({ valor, label: m.label, n: contagemPerfil[valor] ?? 0 })),
+            { valor: 'sem', label: 'Sem avaliação', n: contagemPerfil['sem'] ?? 0 },
+          ].filter(o => o.n > 0 || o.valor === filtroPerfil),
+        }),
+      ],
+    },
+    {
+      titulo: 'Origem',
+      campos: [
+        campo({
+          nome: 'origem', rotulo: 'Origem', atual: filtroOrig, todos: `Todas (${baseOrig.length})`,
+          opcoes: Object.entries(ORIGEM_LABEL)
+            .map(([valor, label]) => ({ valor, label, n: contagemOrig[valor] ?? 0 }))
+            .filter(o => o.n > 0 || o.valor === filtroOrig),
+        }),
+      ],
+    },
+  ];
 
-  // Mais largo que o max-w-6xl das outras telas de propósito: esta tem 7 colunas.
+  const CAMPO = 'h-8 w-full rounded-lg border border-oli-border bg-white px-2 text-xs focus:outline-none focus:ring-2 focus:ring-oli-green/30';
+  const ROTULO = 'text-[10px] font-bold uppercase tracking-wide text-oli-lgray';
+  const SELO = 'whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold';
+  const BARRA_TEMP: Record<string, string> = { quente: 'bg-oli-red', morno: 'bg-orange-400', frio: 'bg-sky-400' };
+
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-      <div>
+    <div className="mx-auto max-w-[1200px] space-y-4 p-4 md:p-6">
+      <header>
         <h1 className="text-2xl font-bold text-oli-dark">Leads</h1>
-        <p className="text-sm text-gray-500">Contatos do site, dos anúncios e da RD Station.</p>
-      </div>
+        <p className="text-sm text-oli-gray">Contatos do site, dos anúncios e da RD Station.</p>
+      </header>
 
-      {/* Busca livre. GET nativo, não client component: o navegador monta a
-          URL sozinho e a página server component faz o resto — mesmo padrão
-          dos chips abaixo. Campos ocultos preservam os outros filtros
-          ativos, senão buscar reseta a situação/atendente/origem escolhidos. */}
-      <form action="/comercial" method="get" className="flex items-center gap-2">
-        <input type="hidden" name="status" value={filtro} />
-        <input type="hidden" name="atendente" value={filtroAtd} />
-        <input type="hidden" name="origem" value={filtroOrig} />
-        <input type="hidden" name="atendimento" value={filtroAtend} />
-        <input type="hidden" name="revisita" value={filtroRev} />
-        <input
-          type="search"
-          name="q"
-          defaultValue={searchParams.q ?? ''}
-          placeholder="Buscar por nome, e-mail ou WhatsApp…"
-          className="w-full max-w-sm border border-gray-200 rounded-lg px-3 py-2 text-sm"
-        />
-        <button type="submit" className="text-xs text-oli-green font-semibold underline">Buscar</button>
-        {buscaCrua && (
-          <Link href={href({ q: '' })} className="text-xs text-gray-400 hover:text-gray-600">limpar</Link>
-        )}
-      </form>
+      <PainelFiltros
+        basePath="/comercial"
+        secoes={secoes}
+        busca={searchParams.q ?? ''}
+        placeholderBusca="Buscar por nome, e-mail ou WhatsApp…"
+        rotuloItens="leads"
+        total={leads.length}
+        totalGeral={todos.length}
+      />
 
-      {/* Filtro por situação. Links, não botões: mantém a página como server
-          component e deixa cada filtro com URL própria, compartilhável. */}
-      <div className="space-y-2">
-        {/* Primeira linha da barra enquanto a varredura pré-troca de agência
-            estiver rodando: é a fila que a Claudia trabalha hoje. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Revisita</span>
-          <Link
-            href={href({ revisita: 'todos' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroRev === 'todos'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-            }`}
-          >
-            Todas <span className="opacity-70">{baseRev.length}</span>
-          </Link>
-          {Object.entries(REVISITA_LABEL).map(([valor, meta]) => {
-            const n = contagemRev[valor] ?? 0;
-            if (n === 0 && filtroRev !== valor) return null;
-            const ativo = filtroRev === valor;
+      {leads.length === 0 ? (
+        <p className="rounded-2xl border border-oli-border bg-white px-4 py-8 text-center text-sm text-oli-gray">
+          {filtro === 'todos' && filtroAtd === 'todos' && filtroOrig === 'todos' && filtroAtend === 'todos' && !buscaCrua
+            ? 'Nenhum lead recebido ainda.'
+            : 'Nenhum lead com esses filtros.'}
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {leads.map((lead) => {
+            const statusMeta   = STATUS_LABEL[lead.status] ?? { label: lead.status, bg: 'bg-gray-100', text: 'text-gray-500' };
+            const tempMeta     = lead.temperatura ? TEMPERATURA_LABEL[lead.temperatura] : null;
+            const perfilMeta   = lead.perfil      ? PERFIL_LABEL[lead.perfil]           : null;
+            const nutricaoMeta = resumoNutricao(lead);
+            const revMeta      = lead.revisita_status ? REVISITA_LABEL[lead.revisita_status] : null;
+            const barra        = (lead.temperatura && BARRA_TEMP[lead.temperatura]) || 'bg-oli-border';
             return (
-              <Link
-                key={valor}
-                href={href({ revisita: valor })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  ativo ? 'bg-oli-green text-white border-oli-green' : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
-                }`}
-              >
-                {meta.label} <span className="opacity-70">{n}</span>
-              </Link>
-            );
-          })}
-          <Link
-            href={href({ revisita: 'fora' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroRev === 'fora'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-gray-100 text-gray-500 border-transparent hover:border-oli-green'
-            }`}
-          >
-            Fora da varredura <span className="opacity-70">{contagemRev['fora'] ?? 0}</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Atendimento</span>
-          <Link
-            href={href({ atendimento: 'todos' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroAtend === 'todos'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-            }`}
-          >
-            Todos <span className="opacity-70">{baseAtend.length}</span>
-          </Link>
-          <Link
-            href={href({ atendimento: 'pendente' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroAtend === 'pendente'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-amber-50 text-amber-700 border-transparent hover:border-oli-green'
-            }`}
-          >
-            Falta atender <span className="opacity-70">{contagemAtend['pendente'] ?? 0}</span>
-          </Link>
-          <Link
-            href={href({ atendimento: 'atendido' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroAtend === 'atendido'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-green-50 text-oli-green border-transparent hover:border-oli-green'
-            }`}
-          >
-            Já atendido <span className="opacity-70">{contagemAtend['atendido'] ?? 0}</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Origem</span>
-          <Link
-            href={href({ origem: 'todos' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroOrig === 'todos'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-            }`}
-          >
-            Todas <span className="opacity-70">{baseOrig.length}</span>
-          </Link>
-          {Object.entries(ORIGEM_LABEL).map(([valor, label]) => {
-            const n = contagemOrig[valor] ?? 0;
-            if (n === 0 && filtroOrig !== valor) return null;
-            const ativo = filtroOrig === valor;
-            return (
-              <Link
-                key={valor}
-                href={href({ origem: valor })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  ativo
-                    ? 'bg-oli-green text-white border-oli-green'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-oli-green'
-                }`}
-              >
-                {label} <span className="opacity-70">{n}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Situação</span>
-          <Link
-            href={href({ status: 'todos' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtro === 'todos'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-            }`}
-          >
-            Todas <span className="opacity-70">{baseStatus.length}</span>
-          </Link>
-
-          {Object.entries(STATUS_LABEL).map(([valor, meta]) => {
-            const n = contagem[valor] ?? 0;
-            // Etapa sem nenhum lead não vira chip — a barra ficaria com 9
-            // filtros mortos desde o primeiro dia.
-            if (n === 0 && filtro !== valor) return null;
-            const ativo = filtro === valor;
-            return (
-              <Link
-                key={valor}
-                href={href({ status: valor })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  ativo
-                    ? 'bg-oli-green text-white border-oli-green'
-                    : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
-                }`}
-              >
-                {meta.label} <span className="opacity-70">{n}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Temperatura</span>
-          <Link
-            href={href({ temperatura: 'todos' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroTemp === 'todos'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-            }`}
-          >
-            Todas <span className="opacity-70">{baseTemp.length}</span>
-          </Link>
-          {Object.entries(TEMPERATURA_LABEL).map(([valor, meta]) => {
-            const n = contagemTemp[valor] ?? 0;
-            if (n === 0 && filtroTemp !== valor) return null;
-            const ativo = filtroTemp === valor;
-            return (
-              <Link
-                key={valor}
-                href={href({ temperatura: valor })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  ativo ? 'bg-oli-green text-white border-oli-green' : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
-                }`}
-              >
-                {meta.label} <span className="opacity-70">{n}</span>
-              </Link>
-            );
-          })}
-          {/* "Sem avaliação" separado, igual ao "Sem atendente" — é fila de
-              trabalho (falta classificar), não deve se perder misturado. */}
-          <Link
-            href={href({ temperatura: 'sem' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroTemp === 'sem'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-gray-100 text-gray-500 border-transparent hover:border-oli-green'
-            }`}
-          >
-            Sem avaliação <span className="opacity-70">{contagemTemp['sem'] ?? 0}</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Perfil</span>
-          <Link
-            href={href({ perfil: 'todos' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroPerfil === 'todos'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-            }`}
-          >
-            Todos <span className="opacity-70">{basePerfil.length}</span>
-          </Link>
-          {Object.entries(PERFIL_LABEL).map(([valor, meta]) => {
-            const n = contagemPerfil[valor] ?? 0;
-            if (n === 0 && filtroPerfil !== valor) return null;
-            const ativo = filtroPerfil === valor;
-            return (
-              <Link
-                key={valor}
-                href={href({ perfil: valor })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  ativo ? 'bg-oli-green text-white border-oli-green' : `${meta.bg} ${meta.text} border-transparent hover:border-oli-green`
-                }`}
-              >
-                {meta.label} <span className="opacity-70">{n}</span>
-              </Link>
-            );
-          })}
-          <Link
-            href={href({ perfil: 'sem' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroPerfil === 'sem'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-gray-100 text-gray-500 border-transparent hover:border-oli-green'
-            }`}
-          >
-            Sem avaliação <span className="opacity-70">{contagemPerfil['sem'] ?? 0}</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold w-16">Atendente</span>
-          <Link
-            href={href({ atendente: 'todos' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroAtd === 'todos'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-white text-gray-500 border-gray-200 hover:border-oli-green'
-            }`}
-          >
-            Todos <span className="opacity-70">{baseAtd.length}</span>
-          </Link>
-
-          {/* Olivia não é um profile com acesso ao painel — é a IA da régua
-              comercial (§40 do handoff), mas conta como atendente pra quem
-              está filtrando quem já foi contatado e por quem. */}
-          <Link
-            href={href({ atendente: 'olivia' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroAtd === 'olivia'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-blue-50 text-blue-700 border-transparent hover:border-oli-green'
-            }`}
-          >
-            Olivia (IA) <span className="opacity-70">{contagemAtd['olivia'] ?? 0}</span>
-          </Link>
-
-          {atendentes.map(a => {
-            const n = contagemAtd[a.id] ?? 0;
-            const ativo = filtroAtd === a.id;
-            return (
-              <Link
-                key={a.id}
-                href={href({ atendente: a.id })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  ativo
-                    ? 'bg-oli-green text-white border-oli-green'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-oli-green'
-                }`}
-              >
-                {nomeCurto(a.nome)} <span className="opacity-70">{n}</span>
-              </Link>
-            );
-          })}
-
-          {/* "Sem atendente" é o chip que mais importa no dia a dia: é a fila
-              de quem ainda não tem dono. Aparece mesmo zerado, de propósito. */}
-          <Link
-            href={href({ atendente: 'sem' })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-              filtroAtd === 'sem'
-                ? 'bg-oli-green text-white border-oli-green'
-                : 'bg-amber-50 text-amber-700 border-transparent hover:border-oli-green'
-            }`}
-          >
-            Sem atendente <span className="opacity-70">{contagemAtd['sem'] ?? 0}</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* overflow-x-auto, não overflow-hidden: em tela menor a coluna de edição
-          empurra a tabela além do container e o hidden cortava conteúdo sem dar
-          como rolar. */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-            <tr>
-              <th className="text-left px-4 py-3">Recebido</th>
-              <th className="text-left px-4 py-3">Contato</th>
-              <th className="text-left px-4 py-3">Especialidade</th>
-              <th className="text-left px-4 py-3">Origem</th>
-              <th className="text-left px-4 py-3">Situação</th>
-              <th className="text-left px-4 py-3 w-[330px]">Atualizar</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {leads.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                {filtro === 'todos' && filtroAtd === 'todos' && filtroOrig === 'todos' && filtroAtend === 'todos' && !buscaCrua
-                  ? 'Nenhum lead recebido ainda.'
-                  : 'Nenhum lead com esses filtros.'}
-              </td></tr>
-            )}
-            {leads.map((lead) => {
-              const statusMeta   = STATUS_LABEL[lead.status] ?? { label: lead.status, bg: 'bg-gray-100', text: 'text-gray-500' };
-              const tempMeta     = lead.temperatura ? TEMPERATURA_LABEL[lead.temperatura] : null;
-              const perfilMeta   = lead.perfil      ? PERFIL_LABEL[lead.perfil]           : null;
-              const nutricaoMeta = resumoNutricao(lead);
-              const revMeta      = lead.revisita_status ? REVISITA_LABEL[lead.revisita_status] : null;
-              return (
-                <tr key={lead.id} className="border-t border-gray-50 align-top">
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatData(lead.created_at)}</td>
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-oli-dark">{lead.nome}</p>
-                    {lead.whatsapp
-                      ? <p className="text-xs text-gray-400">{lead.whatsapp}</p>
-                      : <p className="text-xs text-amber-600 font-medium">sem telefone — falar por e-mail</p>}
-                    <p className="text-xs text-gray-400">{lead.email}</p>
-                    {/* O botão some sozinho quando não há número utilizável —
-                        oferecer e abrir o WhatsApp sem destino pareceria defeito. */}
-                    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                      <BotaoWhatsApp numero={lead.whatsapp} texto={mensagemLead(lead.nome)} tamanho="pequeno" />
-                      {/* Ação principal pra começar a régua — fica na primeira
-                          coluna, ao lado do WhatsApp normal, não escondida no
-                          fim do formulário de edição. Só aparece antes do
-                          opt-in; depois disso o status/pausar/retomar vive na
-                          coluna Situação/Atualizar. */}
-                      {lead.whatsapp && !lead.whatsapp_opt_in_at && (
-                        <form action={optInLeadWhatsapp}>
-                          <input type="hidden" name="id" value={lead.id} />
-                          <input type="hidden" name="source" value={ORIGEM_PARA_OPT_IN_SOURCE[lead.origem] ?? 'manual'} />
-                          <button
-                            type="submit"
-                            className="bg-oli-green text-white font-semibold rounded-lg hover:opacity-90 transition-opacity text-[11px] px-2 py-0.5"
-                          >
-                            Iniciar com Olivia
-                          </button>
-                        </form>
-                      )}
+              <li key={lead.id} className="relative overflow-hidden rounded-2xl border border-oli-border bg-white">
+                <span className={`absolute inset-y-0 left-0 w-1.5 ${barra}`} aria-hidden="true" />
+                <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 py-3 pl-5 pr-4">
+                  <div className="min-w-0 flex-1 basis-64">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="truncate text-sm font-bold text-oli-dark">{lead.nome}</p>
+                      <span className={`${SELO} ${statusMeta.bg} ${statusMeta.text}`}>{statusMeta.label}</span>
+                      {tempMeta && <span className={`${SELO} ${tempMeta.bg} ${tempMeta.text}`}>{tempMeta.label}</span>}
+                      {revMeta && <span className={`${SELO} ${revMeta.bg} ${revMeta.text}`}>{revMeta.label}</span>}
                     </div>
-                  </td>
-                  <td className="px-4 py-3">{lead.especialidade ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <p>{ORIGEM_LABEL[lead.origem] ?? lead.origem}</p>
-                    {/* fonte vem da RD (canal), conjunto/anuncio vêm do Meta (criativo).
-                        São camadas diferentes — por isso aparecem juntas, sem substituição. */}
-                    {lead.fonte && <p className="text-xs text-oli-green font-medium">{lead.fonte}</p>}
-                    {lead.conjunto && <p className="text-xs text-gray-400">{lead.conjunto}</p>}
-                    {lead.anuncio && <p className="text-xs text-gray-400">{lead.anuncio}</p>}
-                  </td>
-                  <td className="px-4 py-3">
-                    {/* Hierarquia deliberada, depois da classificação em massa de
-                        29/ago deixar a coluna virando uma pilha de 8 selos do
-                        mesmo peso visual — impossível bater o olho e saber o que
-                        importa. Linha 1 (destaque): status + temperatura, é a
-                        decisão de "ligo agora ou não". Linha 2: dono do
-                        atendimento. Resto vira texto miúdo secundário — ainda
-                        visível, mas não competindo por atenção com o que decide
-                        prioridade. */}
-                    <div className="flex flex-col items-start gap-1.5">
-                      <div className="flex items-center gap-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${statusMeta.bg} ${statusMeta.text}`}>
-                          {statusMeta.label}
-                        </span>
-                        {tempMeta && (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${tempMeta.bg} ${tempMeta.text}`}>
-                            {tempMeta.label}
-                          </span>
-                        )}
-                        {/* Ao lado de status/temperatura porque, enquanto a
-                            varredura roda, "falta revisitar" pesa tanto quanto
-                            a etapa da esteira na hora de escolher quem chamar. */}
-                        {revMeta && (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap ${revMeta.bg} ${revMeta.text}`}>
-                            {revMeta.label}
-                          </span>
-                        )}
-                      </div>
-                      {lead.revisita_em && (
-                        <p className="text-[11px] text-gray-400 leading-snug">
-                          Revisita {formatData(lead.revisita_em)}
-                          {lead.revisita_por && ` · ${nomeCurto(nomePorId.get(lead.revisita_por) ?? '—')}`}
-                          {lead.revisita_resultado && ` · ${lead.revisita_resultado}`}
-                        </p>
-                      )}
-                      {/* Sem dono aparece em âmbar, não some: lead sem atendente
-                          é o que mais corre risco de ficar parado. Olivia tem
-                          prioridade de exibição — é o mesmo balde do filtro. */}
+                    <p className="mt-0.5 truncate text-xs text-oli-gray">
+                      {[
+                        lead.especialidade,
+                        ORIGEM_LABEL[lead.origem] ?? lead.origem,
+                        lead.whatsapp ?? 'sem telefone',
+                        formatData(lead.created_at),
+                      ].filter(Boolean).join(' · ')}
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       {lead.atendido_por_ia
-                        ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-blue-50 text-blue-700">
-                            Olivia (IA)
-                          </span>
+                        ? <span className={`${SELO} bg-blue-50 text-blue-700`}>Olivia (IA)</span>
                         : lead.atendente_id
-                          ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-gray-100 text-gray-600">
-                              {nomeCurto(nomePorId.get(lead.atendente_id) ?? '—')}
-                            </span>
-                          : <span className="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-50 text-amber-700">
-                              sem atendente
-                            </span>}
-                      {/* Régua de nutrição comercial — só aparece com opt-in
-                          registrado. Sem isso, não existe disparo automático.
-                          Continua em selo (não texto miúdo): é acionável, tem
-                          data. */}
-                      {nutricaoMeta && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${nutricaoMeta.bg} ${nutricaoMeta.text}`}>
-                          {nutricaoMeta.label}
-                        </span>
-                      )}
-                      {/* Metadado secundário — perfil, canal e motivo de descarte
-                          continuam visíveis, só não brigam mais em peso visual
-                          com status/temperatura/dono. Uma linha só, separada
-                          por "·", sem fundo colorido. */}
-                      {(perfilMeta || lead.canal_primeiro_contato || lead.motivo_descarte) && (
-                        <p className="text-[11px] text-gray-400 leading-snug">
-                          {[
-                            perfilMeta?.label,
-                            lead.canal_primeiro_contato && `1º contato: ${CANAL_LABEL[lead.canal_primeiro_contato] ?? lead.canal_primeiro_contato}`,
-                            lead.motivo_descarte && (MOTIVO_LABEL[lead.motivo_descarte] ?? lead.motivo_descarte),
-                          ].filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                      {/* Só aparece quando algo deu errado. Sem este aviso, um lead
-                          dessincronizado da RD ficaria invisível — que é justamente
-                          o problema que a sincronização existe para evitar. Mantido
-                          em destaque (vermelho) — é o único item desta coluna que
-                          pede ação corretiva, não é só contexto. */}
+                          ? <span className={`${SELO} bg-gray-100 text-gray-600`}>{nomeCurto(nomePorId.get(lead.atendente_id) ?? '—')}</span>
+                          : <span className={`${SELO} bg-amber-50 text-amber-700`}>Sem atendente</span>}
+                      {nutricaoMeta && <span className={`${SELO} ${nutricaoMeta.bg} ${nutricaoMeta.text}`}>{nutricaoMeta.label}</span>}
                       {lead.rd_sync_erro && (
-                        <span className="text-xs text-oli-red font-semibold" title={lead.rd_sync_erro}>
-                          ⚠ não espelhado na RD
-                        </span>
-                      )}
-                      {!lead.rd_deal_id && (
-                        <p className="text-[11px] text-gray-300">sem negociação na RD</p>
+                        <span className="text-[11px] font-semibold text-oli-red" title={lead.rd_sync_erro}>⚠ não espelhado na RD</span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 w-[330px]">
-                    <form action={updateLead} className="flex flex-col gap-2">
+                  </div>
+
+                  <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                    <BotaoWhatsApp numero={lead.whatsapp} texto={mensagemLead(lead.nome)} tamanho="pequeno" />
+                    {/* Só aparece antes do opt-in; depois disso pausar/retomar vive nos detalhes. */}
+                    {lead.whatsapp && !lead.whatsapp_opt_in_at && (
+                      <form action={optInLeadWhatsapp}>
+                        <input type="hidden" name="id" value={lead.id} />
+                        <input type="hidden" name="source" value={ORIGEM_PARA_OPT_IN_SOURCE[lead.origem] ?? 'manual'} />
+                        <button
+                          type="submit"
+                          className="rounded-lg bg-oli-green px-2 py-0.5 text-[11px] font-semibold text-white transition-transform duration-150 ease-out active:scale-[0.97]"
+                        >
+                          Iniciar com Olivia
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+
+                <details className="group border-t border-oli-border/70 bg-oli-bg/40">
+                  <summary
+                    aria-label={`Detalhes e edição de ${lead.nome}`}
+                    className="flex cursor-pointer list-none items-center gap-1.5 py-2 pl-5 pr-4 text-xs font-semibold text-oli-green [&::-webkit-details-marker]:hidden"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5 transition-transform duration-150 ease-out group-open:rotate-180" aria-hidden="true" />
+                    <span className="group-open:hidden">Detalhes e edição</span>
+                    <span className="hidden group-open:inline">Fechar detalhes</span>
+                  </summary>
+
+                  <div className="space-y-3 px-5 pb-4 pt-1">
+                    <dl className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
+                      <div><dt className={ROTULO}>E-mail</dt><dd className="break-all text-oli-dark">{lead.email}</dd></div>
+                      {lead.fonte && <div><dt className={ROTULO}>Fonte (RD)</dt><dd className="text-oli-green font-medium">{lead.fonte}</dd></div>}
+                      {lead.conjunto && <div><dt className={ROTULO}>Conjunto</dt><dd className="text-oli-dark">{lead.conjunto}</dd></div>}
+                      {lead.anuncio && <div><dt className={ROTULO}>Anúncio</dt><dd className="text-oli-dark">{lead.anuncio}</dd></div>}
+                      {(perfilMeta || lead.canal_primeiro_contato || lead.motivo_descarte) && (
+                        <div className="sm:col-span-2">
+                          <dt className={ROTULO}>Perfil e contato</dt>
+                          <dd className="text-oli-gray">
+                            {[
+                              perfilMeta?.label,
+                              lead.canal_primeiro_contato && `1º contato: ${CANAL_LABEL[lead.canal_primeiro_contato] ?? lead.canal_primeiro_contato}`,
+                              lead.motivo_descarte && (MOTIVO_LABEL[lead.motivo_descarte] ?? lead.motivo_descarte),
+                            ].filter(Boolean).join(' · ')}
+                          </dd>
+                        </div>
+                      )}
+                      {lead.revisita_em && (
+                        <div className="sm:col-span-2">
+                          <dt className={ROTULO}>Revisita</dt>
+                          <dd className="text-oli-gray">
+                            {formatData(lead.revisita_em)}
+                            {lead.revisita_por && ` · ${nomeCurto(nomePorId.get(lead.revisita_por) ?? '—')}`}
+                            {lead.revisita_resultado && ` · ${lead.revisita_resultado}`}
+                          </dd>
+                        </div>
+                      )}
+                      {!lead.rd_deal_id && <div className="sm:col-span-2 text-oli-lgray">Sem negociação na RD</div>}
+                    </dl>
+
+                    <form action={updateLead} className="space-y-3 rounded-xl border border-oli-border bg-white p-3">
                       <input type="hidden" name="id" value={lead.id} />
-
-                      <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">Atendente</label>
-                      <select name="atendente_id" defaultValue={lead.atendente_id ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
-                        <option value="">— sem atendente</option>
-                        {atendentes.map(a => (
-                          <option key={a.id} value={a.id}>{a.nome}</option>
-                        ))}
-                      </select>
-
-                      <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">Etapa</label>
-                      <select name="status" defaultValue={lead.status} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
-                        {Object.entries(STATUS_LABEL).map(([value, meta]) => (
-                          <option key={value} value={value}>{meta.label}</option>
-                        ))}
-                      </select>
-
-                      {/* Bloco da varredura pré-troca de agência. Fica logo
-                          abaixo da etapa porque é o eixo paralelo a ela: a
-                          esteira diz onde o lead está, a revisita diz se já
-                          passamos por ele nesta rodada. Escolher "— fora da
-                          varredura" tira o lead da fila da Claudia. */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Revisita</label>
-                          <select name="revisita_status" defaultValue={lead.revisita_status ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
-                            <option value="">— fora da varredura</option>
-                            {Object.entries(REVISITA_LABEL).map(([value, meta]) => (
-                              <option key={value} value={value}>{meta.label}</option>
-                            ))}
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Atendente</span>
+                          <select name="atendente_id" defaultValue={lead.atendente_id ?? ''} className={CAMPO}>
+                            <option value="">— sem atendente</option>
+                            {atendentes.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
                           </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Quem revisitou</label>
-                          <select name="revisita_por" defaultValue={lead.revisita_por ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Etapa</span>
+                          <select name="status" defaultValue={lead.status} className={CAMPO}>
+                            {Object.entries(STATUS_LABEL).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>1º contato foi por</span>
+                          <select name="canal_primeiro_contato" defaultValue={lead.canal_primeiro_contato ?? ''} className={CAMPO}>
                             <option value="">— não registrado</option>
-                            {atendentes.map(a => (
-                              <option key={a.id} value={a.id}>{a.nome}</option>
-                            ))}
+                            {Object.entries(CANAL_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                           </select>
-                        </div>
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Temperatura</span>
+                          <select name="temperatura" defaultValue={lead.temperatura ?? ''} className={CAMPO}>
+                            <option value="">— não avaliado</option>
+                            {Object.entries(TEMPERATURA_LABEL).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Perfil</span>
+                          <select name="perfil" defaultValue={lead.perfil ?? ''} className={CAMPO}>
+                            <option value="">— não avaliado</option>
+                            {Object.entries(PERFIL_LABEL).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
+                          </select>
+                        </label>
+                        {/* Sempre visível: o banco recusa motivo em lead que não está descartado
+                            e a action limpa o campo antes de gravar. */}
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Motivo (só vale se descartado)</span>
+                          <select name="motivo_descarte" defaultValue={lead.motivo_descarte ?? ''} className={CAMPO}>
+                            <option value="">— sem motivo</option>
+                            {Object.entries(MOTIVO_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                          </select>
+                        </label>
                       </div>
 
-                      {/* Separado de `observacoes` de propósito: aquele campo
-                          guarda o histórico da agência anterior e não deve ser
-                          sobrescrito pelo que o lead responder agora. */}
-                      <input
-                        type="text"
-                        name="revisita_resultado"
-                        defaultValue={lead.revisita_resultado ?? ''}
-                        placeholder="O que ele respondeu na revisita"
-                        className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
-                      />
-
-                      <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">1º contato foi por</label>
-                      <select name="canal_primeiro_contato" defaultValue={lead.canal_primeiro_contato ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
-                        <option value="">— não registrado</option>
-                        {Object.entries(CANAL_LABEL).map(([value, label]) => (
-                          <option key={value} value={value}>{label}</option>
-                        ))}
-                      </select>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Temperatura</label>
-                          <select name="temperatura" defaultValue={lead.temperatura ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
-                            <option value="">— não avaliado</option>
-                            {Object.entries(TEMPERATURA_LABEL).map(([value, meta]) => (
-                              <option key={value} value={value}>{meta.label}</option>
-                            ))}
+                      {/* Eixo paralelo à esteira: a esteira diz onde o lead está, a revisita diz se
+                          já passamos por ele nesta rodada. "— fora da varredura" tira o lead da fila. */}
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Revisita</span>
+                          <select name="revisita_status" defaultValue={lead.revisita_status ?? ''} className={CAMPO}>
+                            <option value="">— fora da varredura</option>
+                            {Object.entries(REVISITA_LABEL).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
                           </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">Perfil</label>
-                          <select name="perfil" defaultValue={lead.perfil ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
-                            <option value="">— não avaliado</option>
-                            {Object.entries(PERFIL_LABEL).map(([value, meta]) => (
-                              <option key={value} value={value}>{meta.label}</option>
-                            ))}
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Quem revisitou</span>
+                          <select name="revisita_por" defaultValue={lead.revisita_por ?? ''} className={CAMPO}>
+                            <option value="">— não registrado</option>
+                            {atendentes.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
                           </select>
-                        </div>
+                        </label>
+                        {/* Separado de `observacoes`: aquele guarda o histórico da agência anterior. */}
+                        <label className="flex flex-col gap-1">
+                          <span className={ROTULO}>Resposta na revisita</span>
+                          <input
+                            type="text"
+                            name="revisita_resultado"
+                            defaultValue={lead.revisita_resultado ?? ''}
+                            placeholder="O que ele respondeu"
+                            className={CAMPO}
+                          />
+                        </label>
                       </div>
 
-                      {/* Sempre visível: esconder condicionalmente exigiria virar client
-                          component só por isso. O banco recusa motivo em lead que não
-                          está descartado, e a action limpa o campo antes de gravar. */}
-                      <label className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold -mb-1">
-                        Motivo <span className="normal-case tracking-normal font-normal">(só vale se descartado)</span>
-                      </label>
-                      <select name="motivo_descarte" defaultValue={lead.motivo_descarte ?? ''} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
-                        <option value="">— sem motivo</option>
-                        {Object.entries(MOTIVO_LABEL).map(([value, label]) => (
-                          <option key={value} value={value}>{label}</option>
-                        ))}
-                      </select>
-
-                      {/* Colapsado por padrão: a maioria dos leads não tem observação,
-                          e um textarea de 8 linhas em toda linha da tabela deixava a
-                          tela impossível de varrer. O <details> é nativo — não precisa
-                          virar client component só pra abrir e fechar.
-                          O textarea continua no DOM fechado, então o form envia normal. */}
-                      <details className="group">
-                        <summary className="cursor-pointer list-none text-[11px] text-gray-500 hover:text-oli-green">
-                          {lead.observacoes ? (
-                            <>
-                              <span className="font-semibold uppercase tracking-wide text-gray-400">Obs. </span>
-                              <span className="group-open:hidden">
-                                {lead.observacoes.slice(0, 60)}{lead.observacoes.length > 60 ? '…' : ''}
-                              </span>
-                              <span className="hidden group-open:inline text-oli-green font-semibold">fechar</span>
-                            </>
-                          ) : (
-                            <span className="text-gray-400 group-open:text-oli-green">+ observação</span>
-                          )}
-                        </summary>
+                      <label className="flex flex-col gap-1">
+                        <span className={ROTULO}>Observações internas</span>
                         <textarea
                           name="observacoes"
                           defaultValue={lead.observacoes ?? ''}
                           placeholder="Observações internas"
-                          rows={6}
-                          className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] leading-relaxed resize-y"
+                          rows={4}
+                          className="w-full resize-y rounded-lg border border-oli-border px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-oli-green/30"
                         />
-                      </details>
-                      <button type="submit" className="text-xs text-oli-green font-semibold underline self-start">
+                      </label>
+
+                      <button
+                        type="submit"
+                        className="h-9 rounded-xl bg-oli-green px-4 text-xs font-semibold text-white transition-transform duration-150 ease-out active:scale-[0.97]"
+                      >
                         Salvar
                       </button>
                     </form>
 
-                    {/* Formulário à parte — HTML não aceita <form> aninhado.
-                        O gatilho de opt-in ("Iniciar com Olivia") mora na
-                        coluna Contato, ao lado do WhatsApp normal — aqui só
-                        pausar/retomar, que só faz sentido depois do opt-in. */}
+                    {/* Formulário à parte — HTML não aceita <form> aninhado. */}
                     {lead.whatsapp_opt_in_at && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        {lead.whatsapp_opt_out_at ? (
-                          <form action={resumeLeadWhatsappNutricao}>
-                            <input type="hidden" name="id" value={lead.id} />
-                            <button type="submit" className="text-[11px] text-oli-green font-semibold underline">
-                              Retomar nutrição
-                            </button>
-                          </form>
-                        ) : (
-                          <form action={pauseLeadWhatsappNutricao}>
-                            <input type="hidden" name="id" value={lead.id} />
-                            <button type="submit" className="text-[11px] text-gray-500 font-semibold underline">
-                              Pausar nutrição
-                            </button>
-                          </form>
-                        )}
-                      </div>
+                      lead.whatsapp_opt_out_at ? (
+                        <form action={resumeLeadWhatsappNutricao}>
+                          <input type="hidden" name="id" value={lead.id} />
+                          <button type="submit" className="text-xs font-semibold text-oli-green underline">Retomar nutrição</button>
+                        </form>
+                      ) : (
+                        <form action={pauseLeadWhatsappNutricao}>
+                          <input type="hidden" name="id" value={lead.id} />
+                          <button type="submit" className="text-xs font-semibold text-oli-gray underline">Pausar nutrição</button>
+                        </form>
+                      )
                     )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
