@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { abrirFiltros } from './helpers';
 
 test.describe('Médicos (/medicos)', () => {
   test.beforeEach(async ({ page }) => {
@@ -29,11 +30,7 @@ test.describe('Médicos (/medicos)', () => {
   });
 
   test('filtros: abre o painel e filtra por plano', async ({ page }) => {
-    await expect(async () => {
-      const botao = page.getByRole('button', { name: /^Filtros/ });
-      if ((await botao.getAttribute('aria-expanded')) !== 'true') await botao.click();
-      await expect(botao).toHaveAttribute('aria-expanded', 'true', { timeout: 1000 });
-    }).toPass({ timeout: 30_000 });
+    await abrirFiltros(page);
     const grupo = page.getByRole('group', { name: 'Filtrar por plano' });
     await expect(grupo).toBeVisible();
     await grupo.getByRole('button', { name: /^Plano: PRO/ }).click();

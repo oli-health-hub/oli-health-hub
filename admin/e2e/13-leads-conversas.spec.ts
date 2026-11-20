@@ -1,13 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
-
-/** Com `waitUntil: 'commit'` o clique pode chegar antes da hidratação; repete até o painel abrir. */
-async function abrirFiltros(page: Page) {
-  await expect(async () => {
-    const botao = page.getByRole('button', { name: /^Filtros/ });
-    if ((await botao.getAttribute('aria-expanded')) !== 'true') await botao.click();
-    await expect(botao).toHaveAttribute('aria-expanded', 'true', { timeout: 1000 });
-  }).toPass({ timeout: 45_000 });
-}
+import { test, expect } from '@playwright/test';
+import { abrirFiltros } from './helpers';
 
 test.describe('Leads (/comercial)', () => {
   // A página de Leads é pesada: a hidratação pode levar dezenas de segundos.

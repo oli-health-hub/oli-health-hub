@@ -26,7 +26,13 @@ test.describe('Planos (/planos)', () => {
     }
   });
 
-  test('shows "Sem assinatura" section when doctors exist without subscription', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /Sem assinatura/ })).toBeVisible();
+  test('a seção "Sem assinatura" aparece só quando há profissionais sem assinatura', async ({ page }) => {
+    // O indicador do cabeçalho e a seção usam a mesma contagem; a seção só existe se ela for maior que zero.
+    const rotulo = page.locator('header').getByText('Profissionais sem assinatura', { exact: true });
+    await expect(rotulo).toBeVisible();
+    const valor = Number(await rotulo.locator('xpath=preceding-sibling::p[1]').innerText());
+    const secao = page.getByRole('heading', { name: /^Sem assinatura/ });
+    if (valor > 0) await expect(secao).toBeVisible();
+    else await expect(secao).toHaveCount(0);
   });
 });

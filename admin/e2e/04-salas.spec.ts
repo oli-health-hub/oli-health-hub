@@ -18,9 +18,10 @@ test.describe('Mapa das Salas (/salas)', () => {
     await expect(kpis.getByText('Ocupação', { exact: true })).toBeVisible();
   });
 
-  test('timeline shows all 7 room labels', async ({ page }) => {
-    // Room labels are in the timeline sidebar (w-20 divs with room name)
-    const rooms = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala Digital'];
+  test('timeline shows all 9 room labels', async ({ page }) => {
+    // Room labels are in the timeline sidebar (w-20 divs with room name).
+    // A tabela `rooms` tem 9 salas (Sala 1 a Sala 9); a "Sala Digital" deixou de existir.
+    const rooms = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7', 'Sala 8', 'Sala 9'];
     for (const room of rooms) {
       await expect(page.locator('.space-y-2').getByText(room, { exact: true })).toBeVisible();
     }
