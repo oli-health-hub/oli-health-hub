@@ -14,11 +14,11 @@ test.describe('Médicos (/medicos)', () => {
   });
 
   test('mostra linhas compactas de profissionais', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /^Ver detalhes de / }).first()).toBeVisible();
+    await expect(page.locator('summary[aria-label^="Ver detalhes de "]').first()).toBeVisible();
   });
 
   test('a linha abre os detalhes (e-mail, módulos, assessorias)', async ({ page }) => {
-    await page.getByRole('button', { name: /^Ver detalhes de / }).first().click();
+    await page.locator('summary[aria-label^="Ver detalhes de "]').first().click();
     await expect(page.getByText('Assessorias').first()).toBeVisible();
     await expect(page.getByText('E-mail').first()).toBeVisible();
   });
@@ -29,7 +29,11 @@ test.describe('Médicos (/medicos)', () => {
   });
 
   test('filtros: abre o painel e filtra por plano', async ({ page }) => {
-    await page.getByRole('button', { name: /^Filtros/ }).click();
+    await expect(async () => {
+      const botao = page.getByRole('button', { name: /^Filtros/ });
+      if ((await botao.getAttribute('aria-expanded')) !== 'true') await botao.click();
+      await expect(botao).toHaveAttribute('aria-expanded', 'true', { timeout: 1000 });
+    }).toPass({ timeout: 30_000 });
     const grupo = page.getByRole('group', { name: 'Filtrar por plano' });
     await expect(grupo).toBeVisible();
     await grupo.getByRole('button', { name: /^Plano: PRO/ }).click();
