@@ -3265,6 +3265,23 @@ Fase 2 Financeiro unificado (hoje as abas ainda repetem conteúdo e as abas inte
 - **e2e no preview:** 94 passaram, 12 falharam; 4 eram da Fase 1 e foram corrigidos. **8 já estavam desatualizados antes da Fase 1 e seguem assim:** `04-salas` ("Sala Digital"), `06-medicos` ("Cesar de Oliveira"), `07-planos` (heading "Sem assinatura") e 5 de `11-usuarios` (o texto agora é "N com acesso ao painel").
 
 
+## 83. Admin: telas mais visuais (Hoje, Leads, Conversas, Profissionais) (20/11)
+
+**Por quê.** Pedido do fundador em 20/11: Hoje "não achei muito visual"; Leads "muito confusa"; Conversas com a cara do WhatsApp e etiquetas; Profissionais (confirmado pelo fundador como a tela de "clientes") com seleções visuais e filtros, e filtros mais organizados em Leads, Conversas e Profissionais, com linhas compactas e botão para abrir. Branch `feat/admin-visual`. Sem migration, sem dado novo.
+
+### 83.1 O que mudou
+- **Hoje:** cartões de resumo clicáveis (reservas, pendências, salas livres, aguardando resposta); pendências em cartões com ícone e cor; reservas do dia como linha do tempo com faixa pelo status; salas em grade verde/dourada. Regras de dados e LGPD (rótulo de paciente) intactas.
+- **Painel de filtros único** (`admin/components/PainelFiltros.tsx`): busca sempre à vista, botão "Filtros" com os critérios agrupados, chips removíveis dos filtros ativos, contagem "Mostrando N de M". Usado em Leads e Profissionais; o contrato de URL (`?status=…&origem=…`) não mudou.
+- **Leads:** chips viraram listas suspensas (Fila de trabalho, Qualificação, Origem); cada lead é uma linha compacta com barra pela temperatura e "Detalhes e edição" expansível (o formulário e as actions são os mesmos). Rótulos de situação, temperatura e origem foram para `lib/lead-labels.ts`, compartilhado com Conversas.
+- **Conversas:** visual do WhatsApp; linha compacta com 2 etiquetas e botão `+N` que expande o resto; filtros no painel da lista; campo de mensagem com botão redondo (resolve o "Enviar" cortado) e recuo à esquerda no celular (resolve o botão flutuante cobrindo o clipe). **Etiquetas derivadas de `conversations` e `leads`** (aguardando resposta, Olivia/Equipe/Paciente/Encerrada, temperatura, situação, origem, fora da janela de 24h); a consulta passou a trazer `status, temperatura, origem` do lead.
+- **Profissionais:** linhas compactas com selos de plano e status (ícone e cor), detalhes expansíveis (e-mail, módulos, assessorias), atalho da ficha, filtros por plano, status e especialidade, mais busca por nome, e-mail ou CRM.
+
+### 83.2 Não feito
+Etiquetas **manuais** nas conversas (exigem tabela própria, ex.: `conversation_labels`, a propor ao fundador antes de qualquer migration). Fases 2 a 4 da §82.3.
+
+### 83.3 Verificação
+Ver o PR (`tsc`, `next build`, e2e no preview, 375px e 1280px). e2e: `02-hoje` ganhou o teste dos cartões; `06-medicos` foi reescrito para a lista nova (e perdeu a dependência do nome "Cesar de Oliveira"); `13-leads-conversas` é novo.
+
 ## 13. Comandos úteis
 
 ```bash

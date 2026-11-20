@@ -13,27 +13,33 @@ test.describe('Médicos (/medicos)', () => {
     await expect(page.getByText(/cadastrados/)).toBeVisible();
   });
 
-  test('table has correct columns', async ({ page }) => {
-    const headers = ['Nome', 'CRM', 'Especialidade', 'Plano', 'Módulos', 'Cadastro'];
-    for (const h of headers) {
-      await expect(page.locator('thead').getByText(h)).toBeVisible();
-    }
+  test('mostra linhas compactas de profissionais', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /^Ver detalhes de / }).first()).toBeVisible();
   });
 
-  test('shows real doctors from DB', async ({ page }) => {
-    // DB has: Cesar de Oliveira, André Luciano, Igor
-    await expect(page.getByText('Cesar de Oliveira')).toBeVisible();
+  test('a linha abre os detalhes (e-mail, módulos, assessorias)', async ({ page }) => {
+    await page.getByRole('button', { name: /^Ver detalhes de / }).first().click();
+    await expect(page.getByText('Assessorias').first()).toBeVisible();
+    await expect(page.getByText('E-mail').first()).toBeVisible();
   });
 
-  test('doctor name links to detail page', async ({ page }) => {
-    const link = page.locator('tbody').locator('a').first();
-    const href = await link.getAttribute('href');
-    expect(href).toMatch(/\/medicos\/.+/);
+  test('o atalho da ficha leva à página do profissional', async ({ page }) => {
+    const link = page.getByRole('link', { name: /^Abrir a ficha de / }).first();
+    expect(await link.getAttribute('href')).toMatch(/\/medicos\/.+/);
   });
 
-  test('plan badges are visible', async ({ page }) => {
-    const badges = page.locator('tbody').locator('span').filter({ hasText: /BASE|PRO|VIP/ });
-    await expect(badges.first()).toBeVisible();
+  test('filtros: abre o painel e filtra por plano', async ({ page }) => {
+    await page.getByRole('button', { name: /^Filtros/ }).click();
+    const grupo = page.getByRole('group', { name: 'Filtrar por plano' });
+    await expect(grupo).toBeVisible();
+    await grupo.getByRole('button', { name: /^Plano: PRO/ }).click();
+    await expect(page).toHaveURL(/plano=PRO/);
+    await expect(page.getByRole('button', { name: 'Limpar todos os filtros' })).toBeVisible();
+  });
+
+  test('busca sem resultado mostra o estado vazio', async ({ page }) => {
+    await page.goto('/medicos?q=zzzz-sem-resultado');
+    await expect(page.getByText('Nenhum profissional com esses filtros.')).toBeVisible();
   });
 });
 
@@ -43,7 +49,7 @@ test.describe('Médico detail (/medicos/[id])', () => {
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await page.goto('/medicos');
-    const link = page.locator('tbody a').first();
+    const link = page.getByRole('link', { name: /^Abrir a ficha de / }).first();
     const href = await link.getAttribute('href');
     medicoid = href?.split('/medicos/')[1] ?? '';
     await page.close();

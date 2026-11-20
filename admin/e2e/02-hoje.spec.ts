@@ -18,6 +18,12 @@ test.describe('Hoje (/)', () => {
     await expect(page.getByRole('heading', { name: 'Atividade recente' })).toBeVisible();
   });
 
+  test('mostra os cartões de resumo com número', async ({ page }) => {
+    for (const nome of ['Reservas hoje', 'Pendências', 'Salas livres', 'Aguardando resposta']) {
+      await expect(page.getByRole('link', { name: new RegExp(`^${nome}: `) })).toBeVisible();
+    }
+  });
+
   test('tem o atalho do Totem QR', async ({ page }) => {
     await expect(page.getByRole('link', { name: 'Abrir Totem QR' })).toHaveAttribute('href', '/configuracoes/totem');
   });

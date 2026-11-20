@@ -1,10 +1,12 @@
 import Link from 'next/link';
+import { QrCode } from 'lucide-react';
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { carregarHoje } from '@/lib/hoje-data';
 import { contarPendencias } from '@/lib/hoje';
 import { registrarVisualizacaoUmaVezPorDia } from '@/lib/audit';
 import PendenciasCard from '@/components/hoje/PendenciasCard';
 import ReservasDoDia from '@/components/hoje/ReservasDoDia';
+import ResumoCards from '@/components/hoje/ResumoCards';
 import SalasAgora from '@/components/hoje/SalasAgora';
 import AtividadeRecente from '@/components/hoje/AtividadeRecente';
 import { fmtDiaPorExtenso, plural } from '@/components/hoje/format';
@@ -42,8 +44,9 @@ export default async function HojePage() {
         </div>
         <Link
           href="/configuracoes/totem"
-          className="rounded-xl border border-oli-border bg-white px-3 py-2 text-xs font-semibold text-oli-dark transition-transform duration-150 ease-out active:scale-[0.97]"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-oli-border bg-white px-3 py-2 text-xs font-semibold text-oli-dark transition-transform duration-150 ease-out active:scale-[0.97]"
         >
+          <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
           Abrir Totem QR
         </Link>
       </header>
@@ -55,6 +58,8 @@ export default async function HojePage() {
           ))}
         </div>
       )}
+
+      <ResumoCards data={data} pendencias={pendencias} agora={agora} />
 
       <PendenciasCard data={data} total={pendencias} />
 

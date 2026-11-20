@@ -16,7 +16,7 @@ export default async function ConversasPage({
       id, kind, status, phone_e164, last_message_at, last_inbound_at,
       last_message_direction, admin_last_read_at,
       lead_id, patient_id, professional_id,
-      leads:lead_id ( nome ),
+      leads:lead_id ( nome, status, temperatura, origem ),
       patients:patient_id ( nome ),
       profiles:professional_id ( nome )
     `)
@@ -24,12 +24,16 @@ export default async function ConversasPage({
     .limit(200);
 
   return (
-    <div className="p-7 h-full">
-      <h1 className="text-2xl font-bold text-oli-dark mb-1">Conversas</h1>
-      <p className="text-sm text-oli-lgray mb-5">
-        WhatsApp — número único da OLI. Leads (recrutamento) respondidos por IA dentro do escopo; pacientes sempre atendidos pela recepção.
-      </p>
-      <ConversasClient initial={(conversas ?? []) as never[]} initialId={searchParams.id ?? null} />
+    <div className="flex h-full flex-col p-3 md:p-6">
+      <header className="mb-3 shrink-0">
+        <h1 className="text-xl font-bold text-oli-dark md:text-2xl">Conversas</h1>
+        <p className="hidden text-sm text-oli-lgray md:block">
+          WhatsApp — número único da OLI. Leads (recrutamento) respondidos por IA dentro do escopo; pacientes sempre atendidos pela recepção.
+        </p>
+      </header>
+      <div className="min-h-0 flex-1">
+        <ConversasClient initial={(conversas ?? []) as never[]} initialId={searchParams.id ?? null} />
+      </div>
     </div>
   );
 }
