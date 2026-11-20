@@ -1,7 +1,8 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UserCog } from 'lucide-react';
+import { CabecalhoPagina, Selo } from '@/components/ui';
 import { DeleteTeamProfileButton } from './DeleteTeamProfileButton';
 import { TeamProfileForm } from './TeamProfileForm';
 import { updatePartnerCommissionConfig, ensurePartnerReferralCode, addHours, desativarHorasDemonstracao } from '@/app/actions';
@@ -9,6 +10,13 @@ import { updatePartnerCommissionConfig, ensurePartnerReferralCode, addHours, des
 export const dynamic = 'force-dynamic';
 
 const TEAM_TYPES = ['founder', 'specialist', 'partner', 'team'];
+
+const TYPE_LABEL: Record<string, string> = {
+  founder:    'Founder',
+  specialist: 'Especialista',
+  partner:    'Parceiro',
+  team:       'Equipe OLI',
+};
 
 export default async function EquipeDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createSupabaseServer();
@@ -38,13 +46,17 @@ export default async function EquipeDetailPage({ params }: { params: { id: strin
   return (
     <div className="p-7 max-w-2xl">
       <Link href="/configuracoes/equipe" className="inline-flex items-center gap-1.5 text-sm text-oli-gray hover:text-oli-dark mb-4">
-        <ArrowLeft size={14} /> Voltar pra Equipe
+        <ArrowLeft size={14} /> Voltar para a Equipe
       </Link>
 
-      <h1 className="text-xl font-bold text-oli-dark mb-1">{p.nome}</h1>
-      <p className="text-sm text-oli-gray mb-6">
-        Cadastrado em {new Date(p.created_at).toLocaleDateString('pt-BR')}
-      </p>
+      <div className="mb-4">
+        <CabecalhoPagina
+          titulo={p.nome ?? ''}
+          subtitulo={`Cadastrado em ${new Date(p.created_at).toLocaleDateString('pt-BR')}`}
+          icone={UserCog}
+          selos={<Selo tom="green">{TYPE_LABEL[p.user_type] ?? p.user_type}</Selo>}
+        />
+      </div>
 
       <TeamProfileForm
         userId={p.id}

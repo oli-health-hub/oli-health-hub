@@ -1,5 +1,7 @@
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import Link from 'next/link';
+import { UserX } from 'lucide-react';
+import { CabecalhoPagina, Selo } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,19 +26,16 @@ export default async function MedicosExcluidosPage() {
   }
 
   return (
-    <div className="p-7">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <Link href="/medicos" className="text-sm text-oli-lgray hover:text-oli-dark transition-colors">
-            ← Profissionais
-          </Link>
-          <h1 className="text-xl font-bold text-oli-dark mt-1">Contas excluídas</h1>
-          <p className="text-sm text-oli-lgray mt-1">
-            Exclusão suave (LGPD/auditoria) — dados preservados, sem acesso ao app. Não aparecem na lista principal.
-          </p>
-        </div>
-        <span className="text-sm text-oli-gray">{excluidos?.length ?? 0} conta{excluidos?.length !== 1 ? 's' : ''}</span>
-      </div>
+    <div className="space-y-4 p-4 md:p-7">
+      <Link href="/medicos" className="inline-block text-sm text-oli-lgray hover:text-oli-dark transition-colors">
+        ← Profissionais
+      </Link>
+      <CabecalhoPagina
+        titulo="Contas excluídas"
+        subtitulo="Exclusão suave (LGPD/auditoria) — dados preservados, sem acesso ao app. Não aparecem na lista principal."
+        icone={UserX}
+        selos={<Selo tom="neutral">{excluidos?.length ?? 0} conta{excluidos?.length !== 1 ? 's' : ''}</Selo>}
+      />
 
       <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
         <div className="overflow-x-auto">

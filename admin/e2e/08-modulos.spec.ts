@@ -10,9 +10,9 @@ test.describe('Módulos (/modulos)', () => {
   });
 
   test('shows active/pending/total counts', async ({ page }) => {
-    await expect(page.getByText(/ativos/)).toBeVisible();
-    await expect(page.getByText(/pendentes/)).toBeVisible();
-    await expect(page.getByText(/total/)).toBeVisible();
+    await expect(page.getByText('Ativos', { exact: true })).toBeVisible();
+    await expect(page.getByText('Pendentes', { exact: true })).toBeVisible();
+    await expect(page.getByText('Total', { exact: true })).toBeVisible();
   });
 
   test('table has correct columns', async ({ page }) => {

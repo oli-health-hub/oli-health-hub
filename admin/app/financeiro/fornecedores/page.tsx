@@ -1,3 +1,5 @@
+import { Truck, Tags } from 'lucide-react';
+import { CabecalhoPagina } from '@/components/ui';
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { upsertSupplier, deactivateSupplier } from '@/app/actions';
 
@@ -25,17 +27,20 @@ export default async function FornecedoresPage() {
     .order('nome', { ascending: true });
 
   const ativos   = (suppliers ?? []).length;
+  const categoriasEmUso = new Set((suppliers ?? []).map(s => s.categoria).filter(Boolean)).size;
 
   return (
     <div className="p-7 space-y-6">
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-oli-dark">Fornecedores</h1>
-          <p className="text-sm text-oli-lgray mt-0.5">{ativos} fornecedor{ativos !== 1 ? 'es' : ''} ativo{ativos !== 1 ? 's' : ''}</p>
-        </div>
-      </div>
+      <CabecalhoPagina
+        titulo="Fornecedores"
+        subtitulo={`${ativos} fornecedor${ativos !== 1 ? 'es' : ''} ativo${ativos !== 1 ? 's' : ''}`}
+        icone={Truck}
+        kpis={[
+          { icone: Truck, rotulo: 'Fornecedores ativos', valor: String(ativos), tom: 'green' },
+          { icone: Tags,  rotulo: 'Categorias em uso',   valor: String(categoriasEmUso), tom: 'gold' },
+        ]}
+      />
 
       {/* ── Formulário novo fornecedor ── */}
       <div className="bg-white rounded-2xl border border-oli-border p-6">

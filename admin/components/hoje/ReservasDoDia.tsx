@@ -1,8 +1,9 @@
-import { Clock } from 'lucide-react';
+import { Clock, CalendarDays } from 'lucide-react';
 import type { ReservaHoje } from '@/lib/hoje-data';
 import { normalizeReservationStatus, reservationStatusLabel, reservationStatusClass } from '@/lib/reservation-status';
 import type { ReservationStatusKey } from '@/lib/reservation-status';
 import { fmtHora } from './format';
+import { Painel } from '@/components/ui';
 import PacienteForm from './PacienteForm';
 
 const FAIXA: Record<ReservationStatusKey, string> = {
@@ -26,20 +27,17 @@ export default function ReservasDoDia({
   rotulosDisponiveis: boolean;
 }) {
   return (
-    <section
-      id="reservas-do-dia"
-      aria-labelledby="reservas-do-dia-titulo"
-      className="scroll-mt-4 rounded-2xl border border-oli-border bg-white p-5"
-    >
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="reservas-do-dia-titulo" className="text-sm font-bold text-oli-dark">
-          Reservas do dia
-        </h2>
-        {rotulosDisponiveis && (
-          <p className="text-xs text-oli-gray">Paciente: só nome e inicial. Apagado 7 dias após a reserva.</p>
-        )}
-      </div>
-
+    <div id="reservas-do-dia" className="scroll-mt-4">
+      <Painel
+        titulo="Reservas do dia"
+        icone={CalendarDays}
+        tom="green"
+        acao={
+          rotulosDisponiveis ? (
+            <p className="text-right text-xs text-oli-gray">Paciente: só nome e inicial. Apagado 7 dias após a reserva.</p>
+          ) : undefined
+        }
+      >
       {reservas.length === 0 ? (
         <p className="py-6 text-center text-sm text-oli-gray">Nenhuma reserva para hoje.</p>
       ) : (
@@ -84,6 +82,7 @@ export default function ReservasDoDia({
           })}
         </ul>
       )}
-    </section>
+      </Painel>
+    </div>
   );
 }

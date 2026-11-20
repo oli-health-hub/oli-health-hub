@@ -1,5 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
+import { Boxes, CreditCard, Timer, Wallet } from 'lucide-react';
+import { CabecalhoPagina, Selo, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -163,6 +165,13 @@ export default async function PagamentosPage({
   const receitaModulos = modsAtivos.reduce((s, m) => s + (m.modules?.valor ?? 0), 0);
   const totalGeral = receitaMinutagem + receitaAssinaturas + receitaModulos;
 
+  const kpis: KpiDef[] = [
+    { icone: Timer, rotulo: 'Minutagem (período)', valor: fmtBRL(receitaMinutagem), tom: 'blue' },
+    { icone: CreditCard, rotulo: 'Assinaturas ativas', valor: fmtBRL(receitaAssinaturas), tom: 'gold' },
+    { icone: Boxes, rotulo: 'Módulos ativos', valor: fmtBRL(receitaModulos), tom: 'amber' },
+    { icone: Wallet, rotulo: 'Total consolidado', valor: fmtBRL(totalGeral), tom: 'green' },
+  ];
+
   /* filtro por nome (client-side para subs + mods, já que são poucos) */
   const filteredSubs = q
     ? subs.filter(s => s.profiles?.nome?.toLowerCase().includes(q.toLowerCase()))
@@ -190,45 +199,19 @@ export default async function PagamentosPage({
   return (
     <div className="p-7 space-y-7">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-oli-dark">Minutagem por Sessão</h1>
-        <p className="text-sm text-oli-lgray">
-          Período: {new Date(from + 'T12:00:00').toLocaleDateString('pt-BR')} – {new Date(to + 'T12:00:00').toLocaleDateString('pt-BR')}
-        </p>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white rounded-2xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Minutagem (período)</p>
-          <p className="text-2xl font-extrabold text-oli-dark leading-none mt-2">
-            {fmtBRL(receitaMinutagem)}
-          </p>
-          <p className="mt-1.5 text-[10px] text-oli-lgray">{usageTotal ?? 0} sessões</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Assinaturas ativas</p>
-          <p className="text-2xl font-extrabold text-oli-dark leading-none mt-2">
-            {fmtBRL(receitaAssinaturas)}
-          </p>
-          <p className="mt-1.5 text-[10px] text-oli-lgray">{subsAtivas.length} assinaturas</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Módulos ativos</p>
-          <p className="text-2xl font-extrabold text-oli-dark leading-none mt-2">
-            {fmtBRL(receitaModulos)}
-          </p>
-          <p className="mt-1.5 text-[10px] text-oli-lgray">{modsAtivos.length} módulos</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-oli-border p-4 border-oli-green/30">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Total consolidado</p>
-          <p className="text-2xl font-extrabold text-oli-green leading-none mt-2">
-            {fmtBRL(totalGeral)}
-          </p>
-          <p className="mt-1.5 text-[10px] text-oli-lgray">todas as fontes</p>
-        </div>
-      </div>
+      <CabecalhoPagina
+        titulo="Minutagem por Sessão"
+        subtitulo={`Período: ${new Date(from + 'T12:00:00').toLocaleDateString('pt-BR')} – ${new Date(to + 'T12:00:00').toLocaleDateString('pt-BR')}`}
+        icone={Timer}
+        selos={
+          <>
+            <Selo tom="blue">{usageTotal ?? 0} sessões</Selo>
+            <Selo tom="gold">{subsAtivas.length} assinaturas</Selo>
+            <Selo tom="amber">{modsAtivos.length} módulos</Selo>
+          </>
+        }
+        kpis={kpis}
+      />
 
       {/* Filtros */}
       <form method="GET" className="bg-white rounded-2xl border border-oli-border p-4">

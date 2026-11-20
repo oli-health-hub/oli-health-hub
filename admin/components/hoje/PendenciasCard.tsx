@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { LogOut, CalendarX, CalendarClock, Users, MessageCircle, CheckCircle2, type LucideIcon } from 'lucide-react';
+import { LogOut, CalendarX, CalendarClock, Users, MessageCircle, CheckCircle2, AlertTriangle, type LucideIcon } from 'lucide-react';
 import type { HojeData, PendenciaReserva, PendenciaAssinatura, ListaComTotal } from '@/lib/hoje-data';
+import { Painel } from '@/components/ui';
 import { fmtDiaHora, plural } from './format';
 
 const LINK = 'shrink-0 text-xs font-semibold text-oli-green underline-offset-2 hover:underline';
@@ -105,10 +106,8 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
   const { checkoutsAbertos, vencidasSemCheckin, assinaturasVencendo, leadsAguardando, conversasAguardando } = data;
 
   return (
-    <section id="pendencias" aria-labelledby="pendencias-titulo" className="scroll-mt-4 rounded-2xl border border-oli-border bg-white p-5">
-      <h2 id="pendencias-titulo" className="mb-3 text-sm font-bold text-oli-dark">
-        Pendências
-      </h2>
+    <div id="pendencias" className="scroll-mt-4">
+      <Painel titulo="Pendências" icone={AlertTriangle} tom={total === 0 ? 'green' : 'red'}>
 
       {total === 0 ? (
         <p className="flex items-center gap-2 rounded-xl bg-oli-green/10 px-3 py-3 text-sm font-medium text-oli-green">
@@ -173,6 +172,7 @@ export default function PendenciasCard({ data, total }: { data: HojeData; total:
           )}
         </div>
       )}
-    </section>
+      </Painel>
+    </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Layers, Puzzle, Clock, ChevronRight, ExternalLink } from 'lucide-react';
+import { Layers, Puzzle, Clock, ChevronRight, ExternalLink, BookOpen } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 type Tab = 'planos' | 'modulos' | 'horas';
 
@@ -32,16 +33,22 @@ const CATEGORIA_LABEL: Record<string, string> = {
 export function CatalogoClient({ plans, modules, hours }: Props) {
   const [tab, setTab] = useState<Tab>('planos');
 
+  const kpis: KpiDef[] = [
+    { icone: Layers, rotulo: 'Planos ativos', valor: String(plans.filter(p => p.ativo).length), tom: 'green' },
+    { icone: Puzzle, rotulo: 'Módulos ativos', valor: String(modules.filter(m => m.ativo).length), tom: 'blue' },
+    { icone: Clock, rotulo: 'Pacotes de horas ativos', valor: String(hours.filter(h => h.ativo).length), tom: 'gold' },
+  ];
+
   return (
-    <div className="p-7 space-y-6">
+    <div className="p-4 md:p-7 space-y-6">
 
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-oli-dark">Catálogo</h1>
-        <p className="text-sm text-oli-lgray mt-1">
-          Planos de assinatura, módulos avulsos e pacotes de horas disponíveis para venda.
-        </p>
-      </div>
+      <CabecalhoPagina
+        titulo="Catálogo"
+        subtitulo="Planos de assinatura, módulos avulsos e pacotes de horas disponíveis para venda."
+        icone={BookOpen}
+        kpis={kpis}
+      />
 
       {/* Tabs */}
       <div className="border-b border-oli-border flex gap-1 overflow-x-auto">

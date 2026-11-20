@@ -1,4 +1,6 @@
+import { Receipt, CheckCircle2, Clock, AlertTriangle, Wallet } from 'lucide-react';
 import { createSupabaseServer } from '@/lib/supabase-server';
+import { CabecalhoPagina } from '@/components/ui';
 import { upsertFinancialEntry, markEntryPaid, cancelEntry } from '@/app/actions';
 import {
   getPaymentsByDueDate,
@@ -294,49 +296,35 @@ export default async function ContasPage({
   return (
     <div className="p-7 space-y-6">
 
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-oli-dark">Contas a Pagar / Receber</h1>
-          <p className="text-sm text-oli-lgray mt-0.5">{mLabel}</p>
-        </div>
-        {/* Nav mês */}
-        <div className="flex items-center gap-1">
-          <a href={`${tabBase.replace(`year=${viewYear}&month=${viewMonth}`, `year=${prevYear}&month=${prevMonth}`)}&tab=${tab}`}
-             className="px-3 py-1.5 text-oli-lgray hover:text-oli-dark hover:bg-white rounded-xl border border-oli-border text-sm transition-colors">
-            ‹
-          </a>
-          <span className="px-4 py-1.5 text-sm font-semibold text-oli-dark bg-white border border-oli-border rounded-xl">{mLabel}</span>
-          <a href={`${tabBase.replace(`year=${viewYear}&month=${viewMonth}`, `year=${nextYear}&month=${nextMonth}`)}&tab=${tab}`}
-             className="px-3 py-1.5 text-oli-lgray hover:text-oli-dark hover:bg-white rounded-xl border border-oli-border text-sm transition-colors">
-            ›
-          </a>
-        </div>
-      </div>
-
-      {/* ── KPIs ── */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="bg-white rounded-2xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mb-1">Recebido no mês</p>
-          <p className="text-2xl font-extrabold text-emerald-600">{fmtBRL(recebido)}</p>
-          <p className="text-[11px] text-oli-lgray mt-0.5">confirmado / recebido</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mb-1">A receber</p>
-          <p className="text-2xl font-extrabold text-blue-600">{fmtBRL(pendente)}</p>
-          <p className="text-[11px] text-oli-lgray mt-0.5">pendente de confirmação</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mb-1">Em atraso</p>
-          <p className={`text-2xl font-extrabold ${vencido > 0 ? 'text-red-600' : 'text-oli-dark'}`}>{fmtBRL(vencido)}</p>
-          <p className="text-[11px] text-oli-lgray mt-0.5">vencido sem confirmação</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mb-1">A pagar no mês</p>
-          <p className="text-2xl font-extrabold text-red-600">{fmtBRL(totalPagar)}</p>
-          <p className="text-[11px] text-oli-lgray mt-0.5">contas cadastradas</p>
-        </div>
-      </div>
+      {/* ── Cabeçalho + KPIs ── */}
+      <CabecalhoPagina
+        titulo="Contas a Pagar / Receber"
+        subtitulo={mLabel}
+        icone={Receipt}
+        acao={
+          <div className="flex items-center gap-1">
+            <a
+              href={`${tabBase.replace(`year=${viewYear}&month=${viewMonth}`, `year=${prevYear}&month=${prevMonth}`)}&tab=${tab}`}
+              aria-label="Mês anterior"
+              className="px-3 py-1.5 text-oli-lgray hover:text-oli-dark hover:bg-white rounded-xl border border-oli-border text-sm transition-colors">
+              ‹
+            </a>
+            <span className="px-4 py-1.5 text-sm font-semibold text-oli-dark bg-white border border-oli-border rounded-xl">{mLabel}</span>
+            <a
+              href={`${tabBase.replace(`year=${viewYear}&month=${viewMonth}`, `year=${nextYear}&month=${nextMonth}`)}&tab=${tab}`}
+              aria-label="Próximo mês"
+              className="px-3 py-1.5 text-oli-lgray hover:text-oli-dark hover:bg-white rounded-xl border border-oli-border text-sm transition-colors">
+              ›
+            </a>
+          </div>
+        }
+        kpis={[
+          { icone: CheckCircle2,   rotulo: 'Recebido no mês', valor: fmtBRL(recebido),   tom: 'green' },
+          { icone: Clock,          rotulo: 'A receber',       valor: fmtBRL(pendente),   tom: 'gold'  },
+          { icone: AlertTriangle,  rotulo: 'Em atraso',       valor: fmtBRL(vencido),    tom: vencido > 0 ? 'red' : 'neutral' },
+          { icone: Wallet,         rotulo: 'A pagar no mês',  valor: fmtBRL(totalPagar), tom: 'red'   },
+        ]}
+      />
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 border-b border-oli-border pb-0">

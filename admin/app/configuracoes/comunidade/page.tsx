@@ -1,5 +1,7 @@
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { deletePost } from '@/app/actions';
+import { MessageSquare, FileText, Eye, Users } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,12 +25,21 @@ export default async function ComunidadePage() {
     .limit(100);
   const posts = (data ?? []) as unknown as PostRow[];
 
+  const autores = new Set(posts.map((p) => p.profiles?.nome).filter(Boolean)).size;
+  const kpis: KpiDef[] = [
+    { icone: FileText, rotulo: 'Posts no total', valor: String(count ?? 0), tom: 'green' },
+    { icone: Eye, rotulo: 'Posts exibidos', valor: String(posts.length), tom: 'blue' },
+    { icone: Users, rotulo: 'Autores nos posts exibidos', valor: String(autores), tom: 'gold' },
+  ];
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-oli-dark">Comunidade — Feed</h1>
-        <p className="text-sm text-gray-500">Moderação de posts do feed interno. {count ?? 0} posts no total (últimos 100 exibidos).</p>
-      </div>
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <CabecalhoPagina
+        titulo="Comunidade — Feed"
+        subtitulo="Moderação de posts do feed interno (últimos 100 exibidos)."
+        icone={MessageSquare}
+        kpis={kpis}
+      />
 
       {/* overflow-x-auto, não overflow-hidden: em tela menor a tabela rola em
           vez de cortar coluna (mesmo motivo do /leads). */}

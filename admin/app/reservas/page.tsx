@@ -1,6 +1,8 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
+import { CalendarDays, CalendarRange, Clock, Gauge, LayoutGrid, Radio, Users } from 'lucide-react';
 import { ReservationBlock } from '@/components/ReservationBlock';
+import { CabecalhoPagina, Selo, type KpiDef } from '@/components/ui';
 import {
   CANCELLED_STATUS_VALUES,
   normalizeReservationStatus,
@@ -120,6 +122,15 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       }).replace(/^\w/, c => c.toUpperCase());
 
+  const kpis: KpiDef[] = [
+    { icone: CalendarDays, rotulo: 'Reservas', valor: String(totalRes), tom: 'green' },
+    viewMode === 'week'
+      ? { icone: Users, rotulo: 'Profissionais', valor: String(uniqueProfs), tom: 'blue' }
+      : { icone: Radio, rotulo: 'Em sessão', valor: String(inProgress), tom: inProgress > 0 ? 'red' : 'neutral' },
+    { icone: Clock, rotulo: 'Próximas', valor: String(upcoming), tom: 'amber' },
+    { icone: Gauge, rotulo: 'Ocupação', valor: `${utilPct}%`, tom: 'green' },
+  ];
+
   const navStepMs  = (viewMode === 'week' ? 7 : 1) * 86400000;
   const prevHref    = `/reservas?view=${viewMode}&date=${isoDay(new Date(new Date(`${selDate}T12:00:00`).getTime() - navStepMs))}`;
   const nextHref    = `/reservas?view=${viewMode}&date=${isoDay(new Date(new Date(`${selDate}T12:00:00`).getTime() + navStepMs))}`;
@@ -129,84 +140,67 @@ export default async function SalasPage({ searchParams }: { searchParams: { date
   return (
     <div className="p-7 space-y-6">
 
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-oli-dark">Mapa das Salas</h1>
-          <p className="text-sm text-oli-gray mt-0.5">{dateLabel}</p>
+      <CabecalhoPagina
+        titulo="Mapa das Salas"
+        subtitulo={dateLabel}
+        icone={LayoutGrid}
+        selos={
+          <Selo tom="green" icone={viewMode === 'week' ? CalendarRange : CalendarDays}>
+            {viewMode === 'week' ? 'Visão semanal' : 'Visão diária'}
+          </Selo>
+        }
+        kpis={kpis}
+      />
+
+      {/* Controles de visão e data */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Toggle Dia/Semana */}
+        <div className="flex items-center bg-stone-100 rounded-xl p-1 text-xs font-bold">
+          <Link
+            href={`/reservas?date=${selDate}`}
+            aria-label="Ver por dia"
+            className={`px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'day' ? 'bg-white text-oli-dark shadow-sm' : 'text-oli-lgray hover:text-oli-dark'}`}
+          >
+            Dia
+          </Link>
+          <Link
+            href={`/reservas?view=week&date=${selDate}`}
+            aria-label="Ver por semana"
+            className={`px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'week' ? 'bg-white text-oli-dark shadow-sm' : 'text-oli-lgray hover:text-oli-dark'}`}
+          >
+            Semana
+          </Link>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Toggle Dia/Semana */}
-          <div className="flex items-center bg-stone-100 rounded-xl p-1 text-xs font-bold">
-            <Link
-              href={`/reservas?date=${selDate}`}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'day' ? 'bg-white text-oli-dark shadow-sm' : 'text-oli-lgray hover:text-oli-dark'}`}
-            >
-              Dia
+        {/* Date navigator */}
+        <form method="GET" className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="view" value={viewMode} />
+          <Link
+            href={prevHref}
+            aria-label={viewMode === 'week' ? 'Semana anterior' : 'Dia anterior'}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg"
+          >‹</Link>
+          <input
+            type="date"
+            name="date"
+            defaultValue={selDate}
+            aria-label="Data"
+            className="text-sm border border-oli-border rounded-xl px-3 py-1.5 text-oli-dark focus:outline-none focus:ring-1 focus:ring-oli-green"
+          />
+          <button type="submit" aria-label="Ir para a data" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">
+            Ir
+          </button>
+          <Link
+            href={nextHref}
+            aria-label={viewMode === 'week' ? 'Próxima semana' : 'Próximo dia'}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg"
+          >›</Link>
+          {!(viewMode === 'day' ? isToday : isThisWeek) && (
+            <Link href={resetHref} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">
+              {viewMode === 'week' ? 'Esta semana' : 'Hoje'}
             </Link>
-            <Link
-              href={`/reservas?view=week&date=${selDate}`}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'week' ? 'bg-white text-oli-dark shadow-sm' : 'text-oli-lgray hover:text-oli-dark'}`}
-            >
-              Semana
-            </Link>
-          </div>
-
-          {/* Date navigator */}
-          <form method="GET" className="flex items-center gap-2">
-            <input type="hidden" name="view" value={viewMode} />
-            <Link
-              href={prevHref}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg"
-            >‹</Link>
-            <input
-              type="date"
-              name="date"
-              defaultValue={selDate}
-              className="text-sm border border-oli-border rounded-xl px-3 py-1.5 text-oli-dark focus:outline-none focus:ring-1 focus:ring-oli-green"
-            />
-            <button type="submit" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">
-              Ir
-            </button>
-            <Link
-              href={nextHref}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg"
-            >›</Link>
-            {!(viewMode === 'day' ? isToday : isThisWeek) && (
-              <Link href={resetHref} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">
-                {viewMode === 'week' ? 'Esta semana' : 'Hoje'}
-              </Link>
-            )}
-          </form>
-        </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-          <p className="text-2xl font-extrabold text-oli-dark">{totalRes}</p>
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Reservas</p>
-        </div>
-        {viewMode === 'week' ? (
-          <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-            <p className="text-2xl font-extrabold text-oli-dark">{uniqueProfs}</p>
-            <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Profissionais</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-            <p className={`text-2xl font-extrabold ${inProgress > 0 ? 'text-oli-red' : 'text-oli-dark'}`}>{inProgress}</p>
-            <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Em sessão</p>
-          </div>
-        )}
-        <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-          <p className="text-2xl font-extrabold text-yellow-600">{upcoming}</p>
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Próximas</p>
-        </div>
-        <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-          <p className="text-2xl font-extrabold text-oli-green">{utilPct}%</p>
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Ocupação</p>
-        </div>
+          )}
+        </form>
       </div>
 
       {/* Grid semanal */}

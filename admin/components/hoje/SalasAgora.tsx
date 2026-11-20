@@ -1,13 +1,12 @@
 import { DoorOpen, DoorClosed } from 'lucide-react';
 import type { SalaHoje } from '@/lib/hoje-data';
+import { Painel } from '@/components/ui';
 import { fmtHora } from './format';
 
 export default function SalasAgora({ salas }: { salas: SalaHoje[] }) {
   return (
-    <section id="salas-agora" aria-labelledby="salas-agora-titulo" className="scroll-mt-4 rounded-2xl border border-oli-border bg-white p-5">
-      <h2 id="salas-agora-titulo" className="mb-3 text-sm font-bold text-oli-dark">
-        Salas agora
-      </h2>
+    <div id="salas-agora" className="scroll-mt-4">
+      <Painel titulo="Salas agora" icone={DoorOpen} tom="green">
       {salas.length === 0 ? (
         <p className="text-sm text-oli-gray">Nenhuma sala cadastrada.</p>
       ) : (
@@ -39,6 +38,7 @@ export default function SalasAgora({ salas }: { salas: SalaHoje[] }) {
           })}
         </ul>
       )}
-    </section>
+      </Painel>
+    </div>
   );
 }

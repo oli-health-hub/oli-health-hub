@@ -1,5 +1,7 @@
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { registerCommissionPayment } from '@/app/actions';
+import { Handshake, Users, Hourglass, BadgeCheck } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,9 +73,8 @@ export default async function ParceirosPage() {
 
   if (partnerIds.length === 0) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold text-oli-dark">Parceiros</h1>
-        <p className="text-sm text-gray-500 mt-2">Nenhum parceiro externo cadastrado ainda.</p>
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+        <CabecalhoPagina titulo="Parceiros" subtitulo="Nenhum parceiro externo cadastrado ainda." icone={Handshake} />
       </div>
     );
   }
@@ -150,23 +151,50 @@ export default async function ParceirosPage() {
     return lines;
   }
 
+  function indicadosDoParceiro(partnerId: string): Indicado[] {
+    const ids = (referrals ?? [])
+      .filter(r => r.indicador_id === partnerId)
+      .map(r => r.indicado_id)
+      .filter(Boolean) as string[];
+    return ids.map(id => indicadoById.get(id)).filter(Boolean) as Indicado[];
+  }
+  function configDoParceiro(partnerId: string): CommissionConfig {
+    return configByPartner.get(partnerId) ?? { partner_id: partnerId, ...DEFAULT_CONFIG };
+  }
+
+  let totalIndicacoes = 0;
+  let comissaoDevida = 0;
+  let comissaoPaga = 0;
+  for (const partner of partners) {
+    const config = configDoParceiro(partner.id);
+    for (const indicado of indicadosDoParceiro(partner.id)) {
+      totalIndicacoes += 1;
+      for (const line of commissionLines(indicado, config)) {
+        if (line.pago) comissaoPaga += line.valor;
+        else comissaoDevida += line.valor;
+      }
+    }
+  }
+
+  const kpis: KpiDef[] = [
+    { icone: Handshake, rotulo: 'Parceiros', valor: String(partners.length), tom: 'green' },
+    { icone: Users, rotulo: 'Indicações', valor: String(totalIndicacoes), tom: 'blue' },
+    { icone: Hourglass, rotulo: 'Comissão devida', valor: fmtBRL(comissaoDevida), tom: 'amber' },
+    { icone: BadgeCheck, rotulo: 'Comissão paga', valor: fmtBRL(comissaoPaga), tom: 'gold' },
+  ];
+
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-oli-dark">Parceiros</h1>
-        <p className="text-sm text-gray-500">
-          Programa de Indicação de Parceiros Externos — indicações geradas e comissão devida/paga por parceiro.
-          Comissão calculada automaticamente; o pagamento é registrado manualmente após ser feito de verdade.
-        </p>
-      </div>
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-8">
+      <CabecalhoPagina
+        titulo="Parceiros"
+        subtitulo="Programa de Indicação de Parceiros Externos — indicações geradas e comissão devida/paga por parceiro. Comissão calculada automaticamente; o pagamento é registrado manualmente após ser feito de verdade."
+        icone={Handshake}
+        kpis={kpis}
+      />
 
       {partners.map((partner) => {
-        const meusIndicadoIds = (referrals ?? [])
-          .filter(r => r.indicador_id === partner.id)
-          .map(r => r.indicado_id)
-          .filter(Boolean) as string[];
-        const meusIndicados = meusIndicadoIds.map(id => indicadoById.get(id)).filter(Boolean) as Indicado[];
-        const config = configByPartner.get(partner.id) ?? { partner_id: partner.id, ...DEFAULT_CONFIG };
+        const meusIndicados = indicadosDoParceiro(partner.id);
+        const config = configDoParceiro(partner.id);
 
         return (
           // overflow-x-auto, não overflow-hidden: em tela menor a tabela rola em

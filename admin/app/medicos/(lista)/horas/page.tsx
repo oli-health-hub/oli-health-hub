@@ -1,6 +1,8 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { addHours } from '@/app/actions';
 import Link from 'next/link';
+import { Clock, Hourglass, Timer, TriangleAlert } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,12 +49,24 @@ export default async function HorasPage() {
 
   const rows = Object.values(byProfessional).sort((a, b) => (b.total - b.usado) - (a.total - a.usado));
 
+  const totalComprado = rows.reduce((acc, r) => acc + r.total, 0);
+  const totalUsado = rows.reduce((acc, r) => acc + r.usado, 0);
+  const usoAlto = rows.filter(r => r.total > 0 && Math.round((r.usado / r.total) * 100) >= 80).length;
+  const kpis: KpiDef[] = [
+    { icone: Clock, rotulo: 'Horas compradas', valor: fmt(totalComprado), tom: 'green' },
+    { icone: Timer, rotulo: 'Horas utilizadas', valor: fmt(totalUsado), tom: 'blue' },
+    { icone: Hourglass, rotulo: 'Horas restantes', valor: fmt(totalComprado - totalUsado), tom: 'gold' },
+    { icone: TriangleAlert, rotulo: 'Com uso de 80% ou mais', valor: String(usoAlto), tom: 'red' },
+  ];
+
   return (
-    <div className="p-7 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-oli-dark">Controle de Horas</h1>
-        <span className="text-sm text-oli-lgray">{rows.length} profissionais com saldo</span>
-      </div>
+    <div className="p-4 md:p-7 space-y-8">
+      <CabecalhoPagina
+        titulo="Controle de Horas"
+        subtitulo={`${rows.length} profissionais com saldo`}
+        icone={Clock}
+        kpis={kpis}
+      />
 
       {/* Resumo consolidado por médico */}
       <section>

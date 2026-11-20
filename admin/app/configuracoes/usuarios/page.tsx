@@ -1,5 +1,7 @@
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { setUserType, toggleAdminAccess } from '@/app/actions';
+import { UserCog, ShieldCheck, Hourglass, Users } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 import { InviteUserForm } from './InviteUserForm';
 
 export const dynamic = 'force-dynamic';
@@ -32,12 +34,20 @@ export default async function UsuariosPage() {
   const pending     = (profiles ?? []).filter(p => p.user_type === 'pending');
   const nonAdmins   = (profiles ?? []).filter(p => !p.is_admin && p.user_type !== 'pending');
 
+  const kpis: KpiDef[] = [
+    { icone: ShieldCheck, rotulo: 'Com acesso ao painel', valor: String(admins.length), tom: 'green' },
+    { icone: Hourglass, rotulo: 'Aguardando classificação', valor: String(pending.length), tom: 'amber' },
+    { icone: Users, rotulo: 'Demais usuários', valor: String(nonAdmins.length), tom: 'blue' },
+  ];
+
   return (
-    <div className="p-7 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-oli-dark">Usuários do Sistema</h1>
-        <span className="text-sm text-oli-lgray">{admins.length} com acesso ao painel</span>
-      </div>
+    <div className="p-4 md:p-7 space-y-8">
+      <CabecalhoPagina
+        titulo="Usuários do Sistema"
+        subtitulo={`${admins.length} com acesso ao painel`}
+        icone={UserCog}
+        kpis={kpis}
+      />
 
       {/* Convidar usuário */}
       <InviteUserForm />

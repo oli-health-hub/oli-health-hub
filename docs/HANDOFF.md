@@ -3282,6 +3282,17 @@ Etiquetas **manuais** nas conversas (exigem tabela própria, ex.: `conversation_
 ### 83.3 Verificação
 Ver o PR (`tsc`, `next build`, e2e no preview, 375px e 1280px). e2e: `02-hoje` ganhou o teste dos cartões; `06-medicos` foi reescrito para a lista nova (e perdeu a dependência do nome "Cesar de Oliveira"); `13-leads-conversas` é novo.
 
+## 84. Admin: design da ficha aplicado a todas as telas (20/11)
+
+**Por quê.** O fundador aprovou o cabeçalho e o Resumo da ficha do profissional (§83 e PR #14) e pediu o mesmo visual nas demais telas. Branch `feat/admin-design-unificado`. Sem migration, sem consulta nova, sem mudança de regra.
+
+### 84.1 O que mudou
+- **Peças compartilhadas** em `admin/components/ui.tsx`: `CabecalhoPagina` (h1, subtítulo, selos, ação e grade de indicadores), `Kpi`/`KpiGrade` (ícone em quadrado tingido, número e rótulo), `Painel` (cartão de seção com ícone) e `Selo`. Novas telas devem usá-las.
+- **Aplicado em:** Hoje, Leads, Conversas (cabeçalho compacto), Cupons, Promoções, Mapa das salas, Histórico, Minutagem, Financeiro (Resumo, Contas, Recebimentos, Fluxo, Fornecedores), Profissionais (lista, Horas, Assinaturas, Módulos, Excluídas) e Configurações (Catálogo, Usuários, Equipe, Parceiros, Notificações, Comunidade, Meu recebimento). Os indicadores saem só de dados que as telas já carregavam.
+- Os textos dos `h1` não mudaram. Os cartões próprios de KPI e os contadores em texto viraram `Kpi`.
+- **Não alterado:** Totem QR (o `h1` fica em `totem/TotemClient.tsx`), Login e Definir senha.
+- e2e ajustados: `04-salas` (rótulos dos KPIs), `07-planos` e `08-modulos` (contadores viraram rótulos de KPI).
+
 ## 13. Comandos úteis
 
 ```bash

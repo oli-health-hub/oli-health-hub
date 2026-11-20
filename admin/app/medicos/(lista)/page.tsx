@@ -1,6 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
-import { Sprout, Crown, CheckCircle2, PauseCircle, ShieldAlert, Ban, Calculator, Scale, HeartPulse, Megaphone, Layers, Mail, ChevronDown, ExternalLink, type LucideIcon } from 'lucide-react';
+import { Sprout, Crown, CheckCircle2, PauseCircle, ShieldAlert, Ban, Users, Calculator, Scale, HeartPulse, Megaphone, Layers, Mail, ChevronDown, ExternalLink, type LucideIcon } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 import PainelFiltros, { type CampoPainel, type SecaoPainel, type IconePainel, type TomPainel } from '@/components/PainelFiltros';
 
 export const dynamic = 'force-dynamic';
@@ -130,19 +131,28 @@ export default async function MedicosPage({
     { titulo: 'Perfil profissional', campos: [selectEspecialidade] },
   ];
 
+  const kpis: KpiDef[] = [
+    { icone: Users, rotulo: 'Total', valor: String(todos.length), tom: 'green' },
+    { icone: Crown, rotulo: 'PRO', valor: String(todos.filter(m => planoDe(m) === 'PRO').length), tom: 'gold' },
+    { icone: Sprout, rotulo: 'START', valor: String(todos.filter(m => planoDe(m) === 'START').length), tom: 'blue' },
+    { icone: ShieldAlert, rotulo: 'Contas não ativas', valor: String(todos.filter(m => statusDe(m) !== 'active').length), tom: 'amber' },
+  ];
+
   return (
     <div className="mx-auto max-w-[1100px] space-y-4 p-4 md:p-7">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-oli-dark">Profissionais</h1>
-        <div className="flex items-center gap-4">
-          {!!excluidosCount && (
+      <CabecalhoPagina
+        titulo="Profissionais"
+        subtitulo={`${todos.length} cadastrados`}
+        icone={Users}
+        acao={
+          !!excluidosCount && (
             <Link href="/medicos/excluidos" className="text-sm text-oli-lgray underline transition-colors hover:text-oli-dark">
               {excluidosCount} excluída{excluidosCount !== 1 ? 's' : ''} →
             </Link>
-          )}
-          <span className="text-sm text-oli-gray">{todos.length} cadastrados</span>
-        </div>
-      </header>
+          )
+        }
+        kpis={kpis}
+      />
 
       <PainelFiltros
         basePath="/medicos"

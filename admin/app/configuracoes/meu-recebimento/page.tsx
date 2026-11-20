@@ -2,6 +2,8 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import { isFounder } from '@/lib/founder';
 import Link from 'next/link';
+import { Wallet, Banknote, CircleDollarSign, Gauge, Percent } from 'lucide-react';
+import { CabecalhoPagina, KpiGrade, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,20 +113,28 @@ export default async function MeuRecebimentoPage({
     return `/configuracoes/meu-recebimento?mes=${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  return (
-    <div className="p-7 space-y-6 max-w-4xl">
+  const kpis: KpiDef[] = [
+    { icone: Banknote, rotulo: 'Salário-base', valor: fmtBRL(salario), tom: 'neutral' },
+    { icone: CircleDollarSign, rotulo: 'Faturamento OLI', valor: fmtBRL(faturamentoTotal), tom: 'gold' },
+    { icone: Gauge, rotulo: 'Ocupação do mês', valor: `${ocupacaoPct}%`, tom: 'blue' },
+    { icone: Percent, rotulo: 'Alíquota aplicada', valor: `${(faixa.rate * 100).toFixed(0)}%`, tom: 'green' },
+  ];
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-oli-dark">Meu Recebimento</h1>
-          <p className="text-sm text-oli-gray mt-0.5">{mesLabel} — só você vê essa página</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href={mesUrl(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg">‹</Link>
-          <Link href="/configuracoes/meu-recebimento" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">Mês atual</Link>
-          <Link href={mesUrl(1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg">›</Link>
-        </div>
-      </div>
+  return (
+    <div className="p-4 md:p-7 space-y-6 max-w-4xl">
+
+      <CabecalhoPagina
+        titulo="Meu Recebimento"
+        subtitulo={`${mesLabel} — só você vê essa página`}
+        icone={Wallet}
+        acao={
+          <div className="flex items-center gap-2">
+            <Link href={mesUrl(-1)} aria-label="Mês anterior" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg">‹</Link>
+            <Link href="/configuracoes/meu-recebimento" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-oli-green text-white hover:bg-oli-green/80 transition-colors">Mês atual</Link>
+            <Link href={mesUrl(1)} aria-label="Próximo mês" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 text-oli-gray transition-colors text-lg">›</Link>
+          </div>
+        }
+      />
 
       {/* Total a receber */}
       <div className="bg-white rounded-2xl border border-oli-green/30 p-6">
@@ -136,24 +146,7 @@ export default async function MeuRecebimentoPage({
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Salário-base</p>
-          <p className="text-xl font-extrabold text-oli-dark mt-1">{fmtBRL(salario)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Faturamento OLI</p>
-          <p className="text-xl font-extrabold text-oli-dark mt-1">{fmtBRL(faturamentoTotal)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Ocupação do mês</p>
-          <p className="text-xl font-extrabold text-oli-dark mt-1">{ocupacaoPct}%</p>
-        </div>
-        <div className="bg-white rounded-xl border border-oli-border p-4">
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider">Alíquota aplicada</p>
-          <p className="text-xl font-extrabold text-oli-green mt-1">{(faixa.rate * 100).toFixed(0)}%</p>
-        </div>
-      </div>
+      <KpiGrade kpis={kpis} />
 
       {/* Breakdown de faturamento */}
       <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">

@@ -3,7 +3,8 @@ import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { registrarSaida, quitarSaida } from '@/app/actions';
 import ActionForm from '@/components/ActionForm';
 import { getPaymentsByReceiptDate, type AsaasPayment } from '@/lib/asaas';
-import KpiCard from '@/components/KpiCard';
+import { TrendingUp, ArrowDownCircle, ArrowUpCircle, Scale, Clock } from 'lucide-react';
+import { CabecalhoPagina } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,27 +145,29 @@ export default async function FluxoDeCaixaPage() {
 
   return (
     <div className="p-7 space-y-7">
-      <div>
-        <h1 className="text-xl font-bold text-oli-dark">Fluxo de caixa</h1>
-        <p className="text-sm text-oli-lgray mt-0.5">
-          Entradas realizadas (Asaas liquidado + dinheiro registrado em{' '}
-          <Link href="/financeiro/recebimentos" className="text-oli-green font-semibold hover:underline">Recebimentos</Link>
-          ) menos saídas pagas, nos últimos {MESES_EXIBIDOS} meses.
-        </p>
-      </div>
+      <CabecalhoPagina
+        titulo="Fluxo de caixa"
+        subtitulo={
+          <>
+            Entradas realizadas (Asaas liquidado + dinheiro registrado em{' '}
+            <Link href="/financeiro/recebimentos" className="text-oli-green font-semibold hover:underline">Recebimentos</Link>
+            ) menos saídas pagas, nos últimos {MESES_EXIBIDOS} meses.
+          </>
+        }
+        icone={TrendingUp}
+        kpis={[
+          { icone: ArrowDownCircle, rotulo: `Entradas ${labelMes(mesAtual)}`, valor: brl(atual.entradas), tom: 'green' },
+          { icone: ArrowUpCircle,   rotulo: `Saídas ${labelMes(mesAtual)}`,   valor: brl(atual.saidas),   tom: 'red'   },
+          { icone: Scale,           rotulo: `Saldo ${labelMes(mesAtual)}`,    valor: brl(atual.saldo),    tom: atual.saldo < 0 ? 'red' : 'green' },
+          { icone: Clock,           rotulo: `A pagar (pendente) · ${pendentes.length} conta${pendentes.length !== 1 ? 's' : ''}`, valor: brl(totalAPagar), tom: 'gold' },
+        ]}
+      />
 
       {asaas.erro && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-oli-red">
           Não foi possível ler o Asaas ({asaas.erro}). As entradas do Asaas aparecem como R$ 0,00 e os totais estão incompletos.
         </div>
       )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard label={`Entradas ${labelMes(mesAtual)}`} value={brl(atual.entradas)} badge={`dinheiro ${brl(atual.dinheiro)}`} />
-        <KpiCard label={`Saídas ${labelMes(mesAtual)}`} value={brl(atual.saidas)} color="gold" />
-        <KpiCard label={`Saldo ${labelMes(mesAtual)}`} value={brl(atual.saldo)} badge={atual.saldo < 0 ? 'negativo' : 'positivo'} color={atual.saldo < 0 ? 'gold' : 'green'} />
-        <KpiCard label="A pagar (pendente)" value={brl(totalAPagar)} badge={`${pendentes.length} conta${pendentes.length !== 1 ? 's' : ''}`} color="gold" />
-      </div>
 
       {/* ── Resumo mensal ── */}
       <section>
