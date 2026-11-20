@@ -33,7 +33,8 @@ test.describe('Leads (/comercial)', () => {
   test('escolher uma situação reescreve a URL e mostra o filtro ativo', async ({ page }) => {
     await abrirFiltros(page);
     await page.getByLabel('Filtrar por situação').selectOption({ index: 1 });
-    await expect(page).toHaveURL(/status=/);
+    // A navegação renderiza a página de Leads no servidor (pesada): 5 s não bastam.
+    await expect(page).toHaveURL(/status=/, { timeout: 30_000 });
     await expect(page.getByRole('button', { name: 'Limpar todos os filtros' })).toBeVisible();
   });
 
