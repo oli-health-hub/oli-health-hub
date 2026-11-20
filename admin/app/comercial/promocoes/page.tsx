@@ -1,6 +1,8 @@
+import { Gift, CheckCircle2, CalendarClock, Clock, Plus } from 'lucide-react';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { criarPromocao, alternarPromocao } from '@/app/actions';
 import ActionForm from '@/components/ActionForm';
+import { CabecalhoPagina, Painel, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,14 +70,23 @@ export default async function PromocoesPage() {
     usos[r.promotion_id] = u;
   });
 
+  const situacoes = promos.map(p => situacao(p, hoje).label);
+  const minutosConcedidos = Object.values(usos).reduce((soma, u) => soma + u.minutos, 0);
+  const kpis: KpiDef[] = [
+    { icone: Gift, rotulo: 'Promoções cadastradas', valor: String(promos.length), tom: 'green' },
+    { icone: CheckCircle2, rotulo: 'Ativas', valor: String(situacoes.filter(l => l === 'Ativa').length), tom: 'green' },
+    { icone: CalendarClock, rotulo: 'Agendadas', valor: String(situacoes.filter(l => l === 'Agendada').length), tom: 'amber' },
+    { icone: Clock, rotulo: 'Horas concedidas', valor: horas(minutosConcedidos / 60), tom: 'gold' },
+  ];
+
   return (
-    <div className="p-7 space-y-7">
-      <div>
-        <h1 className="text-xl font-bold text-oli-dark">Promoções</h1>
-        <p className="text-sm text-oli-lgray mt-0.5">
-          Horas de bônus concedidas automaticamente quando o produto da condição é pago. Diferente de cupom, que dá desconto no preço.
-        </p>
-      </div>
+    <div className="p-4 md:p-7 space-y-7">
+      <CabecalhoPagina
+        titulo="Promoções"
+        subtitulo="Horas de bônus concedidas automaticamente quando o produto da condição é pago. Diferente de cupom, que dá desconto no preço."
+        icone={Gift}
+        kpis={kpis}
+      />
 
       <div className="rounded-xl border border-oli-border bg-white px-4 py-3 text-sm text-oli-gray">
         <b className="text-oli-dark">Onde a promoção é aplicada:</b> nos recebimentos em dinheiro (Recebimentos) e nos
@@ -85,8 +96,7 @@ export default async function PromocoesPage() {
       </div>
 
       {/* ── Nova promoção ── */}
-      <div className="bg-white rounded-2xl border border-oli-border p-6">
-        <h2 className="text-sm font-bold text-oli-dark mb-4">Nova promoção</h2>
+      <Painel titulo="Nova promoção" icone={Plus} tom="green">
         <ActionForm
           action={criarPromocao}
           formClassName="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-4"
@@ -168,7 +178,7 @@ export default async function PromocoesPage() {
             <input id="descricao" name="descricao" placeholder="Ex.: ação de lançamento do PRO, outubro de 2026" className={INPUT} />
           </div>
         </ActionForm>
-      </div>
+      </Painel>
 
       {/* ── Lista ── */}
       <section>

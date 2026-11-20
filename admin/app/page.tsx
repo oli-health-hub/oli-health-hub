@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { QrCode } from 'lucide-react';
+import { QrCode, CalendarDays } from 'lucide-react';
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { carregarHoje } from '@/lib/hoje-data';
 import { contarPendencias } from '@/lib/hoje';
@@ -10,6 +10,7 @@ import ResumoCards from '@/components/hoje/ResumoCards';
 import SalasAgora from '@/components/hoje/SalasAgora';
 import AtividadeRecente from '@/components/hoje/AtividadeRecente';
 import { fmtDiaPorExtenso, plural } from '@/components/hoje/format';
+import { CabecalhoPagina } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,22 +35,25 @@ export default async function HojePage() {
 
   return (
     <div className="space-y-5 p-4 md:p-7">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-oli-dark">Hoje</h1>
-          <p className="text-sm text-oli-gray">
+      <CabecalhoPagina
+        titulo="Hoje"
+        icone={CalendarDays}
+        subtitulo={
+          <>
             {fmtDiaPorExtenso(agora)} · {nReservas} {plural(nReservas, 'reserva', 'reservas')} · {pendencias}{' '}
             {plural(pendencias, 'pendência', 'pendências')}
-          </p>
-        </div>
-        <Link
-          href="/configuracoes/totem"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-oli-border bg-white px-3 py-2 text-xs font-semibold text-oli-dark transition-transform duration-150 ease-out active:scale-[0.97]"
-        >
-          <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
-          Abrir Totem QR
-        </Link>
-      </header>
+          </>
+        }
+        acao={
+          <Link
+            href="/configuracoes/totem"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-oli-border bg-white px-3 py-2 text-xs font-semibold text-oli-dark transition-transform duration-150 ease-out active:scale-[0.97]"
+          >
+            <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
+            Abrir Totem QR
+          </Link>
+        }
+      />
 
       {data.avisos.length > 0 && (
         <div role="alert" className="rounded-xl border border-oli-gold/40 bg-oli-gold/10 px-4 py-3 text-xs text-oli-dark">

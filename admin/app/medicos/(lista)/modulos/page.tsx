@@ -1,6 +1,8 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { setModuleStatus } from '@/app/actions';
 import Link from 'next/link';
+import { Puzzle, CheckCircle2, Clock, CircleSlash, Boxes } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,16 +35,22 @@ export default async function ModulosPage() {
   const active    = (userModules ?? []).filter(m => m.status === 'active').length;
   const pending   = (userModules ?? []).filter(m => m.status === 'pending_payment').length;
 
+  const total = (userModules ?? []).length;
+  const kpis: KpiDef[] = [
+    { icone: CheckCircle2, rotulo: 'Ativos', valor: String(active), tom: 'green' },
+    { icone: Clock, rotulo: 'Pendentes', valor: String(pending), tom: 'amber' },
+    { icone: CircleSlash, rotulo: 'Inativos ou cancelados', valor: String(total - active - pending), tom: 'neutral' },
+    { icone: Boxes, rotulo: 'Total', valor: String(total), tom: 'blue' },
+  ];
+
   return (
-    <div className="p-7 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-oli-dark">Módulos Contratados</h1>
-        <div className="flex gap-4 text-sm">
-          <span className="text-oli-green font-semibold">{active} ativos</span>
-          <span className="text-yellow-600 font-semibold">{pending} pendentes</span>
-          <span className="text-oli-lgray">{(userModules ?? []).length} total</span>
-        </div>
-      </div>
+    <div className="p-4 md:p-7 space-y-6">
+      <CabecalhoPagina
+        titulo="Módulos Contratados"
+        subtitulo="Módulos avulsos contratados pelos profissionais."
+        icone={Puzzle}
+        kpis={kpis}
+      />
 
       <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
         <div className="overflow-x-auto">

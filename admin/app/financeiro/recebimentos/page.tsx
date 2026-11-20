@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { registrarRecebimentoDinheiro } from '@/app/actions';
-import KpiCard from '@/components/KpiCard';
+import { Banknote, Wallet } from 'lucide-react';
+import { CabecalhoPagina } from '@/components/ui';
 import ActionForm from '@/components/ActionForm';
 import EstornarRecebimentoForm from './EstornarRecebimentoForm';
 
@@ -84,18 +85,20 @@ export default async function RecebimentosPage() {
 
   return (
     <div className="p-7 space-y-7">
-      <div>
-        <h1 className="text-xl font-bold text-oli-dark">Recebimentos em dinheiro</h1>
-        <p className="text-sm text-oli-lgray mt-0.5">
-          Ao registrar, o plano PRO ou as horas são ativados na hora e o valor entra no{' '}
-          <Link href="/financeiro/fluxo" className="text-oli-green font-semibold hover:underline">Fluxo de caixa</Link>.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard label="Recebido em dinheiro (mês)" value={brl(totalMes)} badge={`${doMes.length} recebimento${doMes.length !== 1 ? 's' : ''}`} />
-        <KpiCard label="Total na lista" value={brl(totalLista)} badge={`${validos.length} válido${validos.length !== 1 ? 's' : ''} na lista`} color="gold" />
-      </div>
+      <CabecalhoPagina
+        titulo="Recebimentos em dinheiro"
+        subtitulo={
+          <>
+            Ao registrar, o plano PRO ou as horas são ativados na hora e o valor entra no{' '}
+            <Link href="/financeiro/fluxo" className="text-oli-green font-semibold hover:underline">Fluxo de caixa</Link>.
+          </>
+        }
+        icone={Banknote}
+        kpis={[
+          { icone: Banknote, rotulo: `Recebido em dinheiro (mês) · ${doMes.length} recebimento${doMes.length !== 1 ? 's' : ''}`, valor: brl(totalMes), tom: 'green' },
+          { icone: Wallet,   rotulo: `Total na lista · ${validos.length} válido${validos.length !== 1 ? 's' : ''}`,              valor: brl(totalLista), tom: 'gold' },
+        ]}
+      />
 
       {/* ── Novo recebimento ── */}
       <div className="bg-white rounded-2xl border border-oli-border p-6">

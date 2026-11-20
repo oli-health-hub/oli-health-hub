@@ -10,9 +10,9 @@ test.describe('Planos (/planos)', () => {
   });
 
   test('shows summary counts', async ({ page }) => {
-    await expect(page.getByText(/ativos/)).toBeVisible();
-    await expect(page.getByText(/pendentes/)).toBeVisible();
-    await expect(page.getByText(/cancelados/)).toBeVisible();
+    await expect(page.getByText('Ativos', { exact: true })).toBeVisible();
+    await expect(page.getByText('Pendentes', { exact: true })).toBeVisible();
+    await expect(page.getByText('Cancelados', { exact: true })).toBeVisible();
   });
 
   test('shows "Assinaturas" section heading', async ({ page }) => {

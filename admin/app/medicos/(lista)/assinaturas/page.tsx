@@ -1,5 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
+import { FileText, CheckCircle2, Clock, XCircle, UserX } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,16 +47,21 @@ export default async function PlanosPage() {
   const pending   = (subs ?? []).filter(s => s.status === 'pending_payment');
   const cancelled = (subs ?? []).filter(s => s.status === 'cancelled');
 
+  const kpis: KpiDef[] = [
+    { icone: CheckCircle2, rotulo: 'Ativos', valor: String(active.length), tom: 'green' },
+    { icone: Clock, rotulo: 'Pendentes', valor: String(pending.length), tom: 'amber' },
+    { icone: XCircle, rotulo: 'Cancelados', valor: String(cancelled.length), tom: 'red' },
+    { icone: UserX, rotulo: 'Profissionais sem assinatura', valor: String((semPlano ?? []).length), tom: 'neutral' },
+  ];
+
   return (
-    <div className="p-7 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-oli-dark">Planos & Assinaturas</h1>
-        <div className="flex gap-4 text-sm">
-          <span className="text-oli-green font-semibold">{active.length} ativos</span>
-          <span className="text-yellow-600 font-semibold">{pending.length} pendentes</span>
-          <span className="text-oli-lgray">{cancelled.length} cancelados</span>
-        </div>
-      </div>
+    <div className="p-4 md:p-7 space-y-8">
+      <CabecalhoPagina
+        titulo="Planos & Assinaturas"
+        subtitulo={`${(subs ?? []).length} assinaturas registradas`}
+        icone={FileText}
+        kpis={kpis}
+      />
 
       {/* Assinaturas */}
       <section>

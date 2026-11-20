@@ -1,10 +1,11 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Users, Clock, Flame, UserX } from 'lucide-react';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { updateLead, optInLeadWhatsapp, pauseLeadWhatsappNutricao, resumeLeadWhatsappNutricao } from '@/app/actions';
 import BotaoWhatsApp from '@/components/BotaoWhatsApp';
 import { ORIGEM_LABEL, STATUS_LABEL, TEMPERATURA_LABEL } from '@/lib/lead-labels';
 import PainelFiltros, { type CampoPainel, type SecaoPainel } from '@/components/PainelFiltros';
 import { mensagemLead } from '@/lib/whatsapp';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -357,12 +358,22 @@ export default async function LeadsPage({
   const SELO = 'whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold';
   const BARRA_TEMP: Record<string, string> = { quente: 'bg-oli-red', morno: 'bg-orange-400', frio: 'bg-sky-400' };
 
+  // Indicadores sobre todos os leads, não sobre o resultado filtrado.
+  const kpisLeads: KpiDef[] = [
+    { icone: Users, rotulo: 'Total de leads', valor: String(todos.length), tom: 'green' },
+    { icone: Clock, rotulo: 'Falta atender', valor: String(todos.filter(l => l.status === 'novo').length), tom: 'amber' },
+    { icone: Flame, rotulo: 'Quentes', valor: String(todos.filter(l => l.temperatura === 'quente').length), tom: 'red' },
+    { icone: UserX, rotulo: 'Sem atendente', valor: String(todos.filter(l => !l.atendente_id && !l.atendido_por_ia).length), tom: 'neutral' },
+  ];
+
   return (
     <div className="mx-auto max-w-[1200px] space-y-4 p-4 md:p-6">
-      <header>
-        <h1 className="text-2xl font-bold text-oli-dark">Leads</h1>
-        <p className="text-sm text-oli-gray">Contatos do site, dos anúncios e da RD Station.</p>
-      </header>
+      <CabecalhoPagina
+        titulo="Leads"
+        subtitulo="Contatos do site, dos anúncios e da RD Station."
+        icone={Users}
+        kpis={kpisLeads}
+      />
 
       <PainelFiltros
         basePath="/comercial"

@@ -8,6 +8,8 @@
 
 ---
 
+> **Padrão visual (20/11):** todas as telas abrem com o cabeçalho de `components/ui.tsx` (ícone, título, selos e indicadores com ícone), o mesmo da ficha do profissional. Os indicadores do cabeçalho vêm dos dados da própria tela.
+
 ## Navegação (menu de 6 itens)
 
 Reorganizado em 19/11/2026. Cada item do menu é um grupo; as telas do grupo são **abas** na barra abaixo do topo.

@@ -1,5 +1,7 @@
+import { Ticket, CheckCircle2, Repeat2, CalendarX, Plus } from 'lucide-react';
 import { createSupabaseAdmin } from '@/lib/supabase-server';
 import { createCoupon, toggleCoupon, deleteCoupon } from '@/app/actions';
+import { CabecalhoPagina, Painel, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,15 +51,31 @@ export default async function CuponsPage() {
     .eq('status', 'confirmed');
   const comResgate = new Set((confirmed ?? []).map((r) => r.coupon_id as string));
 
+  const agora = Date.now();
+  const kpis: KpiDef[] = [
+    { icone: Ticket, rotulo: 'Cupons criados', valor: String(coupons.length), tom: 'green' },
+    { icone: CheckCircle2, rotulo: 'Ativos', valor: String(coupons.filter((c) => c.ativo).length), tom: 'green' },
+    { icone: Repeat2, rotulo: 'Usos no total', valor: String(coupons.reduce((soma, c) => soma + c.usos, 0)), tom: 'gold' },
+    {
+      icone: CalendarX,
+      rotulo: 'Com validade vencida',
+      valor: String(coupons.filter((c) => c.validade && new Date(c.validade).getTime() < agora).length),
+      tom: 'neutral',
+    },
+  ];
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-oli-dark">Cupons de desconto</h1>
-        <p className="text-sm text-gray-500">Crie e gerencie cupons. Valor final mínimo de R$5 (regra do Asaas).</p>
-      </div>
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <CabecalhoPagina
+        titulo="Cupons de desconto"
+        subtitulo="Crie e gerencie cupons. Valor final mínimo de R$5 (regra do Asaas)."
+        icone={Ticket}
+        kpis={kpis}
+      />
 
       {/* ── Criar cupom ── */}
-      <form action={createCoupon} className="bg-white rounded-xl border border-gray-100 p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Painel titulo="Novo cupom" icone={Plus} tom="green">
+      <form action={createCoupon} className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-gray-600">Código</label>
           <input name="code" required placeholder="EX: BEMVINDO20" className="border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase" />
@@ -104,6 +122,7 @@ export default async function CuponsPage() {
           </button>
         </div>
       </form>
+      </Painel>
 
       {/* ── Lista ── */}
       {/* overflow-x-auto, não overflow-hidden: em tela menor a tabela rola em

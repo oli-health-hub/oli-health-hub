@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp, Wallet, Receipt, FileText, Truck, ChevronRight, ChevronLeft,
-  Clock, AlertTriangle, CreditCard, Hourglass,
+  Clock, AlertTriangle, CreditCard, Hourglass, Landmark, Repeat,
 } from 'lucide-react';
+import { CabecalhoPagina, KpiGrade, Selo } from '@/components/ui';
 import type { FinanceiroMes, LinhaPagamento, Agrupamento } from '@/lib/financeiro';
 
 type Tab = 'overview' | 'pagamentos' | 'aberto' | 'contas' | 'fornecedores';
@@ -66,40 +67,62 @@ export function FinanceiroClient({ data }: { data: FinanceiroMes }) {
   return (
     <div className="p-7 space-y-6">
 
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-oli-dark">Financeiro</h1>
-          <p className="text-sm text-oli-lgray mt-1">
-            O que entrou, o que está disponível para saque e o que ainda falta receber.
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Link
-            href={`/financeiro?mes=${deslocar(data.mes, -1)}`}
-            aria-label="Mês anterior"
-            className="p-2 text-oli-lgray hover:text-oli-dark hover:bg-white rounded-xl border border-oli-border transition-colors"
-          >
-            <ChevronLeft size={16} />
-          </Link>
-          <span className="px-4 py-1.5 text-sm font-semibold text-oli-dark bg-white border border-oli-border rounded-xl min-w-[150px] text-center">
-            {labelMes(data.mes)}
-          </span>
-          {podeAvancar ? (
+      {/* Cabeçalho + posição de hoje */}
+      <CabecalhoPagina
+        titulo="Financeiro"
+        subtitulo="O que entrou, o que está disponível para saque e o que ainda falta receber."
+        icone={Landmark}
+        selos={<Selo tom="neutral" icone={Clock}>Posição de hoje: fotografia do Asaas, não muda com o mês</Selo>}
+        acao={
+          <div className="flex items-center gap-1">
             <Link
-              href={`/financeiro?mes=${mesProximo}`}
-              aria-label="Próximo mês"
+              href={`/financeiro?mes=${deslocar(data.mes, -1)}`}
+              aria-label="Mês anterior"
               className="p-2 text-oli-lgray hover:text-oli-dark hover:bg-white rounded-xl border border-oli-border transition-colors"
             >
-              <ChevronRight size={16} />
+              <ChevronLeft size={16} />
             </Link>
-          ) : (
-            <span className="p-2 text-oli-lgray/40 rounded-xl border border-oli-border" aria-hidden="true">
-              <ChevronRight size={16} />
+            <span className="px-4 py-1.5 text-sm font-semibold text-oli-dark bg-white border border-oli-border rounded-xl min-w-[150px] text-center">
+              {labelMes(data.mes)}
             </span>
-          )}
-        </div>
-      </div>
+            {podeAvancar ? (
+              <Link
+                href={`/financeiro?mes=${mesProximo}`}
+                aria-label="Próximo mês"
+                className="p-2 text-oli-lgray hover:text-oli-dark hover:bg-white rounded-xl border border-oli-border transition-colors"
+              >
+                <ChevronRight size={16} />
+              </Link>
+            ) : (
+              <span className="p-2 text-oli-lgray/40 rounded-xl border border-oli-border" aria-hidden="true">
+                <ChevronRight size={16} />
+              </span>
+            )}
+          </div>
+        }
+        kpis={[
+          {
+            icone: Wallet, tom: 'green',
+            rotulo: 'Disponível para saque (saldo atual da conta Asaas)',
+            valor: data.saldoDisponivel === null ? '—' : fmtBRL(data.saldoDisponivel),
+          },
+          {
+            icone: CreditCard, tom: 'blue',
+            rotulo: `A liberar (cartão) · ${data.aLiberar.count} pagamento${data.aLiberar.count !== 1 ? 's' : ''}, líquido`,
+            valor: fmtBRL(data.aLiberar.liquido),
+          },
+          {
+            icone: Clock, tom: 'gold',
+            rotulo: `A receber · ${data.aReceber.count} cobrança${data.aReceber.count !== 1 ? 's' : ''} no prazo, ${fmtBRL(data.aReceber.vencemNoMesAtual)} vence este mês`,
+            valor: fmtBRL(data.aReceber.total),
+          },
+          {
+            icone: AlertTriangle, tom: data.vencido.total > 0 ? 'red' : 'neutral',
+            rotulo: `Vencido · ${data.vencido.count} cobrança${data.vencido.count !== 1 ? 's' : ''} em atraso`,
+            valor: fmtBRL(data.vencido.total),
+          },
+        ]}
+      />
 
       {/* Avisos de leitura do Asaas */}
       {data.avisos.length > 0 && (
@@ -136,78 +159,36 @@ export function FinanceiroClient({ data }: { data: FinanceiroMes }) {
       {tab === 'overview' && (
         <div className="space-y-6">
 
-          {/* Posição de hoje */}
-          <section className="space-y-2.5">
-            <SectionTitle title="Posição hoje" hint="Fotografia do Asaas agora; não muda com o mês escolhido." />
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-              <KpiCard
-                icon={<Wallet size={18} className="text-oli-green" />}
-                iconBg="bg-green-50"
-                label="Disponível para saque"
-                value={data.saldoDisponivel === null ? '—' : fmtBRL(data.saldoDisponivel)}
-                sub="saldo atual da conta Asaas"
-              />
-              <KpiCard
-                icon={<CreditCard size={18} className="text-blue-500" />}
-                iconBg="bg-blue-50"
-                label="A liberar (cartão)"
-                value={fmtBRL(data.aLiberar.liquido)}
-                sub={`${data.aLiberar.count} pagamento${data.aLiberar.count !== 1 ? 's' : ''} pago${data.aLiberar.count !== 1 ? 's' : ''}, ainda fora do saldo (líquido)`}
-              />
-              <KpiCard
-                icon={<Clock size={18} className="text-yellow-600" />}
-                iconBg="bg-yellow-50"
-                label="A receber"
-                value={fmtBRL(data.aReceber.total)}
-                sub={`${data.aReceber.count} cobrança${data.aReceber.count !== 1 ? 's' : ''} no prazo · ${fmtBRL(data.aReceber.vencemNoMesAtual)} vence este mês`}
-              />
-              <KpiCard
-                icon={<AlertTriangle size={18} className="text-red-500" />}
-                iconBg="bg-red-50"
-                label="Vencido"
-                value={fmtBRL(data.vencido.total)}
-                sub={`${data.vencido.count} cobrança${data.vencido.count !== 1 ? 's' : ''} em atraso`}
-                alerta={data.vencido.total > 0}
-              />
-            </div>
-          </section>
-
           {/* Mês escolhido */}
           <section className="space-y-2.5">
             <SectionTitle
               title={`Recebido em ${labelMes(data.mes)}`}
               hint={data.mesEhAtual ? 'Mês em andamento: valores parciais até hoje.' : 'Mês fechado.'}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-              <KpiCard
-                icon={<Receipt size={18} className="text-orange-500" />}
-                iconBg="bg-orange-50"
-                label="Total recebido"
-                value={fmtBRL(totalBruto)}
-                sub={`líquido de taxas ${fmtBRL(totalLiquido)}`}
-              />
-              <KpiCard
-                icon={<TrendingUp size={18} className="text-oli-green" />}
-                iconBg="bg-green-50"
-                label="Via Asaas"
-                value={fmtBRL(data.asaasMes.bruto)}
-                sub={`${data.asaasMes.count} pagamento${data.asaasMes.count !== 1 ? 's' : ''} · taxas ${fmtBRL(data.asaasMes.taxas)}`}
-              />
-              <KpiCard
-                icon={<Wallet size={18} className="text-teal-600" />}
-                iconBg="bg-teal-50"
-                label="Em dinheiro"
-                value={fmtBRL(data.dinheiroMes.total)}
-                sub={`${data.dinheiroMes.count} lançamento${data.dinheiroMes.count !== 1 ? 's' : ''} manual${data.dinheiroMes.count !== 1 ? 'is' : ''}`}
-              />
-              <KpiCard
-                icon={<TrendingUp size={18} className="text-purple-500" />}
-                iconBg="bg-purple-50"
-                label="Receita recorrente (MRR)"
-                value={fmtBRL(data.mrr)}
-                sub={`${data.assinaturasPagas} assinatura${data.assinaturasPagas !== 1 ? 's' : ''} paga${data.assinaturasPagas !== 1 ? 's' : ''} ativa${data.assinaturasPagas !== 1 ? 's' : ''}`}
-              />
-            </div>
+            <KpiGrade
+              kpis={[
+                {
+                  icone: Receipt, tom: 'gold',
+                  rotulo: `Total recebido · líquido de taxas ${fmtBRL(totalLiquido)}`,
+                  valor: fmtBRL(totalBruto),
+                },
+                {
+                  icone: TrendingUp, tom: 'green',
+                  rotulo: `Via Asaas · ${data.asaasMes.count} pagamento${data.asaasMes.count !== 1 ? 's' : ''}, taxas ${fmtBRL(data.asaasMes.taxas)}`,
+                  valor: fmtBRL(data.asaasMes.bruto),
+                },
+                {
+                  icone: Wallet, tom: 'neutral',
+                  rotulo: `Em dinheiro · ${data.dinheiroMes.count} lançamento${data.dinheiroMes.count !== 1 ? 's' : ''} manual${data.dinheiroMes.count !== 1 ? 'is' : ''}`,
+                  valor: fmtBRL(data.dinheiroMes.total),
+                },
+                {
+                  icone: Repeat, tom: 'blue',
+                  rotulo: `Receita recorrente (MRR) · ${data.assinaturasPagas} assinatura${data.assinaturasPagas !== 1 ? 's' : ''} paga${data.assinaturasPagas !== 1 ? 's' : ''} ativa${data.assinaturasPagas !== 1 ? 's' : ''}`,
+                  valor: fmtBRL(data.mrr),
+                },
+              ]}
+            />
           </section>
 
           {/* Resumo + detalhamento */}
@@ -337,30 +318,6 @@ function SectionTitle({ title, hint }: { title: string; hint: string }) {
     <div className="flex items-baseline justify-between flex-wrap gap-x-4">
       <h2 className="text-sm font-bold text-oli-dark">{title}</h2>
       <span className="text-[11px] text-oli-lgray">{hint}</span>
-    </div>
-  );
-}
-
-function KpiCard({
-  icon, iconBg, label, value, sub, alerta,
-}: {
-  icon:    React.ReactNode;
-  iconBg:  string;
-  label:   string;
-  value:   string;
-  sub:     string;
-  alerta?: boolean;
-}) {
-  return (
-    <div className={`bg-white rounded-2xl border p-5 flex flex-col gap-3 ${alerta ? 'border-red-200' : 'border-oli-border'}`}>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
-        {icon}
-      </div>
-      <div>
-        <p className={`text-2xl font-extrabold leading-none ${alerta ? 'text-red-600' : 'text-oli-dark'}`}>{value}</p>
-        <p className="text-[11px] font-semibold text-oli-lgray uppercase tracking-wider mt-1.5">{label}</p>
-        <p className="text-[11px] text-oli-lgray mt-0.5">{sub}</p>
-      </div>
     </div>
   );
 }

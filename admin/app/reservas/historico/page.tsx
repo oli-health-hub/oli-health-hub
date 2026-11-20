@@ -1,5 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
+import { CalendarDays, Clock, History, UserX, Wallet } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 import {
   RESERVATION_STATUS_FILTER_OPTIONS,
   normalizeReservationStatus,
@@ -130,6 +132,18 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
 
   const totalPages = Math.ceil((count ?? 0) / PER_PAGE);
 
+  const kpis: KpiDef[] = [
+    { icone: CalendarDays, rotulo: 'Reservas', valor: String(totalReservations), tom: 'green' },
+    { icone: Clock, rotulo: 'Horas agendadas', valor: fmtDur(Math.round(totalScheduledMin)), tom: 'blue' },
+    {
+      icone: Wallet,
+      rotulo: 'Receita cobrada',
+      valor: totalRevenue > 0 ? `R$ ${totalRevenue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}` : '—',
+      tom: 'gold',
+    },
+    { icone: UserX, rotulo: 'No-shows', valor: String(noShowCount), tom: noShowCount > 0 ? 'red' : 'neutral' },
+  ];
+
   // Build URL helper for pagination/filters
   function buildUrl(params: Record<string, string | number>) {
     const base: Record<string, string> = {
@@ -145,30 +159,12 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Se
   return (
     <div className="p-7 space-y-6">
 
-      {/* Header */}
-      <h1 className="text-xl font-bold text-oli-dark">Histórico de Utilização</h1>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-          <p className="text-2xl font-extrabold text-oli-dark">{totalReservations}</p>
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Reservas</p>
-        </div>
-        <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-          <p className="text-2xl font-extrabold text-oli-dark">{fmtDur(Math.round(totalScheduledMin))}</p>
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Horas agendadas</p>
-        </div>
-        <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-          <p className="text-2xl font-extrabold text-oli-green">
-            {totalRevenue > 0 ? `R$ ${totalRevenue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}` : '—'}
-          </p>
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">Receita cobrada</p>
-        </div>
-        <div className="bg-white rounded-xl border border-oli-border p-4 text-center">
-          <p className="text-2xl font-extrabold text-oli-red">{noShowCount}</p>
-          <p className="text-[10px] font-bold text-oli-lgray uppercase tracking-wider mt-1">No-shows</p>
-        </div>
-      </div>
+      <CabecalhoPagina
+        titulo="Histórico de Utilização"
+        subtitulo={`Período: ${new Date(`${startDate}T12:00:00`).toLocaleDateString('pt-BR')} – ${new Date(`${endDate}T12:00:00`).toLocaleDateString('pt-BR')}`}
+        icone={History}
+        kpis={kpis}
+      />
 
       {/* Filters */}
       <form method="GET" action="/reservas/historico" className="bg-white rounded-2xl border border-oli-border p-4">

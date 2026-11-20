@@ -1,5 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import Link from 'next/link';
+import { UsersRound, Crown, Sparkles, Handshake, Users } from 'lucide-react';
+import { CabecalhoPagina, type KpiDef } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,22 +28,30 @@ export default async function EquipePage() {
     .in('user_type', ['founder', 'specialist', 'partner', 'team'])
     .order('created_at', { ascending: false });
 
+  const contar = (tipo: string) => (equipe ?? []).filter(m => m.user_type === tipo).length;
+  const kpis: KpiDef[] = [
+    { icone: Crown, rotulo: 'Founders', valor: String(contar('founder')), tom: 'gold' },
+    { icone: Sparkles, rotulo: 'Especialistas', valor: String(contar('specialist')), tom: 'blue' },
+    { icone: Handshake, rotulo: 'Parceiros', valor: String(contar('partner')), tom: 'green' },
+    { icone: Users, rotulo: 'Equipe OLI', valor: String(contar('team')), tom: 'neutral' },
+  ];
+
   return (
-    <div className="p-7">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-oli-dark">Equipe</h1>
-          <p className="text-sm text-oli-gray mt-0.5">
-            Founder, especialistas, parceiros e equipe OLI — perfis não-médicos visíveis na Comunidade do app.
-          </p>
-        </div>
-        <Link
-          href="/configuracoes/equipe/novo"
-          className="text-sm font-bold bg-oli-green text-white px-4 py-2 rounded-lg hover:bg-oli-green/90 transition-colors"
-        >
-          + Novo perfil
-        </Link>
-      </div>
+    <div className="p-4 md:p-7 space-y-6">
+      <CabecalhoPagina
+        titulo="Equipe"
+        subtitulo="Founder, especialistas, parceiros e equipe OLI — perfis não-médicos visíveis na Comunidade do app."
+        icone={UsersRound}
+        acao={
+          <Link
+            href="/configuracoes/equipe/novo"
+            className="inline-block text-sm font-bold bg-oli-green text-white px-4 py-2 rounded-lg hover:bg-oli-green/90 transition-colors"
+          >
+            + Novo perfil
+          </Link>
+        }
+        kpis={kpis}
+      />
 
       <div className="bg-white rounded-2xl border border-oli-border overflow-hidden">
         <div className="overflow-x-auto">

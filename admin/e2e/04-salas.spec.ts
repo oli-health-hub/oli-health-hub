@@ -10,12 +10,12 @@ test.describe('Mapa das Salas (/salas)', () => {
   });
 
   test('shows 4 KPI labels', async ({ page }) => {
-    // KPI labels are <p> with uppercase tracking-wider class
-    const kpis = page.locator('p.uppercase.tracking-wider');
-    await expect(kpis.getByText('Reservas')).toBeVisible();
-    await expect(kpis.getByText('Em sessão')).toBeVisible();
-    await expect(kpis.getByText('Próximas')).toBeVisible();
-    await expect(kpis.getByText('Ocupação')).toBeVisible();
+    // Os indicadores ficam no cabeçalho da página (CabecalhoPagina).
+    const kpis = page.locator('header');
+    await expect(kpis.getByText('Reservas', { exact: true })).toBeVisible();
+    await expect(kpis.getByText('Em sessão', { exact: true })).toBeVisible();
+    await expect(kpis.getByText('Próximas', { exact: true })).toBeVisible();
+    await expect(kpis.getByText('Ocupação', { exact: true })).toBeVisible();
   });
 
   test('timeline shows all 7 room labels', async ({ page }) => {
