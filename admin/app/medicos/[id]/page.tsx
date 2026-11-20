@@ -380,13 +380,13 @@ export default async function MedicoDetailPage({
 
         <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
           {KPIS.map(k => (
-            <div key={k.rotulo} className="flex items-center gap-3 rounded-xl border border-oli-border bg-oli-bg/40 p-3">
+            <div key={k.rotulo} className="flex flex-col items-start gap-2 rounded-xl border border-oli-border bg-oli-bg/40 p-3 sm:flex-row sm:items-center sm:gap-3">
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${k.tom}`} aria-hidden="true">
                 <k.icone className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-lg font-bold leading-tight text-oli-dark">{k.valor}</p>
-                <p className="truncate text-[11px] text-oli-lgray">{k.rotulo}</p>
+                <p className="text-lg font-bold leading-tight text-oli-dark">{k.valor}</p>
+                <p className="text-[11px] text-oli-lgray">{k.rotulo}</p>
               </div>
             </div>
           ))}
