@@ -3293,6 +3293,24 @@ Ver o PR (`tsc`, `next build`, e2e no preview, 375px e 1280px). e2e: `02-hoje` g
 - **Não alterado:** Totem QR (o `h1` fica em `totem/TotemClient.tsx`), Login e Definir senha.
 - e2e ajustados: `04-salas` (rótulos dos KPIs), `07-planos` e `08-modulos` (contadores viraram rótulos de KPI).
 
+## 85. Site: formulário de visita trocado pelo WhatsApp da recepção (25/11)
+
+**Por quê.** Pedido da Mirele (CWK, 25/11, 9h02): o formulário "Solicite a sua visita" da home estava falhando ("Não conseguimos enviar agora…", print de um lead de nutrição) e a agência pediu para tirá-lo e deixar só botões para o WhatsApp. O Igor definiu o número: **(11) 91998-0777**, da recepção (chegou a ser o da Olivia, 93942-9453, e depois foi corrigido). Branch `fix/site-whatsapp`.
+
+### 85.1 O que mudou (`landing/index.html`)
+- Saíram o formulário, o script de captura (`fetch` para `leads` com a chave publicável) e o CSS do formulário. No lugar, cartão "Agende a sua visita" com o botão "Agendar visita pelo WhatsApp".
+- Os 7 links de WhatsApp da home apontam para **`5511919980777`**, com mensagem pronta começando por "Olá, vim pelo site…": visita (menu, topo, seção das salas e cartão), "Começar grátis" (START), "Conhecer o PRO" e o botão flutuante. Antes, os botões levavam ao `#contato` e o flutuante ia para o `97223-3745`.
+- O número escrito no bloco de contato ("WhatsApp") e no rodapé também virou **(11) 91998-0777**. O `97223-3745` não aparece mais na home.
+- **Não alterado:** a página `/consultorio` (link de indicação), que segue com o `97223-3745`.
+
+### 85.2 Efeitos
+- O contato do site agora cai numa conversa da recepção, fora da Cloud API: **não vira lead sozinho** na tabela `leads` nem aparece em Leads no admin. Registrar à mão quando fizer sentido. O "vim pelo site" da mensagem pronta identifica a origem na conversa.
+- GTM: o envio do formulário deixa de existir como conversão. Para medir, gatilho de clique com "Click URL contém `wa.me`" (container da CWK).
+- A policy de INSERT anônimo em `leads` (`origem='site'`) ficou sem uso e continua aberta. Fechar quando houver acesso de escrita ao banco.
+
+### 85.3 Causa da falha do formulário (não confirmada)
+- A chave publicável respondeu 200 a um GET em `leads` (a RLS devolve `[]`), então a chave vale; a falha está no INSERT (RLS, CHECK ou trigger). O MCP do Supabase negou SQL e logs ("You do not have permission"), então a causa não foi vista. **Se for trigger de `leads`, os inserts da Olivia, do Meta e do RD também falham**: conferir se continuam entrando leads novos em Leads no admin.
+
 ## 13. Comandos úteis
 
 ```bash
